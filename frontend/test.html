@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>test</title>
+</head>
+<body>
+  <h1>test</h1>
+  <form id="uploadForm" enctype="multipart/form-data">
+    <label for="image">Select an image:</label>
+    <input type="file" id="image" name="image" accept="image/*" required>
+    <button type="submit">Upload and Extract Text</button>
+  </form>
+
+  <h2>Result:</h2>
+  <pre id="result">No text detected yet.</pre>
+
+  <script>
+    const form = document.getElementById('uploadForm');
+    const result = document.getElementById('result');
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      const formData = new FormData(form);
+
+      try {
+        // 서버로 요청 보내기
+        const response = await fetch('http://localhost:3000/example', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) {
+          throw new Error(`Server error: ${response.statusText}`);
+        }
+
+        // JSON 데이터 파싱
+        const result = await response.json();
+
+        // JSON 데이터를 보기 좋게 포맷팅하여 화면에 표시
+        document.getElementById("result").textContent = JSON.stringify(result, null, 2);
+      } catch (error) {
+        console.error('Error:', error);
+        result.textContent = 'An error occurred while processing the image.';
+      }
+    });
+  </script>
+</body>
+</html>
