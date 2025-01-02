@@ -1,5 +1,6 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
+import styled from "styled-components";
 
 import exampleIcon from "../Images/example.png";
 import homeIcon from "../Images/home.png";
@@ -7,118 +8,99 @@ import questionIcon from "../Images/question.png";
 
 const NavBar = () => {
   return (
-    <div style={styles.navbar}>
+    <NavBarContainer>
       {/* 예문 버튼 */}
-      <NavLink
-        to="/example"
-        style={({ isActive }) =>
-          isActive
-            ? { ...styles.navButton, ...styles.activeNavButton }
-            : styles.navButton
-        }
-      >
-        <div style={styles.icon}>
-          <img src={exampleIcon} alt="예문" style={styles.image} />
-        </div>
+      <StyledNavLink to="/example">
+        <IconContainer>
+          <Icon src={exampleIcon} alt="예문" />
+        </IconContainer>
         <span>예문</span>
-      </NavLink>
+      </StyledNavLink>
 
       {/* 둥근 홈 버튼 */}
-      <div style={styles.homeContainer}>
-        <NavLink
-          to="/home"
-          style={({ isActive }) =>
-            isActive
-              ? { ...styles.navButton, ...styles.activeNavButton }
-              : styles.navButton
-          }
-        >
-          <div style={styles.homeIcon}>
-            <img src={homeIcon} alt="홈" style={styles.image} />
-          </div>
-          <span style={styles.homeText}>홈</span>
-        </NavLink>
-      </div>
+
+      <StyledNavLink to="/home">
+        <HomeContainer>
+          <HomeIconContainer>
+            <Icon src={homeIcon} alt="홈" />
+          </HomeIconContainer>
+          <HomeText>홈</HomeText>
+        </HomeContainer>
+      </StyledNavLink>
+
 
       {/* 질문 버튼 */}
-      <NavLink
-        to="/question"
-        style={({ isActive }) =>
-          isActive
-            ? { ...styles.navButton, ...styles.activeNavButton }
-            : styles.navButton
-        }
-      >
-        <div style={styles.icon}>
-          <img src={questionIcon} alt="질문" style={styles.image} />
-        </div>
+      <StyledNavLink to="/question">
+        <IconContainer>
+          <Icon src={questionIcon} alt="질문" />
+        </IconContainer>
         <span>질문</span>
-      </NavLink>
-    </div>
+      </StyledNavLink>
+    </NavBarContainer>
   );
 };
 
 export default NavBar;
 
-const styles = {
-  navbar: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    backgroundColor: "#00DAAA", // 초록색 배경
-    position: "fixed",
-    bottom: 0,
-    width: "100%",
-    height: "100px",
-    padding: "0 20px",
-    borderRadius: "0px",
-  },
-  homeContainer: {
-    position: "absolute",
-    bottom: "60px", // 홈 버튼이 올라오도록 설정
-    left: "50%",
-    transform: "translateX(-50%)",
-    backgroundColor: "#00DAAA",
-    width: "80px",
-    height: "80px",
-    borderRadius: "50%",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    boxShadow: "0px 0px 10px rgba(0, 0, 0, 0.1)",
-    zIndex: 10,
-  },
-  navButton: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    textDecoration: "none",
-    color: "rgba(0, 0, 0, 0.5)",
-    fontSize: "12px",
-    fontWeight: "500",
-    height: "100%", 
-  },
-  activeNavButton: {
-    color: "white",
-  },
-  icon: {
-    marginBottom: "5px",
-  },
-  image: {
-    width: "30px",
-    height: "30px",
-  },
-  homeIcon: {
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  homeText: {
-    marginTop: "5px",
-    color: "rgba(0, 0, 0, 0.5)",
-    fontSize: "12px",
-    fontWeight: "500",
-    textAlign: "center",
-  },
-};
+const NavBarContainer = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  background-color: #00daaa;
+  position: fixed;
+  bottom: 0;
+  width: 100vw;
+  height: 100px;
+`;
+
+const HomeContainer = styled.div`
+  background-color: #00daaa;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+  transform: translateY(-50%);
+`;
+
+const StyledNavLink = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  color: rgba(0, 0, 0, 0.5);
+  font-size: 12px;
+  font-weight: 500;
+  height: 100%;
+
+  &.active {
+    color: white;
+  }
+`;
+
+const IconContainer = styled.div`
+  margin-bottom: 5px;
+`;
+
+const Icon = styled.img`
+  width: 40px;
+  height: 40px;
+`;
+
+const HomeIconContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+`;
+
+const HomeText = styled.span`
+  margin-top: 5px;
+  color: rgba(0, 0, 0, 0.5);
+  font-size: 15px;
+  font-weight: 500;
+  text-align: center;
+`;
