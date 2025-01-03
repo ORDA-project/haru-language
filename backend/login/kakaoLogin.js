@@ -1,24 +1,22 @@
-require('dotenv').config({ path: "../.env" });
+require('dotenv').config({ path: "./.env" });
 const express = require('express');
 const axios = require('axios');
 
-const app = express();
-const PORT = 3000;
+const router = express.Router();
 
 // 카카오 앱 설정 (카카오 개발자 콘솔에서 확인)
 const KAKAO_REST_API_KEY = process.env.KAKAO_REST_API_KEY;
 const KAKAO_REDIRECT_URI = process.env.KAKAO_REDIRECT_URI;
 
 // 카카오 로그인 페이지로 리다이렉트
-app.get('/auth/kakao', (req, res) => {
+router.get('/', (req, res) => {
     const kakaoAuthURL = `https://kauth.kakao.com/oauth/authorize?response_type=code&client_id=${KAKAO_REST_API_KEY}&redirect_uri=${KAKAO_REDIRECT_URI}`;
     res.redirect(kakaoAuthURL);
 });
 
 // 카카오에서 Authorization Code를 받는 콜백
-app.get('/auth/kakao/callback', async (req, res) => {
-    console.log('Query Params:', req.query); // Authorization Code 확인
-    const { code } = req.query; // Authorization 
+router.get('/callback', async (req, res) => {
+    const { code } = req.query; // Authorization Code
     
     if (!code) {
         return res.status(400).send('Authorization code is missing.');
@@ -28,7 +26,7 @@ app.get('/auth/kakao/callback', async (req, res) => {
         // Access Token 요청
         const tokenResponse = await axios.post(
             'https://kauth.kakao.com/oauth/token',
-            null, // POST 요청의 body는 null로 설정
+            null,
             {
                 params: {
                     grant_type: 'authorization_code',
@@ -51,9 +49,17 @@ app.get('/auth/kakao/callback', async (req, res) => {
             },
         });
 
+        // 사용자 정보 가져오기
+        const { nickname } = userResponse.data.properties; // 닉네임
+        const { id } = userResponse.data; // 고유 사용자 ID
+
+        console.log('[DEBUG] User Info:', userResponse.data);
+
         // 사용자 정보 출력
-        const nickname = userResponse.data.properties.nickname;
-        res.send(`Hello, ${nickname}!`); // 한 번만 응답
+        res.send(`
+            <h1>Welcome, ${nickname}!</h1>
+            <p>Your ID: ${id}</p>
+        `);
 
     } catch (error) {
         console.error(error.response ? error.response.data : error.message);
@@ -61,7 +67,4 @@ app.get('/auth/kakao/callback', async (req, res) => {
     }
 });
 
-// 서버 실행
-app.listen(PORT, () => {
-    console.log(`Server running at http://localhost:${PORT}`);
-});
+module.exports = router;

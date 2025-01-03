@@ -1,13 +1,14 @@
-require('dotenv').config({ path: "../.env" });
+const fs = require('fs');
 const express = require('express');
 const axios = require('axios');
 
 const router = express.Router();
 
-// Google API 설정
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
-const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
-const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI;
+// JSON 파일에서 Google API 설정 읽기
+const googleCredentials = JSON.parse(fs.readFileSync('./config/google-credentials.json', 'utf8'));
+const GOOGLE_CLIENT_ID = googleCredentials.web.client_id;
+const GOOGLE_CLIENT_SECRET = googleCredentials.web.client_secret;
+const GOOGLE_REDIRECT_URI = googleCredentials.web.redirect_uris[0];
 
 // Google 로그인 페이지로 리다이렉트
 router.get('/', (req, res) => {

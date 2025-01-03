@@ -1,27 +1,27 @@
-require('dotenv').config();
 const express = require('express');
+const googleRouter = require('./login/googleLogin');
+const kakaoRouter = require('./login/kakaoLogin');
+require('dotenv').config(); // .env 파일 초기화
+
 const app = express();
+const PORT = 3000;
 
-// Google 및 Kakao 라우트 가져오기
-const googleLogin = require('./googleLogin');
-const kakaoLogin = require('./kakaoLogin');
+// Google 라우터 연결
+app.use('/auth/google', googleRouter);
 
-// 라우트 연결
-app.use('/auth/google', googleLogin);
-app.use('/auth/kakao', kakaoLogin);
+// Kakao 라우터 연결
+app.use('/auth/kakao', kakaoRouter);
 
-// 기본 라우트
+// 기본 홈 라우트
 app.get('/', (req, res) => {
     res.send(`
-        <h1>Login Page</h1>
+        <h1>Social Login</h1>
         <a href="/auth/google">Login with Google</a><br>
         <a href="/auth/kakao">Login with Kakao</a>
     `);
 });
 
 // 서버 실행
-const PORT = 3000;
 app.listen(PORT, () => {
     console.log(`Server running at http://localhost:${PORT}`);
 });
-
