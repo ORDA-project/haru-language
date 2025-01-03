@@ -1,16 +1,14 @@
 const textToSpeech = require("@google-cloud/text-to-speech");
-// const fs = require("fs"); 파일 처리 안하면 불필요
-// const util = require("util");
 require("dotenv").config({ path: "../.env" }); // .env 파일 로드
 
 // Google Cloud TTS 클라이언트 초기화
 const ttsClient = new textToSpeech.TextToSpeechClient();
 
 /**
- * 텍스트 데이터를 받아 tts로 변환 후 즉시 실행
+ * 텍스트 데이터를 받아 TTS로 변환 후 MP3 데이터 반환
  * @param {string} text - 변환할 텍스트
+ * @returns {Buffer} - MP3 음성 데이터
  */
-
 async function readTextWithTTS(text) {
   try {
     // Google TTS 요청 구성
@@ -29,9 +27,9 @@ async function readTextWithTTS(text) {
     // TTS 요청
     const [response] = await ttsClient.synthesizeSpeech(request);
 
-    // 오디오 재생을 위해 데이터 반환
+    // MP3 데이터를 반환
     console.log("TTS audio generated successfully!");
-    return response.audioContent;
+    return response.audioContent; // MP3 데이터 (Buffer 형식)
   } catch (error) {
     console.error("Error during TTS conversion:", error.message);
     throw new Error("Failed to read text with TTS.");
