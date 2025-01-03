@@ -18,7 +18,6 @@ const NavBar = () => {
       </StyledNavLink>
 
       {/* 둥근 홈 버튼 */}
-
       <StyledNavLink to="/home">
         <HomeContainer>
           <HomeIconContainer>
@@ -27,7 +26,6 @@ const NavBar = () => {
           <HomeText>홈</HomeText>
         </HomeContainer>
       </StyledNavLink>
-
 
       {/* 질문 버튼 */}
       <StyledNavLink to="/question">
@@ -66,7 +64,7 @@ const HomeContainer = styled.div`
   transform: translateY(-50%);
 `;
 
-const StyledNavLink = styled.div`
+const StyledNavLink = styled(NavLink)`
   display: flex;
   flex-direction: column;
   align-items: center;
