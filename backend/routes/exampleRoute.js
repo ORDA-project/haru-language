@@ -2,7 +2,10 @@ const express = require("express");
 const multer = require("multer");
 const { detectText } = require("../services/visionService");
 const { generateExamples } = require("../services/gptService");
+const { readTextWithTTS } = require("../services/ttsService");
 const fs = require("fs");
+
+require("dotenv").config({ path: "../.env" });
 
 const router = express.Router();
 
@@ -31,6 +34,8 @@ router.post("/", upload.single("image"), async (req, res) => {
     // Step 2: GPT API로 예문 생성
     const gptResponse = await generateExamples(extractedText);
 
+    // Step 3: TTS로 추출된 텍스트 읽기
+    await readTextWithTTS(extractedText);
 
     // 업로드된 파일 삭제
     fs.unlinkSync(filePath);
