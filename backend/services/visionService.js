@@ -1,5 +1,10 @@
 const vision = require("@google-cloud/vision");
 
+
+// 환경 변수 확인 로그 추가
+console.log("GOOGLE_APPLICATION_CREDENTIALS:", process.env.GOOGLE_APPLICATION_CREDENTIALS);
+
+
 // Google Cloud Vision 클라이언트 초기화
 const client = new vision.ImageAnnotatorClient();
 

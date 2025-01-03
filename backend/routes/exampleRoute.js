@@ -21,6 +21,7 @@ const upload = multer({
 
 // 업로드 및 Vision API 호출 라우트
 router.post("/", upload.single("image"), async (req, res) => {
+  console.log("File uploaded:", req.file); // 업로드된 파일 정보 확인
   const filePath = req.file.path;
 
   try {
@@ -36,6 +37,7 @@ router.post("/", upload.single("image"), async (req, res) => {
 
     // 최종 결과 반환
     res.send({
+      extractedText, // 추출된 텍스트 반환
       generatedExample: gptResponse,
     });
 
