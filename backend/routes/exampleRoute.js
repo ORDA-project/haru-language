@@ -34,7 +34,8 @@ router.post("/", upload.single("image"), async (req, res) => {
     const gptResponse = await generateExamples(extractedText);
 
     // Step 3: TTS로 음성 데이터 생성
-    const audioContent = await readTextWithTTS(extractedText);
+    const gptResponseText = JSON.stringify(gptResponse, null, 2); // JSON 객체를 문자열로 변환
+    const audioContent = await readTextWithTTS(gptResponseText);
 
     // 업로드된 파일 삭제
     fs.unlinkSync(filePath);
