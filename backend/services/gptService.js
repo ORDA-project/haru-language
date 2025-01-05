@@ -51,6 +51,34 @@ async function generateExamples(inputSentence) {
   }
 }
 
+
+async function getAnswer(question) {
+  try {
+    // GPT API 요청
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are an English teacher helping students improve their language skills. Provide clear and helpful explanations for their questions about grammar, vocabulary, and usage. Include explanations in Korean with examples in both English and Korean."
+        },
+        {
+          role: "user",
+          content: question,
+        },
+      ],
+      max_tokens: 500,
+    });
+
+    return response.choices[0].message.content.trim();
+  } catch (error) {
+    console.error("Error answering question:", error.message);
+    throw new Error("Failed to get an answer from GPT.");
+  }
+}
+
 module.exports = {
   generateExamples,
+  getAnswer,
 };
