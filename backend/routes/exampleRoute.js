@@ -2,7 +2,6 @@ const express = require("express");
 const multer = require("multer");
 const { detectText } = require("../services/visionService");
 const { generateExamples } = require("../services/gptService");
-const { readTextWithTTS } = require("../services/ttsService");
 const fs = require("fs");
 require("dotenv").config({ path: "../.env" });
 
@@ -44,14 +43,14 @@ router.post("/", upload.single("image"), async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Error detecting text:", error);
+    console.error("Error generating examples:", error);
 
     // 파일 삭제
     if (req.file && req.file.path) {
       fs.unlinkSync(req.file.path);
     }
 
-    res.status(500).send({ message: "Error detecting text", error });
+    res.status(500).send({ message: "Error generating examples", error });
   }
 });
 
