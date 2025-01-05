@@ -1,5 +1,5 @@
 import React from "react";
-import { Stage, Span } from "../Styles/Question";
+import { Stage, Span } from "../../Styles/Question";
 import { Spinner } from "basic-loading";
 
 const StageLoading = () => (

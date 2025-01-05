@@ -2,9 +2,9 @@ import React from "react";
 import { NavLink } from "react-router-dom";
 import styled from "styled-components";
 
-import exampleIcon from "../Images/example.png";
-import homeIcon from "../Images/home.png";
-import questionIcon from "../Images/question.png";
+import exampleIcon from "../../Images/example.png";
+import homeIcon from "../../Images/home.png";
+import questionIcon from "../../Images/question.png";
 
 const NavBar = () => {
   return (

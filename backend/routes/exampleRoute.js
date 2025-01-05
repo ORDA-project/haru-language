@@ -2,7 +2,9 @@ const express = require("express");
 const multer = require("multer");
 const { detectText } = require("../services/visionService");
 const { generateExamples } = require("../services/gptService");
+const { readTextWithTTS } = require("../services/ttsService");
 const fs = require("fs");
+require("dotenv").config({ path: "../.env" });
 
 const router = express.Router();
 

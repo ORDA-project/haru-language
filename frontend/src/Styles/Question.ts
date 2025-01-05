@@ -74,7 +74,14 @@ export const SpeakButton = styled.button`
     width: 80px;
     height: 80px;
     border: none;
-`
+
+    &:active{
+        background:rgba(0, 218, 171, 0.45);
+    }
+    &:focus{
+        background:rgba(0, 218, 171, 0.45);
+    }
+`;
 
 export const Label = styled.label`
     display: flex;

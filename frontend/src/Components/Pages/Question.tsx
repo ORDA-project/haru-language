@@ -2,11 +2,11 @@ import React, { useState, useRef, ChangeEvent } from "react";
 import Cropper from "react-cropper";
 import "cropperjs/dist/cropper.css";
 import axios from "axios";
-import StageUpload from "../Components/StageUpload";
-import StageCrop from "../Components/StageCrop";
-import StageLoading from "../Components/StageLoading";
-import StageResult from "../Components/StageResult";
-import { Example } from "../types"; // Example type definition
+import StageUpload from "../Elements/StageUpload";
+import StageCrop from "../Elements/StageCrop";
+import StageLoading from "../Elements/StageLoading";
+import StageResult from "../Elements/StageResult";
+import { Example } from "../../types"; // Example type definition
 
 const App = () => {
   const [stage, setStage] = useState<number>(1);
@@ -57,9 +57,8 @@ const App = () => {
         }
       );
 
-      const { generatedExample } = response.data;
-      console.log(generatedExample);
-      console.log(generatedExample.description);
+      console.log(response.data);
+      const { generatedExample, audioContent } = response.data;
       setDescription(generatedExample.description);
       setExamples(generatedExample.examples);
       setStage(4); // Show result

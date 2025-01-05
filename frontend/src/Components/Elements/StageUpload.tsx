@@ -1,5 +1,5 @@
 import React from "react";
-import { Stage, Label, Text } from "../Styles/Question";
+import { Stage, Label, Text } from "../../Styles/Question";
 
 interface StageUploadProps {
     handleFileUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
