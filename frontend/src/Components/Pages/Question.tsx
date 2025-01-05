@@ -1,102 +1,86 @@
-import React, { useState, useRef, ChangeEvent } from "react";
-import Cropper from "react-cropper";
-import "cropperjs/dist/cropper.css";
-import axios from "axios";
-import StageUpload from "../Elements/StageUpload";
-import StageCrop from "../Elements/StageCrop";
-import StageLoading from "../Elements/StageLoading";
-import StageResult from "../Elements/StageResult";
-import { Example } from "../../types"; // Example type definition
+import React, { useState } from "react";
+import Navbar from "../Templates/SecondNavbar";
+import {
+  ChatBotContainer,
+  MessageList,
+  MessageBubble,
+  InputContainer,
+  TextInput,
+  SendButton,
+  MicButton,
+} from "../../Styles/Question";
+import Mike from "../../Images/mike.png"; // 마이크 이미지 import
 
-const App = () => {
-  const [stage, setStage] = useState<number>(1);
-  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
-  const [croppedImage, setCroppedImage] = useState<string | null>(null);
-  const [examples, setExamples] = useState<Example[]>([]);
-  const [errorMessage, setErrorMessage] = useState<string>("");
-  const [description, setDescription] = useState<string>("");
-  const cropperRef = useRef<any>(null);
+const ChatBot = () => {
+  const [messages, setMessages] = useState<
+    { type: "user" | "bot"; content: string }[]
+  >([
+    {
+      type: "bot",
+      content: "외국 사람들도 밥 먹었냐고 안 물어봐? 비슷한 한국어가 있어?",
+    },
+  ]);
 
-  const handleFileUpload = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const imageURL = URL.createObjectURL(file);
-      setUploadedImage(imageURL);
-      setStage(2); // Move to crop screen
+  const [userInput, setUserInput] = useState("");
+
+  const handleSend = () => {
+    if (userInput.trim()) {
+      setMessages((prev) => [...prev, { type: "user", content: userInput }]);
+
+      const botResponse = generateBotResponse(userInput);
+      setMessages((prev) => [...prev, { type: "bot", content: botResponse }]);
+
+      setUserInput("");
     }
   };
 
-  const handleCrop = () => {
-    const cropper = cropperRef.current?.cropper;
-    if (cropper) {
-      const croppedCanvas = cropper.getCroppedCanvas();
-      if (croppedCanvas) {
-        const croppedDataURL = croppedCanvas.toDataURL("image/png");
-        setCroppedImage(croppedDataURL);
-        setStage(3); // Move to OCR stage
-        handleGenerateExamples(croppedDataURL); // Generate examples and perform OCR
-      }
+  const handleMicClick = () => {
+    setMessages((prev) => [
+      ...prev,
+      { type: "bot", content: "음성 입력 기능은 준비 중입니다!" },
+    ]);
+  };
+
+  const handleKeyPress = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Enter") {
+      handleSend();
     }
   };
 
-  const handleBackToUpload = () => {
-    setUploadedImage(null); // Clear uploaded image
-    setStage(1); // Go back to the upload stage
-  };
-
-  const handleGenerateExamples = async (imageData: string) => {
-    try {
-      const formData = new FormData();
-      formData.append("image", dataURItoBlob(imageData));
-
-      const response = await axios.post(
-        "http://localhost:3000/example",
-        formData,
-        {
-          headers: { "Content-Type": "multipart/form-data" },
-        }
-      );
-
-      console.log(response.data);
-      const { generatedExample, audioContent } = response.data;
-      setDescription(generatedExample.description);
-      setExamples(generatedExample.examples);
-      setStage(4); // Show result
-    } catch (error) {
-      setErrorMessage("Failed to generate examples.");
-      console.error("Error generating examples:", error);
-      setStage(1); // Reset to initial state
+  const generateBotResponse = (input: string) => {
+    if (input.includes("밥")) {
+      return "Did you eat lunch? 영어권에서는 친구나 가족끼리 주로 사용하는 질문입니다.";
     }
-  };
-
-  const dataURItoBlob = (dataURI: string): Blob => {
-    const byteString = atob(dataURI.split(",")[1]);
-    const mimeString = dataURI.split(",")[0].split(":")[1].split(";")[0];
-    const ab = new ArrayBuffer(byteString.length);
-    const ia = new Uint8Array(ab);
-    for (let i = 0; i < byteString.length; i++) {
-      ia[i] = byteString.charCodeAt(i);
-    }
-    return new Blob([ab], { type: mimeString });
+    return "질문에 대해 아직 학습 중이에요!";
   };
 
   return (
-    <div style={{ textAlign: "center", marginTop: "20px" }}>
-      {stage === 1 && <StageUpload handleFileUpload={handleFileUpload} />}
-      {stage === 2 && uploadedImage && (
-        <StageCrop uploadedImage={uploadedImage} cropperRef={cropperRef} handleCrop={handleCrop} handleBackToUpload={handleBackToUpload} />
-      )}
-      {stage === 3 && <StageLoading />}
-      {stage === 4 && (
-        <StageResult
-          description={description}
-          examples={examples}
-          errorMessage={errorMessage}
-          setStage={setStage}
-        />
-      )}
+    <div>
+      <Navbar />
+      <ChatBotContainer>
+        <MessageList>
+          {messages.map((msg, index) => (
+            <MessageBubble key={index} isUser={msg.type === "user"}>
+              {msg.content}
+            </MessageBubble>
+          ))}
+        </MessageList>
+        <InputContainer>
+          <TextInput
+            type="text"
+            value={userInput}
+            onChange={(e) => setUserInput(e.target.value)}
+            onKeyPress={handleKeyPress} // 엔터 키 이벤트 추가
+            placeholder="내용을 입력하세요."
+          />
+          <SendButton onClick={handleSend}>전송</SendButton>
+          <MicButton onClick={handleMicClick}>
+            <img src={Mike} alt="마이크" />
+          </MicButton>
+        </InputContainer>
+      </ChatBotContainer>
     </div>
   );
 };
 
-export default App;
+export default ChatBot;
