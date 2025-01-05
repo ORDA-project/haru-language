@@ -52,8 +52,8 @@
 // export default StageResult;
 
 import React, { useState } from "react";
-import { Example } from "../types"; // Import Example type
-import { Button, Stage, Card, CardList, Context, DotContainer, Dot, ButtonContainer, MoveButton, SpeakButton, Description } from "../Styles/Question";
+import { Example } from "../../types"; // Import Example type
+import { Button, Stage, Card, CardList, Context, DotContainer, Dot, ButtonContainer, MoveButton, SpeakButton, Description } from "../../Styles/Question";
 
 interface StageResultProps {
     description: string;
@@ -90,23 +90,27 @@ const StageResult = ({
         setCurrentIndex(index);
     };
 
-    // TTS 처리 함수
+    // tts 함수
     const handleTTS = async () => {
-        const textToRead = examples[currentIndex].dialogue.A.english;
-
+        const dialogueA = examples[currentIndex].dialogue.A.english;
+        const dialogueB = examples[currentIndex].dialogue.B.english;
+    
+        // 두 텍스트를 결합
+        const textToRead = `${dialogueA}\n${dialogueB}`;
+    
         try {
-            const response = await fetch("/api/tts", {
+            const response = await fetch("http://localhost:3000/api/tts", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify({ text: textToRead }),
+                body: JSON.stringify({ text: textToRead }), // 두 텍스트를 결합하여 전송
             });
-
+    
             if (!response.ok) {
                 throw new Error("TTS 요청에 실패했습니다.");
             }
-
+    
             const { audioContent } = await response.json();
             const audio = new Audio(`data:audio/mp3;base64,${audioContent}`);
             audio.play();
@@ -115,6 +119,7 @@ const StageResult = ({
             console.error("TTS 오류:", error);
         }
     };
+    
 
 
     return (

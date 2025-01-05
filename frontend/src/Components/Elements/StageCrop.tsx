@@ -1,7 +1,7 @@
 import React from "react";
 import Cropper from "react-cropper";
 import "cropperjs/dist/cropper.css";
-import { Stage, Button, Text } from "../Styles/Question";
+import { Stage, Button, Text } from "../../Styles/Question";
 
 interface StageCropProps {
   uploadedImage: string;
