@@ -1,3 +1,4 @@
+const { Example, ExampleItem, Dialogue, Question, Answer } = require('../models');
 const { OpenAI } = require("openai");
 require("dotenv").config();
 
@@ -6,13 +7,9 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-/**
- * GPT를 사용해 입력 문장과 유사한 학습 예제를 생성합니다.
- * 예제는 영어로, 설명은 한국어로 반환합니다.
- * @param {string} inputSentence 입력 문장
- * @returns {Promise<object[]>} 학습 예제 배열
- */
-async function generateExamples(inputSentence) {
+
+async function generateExamples(inputSentence, userId) {
+  console.log(userId);
   try {
     // GPT API 요청
     const response = await openai.chat.completions.create({
@@ -44,6 +41,29 @@ async function generateExamples(inputSentence) {
     const cleanedOutput = response.choices[0].message.content.replace(/```json|```/g, "").trim();
     const examples = JSON.parse(cleanedOutput);
 
+    // 데이터베이스 저장 시작
+    const example = await Example.create({
+      extracted_sentence: examples.extractedSentence,
+      description: examples.description,
+      user_id: userId, // 사용자 ID 저장
+    });
+
+    for (const exampleItemData of examples.examples) {
+      const exampleItem = await ExampleItem.create({
+        example_id: example.id,
+        context: exampleItemData.context,
+      });
+
+      for (const [speaker, dialogueData] of Object.entries(exampleItemData.dialogue)) {
+        await Dialogue.create({
+          example_item_id: exampleItem.id,
+          speaker,
+          english: dialogueData.english,
+          korean: dialogueData.korean,
+        });
+      }
+    }
+
     return examples;
   } catch (error) {
     console.error("Error generating examples:", error.message);
@@ -52,8 +72,13 @@ async function generateExamples(inputSentence) {
 }
 
 
-async function getAnswer(question) {
+async function getAnswer(question, userId) {
   try {
+
+    if (!question || !userId) {
+      throw new Error('질문과 사용자 ID는 필수입니다.');
+    }
+  
     // GPT API 요청
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
@@ -71,7 +96,25 @@ async function getAnswer(question) {
       max_tokens: 500,
     });
 
-    return response.choices[0].message.content.trim();
+    const answerContent = response.choices[0].message.content.trim();
+
+    // 질문 저장
+    const savedQuestion = await Question.create({
+      user_id: userId,
+      content: question,
+    });
+
+    // 답변 저장
+    const savedAnswer = await Answer.create({
+      question_id: savedQuestion.id,
+      content: answerContent,
+    });
+
+    // 반환 데이터
+    return {
+      question: savedQuestion.content,
+      answer: savedAnswer.content,
+    };
   } catch (error) {
     console.error("Error answering question:", error.message);
     throw new Error("Failed to get an answer from GPT.");
