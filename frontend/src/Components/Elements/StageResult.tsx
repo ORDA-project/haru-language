@@ -1,56 +1,3 @@
-// import React from "react";
-// import { Example } from "../types"; // Import Example type
-// import { Button, Stage, Div, Card, CardList, Context } from "../Styles/Question";
-
-// interface StageResultProps {
-//     extractedText: string;
-//     examples: Example[];
-//     errorMessage: string;
-//     setStage: React.Dispatch<React.SetStateAction<number>>;
-// }
-
-// const StageResult = ({
-//     extractedText,
-//     examples,
-//     errorMessage,
-//     setStage,
-// }: StageResultProps) => (
-//         <Stage>
-//             <Div>
-//                 <h3>추출된 텍스트</h3>
-//                 <p>{extractedText}</p>
-//             </Div>
-//             <Div>
-//                 <h3>생성된 예문</h3>
-//                 <CardList>
-//                 {examples.map((example) => (
-//                     <Card key={example.id}>
-//                         <Context>
-//                             <strong>{example.context}</strong>
-//                         </Context>
-//                         <p>
-//                             <strong>A:</strong> {example.dialogue.A.english}
-//                         </p>
-//                         <p>
-//                             {example.dialogue.A.korean}
-//                         </p>
-//                         <p>
-//                             <strong>B:</strong> {example.dialogue.B.english}
-//                         </p>
-//                         <p>
-//                             {example.dialogue.B.korean}
-//                         </p>
-//                     </Card>
-//                 ))}
-//                 </CardList>
-//             </Div>
-//             <Button onClick={() => setStage(1)}>다시 시작하기</Button>
-//             { errorMessage && <p>{errorMessage}</p> }
-//         </Stage>
-// );
-
-// export default StageResult;
-
 import React, { useState } from "react";
 import { Example } from "../../types"; // Import Example type
 import {
@@ -66,6 +13,7 @@ import {
   SpeakButton,
   Description,
 } from "../../Styles/Example";
+
 
 interface StageResultProps {
   description: string;

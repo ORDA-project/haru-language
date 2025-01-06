@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import HomeInfoComponent from "../Elements/HomeInfo"; // 기존 HomeInfo를 가져옵니다.
+import NavBar from "../Templates/Navbar";
 
 interface HomeProps {}
 
@@ -17,6 +18,7 @@ const Home = (props: HomeProps) => {
     return (
         <>
             <HomeInfoComponent isLogin={isLogin} userName={"진희"} visitCount={10} />
+            <NavBar />
         </>
     );
 };

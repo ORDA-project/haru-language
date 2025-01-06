@@ -22,7 +22,7 @@ const StageCrop = ({
     </Text>
     <Cropper
       src={uploadedImage}
-      style={{ height: 400, width: "100%" }}
+      style={{ height: 400, width: "100%", margin: "10px 0"}}
       initialAspectRatio={16 / 9}
       guides={true}
       ref={cropperRef}
