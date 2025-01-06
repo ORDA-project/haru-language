@@ -6,7 +6,7 @@ import StageUpload from "../Elements/StageUpload";
 import StageCrop from "../Elements/StageCrop";
 import StageLoading from "../Elements/StageLoading";
 import StageResult from "../Elements/StageResult";
-import { Example } from "../../types"; // Example type definition
+import { Example } from "../types"; // Example type definition
 
 const App = () => {
   const [stage, setStage] = useState<number>(1);
@@ -81,7 +81,7 @@ const App = () => {
   };
 
   return (
-    <div style={{ textAlign: "center", marginTop: "20px" }}>
+    <div>
       {stage === 1 && <StageUpload handleFileUpload={handleFileUpload} />}
       {stage === 2 && uploadedImage && (
         <StageCrop uploadedImage={uploadedImage} cropperRef={cropperRef} handleCrop={handleCrop} handleBackToUpload={handleBackToUpload} />

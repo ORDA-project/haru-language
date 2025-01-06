@@ -1,6 +1,7 @@
 import styled, { keyframes } from "styled-components";
 
 export const Stage = styled.div`
+    position: fixed;
     width: 100vw;
     height: 100vh;
     display: flex;
@@ -102,15 +103,15 @@ export const Span = styled.span`
 `;
 
 export const Button = styled.button`
-  padding: 20px;
+  padding: 10px 20px;
   background-color: #00daaa;
-  font-size: 19px;
+  font-size: 15px;
   font-weight: 700;
   color: #fff;
   border: none;
   border-radius: 5px;
   cursor: pointer;
-  margin-top: 20px;
+  margin: 5px;
 `;
 
 export const Result = styled.div`

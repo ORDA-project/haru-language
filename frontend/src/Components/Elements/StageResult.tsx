@@ -52,7 +52,7 @@
 // export default StageResult;
 
 import React, { useState } from "react";
-import { Example } from "../../types"; // Import Example type
+import { Example } from "../types"; // Import Example type
 import { Button, Stage, Card, CardList, Context, DotContainer, Dot, ButtonContainer, MoveButton, SpeakButton, Description } from "../../Styles/Question";
 
 interface StageResultProps {
