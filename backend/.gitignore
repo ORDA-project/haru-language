@@ -1,3 +1,4 @@
 .env
 config/google-cloud-key.json
+config/config.json
 node_modules
