@@ -6,7 +6,7 @@ import StageUpload from "../Elements/StageUpload";
 import StageCrop from "../Elements/StageCrop";
 import StageLoading from "../Elements/StageLoading";
 import StageResult from "../Elements/StageResult";
-import { Example } from "../../types"; // Example type definition
+import { Example } from "../types"; // Example type definition
 
 const App = () => {
   const [stage, setStage] = useState<number>(1);

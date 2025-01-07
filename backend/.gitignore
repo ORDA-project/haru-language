@@ -2,3 +2,4 @@
 config/google-cloud-key.json
 config/config.json
 node_modules
+config/google-credentials.json
