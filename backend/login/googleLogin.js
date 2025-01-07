@@ -28,6 +28,7 @@ const GOOGLE_REDIRECT_URI = googleCredentials.web.redirect_uris[0];
 
 // Google 로그인 페이지로 리다이렉트
 router.get("/", (req, res) => {
+
     const googleAuthURL = `https://accounts.google.com/o/oauth2/auth?response_type=code&client_id=${GOOGLE_CLIENT_ID}&redirect_uri=${GOOGLE_REDIRECT_URI}&scope=email%20profile`;
     res.redirect(googleAuthURL);
 });
@@ -38,6 +39,7 @@ router.get("/callback", async (req, res) => {
 
     if (!code) {
         return res.status(400).send("Authorization code is missing.");
+
     }
 
     try {
@@ -54,6 +56,7 @@ router.get("/callback", async (req, res) => {
                     grant_type: "authorization_code",
                 },
                 headers: { "Content-Type": "application/x-www-form-urlencoded" },
+
             }
         );
 
@@ -103,3 +106,4 @@ router.get("/callback", async (req, res) => {
 });
 
 module.exports = router;
+

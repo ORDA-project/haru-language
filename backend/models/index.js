@@ -33,6 +33,31 @@ Object.keys(db).forEach((modelName) => {
     }
 });
 
+// 관계 설정을 위한 추가 코드
+const Question = require('./Question');
+const Answer = require('./Answer');
+const Example = require('./Example');
+const ExampleItem = require('./ExampleItem');
+const Dialogue = require('./Dialogue');
+
+// 관계 설정
+Question.hasMany(Answer, { foreignKey: 'question_id', onDelete: 'CASCADE' });
+Answer.belongsTo(Question, { foreignKey: 'question_id' });
+
+Example.hasMany(ExampleItem, { foreignKey: 'example_id', onDelete: 'CASCADE' });
+ExampleItem.belongsTo(Example, { foreignKey: 'example_id' });
+
+ExampleItem.hasMany(Dialogue, { foreignKey: 'example_item_id', onDelete: 'CASCADE' });
+Dialogue.belongsTo(ExampleItem, { foreignKey: 'example_item_id' });
+
+// DB 객체에 추가
+db.Question = Question;
+db.Answer = Answer;
+db.Example = Example;
+db.ExampleItem = ExampleItem;
+db.Dialogue = Dialogue;
+
+// Sequelize 인스턴스 추가
 db.sequelize = sequelize;
 db.Sequelize = Sequelize;
 

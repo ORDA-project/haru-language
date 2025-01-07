@@ -15,6 +15,7 @@ const { sequelize } = require("./models");
 const app = express();
 const port = process.env.PORT || 3000;
 
+
 // JSON 본문 파싱을 위한 미들웨어 추가
 app.use(express.json());
 
