@@ -1,13 +1,9 @@
-body {
-  margin: 0;
+* {
   font-family: KoPubWorldDotum_Pro;
   font-style: normal;
   font-weight: 500;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+body {
+  margin: 0;
 }

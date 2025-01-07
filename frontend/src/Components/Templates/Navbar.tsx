@@ -6,7 +6,11 @@ import exampleIcon from "../../Images/example.png";
 import homeIcon from "../../Images/home.png";
 import questionIcon from "../../Images/question.png";
 
-const NavBar = () => {
+interface NavBarProps {
+  currentPage: string;
+}
+
+const NavBar = ({currentPage}: NavBarProps) => {
   return (
     <NavBarContainer>
       {/* 예문 버튼 */}
@@ -18,7 +22,7 @@ const NavBar = () => {
       </StyledNavLink>
 
       {/* 둥근 홈 버튼 */}
-      <StyledNavLink to="/home">
+      <StyledNavLink to="/">
         <HomeContainer>
           <HomeIconContainer>
             <Icon src={homeIcon} alt="홈" />
