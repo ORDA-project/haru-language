@@ -4,6 +4,7 @@ import Home from "./Components/Pages/Home";
 import Question from "./Components/Pages/Question";
 import Example from "./Components/Pages/Example";
 import Introduction from "./Components/Pages/Introduction";
+import Startlogin from "./Components/Pages/Startlogin";
 
 const router = createBrowserRouter([
   {
@@ -25,6 +26,10 @@ const router = createBrowserRouter([
   {
     path: "/Introduction",
     element: <Introduction />,
+  },
+  {
+    path: "/Startlogin",
+    element: <Startlogin />,
   },
 ]);
 
