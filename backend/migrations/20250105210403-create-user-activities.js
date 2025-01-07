@@ -44,6 +44,18 @@ module.exports = {
                 defaultValue: Sequelize.literal("CURRENT_TIMESTAMP"),
             },
         });
+
+        await queryInterface.addConstraint('user_activities', {
+            fields: ['user_id'],
+            type: 'foreign key',
+            name: 'fk_user_id',
+            references: {
+                table: 'users',
+                field: 'id',
+            },
+            onUpdate: 'CASCADE',
+            onDelete: 'CASCADE',
+        });
     },
 
     async down(queryInterface, Sequelize) {

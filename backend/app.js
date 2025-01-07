@@ -44,16 +44,6 @@ app.use(
   })
 );
 
-// DB 연결 확인
-sequelize
-  .authenticate()
-  .then(() => {
-    console.log("데이터베이스 연결 성공");
-  })
-  .catch((err) => {
-    console.error("데이터베이스 연결 실패:", err);
-  });
-
 // 소셜 로그인 라우트 등록
 app.use("/auth", socialLoginRoutes);
 

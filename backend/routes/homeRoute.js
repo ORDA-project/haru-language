@@ -34,7 +34,8 @@ router.get("/", async (req, res) => {
         });
 
         // 노래 추천 데이터 가져오기
-        const song = await Song.findOne({ order: [["createdAt", "DESC"]] });
+        const songs = await Song.findAll(); // 모든 노래 가져오기
+        const song = songs[Math.floor(Math.random() * songs.length)]; // 랜덤으로 하나 선택
 
         // 응답 데이터 생성 
         res.json({
