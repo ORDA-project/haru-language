@@ -7,6 +7,7 @@ const router = express.Router();
 
 
 router.post("/", async (req, res) => {
+
   const { userId, question } = req.body;
 
   if (!userId || !question) {

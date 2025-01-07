@@ -40,6 +40,7 @@ router.post("/", upload.single("image"), async (req, res) => {
     const gptResponse = await generateExamples(extractedText, userId);
 
 
+
     // 업로드된 파일 삭제
     fs.unlinkSync(filePath);
 
