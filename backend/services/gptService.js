@@ -1,4 +1,10 @@
-const { Example, ExampleItem, Dialogue, Question, Answer } = require('../models');
+const {
+  Example,
+  ExampleItem,
+  Dialogue,
+  Question,
+  Answer,
+} = require("../models");
 const { OpenAI } = require("openai");
 require("dotenv").config();
 
@@ -7,14 +13,12 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-
-
 async function generateExamples(inputSentence, userId) {
   console.log(userId);
   try {
     // GPT API 요청
     const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini", 
+      model: "gpt-4o-mini",
       messages: [
         {
           role: "system",
@@ -28,7 +32,7 @@ async function generateExamples(inputSentence, userId) {
             "     - 'dialogue': A structured conversation where A and B exchange lines. Each speaker has:\n" +
             "         - 'english': Their line in English.\n" +
             "         - 'korean': The corresponding translation in Korean.\n" +
-            "Return only JSON with no additional explanations or metadata. Avoid nested 'generatedExample' objects."
+            "Return only JSON with no additional explanations or metadata. Avoid nested 'generatedExample' objects.",
         },
         {
           role: "user",
@@ -39,9 +43,10 @@ async function generateExamples(inputSentence, userId) {
     });
 
     // GPT 응답에서 JSON 추출 및 파싱
-    const cleanedOutput = response.choices[0].message.content.replace(/```json|```/g, "").trim();
+    const cleanedOutput = response.choices[0].message.content
+      .replace(/```json|```/g, "")
+      .trim();
     const examples = JSON.parse(cleanedOutput);
-
 
     // 데이터베이스 저장 시작
     const example = await Example.create({
@@ -56,7 +61,9 @@ async function generateExamples(inputSentence, userId) {
         context: exampleItemData.context,
       });
 
-      for (const [speaker, dialogueData] of Object.entries(exampleItemData.dialogue)) {
+      for (const [speaker, dialogueData] of Object.entries(
+        exampleItemData.dialogue
+      )) {
         await Dialogue.create({
           example_item_id: exampleItem.id,
           speaker,
@@ -73,14 +80,12 @@ async function generateExamples(inputSentence, userId) {
   }
 }
 
-
 async function getAnswer(question, userId) {
   try {
-
     if (!question || !userId) {
-      throw new Error('질문과 사용자 ID는 필수입니다.');
+      throw new Error("질문과 사용자 ID는 필수입니다.");
     }
-  
+
     // GPT API 요청
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
@@ -88,7 +93,7 @@ async function getAnswer(question, userId) {
         {
           role: "system",
           content:
-            "You are an English teacher helping students improve their language skills. Provide clear and helpful explanations for their questions about grammar, vocabulary, and usage. Include explanations in Korean with examples in both English and Korean."
+            "You are an English teacher helping students improve their language skills. Provide clear and helpful explanations for their questions about grammar, vocabulary, and usage. Include explanations in Korean with examples in both English and Korean.",
         },
         {
           role: "user",
@@ -97,7 +102,6 @@ async function getAnswer(question, userId) {
       ],
       max_tokens: 500,
     });
-
 
     const answerContent = response.choices[0].message.content.trim();
 
@@ -118,7 +122,6 @@ async function getAnswer(question, userId) {
       question: savedQuestion.content,
       answer: savedAnswer.content,
     };
-
   } catch (error) {
     console.error("Error answering question:", error.message);
     throw new Error("Failed to get an answer from GPT.");
