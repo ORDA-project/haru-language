@@ -1,7 +1,7 @@
 const express = require("express");
 const multer = require("multer");
 const { detectText } = require("../services/visionService");
-const { generateExamples } = require("../services/gptService");
+const { generateExamples, recommendQuote } = require("../services/gptService");
 const { getExamplesByUserId } = require("../services/historyService");
 const fs = require("fs");
 require("dotenv").config({ path: "../.env" });
@@ -43,6 +43,8 @@ router.post("/", upload.single("image"), async (req, res) => {
     // Step 2: GPT API로 예문 생성
     const gptResponse = await generateExamples(extractedText, userId);
 
+    // 명언 업데이트
+    const updatedQuote = await recommendQuote(userId);
 
 
     // 업로드된 파일 삭제

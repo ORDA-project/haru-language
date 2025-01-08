@@ -8,6 +8,7 @@ const Dialogue = require('./Dialogue');
 const Song = require('./Song');
 const User = require('./User');
 const UserActivity = require('./UserActivity');
+const Quote = require('./Quote');
 
 // 관계 설정
 Question.hasMany(Answer, { foreignKey: 'question_id', onDelete: 'CASCADE' });
@@ -29,6 +30,7 @@ module.exports = {
     Example,
     ExampleItem,
     Dialogue,
+    Quote,
     Song,
     User,
     UserActivity,

@@ -4,7 +4,9 @@ const {
   Dialogue,
   Question,
   Answer,
+  Quote,
 } = require("../models");
+
 const { OpenAI } = require("openai");
 require("dotenv").config();
 
@@ -161,9 +163,22 @@ async function recommendQuote(userId) {
       max_tokens: 200,
     });
 
-    const quote = response.choices[0].message.content.trim();
+    const quote = response.choices[0].message.content.replace(/```json|```/g, "").trim();
+    const quoteData = JSON.parse(quote);
 
-    return { quote };
+    // 명언 데이터베이스에 저장
+    await Quote.create({
+      user_id: userId,
+      quote: quoteData.quote,
+      translation: quoteData.translation,
+      source: quoteData.source,
+    });
+
+    return {
+      quote: quoteData.quote,
+      translation: quoteData.translation,
+      source: quoteData.source,
+    };
   } catch (error) {
     console.error("Error recommending quote:", error.message);
     throw new Error("Failed to recommend a quote.");
