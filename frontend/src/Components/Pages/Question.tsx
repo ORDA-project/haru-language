@@ -1,5 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import NavBar from "../Templates/Navbar";
 import {
   ChatBotContainer,
@@ -10,35 +12,65 @@ import {
   SendButton,
   MicButton,
 } from "../../Styles/Question";
-import Mike from "../../Images/mike.png"; // 마이크 이미지 import
-import Send from "../../Images/sendicon.png"; // 전송 아이콘 import
+import Mike from "../../Images/mike.png";
+import Send from "../../Images/sendicon.png";
 
 const ChatBot = () => {
   const [messages, setMessages] = useState<
     { type: "user" | "bot"; content: string }[]
-  >([
-    {
-      type: "bot",
-      content: "외국 사람들도 밥 먹었냐고 안 물어봐? 비슷한 한국어가 있어?",
-    },
-  ]);
-
+  >([]);
   const [userInput, setUserInput] = useState("");
+  const [userName, setUserName] = useState("사용자"); // 기본값: "사용자"
+
+  // 사용자 이름 가져오기 (백엔드 호출 예제)
+  useEffect(() => {
+    const fetchUserName = async () => {
+      try {
+        const response = await axios.get("http://localhost:8000/user"); // 예: 사용자 정보 API
+        setUserName(response.data.name || "사용자");
+        setMessages([
+          {
+            type: "bot",
+            content: `안녕하세요, ${
+              response.data.name || "사용자"
+            }님! 학습 관련 도움이 필요하신가요?`,
+          },
+        ]);
+      } catch (error) {
+        console.error("사용자 이름을 불러오는 데 실패했습니다.", error);
+        setMessages([
+          {
+            type: "bot",
+            content: "안녕하세요! 학습 관련 도움이 필요하신가요?",
+          },
+        ]);
+      }
+    };
+
+    fetchUserName();
+  }, []);
 
   const handleSend = async () => {
     if (userInput.trim()) {
-      setMessages((prev) => [...prev, { type: "user", content: userInput }]);
+      // 입력값을 즉시 비우기
+      const currentInput = userInput;
+      setUserInput("");
+
+      // 사용자가 입력한 메시지 추가
+      setMessages((prev) => [...prev, { type: "user", content: currentInput }]);
 
       try {
-        // 백엔드로 요청 보내기
+        console.log("Sending request to backend...");
         const response = await axios.post("http://localhost:8000/question", {
-          userId: 1, // userId는 고정값으로 설정하거나 동적으로 변경 가능
-          question: userInput,
+          userId: 1,
+          question: currentInput,
         });
+        console.log("Response from backend:", response.data);
 
-        const botResponse = response.data.result.answer;
+        const botResponse = response.data.answer.answer;
         setMessages((prev) => [...prev, { type: "bot", content: botResponse }]);
       } catch (error) {
+        console.error("Error during request:", error);
         const errorMessage =
           error.response?.data?.message || "서버에 연결할 수 없습니다.";
         setMessages((prev) => [
@@ -46,8 +78,6 @@ const ChatBot = () => {
           { type: "bot", content: errorMessage },
         ]);
       }
-
-      setUserInput("");
     }
   };
 
@@ -70,7 +100,13 @@ const ChatBot = () => {
         <MessageList>
           {messages.map((msg, index) => (
             <MessageBubble key={index} isUser={msg.type === "user"}>
-              {msg.content}
+              {msg.type === "bot" ? (
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {msg.content}
+                </ReactMarkdown>
+              ) : (
+                msg.content
+              )}
             </MessageBubble>
           ))}
         </MessageList>
@@ -82,7 +118,7 @@ const ChatBot = () => {
             type="text"
             value={userInput}
             onChange={(e) => setUserInput(e.target.value)}
-            onKeyDown={handleKeyDown} // 엔터 키 이벤트
+            onKeyDown={handleKeyDown}
             placeholder="내용을 입력하세요."
           />
           <SendButton onClick={handleSend}>
