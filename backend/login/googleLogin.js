@@ -98,7 +98,7 @@ router.get("/callback", async (req, res) => {
 
 
         // 로그인 성공 후 홈으로 리다이렉트
-        res.redirect("/home");
+        res.redirect("http://localhost:3000");
 
     } catch (err) {
         console.error(err.message);
