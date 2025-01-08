@@ -30,6 +30,7 @@ const GOOGLE_REDIRECT_URI = googleCredentials.web.redirect_uris[0];
 router.get("/", (req, res) => {
 
     const googleAuthURL = `https://accounts.google.com/o/oauth2/auth?response_type=code&client_id=${GOOGLE_CLIENT_ID}&redirect_uri=${GOOGLE_REDIRECT_URI}&scope=email%20profile`;
+    console.log("Google Auth URL:", googleAuthURL);
     res.redirect(googleAuthURL);
 });
 

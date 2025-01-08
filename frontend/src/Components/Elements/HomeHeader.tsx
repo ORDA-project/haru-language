@@ -33,6 +33,14 @@ const HomeHeaderContainer = styled.div`
     display: flex;
     justify-content: space-between;
     align-items: center;
+    width: 90vw;
+    height: 10vh;
+    position: fixed;
+    top: 0;
+    left: 0;
+    padding: 5vw;
+    background: linear-gradient(to bottom, #ffffff, #ffffffa1);
+    z-index: 10;
 `;
 
 const MyAccount = styled.div`

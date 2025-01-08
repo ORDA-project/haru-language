@@ -59,7 +59,7 @@ const StageResult = ({
     const textToRead = `${dialogueA}\n${dialogueB}`;
 
     try {
-      const response = await fetch("http://localhost:3000/api/tts", {
+      const response = await fetch("http://localhost:8000/api/tts", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
