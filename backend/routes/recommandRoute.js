@@ -1,15 +1,17 @@
 const express = require("express");
-const { recommendQuote } = require("../services/gptService");
+const { getQuotesByUserId } = require("../services/historyService");
 
 const router = express.Router();
 
 router.get('/quote/:userId', async (req, res) => {
     const { userId } = req.params;
     try {
-      const quote = await recommendQuote(userId);
-      res.status(200).json(quote);
+      const quote = await getQuotesByUserId(userId);
+      res.status(200).json({
+        data:quote,
+      });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ message: error.message });
     }
   });
 
