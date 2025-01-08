@@ -3,6 +3,7 @@ import styled from "styled-components";
 import HomeInfo from "../Elements/HomeInfo"; // 기존 HomeInfo를 가져옵니다.
 import NavBar from "../Templates/Navbar";
 import HomeHeader from "../Elements/HomeHeader";
+import StatusCheck from "../Elements/StatusCheck";
 import axios from "axios";
 // import Login from "../Pages/Login";
 
@@ -21,7 +22,7 @@ const Home = ({Login = true}: HomeProps) => {
         setLogin(Login);
 
         // if (Login) {
-        //     axios.get("http://localhost:3000/home")
+        //     axios.get("http://localhost:8000/home")
         //         .then((res) => {
         //             const { userName, visitCount, mostVisitedDay, recommendation } = res.data.userData;
         //             setUserName(userName);
@@ -37,9 +38,9 @@ const Home = ({Login = true}: HomeProps) => {
 
     return (
         <HomeContainer>
+            <HomeHeader />
             {isLogin ? (
                 <HomeDiv>
-                    <HomeHeader />
                     {/* <HomeInfo 
                         userName={userName} 
                         visitCount={visitCount} 
@@ -48,6 +49,7 @@ const Home = ({Login = true}: HomeProps) => {
                     /> */}
                     {/* 예시 데이터 */}
                     <HomeInfo userName={"진희"} visitCount={10} mostVisitedDay={"월요일"} recommendation={"Santa Tell Me by Ariana Grande"}/>
+                    <StatusCheck />
                 </HomeDiv>
             ) : (
                 <div>로그인 후 이용 가능</div>
@@ -66,4 +68,5 @@ const HomeContainer = styled.div`
 
 const HomeDiv = styled.div`
     padding: 5vw;
+    transform: translateY(calc(10vh));
 `;

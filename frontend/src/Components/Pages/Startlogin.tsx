@@ -9,11 +9,15 @@ import {
 } from "../../Styles/Startlogin";
 import googlelogo from "../../Images/google_logo.png";
 
+
+
+
 const Login: React.FC = () => {
   const handleGoogleLogin = () => {
-    console.log("구글 로그인 버튼 클릭");
-    // 구글 로그인 로직 추가
+    // 서버의 Google OAuth 엔드포인트로 리다이렉트
+    window.location.href = "http://localhost:8000/auth/google";
   };
+  
 
   return (
     <Stage>

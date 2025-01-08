@@ -13,7 +13,7 @@ const ttsRoutes = require("./routes/ttsRoute"); // TTS 라우트
 const { sequelize } = require("./models");
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 8000;
 
 
 // JSON 본문 파싱을 위한 미들웨어 추가
@@ -21,6 +21,11 @@ app.use(express.json());
 
 // CORS 활성화
 app.use(cors(corsConfig));
+
+app.use(cors({
+  origin: 'http://localhost:3000', // 프런트엔드 도메인
+  credentials: true,  // 쿠키를 사용하려면 이 옵션도 활성화
+}));
 
 // 세션 설정
 app.use(

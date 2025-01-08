@@ -52,7 +52,7 @@ const App = () => {
       formData.append("image", dataURItoBlob(imageData));
 
       const response = await axios.post(
-        "http://localhost:3000/example",
+        "http://localhost:8000/example",
         formData,
         {
           headers: { "Content-Type": "multipart/form-data" },

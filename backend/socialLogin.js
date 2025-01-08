@@ -4,7 +4,7 @@ const kakaoRouter = require('./login/kakaoLogin');
 require('dotenv').config(); // .env 파일 초기화
 
 const app = express();
-const PORT = 3000;
+const PORT = 8000;
 
 // Google 라우터 연결
 app.use('/auth/google', googleRouter);

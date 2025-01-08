@@ -6,14 +6,10 @@ import Example from "./Components/Pages/Example";
 import Introduction from "./Components/Pages/Introduction";
 import Startlogin from "./Components/Pages/Startlogin";
 
-const router = createBrowserRouter([
-  {
-    path: "/Navbar",
-    element: <Navbar />,
-  },
+const router = createBrowserRouter([ 
   {
     path: "/",
-    element: <Home />,
+    element: <Home Login={true} />,
   },
   {
     path: "/Question",
