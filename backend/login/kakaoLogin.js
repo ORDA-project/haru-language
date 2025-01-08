@@ -63,7 +63,7 @@ router.get("/callback", async (req, res) => {
         });
 
         // 세션에 사용자 정보 저장
-        req.session.user = { id: user.id, name: user.name };
+        req.session.user = { userId: user.id, name: user.name };
 
         // 로그인 성공 후 홈으로 리다이렉트
         res.redirect("/home");

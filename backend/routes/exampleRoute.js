@@ -25,7 +25,11 @@ const upload = multer({
 router.post("/", upload.single("image"), async (req, res) => {
   console.log("File uploaded:", req.file); // 업로드된 파일 정보 확인
   const filePath = req.file.path;
-  const { userId } = req.body;
+  const { userId } = req.session.user;
+
+  console.log(req.session.user);
+
+  console.log(userId);
 
   if (!userId) {
     // userId가 없을 경우 에러 반환

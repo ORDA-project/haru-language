@@ -1,6 +1,7 @@
 .env
 config/google-cloud-key.json
-node_modules
 config/google-credentials.json
 config/config.json
+node_modules
+
 

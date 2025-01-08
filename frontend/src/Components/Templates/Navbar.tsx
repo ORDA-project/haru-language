@@ -20,7 +20,7 @@ const NavBar = ({ currentPage }: NavBarProps) => {
       </StyledNavLink>
 
       {/* 둥근 홈 버튼 */}
-      <StyledNavLink to="/">
+      <StyledNavLink to="/home">
         {currentPage === "Home" ? 
         <HomeContainer>
           <HomeIconContainer>
