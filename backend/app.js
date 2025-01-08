@@ -8,9 +8,11 @@ const corsConfig = require("./config/corsConfig"); // CORS 설정 가져오기
 const socialLoginRoutes = require("./routes/socialLoginRoute"); // 소셜 로그인 라우트
 const homeRoutes = require("./routes/homeRoute"); // 홈화면 라우트
 const exampleRoutes = require("./routes/exampleRoute"); // 예문생성 라우트
-const questionRoutes = require("./routes/questionRoute"); // 질문 생성 라우트
-const ttsRoutes = require("./routes/ttsRoute"); // TTS 라우트
-const { sequelize } = require("./models");
+const questionRoutes = require("./routes/questionRoute");
+const ttsRoutes = require("./routes/ttsRoute");
+const recommandRoutes = require("./routes/recommandRoute");
+
+const { sequelize } = require("./models"); // Sequelize 인스턴스 가져오기
 
 const app = express();
 const port = process.env.PORT || 8000;
@@ -60,6 +62,7 @@ app.use("/example", exampleRoutes);
 
 // 질문 생성 라우트 등록
 app.use("/question", questionRoutes);
+app.use("/recommand", recommandRoutes);
 
 // TTS 라우트 등록
 app.use("/api", ttsRoutes);
