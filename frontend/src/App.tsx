@@ -1,22 +1,32 @@
 import { RouterProvider, createBrowserRouter } from "react-router-dom";
-import "./App.css";
 import Navbar from "./Components/Templates/Navbar";
-import Home from "./Components/Pages/Home"
+import Home from "./Components/Pages/Home";
 import Question from "./Components/Pages/Question";
+import Example from "./Components/Pages/Example";
+import Introduction from "./Components/Pages/Introduction";
+import Startlogin from "./Components/Pages/Startlogin";
 
-const router = createBrowserRouter([
-  {
-    path: "/Navbar",
-    element: <Navbar />,
-  },
+const router = createBrowserRouter([ 
   {
     path: "/",
-    element: <Home />
+    element: <Home Login={true} />,
   },
   {
     path: "/Question",
     element: <Question />,
-  }
+  },
+  {
+    path: "/Example",
+    element: <Example />,
+  },
+  {
+    path: "/Introduction",
+    element: <Introduction />,
+  },
+  {
+    path: "/Startlogin",
+    element: <Startlogin />,
+  },
 ]);
 
 function App() {

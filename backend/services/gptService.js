@@ -8,6 +8,7 @@ const openai = new OpenAI({
 });
 
 
+
 async function generateExamples(inputSentence, userId) {
   console.log(userId);
   try {
@@ -40,6 +41,7 @@ async function generateExamples(inputSentence, userId) {
     // GPT 응답에서 JSON 추출 및 파싱
     const cleanedOutput = response.choices[0].message.content.replace(/```json|```/g, "").trim();
     const examples = JSON.parse(cleanedOutput);
+
 
     // 데이터베이스 저장 시작
     const example = await Example.create({
@@ -96,6 +98,7 @@ async function getAnswer(question, userId) {
       max_tokens: 500,
     });
 
+
     const answerContent = response.choices[0].message.content.trim();
 
     // 질문 저장
@@ -115,6 +118,7 @@ async function getAnswer(question, userId) {
       question: savedQuestion.content,
       answer: savedAnswer.content,
     };
+
   } catch (error) {
     console.error("Error answering question:", error.message);
     throw new Error("Failed to get an answer from GPT.");

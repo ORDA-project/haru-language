@@ -1,169 +1,113 @@
-import styled, { keyframes } from "styled-components";
+import styled from "styled-components";
 
-export const Stage = styled.div`
-    width: 100vw;
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
+export const ChatBotContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  height: 100vh;
+  background-color: #f1f1f1; /* 회색 배경 */
+  padding-bottom: 130px; /* 네비바 높이만큼 패딩 추가 */
 `;
 
-export const Description = styled.div`
-    position: relative;
-    width: 293px;
-    padding: 20px;
-    margin: 10px;
-    border-radius: 13px;
-    background: #F6F6F6;
-    box-shadow: 4px 0px 7px 2px rgba(0, 0, 0, 0.10);
-    text-align: start;
-
-    /* 말풍선의 '꼬리' 부분 */
-    &::after {
-        content: "";
-        position: absolute;
-        bottom: 50%;
-        right: 100%;
-        width: 0;
-        height: 0;
-        border-left: 20px solid transparent;
-        border-top: 10px solid transparent;
-        border-bottom: 10px solid transparent;
-        border-right: 20px solid #F6F6F6;
-    }
-`;
-
-
-export const CardList = styled.div`
-    display: flex;
-    overflow: auto;
-    justify-content: center;
-`;
-
-export const Card = styled.div`
-    width: 293px;
-    padding: 20px;
-    margin: 10px;
-    border-radius: 13px;
-    background: #F6F6F6;
-    box-shadow: 4px 0px 7px 2px rgba(0, 0, 0, 0.10);
-    flex-shrink: 0;
-    text-align: start;
-`;
-
-export const ButtonContainer = styled.div`
-    display: flex; 
-    justify-content: space-between;
-`;
-
-export const MoveButton = styled.button`
-    border: none;
-    background-color: rgba(0, 0, 0, 0);
-    transform: translateY(15px);
-
-    &:disabled {
-        opacity: 0;
-    }
-`;
-
-export const SpeakButton = styled.button`
-    border-radius: 40px;
-    background: #00DAAA;
-    width: 80px;
-    height: 80px;
-    border: none;
-
-    &:active{
-        background:rgba(0, 218, 171, 0.45);
-    }
-    &:focus{
-        background:rgba(0, 218, 171, 0.45);
-    }
-`;
-
-export const Label = styled.label`
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    background-color: #ffffff;
-    margin: 20px;
-`;
-
-export const Text = styled.p`
-  font-size: 24px;
-  color: #333
-`;
-
-export const Span = styled.span`
-    font-size: 24px;
-    margin: 10px 0;
-`;
-
-export const Button = styled.button`
+export const MessageList = styled.div`
+  flex: 1;
+  overflow-y: auto;
   padding: 20px;
-  background-color: #00daaa;
-  font-size: 19px;
-  font-weight: 700;
-  color: #fff;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 `;
 
-export const Result = styled.div`
-  text-align: center;
+export const MessageBubble = styled.div<{ isUser: boolean }>`
+  max-width: 70%;
+  padding: 15px;
+  margin: 5px 0;
+  border-radius: 15px;
+  background-color: ${({ isUser }) => (isUser ? "#00daaa" : "#ffffff")};
+  color: ${({ isUser }) => (isUser ? "#ffffff" : "#333")};
+  align-self: ${({ isUser }) => (isUser ? "flex-end" : "flex-start")};
+  position: relative;
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+
+  font-size: 18px; /* 글씨 크기 */
+  line-height: 1.6;
+  font-weight: 750; /* 글씨 두께 */
+
+  &::after {
+    content: "";
+    position: absolute;
+    ${({ isUser }) => (isUser ? "right: -10px;" : "left: -10px;")}
+    top: 10px;
+    width: 0;
+    height: 0;
+    border: 10px solid transparent;
+    ${({ isUser }) =>
+      isUser ? "border-left-color: #00daaa;" : "border-right-color: #ffffff;"}
+  }
 `;
 
-export const Heading = styled.h3`
-  margin-top: 20px;
-  font-size: 24px;
-  color: #333;
+export const InputContainer = styled.div`
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  background-color: #ffffff;
+  border-top: 1px solid #ddd;
+  position: fixed;
+  bottom: 100px; /* 네비바 바로 위 */
+  width: calc(100% - 10px); /* 좌우 여백 추가 */
+  border-radius: 10px;
+  box-shadow: 0px -2px 4px rgba(0, 0, 0, 0.1);
 `;
 
-export const ExampleCard = styled.div`
-  margin-bottom: 15px;
+export const TextInput = styled.input`
+  flex: 1;
   padding: 10px;
   border: 1px solid #ddd;
-  border-radius: 5px;
-`;
-
-export const Error = styled.p`
-  color: red;
-  margin-top: 20px;
+  border-radius: 20px;
+  margin: 0 15px;
   font-size: 16px;
 `;
 
-export const ProgressBar = styled.div`
-    width: 80%;
-  background-color: #e0e0e0;
-  margin: 20px auto;
-  border-radius: 5px;
-  overflow: hidden;
+export const SendButton = styled.button`
+  background-color: #00daaa;
+  color: #ffffff;
+  border: none;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+
+  img {
+    width: 50px;
+    height: 50px;
+  }
+
+  &:hover {
+    background-color: #00c89c;
+  }
 `;
 
-export const Context = styled.strong`
-    background-color: #00daaa;
-`;
+export const MicButton = styled.button`
+  background-color: #d9d9d9;
+  color: #ffffff;
+  border: none;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
 
-export const DotContainer = styled.div`
-    display: flex;
-    justify-content: center;
-    margin: 10px 0;
-    transform: translateY(-10px);
-`;
+  img {
+    width: 30px;
+    height: 30px;
+  }
 
-export const Dot = styled.div<{ isActive: boolean }>`
-    width: 10px;
-    height: 10px;
-    margin: 0 5px;
-    border-radius: 50%;
-    background-color: ${({ isActive }) => (isActive ? "#00daaa" : "gray")};
-    cursor: pointer;
-
-    &:hover {
-        background-color: #00daaa;
-    }
+  &:hover {
+    background-color: #00c89c;
+  }
 `;

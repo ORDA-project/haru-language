@@ -1,7 +1,7 @@
 import React from "react";
 import Cropper from "react-cropper";
 import "cropperjs/dist/cropper.css";
-import { Stage, Button, Text } from "../../Styles/Question";
+import { Stage, Button, Text } from "../../Styles/Example";
 
 interface StageCropProps {
   uploadedImage: string;
@@ -10,12 +10,19 @@ interface StageCropProps {
   handleBackToUpload: () => void;
 }
 
-const StageCrop = ({ uploadedImage, cropperRef, handleCrop, handleBackToUpload }: StageCropProps) => (
+const StageCrop = ({
+  uploadedImage,
+  cropperRef,
+  handleCrop,
+  handleBackToUpload,
+}: StageCropProps) => (
   <Stage>
-    <Text style={{fontSize: "19px", margin: "30px 0"}}>어떤 문장을 기반으로 예문을 생성하고 싶으신가요?</Text>
+    <Text style={{ fontSize: "19px", margin: "30px 0" }}>
+      어떤 문장을 기반으로 예문을 생성하고 싶으신가요?
+    </Text>
     <Cropper
       src={uploadedImage}
-      style={{ height: 400, width: "100%" }}
+      style={{ height: 400, width: "100%", margin: "10px 0"}}
       initialAspectRatio={16 / 9}
       guides={true}
       ref={cropperRef}
