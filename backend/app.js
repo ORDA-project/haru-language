@@ -6,6 +6,7 @@ const corsConfig = require("./config/corsConfig"); // CORS 설정 가져오기
 const exampleRoutes = require("./routes/exampleRoute"); // 예문생성 라우트
 const questionRoutes = require("./routes/questionRoute");
 const ttsRoutes = require("./routes/ttsRoute");
+const recommandRoutes = require("./routes/recommandRoute");
 
 const { sequelize } = require("./models"); // Sequelize 인스턴스 가져오기
 
@@ -21,6 +22,7 @@ app.use(cors(corsConfig));
 // 업로드 라우트 등록
 app.use("/example", exampleRoutes);
 app.use("/question", questionRoutes);
+app.use("/recommand", recommandRoutes);
 
 app.use("/api", ttsRoutes);
 

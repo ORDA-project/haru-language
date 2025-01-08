@@ -121,7 +121,50 @@ async function getAnswer(question, userId) {
   }
 }
 
+
+
+async function recommendQuote(userId) {
+  try {
+    // 최근 생성된 예문 기록 가져오기
+    const recentExamples = await Example.findAll({
+      where: { user_id: userId },
+      order: [['created_at', 'DESC']],
+      limit: 1, // 최신 5개 예문
+    });
+
+    if (recentExamples.length === 0) {
+      throw new Error('최근 생성된 예문 기록이 없습니다.');
+    }
+
+    // 예문에서 주제 추출 및 GPT로 명언 추천 요청
+    const topics = recentExamples.map((example) => example.description).join("\n");
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are a motivational assistant. Based on the given topics, recommend an inspirational quote in English and its Korean translation, including the quote's source. Return a JSON object with 'quote', 'translation', and 'source' fields."
+        },
+        {
+          role: "user",
+          content: `The topics are:\n${topics}`,
+        },
+      ],
+      max_tokens: 200,
+    });
+
+    const quote = response.choices[0].message.content.trim();
+
+    return { quote };
+  } catch (error) {
+    console.error("Error recommending quote:", error.message);
+    throw new Error("Failed to recommend a quote.");
+  }
+}
+
 module.exports = {
   generateExamples,
   getAnswer,
+  recommendQuote,
 };
