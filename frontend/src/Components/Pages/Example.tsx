@@ -7,6 +7,8 @@ import StageCrop from "../Elements/StageCrop";
 import StageLoading from "../Elements/StageLoading";
 import StageResult from "../Elements/StageResult";
 import { Example } from "../types"; // Example type definition
+import styled from "styled-components";
+import NavBar from "../Templates/Navbar";
 
 const App = () => {
   const [stage, setStage] = useState<number>(1);
@@ -81,7 +83,8 @@ const App = () => {
   };
 
   return (
-    <div style={{ textAlign: "center", marginTop: "20px" }}>
+    <ExampleContainer>
+    <ExampleDiv>
       {stage === 1 && <StageUpload handleFileUpload={handleFileUpload} />}
       {stage === 2 && uploadedImage && (
         <StageCrop uploadedImage={uploadedImage} cropperRef={cropperRef} handleCrop={handleCrop} handleBackToUpload={handleBackToUpload} />
@@ -95,8 +98,19 @@ const App = () => {
           setStage={setStage}
         />
       )}
-    </div>
+    </ExampleDiv>
+    <NavBar currentPage={"Example"} />
+    </ExampleContainer>
   );
 };
 
 export default App;
+
+const ExampleContainer = styled.div`
+  width: 100vw;
+  height: 100vh;
+`;
+
+const ExampleDiv = styled.div`
+  text-align: center;
+`;

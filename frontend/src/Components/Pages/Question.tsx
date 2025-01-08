@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import Navbar from "../Templates/SecondNavbar";
+import NavBar from "../Templates/Navbar";
 import {
   ChatBotContainer,
   MessageList,
@@ -56,7 +56,6 @@ const ChatBot = () => {
 
   return (
     <div>
-      <Navbar />
       <ChatBotContainer>
         <MessageList>
           {messages.map((msg, index) => (
@@ -79,6 +78,7 @@ const ChatBot = () => {
           </MicButton>
         </InputContainer>
       </ChatBotContainer>
+      <NavBar currentPage={"Question"} />
     </div>
   );
 };
