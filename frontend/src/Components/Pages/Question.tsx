@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import axios from "axios";
 import NavBar from "../Templates/Navbar";
 import {
   ChatBotContainer,
@@ -10,6 +11,7 @@ import {
   MicButton,
 } from "../../Styles/Question";
 import Mike from "../../Images/mike.png"; // 마이크 이미지 import
+import Send from "../../Images/sendicon.png"; // 전송 아이콘 import
 
 const ChatBot = () => {
   const [messages, setMessages] = useState<
@@ -23,12 +25,27 @@ const ChatBot = () => {
 
   const [userInput, setUserInput] = useState("");
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (userInput.trim()) {
       setMessages((prev) => [...prev, { type: "user", content: userInput }]);
 
-      const botResponse = generateBotResponse(userInput);
-      setMessages((prev) => [...prev, { type: "bot", content: botResponse }]);
+      try {
+        // 백엔드로 요청 보내기
+        const response = await axios.post("http://localhost:8000/question", {
+          userId: 1, // userId는 고정값으로 설정하거나 동적으로 변경 가능
+          question: userInput,
+        });
+
+        const botResponse = response.data.result.answer;
+        setMessages((prev) => [...prev, { type: "bot", content: botResponse }]);
+      } catch (error) {
+        const errorMessage =
+          error.response?.data?.message || "서버에 연결할 수 없습니다.";
+        setMessages((prev) => [
+          ...prev,
+          { type: "bot", content: errorMessage },
+        ]);
+      }
 
       setUserInput("");
     }
@@ -41,17 +58,10 @@ const ChatBot = () => {
     ]);
   };
 
-  const handleKeyPress = (event: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "Enter") {
       handleSend();
     }
-  };
-
-  const generateBotResponse = (input: string) => {
-    if (input.includes("밥")) {
-      return "Did you eat lunch? 영어권에서는 친구나 가족끼리 주로 사용하는 질문입니다.";
-    }
-    return "질문에 대해 아직 학습 중이에요!";
   };
 
   return (
@@ -65,17 +75,19 @@ const ChatBot = () => {
           ))}
         </MessageList>
         <InputContainer>
+          <MicButton onClick={handleMicClick}>
+            <img src={Mike} alt="마이크" />
+          </MicButton>
           <TextInput
             type="text"
             value={userInput}
             onChange={(e) => setUserInput(e.target.value)}
-            onKeyPress={handleKeyPress} // 엔터 키 이벤트 추가
+            onKeyDown={handleKeyDown} // 엔터 키 이벤트
             placeholder="내용을 입력하세요."
           />
-          <SendButton onClick={handleSend}>전송</SendButton>
-          <MicButton onClick={handleMicClick}>
-            <img src={Mike} alt="마이크" />
-          </MicButton>
+          <SendButton onClick={handleSend}>
+            <img src={Send} alt="전송" />
+          </SendButton>
         </InputContainer>
       </ChatBotContainer>
       <NavBar currentPage={"Question"} />

@@ -5,7 +5,7 @@ export const ChatBotContainer = styled.div`
   flex-direction: column;
   justify-content: flex-end;
   height: 100vh;
-  background-color: #f9f9f9;
+  background-color: #f1f1f1; /* 회색 배경 */
   padding-bottom: 130px; /* 네비바 높이만큼 패딩 추가 */
 `;
 
@@ -29,11 +29,9 @@ export const MessageBubble = styled.div<{ isUser: boolean }>`
   position: relative;
   box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
 
-    /* 글꼴 스타일 */
-  font-size: 18px; /* 글씨 크기 증가 */
-  line-height: 1.6; /* 줄 간격 확대 */
-  font-weight: 750; /* 더 두껍게 */
-
+  font-size: 18px; /* 글씨 크기 */
+  line-height: 1.6;
+  font-weight: 750; /* 글씨 두께 */
 
   &::after {
     content: "";
@@ -43,22 +41,22 @@ export const MessageBubble = styled.div<{ isUser: boolean }>`
     width: 0;
     height: 0;
     border: 10px solid transparent;
-    border- ${({ isUser }) => (isUser ? "left-color" : "right-color")}: 
-      ${({ isUser }) => (isUser ? "#00daaa" : "#ffffff")};
+    ${({ isUser }) =>
+      isUser ? "border-left-color: #00daaa;" : "border-right-color: #ffffff;"}
   }
 `;
 
 export const InputContainer = styled.div`
   display: flex;
   align-items: center;
-  padding: 10px;
+  padding: 4px;
   background-color: #ffffff;
   border-top: 1px solid #ddd;
   position: fixed;
   bottom: 100px; /* 네비바 바로 위 */
-  width: calc(100% - 20px); /* 좌우 여백 추가 */
+  width: calc(100% - 10px); /* 좌우 여백 추가 */
   border-radius: 10px;
-  box-shadow: 0px -2px 4px rgba(0, 0, 0, 0.1); /* 그림자 추가 */
+  box-shadow: 0px -2px 4px rgba(0, 0, 0, 0.1);
 `;
 
 export const TextInput = styled.input`
@@ -66,7 +64,7 @@ export const TextInput = styled.input`
   padding: 10px;
   border: 1px solid #ddd;
   border-radius: 20px;
-  margin-right: 15px;
+  margin: 0 15px;
   font-size: 16px;
 `;
 
@@ -80,9 +78,12 @@ export const SendButton = styled.button`
   display: flex;
   justify-content: center;
   align-items: center;
-  font-size: 18px;
   cursor: pointer;
-  margin-right: 10px;
+
+  img {
+    width: 50px;
+    height: 50px;
+  }
 
   &:hover {
     background-color: #00c89c;
@@ -90,7 +91,7 @@ export const SendButton = styled.button`
 `;
 
 export const MicButton = styled.button`
-  background-color: #00daaa;
+  background-color: #d9d9d9;
   color: #ffffff;
   border: none;
   border-radius: 50%;
@@ -99,12 +100,11 @@ export const MicButton = styled.button`
   display: flex;
   justify-content: center;
   align-items: center;
-  font-size: 18px;
   cursor: pointer;
 
   img {
-    width: 24px;
-    height: 24px;
+    width: 30px;
+    height: 30px;
   }
 
   &:hover {
