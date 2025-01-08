@@ -8,23 +8,23 @@ import Startlogin from "./Components/Pages/Startlogin";
 
 const router = createBrowserRouter([ 
   {
-    path: "/",
+    path: "/home",
     element: <Home Login={true} />,
   },
   {
-    path: "/Question",
+    path: "/question",
     element: <Question />,
   },
   {
-    path: "/Example",
+    path: "/example",
     element: <Example />,
   },
   {
-    path: "/Introduction",
+    path: "/introduction",
     element: <Introduction />,
   },
   {
-    path: "/Startlogin",
+    path: "/",
     element: <Startlogin />,
   },
 ]);

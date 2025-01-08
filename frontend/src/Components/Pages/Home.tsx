@@ -11,7 +11,7 @@ interface HomeProps {
     Login: boolean;
 }
 
-const Home = ({Login = true}: HomeProps) => {
+const Home = ({ Login = true }: HomeProps) => {
     const [isLogin, setLogin] = useState<boolean>(true);
     const [userName, setUserName] = useState<string>("");
     const [visitCount, setVisitCount] = useState<number>(0);
@@ -20,20 +20,22 @@ const Home = ({Login = true}: HomeProps) => {
 
     useEffect(() => {
         setLogin(Login);
-
-        // if (Login) {
-        //     axios.get("http://localhost:8000/home")
-        //         .then((res) => {
-        //             const { userName, visitCount, mostVisitedDay, recommendation } = res.data.userData;
-        //             setUserName(userName);
-        //             setVisitCount(visitCount);
-        //             setMostVisitedDay(mostVisitedDay);
-        //             setRecommendation(recommendation);
-        //         })
-        //         .catch((err) => {
-        //             console.error("Error fetching user data:", err);
-        //         });
-        // }
+        axios({
+            method: "GET",
+            url: "http://localhost:8000/home",
+            withCredentials: true
+        }).then((res) => {
+                console.log(res.data);
+                const { name, visitCount, mostVisitedDay, recommendation } = res.data.userData;
+                console.log(name, visitCount, mostVisitedDay, recommendation);
+                setUserName(name);
+                setVisitCount(visitCount);
+                setMostVisitedDay(mostVisitedDay);
+                setRecommendation(recommendation);
+            })
+            .catch((err) => {
+                console.error("Error fetching user data:", err);
+            });
     }, [Login]);
 
     return (
@@ -41,20 +43,20 @@ const Home = ({Login = true}: HomeProps) => {
             <HomeHeader />
             {isLogin ? (
                 <HomeDiv>
-                    {/* <HomeInfo 
-                        userName={userName} 
-                        visitCount={visitCount} 
-                        mostVisitedDay={mostVisitedDay} 
-                        recommendation={recommendation} 
-                    /> */}
+                    <HomeInfo
+                        userName={userName}
+                        visitCount={visitCount}
+                        mostVisitedDay={mostVisitedDay}
+                        recommendation={recommendation}
+                    />
                     {/* 예시 데이터 */}
-                    <HomeInfo userName={"진희"} visitCount={10} mostVisitedDay={"월요일"} recommendation={"Santa Tell Me by Ariana Grande"}/>
+                    {/* <HomeInfo userName={"진희"} visitCount={10} mostVisitedDay={"월요일"} recommendation={"Santa Tell Me by Ariana Grande"}/> */}
                     <StatusCheck />
                 </HomeDiv>
             ) : (
                 <div>로그인 후 이용 가능</div>
             )}
-            <NavBar currentPage={"Home"}/>
+            <NavBar currentPage={"Home"} />
         </HomeContainer>
     );
 };
@@ -68,5 +70,5 @@ const HomeContainer = styled.div`
 
 const HomeDiv = styled.div`
     padding: 5vw;
-    transform: translateY(calc(10vh));
+    transform: translateY(calc(10vh + 5vw));
 `;
