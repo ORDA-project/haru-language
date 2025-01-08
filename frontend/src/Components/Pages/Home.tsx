@@ -70,5 +70,5 @@ const HomeContainer = styled.div`
 
 const HomeDiv = styled.div`
     padding: 5vw;
-    transform: translateY(calc(10vw));
+    transform: translateY(calc(10vh + 5vw));
 `;

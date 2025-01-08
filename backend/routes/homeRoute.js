@@ -13,10 +13,13 @@ router.get("/", async (req, res) => {
     }
 
     try {
-        const userId = req.session.user.id;
+        const userId = req.session.user.userId;
+
+        console.log(userId);
 
         // 사용자 정보 가져오기
-        const user = await User.findByPk(userId);
+        const user = await User.findOne({
+            where: {id: userId}});
         if (!user) {
             return res.status(404).json({
                 success: false,

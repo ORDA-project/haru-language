@@ -93,12 +93,12 @@ router.get("/callback", async (req, res) => {
         });
 
         // 세션에 사용자 정보 저장
-        req.session.user = { id: user.id, name: user.name, email: user.email };
+        req.session.user = { userId: user.id, name: user.name, email: user.email };
         console.log(req.session.user); // 세션에 저장된 사용자 정보 확인
 
 
         // 로그인 성공 후 홈으로 리다이렉트
-        res.redirect("http://localhost:3000");
+        res.redirect("http://localhost:3000/home");
 
     } catch (err) {
         console.error(err.message);
