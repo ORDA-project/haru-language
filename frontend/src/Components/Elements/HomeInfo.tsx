@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
+import { useNavigate } from "react-router-dom";
 
 interface HomeInfoProps {
     userName?: string;
@@ -9,6 +10,7 @@ interface HomeInfoProps {
 }
 
 const HomeInfo = ({ userName, visitCount, mostVisitedDay, recommendation }: HomeInfoProps) => {
+    const navigate = useNavigate();
     return (
         <>
             <div>
@@ -19,8 +21,8 @@ const HomeInfo = ({ userName, visitCount, mostVisitedDay, recommendation }: Home
             </div>
             <Alarm>
                 <div>
-                    <div style={{ fontSize: "16px", fontWeight: 700, lineHeight: "150%" }}>{mostVisitedDay} 알람 바로가기</div>
-                    <div style={{ fontSize: "11px", lineHeight: "150%" }}><span>{userName}님은 하루언어를 {mostVisitedDay}에 자주 이용하시는군요!</span></div>
+                    <div style={{ fontSize: "16px", fontWeight: 700, lineHeight: "150%"}}>{mostVisitedDay} 알람 바로가기</div>
+                    <div style={{ fontSize: "11px", lineHeight: "150%" }}><span>{userName}님은 하루언어를<br /> {mostVisitedDay}에 자주 이용하시는군요!</span></div>
                 </div>
                 <div>
                     <svg xmlns="http://www.w3.org/2000/svg" width="22" height="17" viewBox="0 0 22 17" fill="none">
@@ -28,38 +30,56 @@ const HomeInfo = ({ userName, visitCount, mostVisitedDay, recommendation }: Home
                     </svg>
                 </div>
             </Alarm>
-            <SongRecommend>
-                <div style={{width: "180px"}}>
-                    <div style={{ fontSize: "16px", fontWeight: 700, lineHeight: "150%"}}><span>오늘의 추천 팝송</span></div>
-                    <div style={{ fontSize: "22px", fontWeight: 700, lineHeight: "150%" }}><span>{recommendation}</span></div>
+            <Quote onClick={() => {navigate("/quote")}}>
+                <div style={{ width: "180px" }}>
+                    <div style={{ fontSize: "16px", fontWeight: 700, lineHeight: "150%", margin: "20px 0" }}><span>오늘의 추천 명언</span></div>
+                    <Content><span>{recommendation}</span></Content>
                 </div>
-                <SongIcon>
-                    <div style={{top: "10px", left: "-60px"}}>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="63" height="63" viewBox="0 0 63 63" fill="none">
-                        <path d="M31.5 13.125V35.5687C29.0325 34.1512 25.9875 33.6 22.7587 34.7287C19.2412 35.9887 16.5375 39.1125 15.9075 42.7875C15.6162 44.4411 15.7251 46.1404 16.225 47.7433C16.7248 49.3462 17.6011 50.8062 18.7807 52.0012C19.9602 53.1961 21.4087 54.0913 23.005 54.6119C24.6013 55.1326 26.299 55.2635 27.9562 54.9937C33.1012 54.18 36.75 49.455 36.75 44.2312V18.375H42C44.8875 18.375 47.25 16.0125 47.25 13.125C47.25 10.2375 44.8875 7.875 42 7.875H36.75C33.8625 7.875 31.5 10.2375 31.5 13.125Z" fill="#FEB1DA" />
-                    </svg>
+                <Icon>
+                    <div style={{ top: "0", left: "-50px" }}>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="80" height="70" viewBox="0 0 80 70" fill="none">
+                            <path d="M31.77 14.27C24.835 21.2 21.73 28.07 20.57 36.03C22.5186 35.0671 24.7278 34.7654 26.8632 35.1703C28.9986 35.5753 30.9439 36.6649 32.4047 38.2743C33.8655 39.8837 34.7621 41.9252 34.9589 44.0898C35.1557 46.2543 34.6419 48.424 33.4954 50.2705C32.3488 52.1169 30.6319 53.5396 28.6045 54.323C26.5771 55.1064 24.3497 55.208 22.2595 54.6124C20.1692 54.0167 18.3299 52.7563 17.02 51.0218C15.7102 49.2874 15.001 47.1735 15 45C15.005 32.04 17.64 21.33 28.235 10.73C28.7044 10.2606 29.3411 9.99684 30.005 9.99684C30.6689 9.99684 31.3056 10.2606 31.775 10.73C32.2444 11.1994 32.5081 11.8361 32.5081 12.5C32.5081 13.1639 32.2394 13.8006 31.77 14.27ZM61.775 14.27C54.84 21.2 51.73 28.07 50.575 36.03C52.524 35.0683 54.7332 34.7677 56.8683 35.1738C59.0034 35.5798 60.948 36.6704 62.4079 38.2804C63.8678 39.8903 64.7635 41.9321 64.9593 44.0966C65.1551 46.2611 64.6405 48.4305 63.4932 50.2764C62.346 52.1222 60.6286 53.5441 58.6011 54.3268C56.5736 55.1094 54.3463 55.2102 52.2563 54.6139C50.1664 54.0176 48.3276 52.7567 47.0183 51.022C45.709 49.2873 45.0005 47.1733 45 45C45.005 32.04 47.64 21.33 58.235 10.73C58.7044 10.2606 59.3411 9.99684 60.005 9.99684C60.6689 9.99684 61.3056 10.2606 61.775 10.73C62.2444 11.1994 62.5081 11.8361 62.5081 12.5C62.5081 13.1639 62.2444 13.8006 61.775 14.27Z" fill="#FFA6A8" />
+                        </svg>
                     </div>
-                    <div style={{top: "-20px", left: "-25px"}}>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="53" height="53" viewBox="0 0 53 53" fill="none" style={{}}>
-                        <path d="M10.75 50.125C15.0992 50.125 18.625 46.5992 18.625 42.25C18.625 37.9008 15.0992 34.375 10.75 34.375C6.40076 34.375 2.875 37.9008 2.875 42.25C2.875 46.5992 6.40076 50.125 10.75 50.125Z" fill="#CAE85D" stroke="#CAE85D" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
-                        <path d="M42.25 47.5C46.5992 47.5 50.125 43.9742 50.125 39.625C50.125 35.2758 46.5992 31.75 42.25 31.75C37.9008 31.75 34.375 35.2758 34.375 39.625C34.375 43.9742 37.9008 47.5 42.25 47.5Z" fill="#CAE85D" stroke="#CAE85D" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
-                        <path d="M50.125 2.875L18.625 10.75V21.25L50.125 13.375V2.875Z" fill="#CAE85D" />
-                        <path d="M18.625 42.25V21.25M18.625 21.25V10.75L50.125 2.875V13.375M18.625 21.25L50.125 13.375M50.125 39.625V13.375" stroke="#CAE85D" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
-                    </svg>
+                    <div style={{ top: "-40px", left: "20px" }}>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 80 80" fill="none">
+                            <path d="M48.23 55.73C55.165 48.8 58.27 41.93 59.43 33.97C57.4814 34.9329 55.2722 35.2346 53.1368 34.8297C51.0014 34.4247 49.0561 33.3351 47.5953 31.7257C46.1345 30.1163 45.2379 28.0748 45.0411 25.9102C44.8443 23.7457 45.3581 21.576 46.5046 19.7295C47.6512 17.8831 49.3681 16.4604 51.3955 15.677C53.4229 14.8936 55.6503 14.792 57.7405 15.3876C59.8308 15.9833 61.6701 17.2437 62.98 18.9782C64.2898 20.7126 64.999 22.8265 65 25C64.995 37.96 62.36 48.67 51.765 59.27C51.2956 59.7394 50.6589 60.0032 49.995 60.0032C49.3311 60.0032 48.6944 59.7394 48.225 59.27C47.7556 58.8006 47.4919 58.1639 47.4919 57.5C47.4919 56.8361 47.7606 56.1994 48.23 55.73ZM18.225 55.73C25.16 48.8 28.27 41.93 29.425 33.97C27.476 34.9317 25.2668 35.2323 23.1317 34.8262C20.9966 34.4202 19.052 33.3296 17.5921 31.7196C16.1322 30.1097 15.2365 28.0679 15.0407 25.9034C14.8449 23.7389 15.3595 21.5695 16.5068 19.7236C17.654 17.8778 19.3714 16.4559 21.3989 15.6732C23.4264 14.8906 25.6537 14.7898 27.7437 15.3861C29.8336 15.9824 31.6724 17.2433 32.9817 18.978C34.291 20.7127 34.9995 22.8267 35 25C34.995 37.96 32.36 48.67 21.765 59.27C21.2956 59.7394 20.6589 60.0032 19.995 60.0032C19.3311 60.0032 18.6944 59.7394 18.225 59.27C17.7556 58.8006 17.4919 58.1639 17.4919 57.5C17.4919 56.8361 17.7556 56.1994 18.225 55.73Z" fill="#FCC21B" />
+                        </svg>
                     </div>
-                    <div style={{top: "-100px", left: "20px"}}>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="63" height="63" viewBox="0 0 63 63" fill="none">
-                        <path d="M31.5 13.125V35.5687C29.0325 34.1512 25.9875 33.6 22.7587 34.7287C19.2412 35.9887 16.5375 39.1125 15.9075 42.7875C15.6162 44.4411 15.7251 46.1404 16.225 47.7433C16.7248 49.3462 17.6011 50.8062 18.7807 52.0012C19.9602 53.1961 21.4087 54.0913 23.005 54.6119C24.6013 55.1326 26.299 55.2635 27.9562 54.9937C33.1012 54.18 36.75 49.455 36.75 44.2312V18.375H42C44.8875 18.375 47.25 16.0125 47.25 13.125C47.25 10.2375 44.8875 7.875 42 7.875H36.75C33.8625 7.875 31.5 10.2375 31.5 13.125Z" fill="#FF6363" />
-                    </svg>
+                </Icon>
+            </Quote>
+            <SongRecommend onClick={() => {navigate("/song-recommend")}}>
+                <div style={{ width: "180px" }}>
+                    <div style={{ fontSize: "16px", fontWeight: 700, lineHeight: "150%", margin: "20px 0"}}><span>오늘의 추천 팝송</span></div>
+                    <Content><span>{recommendation}</span></Content>
+                </div>
+                <Icon>
+                    <div style={{ top: "10px", left: "-60px" }}>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="63" height="63" viewBox="0 0 63 63" fill="none">
+                            <path d="M31.5 13.125V35.5687C29.0325 34.1512 25.9875 33.6 22.7587 34.7287C19.2412 35.9887 16.5375 39.1125 15.9075 42.7875C15.6162 44.4411 15.7251 46.1404 16.225 47.7433C16.7248 49.3462 17.6011 50.8062 18.7807 52.0012C19.9602 53.1961 21.4087 54.0913 23.005 54.6119C24.6013 55.1326 26.299 55.2635 27.9562 54.9937C33.1012 54.18 36.75 49.455 36.75 44.2312V18.375H42C44.8875 18.375 47.25 16.0125 47.25 13.125C47.25 10.2375 44.8875 7.875 42 7.875H36.75C33.8625 7.875 31.5 10.2375 31.5 13.125Z" fill="#FEB1DA" />
+                        </svg>
                     </div>
-                </SongIcon>
+                    <div style={{ top: "-20px", left: "-25px" }}>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="53" height="53" viewBox="0 0 53 53" fill="none" style={{}}>
+                            <path d="M10.75 50.125C15.0992 50.125 18.625 46.5992 18.625 42.25C18.625 37.9008 15.0992 34.375 10.75 34.375C6.40076 34.375 2.875 37.9008 2.875 42.25C2.875 46.5992 6.40076 50.125 10.75 50.125Z" fill="#CAE85D" stroke="#CAE85D" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+                            <path d="M42.25 47.5C46.5992 47.5 50.125 43.9742 50.125 39.625C50.125 35.2758 46.5992 31.75 42.25 31.75C37.9008 31.75 34.375 35.2758 34.375 39.625C34.375 43.9742 37.9008 47.5 42.25 47.5Z" fill="#CAE85D" stroke="#CAE85D" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+                            <path d="M50.125 2.875L18.625 10.75V21.25L50.125 13.375V2.875Z" fill="#CAE85D" />
+                            <path d="M18.625 42.25V21.25M18.625 21.25V10.75L50.125 2.875V13.375M18.625 21.25L50.125 13.375M50.125 39.625V13.375" stroke="#CAE85D" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                    </div>
+                    <div style={{ top: "-100px", left: "20px" }}>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="63" height="63" viewBox="0 0 63 63" fill="none">
+                            <path d="M31.5 13.125V35.5687C29.0325 34.1512 25.9875 33.6 22.7587 34.7287C19.2412 35.9887 16.5375 39.1125 15.9075 42.7875C15.6162 44.4411 15.7251 46.1404 16.225 47.7433C16.7248 49.3462 17.6011 50.8062 18.7807 52.0012C19.9602 53.1961 21.4087 54.0913 23.005 54.6119C24.6013 55.1326 26.299 55.2635 27.9562 54.9937C33.1012 54.18 36.75 49.455 36.75 44.2312V18.375H42C44.8875 18.375 47.25 16.0125 47.25 13.125C47.25 10.2375 44.8875 7.875 42 7.875H36.75C33.8625 7.875 31.5 10.2375 31.5 13.125Z" fill="#FF6363" />
+                        </svg>
+                    </div>
+                </Icon>
             </SongRecommend>
             <StudyStatus>
                 <div style={{ display: "flex", flexDirection: "column", width: "100%" }}>
                     <div style={{ fontSize: "20px", fontWeight: 700, lineHeight: "150%" }}>7번 남았어요!</div>
                     <div style={{ fontSize: "14px", lineHeight: "150%" }}><span>7번 더 오면 시즌 2를<br />완료할 수 있어요.</span></div>
                 </div>
-                <div style={{ height: '100%'}}>
+                <div style={{ height: '100%' }}>
                     <svg xmlns="http://www.w3.org/2000/svg" width="104" height="95" viewBox="0 0 104 95" fill="none">
                         <path d="M72.2222 -9H31.7778C30.2454 -9 28.7758 -8.39127 27.6923 -7.30773C26.6087 -6.22418 26 -4.75458 26 -3.22222V28.5556C26 28.5556 26 31.4444 28.8889 34.3333L47.4616 48.7778H56.5384L75.1111 34.3333C78 31.4444 78 28.5556 78 28.5556V-3.22222C78 -4.75458 77.3913 -6.22418 76.3077 -7.30773C75.2242 -8.39127 73.7546 -9 72.2222 -9Z" fill="#55ACEE" />
                         <path d="M34.6667 -9V38.8256L47.4615 48.7778H56.5384L69.3333 38.8256V-9H34.6667Z" fill="#E1E8ED" />
@@ -70,7 +90,7 @@ const HomeInfo = ({ userName, visitCount, mostVisitedDay, recommendation }: Home
                     </svg>
                 </div>
             </StudyStatus>
-            <hr style={{strokeWidth: "0.5px", stroke: "#B4B2B3"}}/>
+            <hr style={{ strokeWidth: "0.5px", stroke: "#B4B2B3" }} />
         </>
     );
 };
@@ -85,6 +105,17 @@ const Text = styled.p`
     font-size: 24px;
     line-height: 150%;
     font-weight: 500;
+    margin: 20px 0;
+`;
+
+const Content = styled.div`
+    font-size: 22px;
+    font-weight: 700; 
+    line-height: 150%;
+    width: max-content;
+    max-width: 50vw;
+    overflow: hidden;
+    text-overflow:ellipsis;
     margin: 20px 0;
 `;
 
@@ -103,6 +134,22 @@ const Alarm = styled.div`
     margin: 20px 0;
 `;
 
+const Quote = styled.div`
+    height: 120px;
+    display: flex;
+    padding: 0 20px;
+    justify-content: space-between;
+    align-items: center;
+    border-radius: 20px;
+    background: #FFF;
+    box-shadow: 0px 3px 7px 2px rgba(0, 0, 0, 0.05);
+    margin: 20px 0;
+`;
+
+const QuoteIcon = styled.div`
+
+`;
+
 const SongRecommend = styled.div`
     height: 120px;
     display: flex;
@@ -115,7 +162,7 @@ const SongRecommend = styled.div`
     margin: 20px 0;
 `;
 
-const SongIcon = styled.div`
+const Icon = styled.div`
     height: 120px;
 
     & div {
@@ -134,3 +181,5 @@ const StudyStatus = styled.div`
     box-shadow: 0px 3px 7px 2px rgba(0, 0, 0, 0.05);
     margin: 20px 0;
 `;
+
+

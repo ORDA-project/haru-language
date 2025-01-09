@@ -1,4 +1,5 @@
 import styled from "styled-components";
+import LogoImg from "../../Images/LogoImg.png"
 
 interface HomeHeaderProps {
 
@@ -8,8 +9,9 @@ const HomeHeader = (props: HomeHeaderProps) => {
     return (
         <HomeHeaderContainer>
             <Logo>
-                <img src="" alt="" style={{width: "26px", height: "24px", backgroundColor: "#D9D9D9"}}/>
-                <span>하루영어</span>
+                {/* <LogoSvg /> */}
+                <img src={LogoImg} alt="" style={{width: "30px", height: "30px"}}/>
+                <span style={{fontSize: "24px"}}>하루언어</span>
             </Logo>
             <MyAccount>
                 <Profile>
@@ -32,7 +34,7 @@ export default HomeHeader;
 const HomeHeaderContainer = styled.div`
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     width: 90vw;
     height: 10vh;
     position: fixed;

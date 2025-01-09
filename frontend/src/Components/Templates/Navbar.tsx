@@ -79,7 +79,7 @@ const HomeContainer = styled.div`
   justify-content: center;
   align-items: center;
   box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-  transform: translateY(-50%);
+  transform: translateY(-30px);
 `;
 
 const NotHomeContainer = styled.div`

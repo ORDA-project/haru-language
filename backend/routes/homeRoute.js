@@ -31,7 +31,7 @@ router.get("/", async (req, res) => {
         const [activity] = await UserActivity.findOrCreate({
             where: { user_id: userId },
             defaults: {
-                visit_count: 0,
+                visit_count: 1,
                 most_visited_day: null,
             },
         });
