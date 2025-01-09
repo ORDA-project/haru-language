@@ -74,14 +74,18 @@ const ChatBot = () => {
           data: { question: currentInput },
           headers: { "Content-Type": "application/json" },
           withCredentials: true,
-        }).then((res) => {
-          const botResponse = res.data.answer.answer;
-          console.log(botResponse);
-          setMessages((prev) => [...prev, { type: "bot", content: botResponse }]);
-        }).catch((error) => {
-          console.log(error);
-        });
-        
+        })
+          .then((res) => {
+            const botResponse = res.data.answer.answer;
+            console.log(botResponse);
+            setMessages((prev) => [
+              ...prev,
+              { type: "bot", content: botResponse },
+            ]);
+          })
+          .catch((error) => {
+            console.log(error);
+          });
       } catch (error: any) {
         console.error("Error during request:", error);
         const errorMessage =
