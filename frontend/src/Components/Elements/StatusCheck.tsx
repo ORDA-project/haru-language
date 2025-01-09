@@ -1,13 +1,16 @@
 import styled from "styled-components";
+import { useNavigate } from "react-router-dom";
 
 interface StatusProps {
 
 }
 
 const StatusCheck = (props: StatusProps) => {
+    const navigate = useNavigate();
+    
     return (
         <StatusContainer>
-            <Button>진도 점검 하러 가기</Button>
+            <Button onClick={() => {navigate("/quiz")}}>진도 점검 하러 가기</Button>
             <StatusRecord>
 
             </StatusRecord>
