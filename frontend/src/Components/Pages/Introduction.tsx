@@ -9,8 +9,10 @@ import {
   Placeholder,
   ImageButton,
   Icon,
+  CloseButton,
 } from "../../Styles/Introduction";
 import rightarrow from "../../Images/rightarrow.png";
+import { useNavigate } from "react-router-dom";
 
 interface Page {
   title: string;
@@ -53,6 +55,7 @@ const pages: Page[] = [
 
 const Introduction: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<number>(0);
+  const navigate = useNavigate();
 
   const handleNext = (): void => {
     if (currentPage < pages.length - 1) {
@@ -63,8 +66,24 @@ const Introduction: React.FC = () => {
     }
   };
 
+  const handlePrev = (): void => {
+    if (currentPage > 0) {
+      setCurrentPage((prev) => prev - 1);
+    } else {
+      console.log("첫 번째 페이지입니다.");
+    }
+  };
+
+  const handleClose = (): void => {
+    console.log("닫기 버튼 클릭");
+    navigate("/");
+    // 필요한 추가 로직 (예: 페이지 닫기, 이동 등) 추가
+  };
+
   return (
     <Stage>
+      {/* 닫기 버튼 */}
+      <CloseButton onClick={handleClose}>×</CloseButton>
       {/* 페이지 인디케이터 */}
       <PageIndicator>
         {pages.map((_, index) => (
@@ -92,10 +111,18 @@ const Introduction: React.FC = () => {
           </>
         )}
       </Content>
-      {/* 화살표 버튼 */}
-      <ImageButton onClick={handleNext}>
-        <Icon src={rightarrow} alt="다음" />
-      </ImageButton>
+      {/* 왼쪽 화살표 버튼 */}
+      {currentPage > 0 && (
+        <ImageButton position="left" onClick={handlePrev}>
+          <Icon src={rightarrow} alt="이전" flipped />
+        </ImageButton>
+      )}
+      {/* 오른쪽 화살표 버튼 */}
+      {currentPage < pages.length - 1 && (
+        <ImageButton position="right" onClick={handleNext}>
+          <Icon src={rightarrow} alt="다음" />
+        </ImageButton>
+      )}
     </Stage>
   );
 };

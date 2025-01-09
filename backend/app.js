@@ -17,17 +17,18 @@ const { sequelize } = require("./models"); // Sequelize 인스턴스 가져오�
 const app = express();
 const port = process.env.PORT || 8000;
 
-
 // JSON 본문 파싱을 위한 미들웨어 추가
 app.use(express.json());
 
 // CORS 활성화
 app.use(cors(corsConfig));
 
-app.use(cors({
-  origin: 'http://localhost:3000', // 프런트엔드 도메인
-  credentials: true,  // 쿠키를 사용하려면 이 옵션도 활성화
-}));
+app.use(
+  cors({
+    origin: "http://localhost:3000", // 프런트엔드 도메인
+    credentials: true, // 쿠키를 사용하려면 이 옵션도 활성화
+  })
+);
 
 // 세션 설정
 app.use(
@@ -55,7 +56,7 @@ app.use(
 app.use("/auth", socialLoginRoutes);
 
 // 홈화면 라우트 등록
-app.use("/home", homeRoutes); 
+app.use("/home", homeRoutes);
 
 // 예문 생성 라우트 등록
 app.use("/example", exampleRoutes);
@@ -75,7 +76,7 @@ app.get("/", (req, res) => {
 // Sequelize 동기화
 (async () => {
   try {
-    await sequelize.sync({ force: false }); // 기존 데이터 유지 (force: true 사용 시 데이터 초기화됨)
+    await sequelize.sync({ force: true }); // 기존 데이터 유지 (force: true 사용 시 데이터 초기화됨)
     console.log("모든 테이블이 성공적으로 동기화되었습니다!");
 
     // 서버 실행
@@ -90,5 +91,3 @@ app.get("/", (req, res) => {
 
 //set GOOGLE_APPLICATION_CREDENTIALS=./config/google-cloud-key.json
 //$env:GOOGLE_APPLICATION_CREDENTIALS="./config/google-cloud-key.json"
-
-
