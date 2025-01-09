@@ -1,4 +1,3 @@
-// 스타일 코드
 import styled from "styled-components";
 
 export const ChatBotContainer = styled.div`
