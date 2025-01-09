@@ -12,17 +12,25 @@ interface RecommendProps {
 const SongRecommend = (props: RecommendProps) => {
 
     const navigate = useNavigate();
-    const [lyrics, setLyrics] = useState<string>("");
+    const [title, setTitle] = useState<string>("");
+    const [artist, setArtist] = useState<string>("");
+    const [lyric, setLyric] = useState<string>("");
     
 
     useEffect(() => {
         axios({
             method: "GET",
-            url: "http://www.localhost:8000/songLyric",
+            url: "http://localhost:8000/songLyric",
             withCredentials: true,
         }).then((res) => {
-            const {Lyrics} = res.data;
-            setLyrics(Lyrics);
+            const {Title} = res.data.songData;
+            const {Artist} = res.data.songData;
+            const {Lyric} = res.data.songData;
+            const lyricData = JSON.stringify(Lyric).replace("\n", "<br/>");
+            console.log(res.data.songData)
+            setTitle(Title);
+            setArtist(Artist);
+            setLyric(lyricData);
         }).catch((err) => {
             console.error("Error fetching Lyrics data: ", err);
         });
@@ -40,8 +48,16 @@ const SongRecommend = (props: RecommendProps) => {
                 <Youtube>
 
                 </Youtube>
+                <SongInfo>
+                    <Title>
+                        {title}
+                    </Title>
+                    <Artist>
+                        {artist}
+                    </Artist>
+                </SongInfo>
                 <Lyrics>
-                    
+                    <span>{lyric}</span>
                 </Lyrics>
             </RecommendDiv>
             <NavBar currentPage={"Home"} />
@@ -63,8 +79,24 @@ const Youtube = styled.div`
 
 `;
 
-const Lyrics = styled.div`
+const SongInfo = styled.div`
+    width: 100vw;
+    background-color: #00daaa;
+`;
 
+const Lyrics = styled.span`
+  white-space: pre-wrap;
+`;
+
+const Title = styled.div`
+    padding: 10px 20px;
+    font-size: 22px;
+    font-weight: 700;
+`;
+
+const Artist = styled.div`
+    padding: 10px 20px;
+    font-size: 18px;
 `;
 
 export default SongRecommend;
