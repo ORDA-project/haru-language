@@ -49,7 +49,7 @@ const HomeInfo = ({
         <Text>
           <span>{userName}</span>님, 반가워요.
           <br />
-          오늘로 벌써 <StyledSpan>{visitCount}번째</StyledSpan> 방문하셨어요.
+          오늘로 벌써 <StyledSpan>3번째</StyledSpan> 방문하셨어요.
         </Text>
       </div>
       <Alarm>
@@ -62,7 +62,7 @@ const HomeInfo = ({
           <div style={{ fontSize: "11px", lineHeight: "150%" }}>
             <span>
               {userName}님은 하루언어를
-              <br /> {mostVisitedDay}에 자주 이용하시는군요!
+              <br /> {mostVisitedDay}금요일에 자주 이용하시는군요!
             </span>
           </div>
         </div>

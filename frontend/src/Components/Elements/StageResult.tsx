@@ -58,6 +58,8 @@ const StageResult = ({
     // 두 텍스트를 결합
     const textToRead = `${dialogueA}\n${dialogueB}\n${dialogueA}\n${dialogueB}\n${dialogueA}\n${dialogueB}`;
 
+    console.log(textToRead);
+
     try {
       const response = await fetch("http://localhost:8000/api/tts", {
         method: "POST",
@@ -65,6 +67,7 @@ const StageResult = ({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ text: textToRead }), // 두 텍스트를 결합하여 전송
+        credentials: "include",
       });
 
       if (!response.ok) {
