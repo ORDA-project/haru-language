@@ -11,6 +11,8 @@ const exampleRoutes = require("./routes/exampleRoute"); // 예문생성 라우�
 const questionRoutes = require("./routes/questionRoute");
 const ttsRoutes = require("./routes/ttsRoute");
 const recommandRoutes = require("./routes/recommandRoute");
+const quizRoutes = require("./routes/quizRoute");
+
 
 const { sequelize } = require("./models"); // Sequelize 인스턴스 가져오기
 
@@ -25,11 +27,12 @@ app.use(express.json());
 app.use(cors(corsConfig));
 
 app.use(cors({
-  origin: 'http://localhost:3000', // 프런트엔드 도메인
+  origin: 'http://localhost:8000', // 프런트엔드 도메인
   credentials: true,  // 쿠키를 사용하려면 이 옵션도 활성화
 }));
 
 // 세션 설정
+/*
 app.use(
   session({
     key: "user_sid",
@@ -50,7 +53,7 @@ app.use(
     },
   })
 );
-
+*/
 // 소셜 로그인 라우트 등록
 app.use("/auth", socialLoginRoutes);
 
@@ -62,7 +65,11 @@ app.use("/example", exampleRoutes);
 
 // 질문 생성 라우트 등록
 app.use("/question", questionRoutes);
+
+//추천-명언, 노래래
 app.use("/recommand", recommandRoutes);
+
+app.use("/quiz", quizRoutes);
 
 // TTS 라우트 등록
 app.use("/api", ttsRoutes);
@@ -75,7 +82,7 @@ app.get("/", (req, res) => {
 // Sequelize 동기화
 (async () => {
   try {
-    await sequelize.sync({ force: false }); // 기존 데이터 유지 (force: true 사용 시 데이터 초기화됨)
+    await sequelize.sync({ force: true }); // 기존 데이터 유지 (force: true 사용 시 데이터 초기화됨)
     console.log("모든 테이블이 성공적으로 동기화되었습니다!");
 
     // 서버 실행
