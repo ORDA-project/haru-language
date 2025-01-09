@@ -6,6 +6,7 @@ import Example from "./Components/Pages/Example";
 import Introduction from "./Components/Pages/Introduction";
 import Startlogin from "./Components/Pages/Startlogin";
 import SongRecommend from "./Components/Pages/SongRecommend";
+import Quiz from "./Components/Pages/Quiz";
 
 const router = createBrowserRouter([ 
   {
@@ -31,6 +32,10 @@ const router = createBrowserRouter([
   {
     path: "/song-recommend",
     element: <SongRecommend />,
+  },
+  {
+    path: "/quiz",
+    element: <Quiz />,
   }
 ]);
 
