@@ -190,11 +190,11 @@ async function recommendQuote(userId) {
 
 async function generateQuiz(userId) {
   try {
-    // 최근 생성된 예문 3개 가져오기
+    // 최근 생성된 예문 5개 가져오기
     const recentExamples = await Example.findAll({
       where: { user_id: userId },
       order: [["created_at", "DESC"]],
-      limit: 3,
+      limit: 5,
     });
 
     if (recentExamples.length < 3) {
@@ -212,14 +212,15 @@ async function generateQuiz(userId) {
         {
           role: "system",
           content:
-            "You are a quiz generator and the user is an English learner. Considering the given description, create 5 OX quiz questions about grammar or vocabulary. Each question should include:\n" +
-            "- A question that can be answered with 'O' or 'X' and description in both Korean and English.\n" +
+
+            "You are a quiz generator for English language learners. Based on the given topics and sentences, create 5 OX quiz questions specifically designed for learning English. Each question should include:\n" +
+            "- A question text that tests grammar, vocabulary, or sentence usage and can be answered with 'O' or 'X'.\n" +
             "- Clearly indicate the correct answer ('O' or 'X').\n" +
             "Return the result as a JSON array of questions, with each question having 'question', 'answer', and 'description' fields."
         },
         {
           role: "user",
-          content: `The topics are:\n${topics}`,
+          content: `The topics and sentences are:\n${topics}`,
         },
       ],
       max_tokens: 600,

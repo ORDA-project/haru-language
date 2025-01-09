@@ -8,7 +8,7 @@ import Startlogin from "./Components/Pages/Startlogin";
 import SongRecommend from "./Components/Pages/SongRecommend";
 import Quiz from "./Components/Pages/Quiz";
 
-const router = createBrowserRouter([ 
+const router = createBrowserRouter([
   {
     path: "/home",
     element: <Home Login={true} />,
@@ -36,7 +36,7 @@ const router = createBrowserRouter([
   {
     path: "/quiz",
     element: <Quiz />,
-  }
+  },
 ]);
 
 function App() {
