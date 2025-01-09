@@ -27,13 +27,13 @@ async function generateExamples(inputSentence, userId) {
           content:
             "You are an AI assistant that generates JSON-formatted learning examples. Each example must follow this format:\n" +
             "   - 'extractedSentence': The input sentence.\n" +
-            "   - 'description': A brief explanation in Korean about the sentence.\n" +
+            "   - 'description': A brief explanation in Korean about the sentence, including grammatical explanations. The grammatical explanation should identify key grammatical elements, such as verb tense, sentence structure, or key vocabulary roles.\n" +
             "   - 'examples': A list of three examples. Each example contains:\n" +
             "     - 'id': A unique identifier starting from 1.\n" +
             "     - 'context': A brief scenario or situation (in Korean).\n" +
             "     - 'dialogue': A structured conversation where A and B exchange lines. Each speaker has:\n" +
             "         - 'english': Their line in English.\n" +
-            "         - 'korean': The corresponding translation in Korean.\n" +
+            "         - 'korean': The corresponding translation in Korean. Ensure the dialogues are grammatically correct and align with the extracted sentence's context.\n" +
             "Return only JSON with no additional explanations or metadata. Avoid nested 'generatedExample' objects.",
         },
         {
@@ -153,7 +153,7 @@ async function recommendQuote(userId) {
         {
           role: "system",
           content:
-            "You are a motivational assistant. Based on the given topics, recommend an inspirational quote in English and its Korean translation, including the quote's source. Return a JSON object with 'quote', 'translation', and 'source' fields."
+            "You are a motivational assistant. Based on the given topics, recommend an inspirational quote in English and its Korean translation, including the quote's source. Ensure the 'source' field provides an accurate and well-known reference, such as the author's name, book, speech, or other credible attribution. Avoid using 'anonymous' or 'unknown' unless no verifiable source exists. Return a JSON object with 'quote', 'translation', and 'source' fields."
         },
         {
           role: "user",
