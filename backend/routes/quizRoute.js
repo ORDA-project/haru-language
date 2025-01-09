@@ -17,14 +17,15 @@ router.post("/", async (req, res) => {
     console.log(userId);
 
     if (!userId) {
-      return res.status(400).json({ message: "userId는는 필수입니다." });
+      return res.status(400).json({ success: false, message: "userId는는 필수입니다." });
     }
     const quiz = await generateQuiz(userId); // 사용자 ID 전달
     console.log(quiz);
 
-    res.status(200).json(quiz);
+    res.status(200).json({success: true, quiz});
   } catch (error) {
     console.error(error.message);
+    res.json({success: false});
   }
 });
 

@@ -23,19 +23,21 @@ async function generateExamples(inputSentence, userId) {
       model: "gpt-4o-mini",
       messages: [
         {
-          role: "system",
-          content:
-            "You are an AI assistant that generates JSON-formatted learning examples. Each example must follow this format:\n" +
-            "   - 'extractedSentence': The input sentence.\n" +
-            "   - 'description': A brief explanation in Korean about the sentence, including grammatical explanations. The grammatical explanation should identify key grammatical elements, such as verb tense, sentence structure, or key vocabulary roles.\n" +
-            "   - 'examples': A list of three examples. Each example contains:\n" +
-            "     - 'id': A unique identifier starting from 1.\n" +
-            "     - 'context': A brief scenario or situation (in Korean).\n" +
-            "     - 'dialogue': A structured conversation where A and B exchange lines. Each speaker has:\n" +
-            "         - 'english': Their line in English.\n" +
-            "         - 'korean': The corresponding translation in Korean. Ensure the dialogues are grammatically correct and align with the extracted sentence's context.\n" +
-            "Return only JSON with no additional explanations or metadata. Avoid nested 'generatedExample' objects.",
-        },
+          "role": "system",
+          "content": 
+            "You are an AI assistant specializing in generating high-quality learning examples for an English education app. Please create JSON-formatted data using the following guidelines:\n\n" +
+            "- 'extractedSentence': The input sentence, which must highlight a key grammar or vocabulary concept.\n" +
+            "- 'description': A concise explanation in Korean of what learners can study from this sentence (e.g., specific grammar points, idiomatic expressions, or vocabulary usage).\n" +
+            "- 'examples': Three carefully curated examples that meet these requirements:\n" +
+            "  - 'id': A unique identifier starting from 1.\n" +
+            "  - 'context': A brief and relatable scenario in Korean where the sentence can be applied.\n" +
+            "  - 'dialogue': A structured and meaningful conversation where A and B exchange lines that:\n" +
+            "      - Demonstrate the grammar or vocabulary point in a practical context.\n" +
+            "      - Each line includes:\n" +
+            "        - 'english': The dialogue in English.\n" +
+            "        - 'korean': A natural and accurate translation in Korean.\n\n" +
+            "Ensure the examples focus on relevant, practical, and educational content. Avoid generic or trivial examples. Provide only the JSON output without any explanations or metadata."
+        },        
         {
           role: "user",
           content: `Create JSON-formatted data for the following sentence: "${inputSentence}".`,
@@ -195,12 +197,13 @@ async function generateQuiz(userId) {
       limit: 3,
     });
 
-    if (recentExamples.length === 0) {
+    if (recentExamples.length < 3) {
       throw new Error("최근 생성된 예문 기록이 없습니다.");
     }
 
     // GPT 요청을 위한 주제 수집
     const topics = recentExamples.map((example) => example.description).join("\n");
+    console.log(topics);
 
     // GPT로 OX 퀴즈 생성 요청
     const response = await openai.chat.completions.create({
@@ -209,10 +212,10 @@ async function generateQuiz(userId) {
         {
           role: "system",
           content:
-            "You are a quiz generator. Based on the given topics, create 5 OX quiz questions. Each question should include:\n" +
-            "- A question text that can be answered with 'O' or 'X'.\n" +
+            "You are a quiz generator and the user is an English learner. Considering the given description, create 5 OX quiz questions about grammar or vocabulary. Each question should include:\n" +
+            "- A question that can be answered with 'O' or 'X' and description in both Korean and English.\n" +
             "- Clearly indicate the correct answer ('O' or 'X').\n" +
-            "Return the result as a JSON array of questions, with each question having 'question' and 'answer' fields."
+            "Return the result as a JSON array of questions, with each question having 'question', 'answer', and 'description' fields."
         },
         {
           role: "user",
