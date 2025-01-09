@@ -10,6 +10,8 @@ export const Stage = styled.div`
     overflow: hidden;
 `;
 
+
+
 export const Description = styled.div`
     position: relative;
     width: 293px;
