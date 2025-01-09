@@ -4,8 +4,8 @@ const { generateQuiz } = require("../services/gptService");
 const router = express.Router();
 
 router.post("/", async (req, res) => {
-  const { userId } = req.body;
-
+  const userId = req.session.user.userId;
+  
   if (!userId) {
     return res.status(400).json({ message: "userId는는 필수입니다." });
   }

@@ -8,7 +8,9 @@ require("dotenv").config({ path: "../.env" });
 const router = express.Router();
 
 router.post("/", async (req, res) => {
-  const { userId, question } = req.body;
+  const { question } = req.body;
+  const userId = req.session.user.userId;
+  
   console.log("Request received:", { userId, question });
 
   if (!userId || !question) {
