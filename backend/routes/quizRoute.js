@@ -12,7 +12,9 @@ router.post("/", async (req, res) => {
 
   try {
     const quiz = await generateQuiz(userId); // 사용자 ID 전달
-    console.log(JSON.stringify(quiz, null, 2));
+    //console.log(quiz);
+
+    res.status(200).json(quiz);
   } catch (error) {
     console.error(error.message);
   }
