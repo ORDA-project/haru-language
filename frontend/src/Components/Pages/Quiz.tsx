@@ -1,19 +1,27 @@
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
+import { useNavigate } from "react-router-dom"; // React Router로 홈 이동
 import NavBar from "../Templates/Navbar";
 import axios from "axios";
 
 interface QuizProps {}
 
 interface Question {
-    text: string; // 질문 텍스트
-    correctAnswer: "O" | "X"; // 정답 (O 또는 X)
+    question: string; // 질문 텍스트
+    description: string;
+    answer: "O" | "X"; // 정답 (O 또는 X)
 }
 
 const Quiz = (props: QuizProps) => {
+    const [isSuccess, setSuccess] = useState<boolean>(true);
+    const [message, setMessage] = useState<string>("");
     const [quiz, setQuiz] = useState<Question[]>([]); // 질문 목록
     const [currentIndex, setCurrentIndex] = useState(0); // 현재 문제 인덱스
     const [selectedAnswer, setSelectedAnswer] = useState<"O" | "X" | null>(null); // 선택한 답
+    const [correctCount, setCorrectCount] = useState(0); // 맞은 문제 개수
+    const [showDescription, setShowDescription] = useState(false);
+    const [showPopup, setShowPopup] = useState(false); // 팝업 표시 여부
+    const navigate = useNavigate(); // 페이지 이동을 위한 네비게이트
 
     useEffect(() => {
         axios({
@@ -23,37 +31,60 @@ const Quiz = (props: QuizProps) => {
             withCredentials: true,
         })
             .then((res) => {
-                const quizData: Question[] = res.data; // API에서 받아온 데이터를 설정
-                setQuiz(quizData);
+                if(!res.data.success){
+                    setSuccess(false);
+                    const {message} = res.data;
+                    setMessage(message);
+                } else {
+                    const quizData: Question[] = res.data.quiz; // API에서 받아온 데이터를 설정
+                    setQuiz(quizData);
+                }
             })
             .catch((err) => console.error(err));
     }, []);
 
+
     const handleAnswer = (answer: "O" | "X") => {
         setSelectedAnswer(answer); // 선택한 답 설정
+        if (answer === quiz[currentIndex].answer) {
+            setCorrectCount((prev) => prev + 1); // 정답 개수 증가
+        }
+
+        setTimeout(() => {
+            setShowDescription(true); // 1초 뒤에 설명 표시
+        }, 500);
     };
 
     const handleNext = () => {
-        setSelectedAnswer(null); // 선택한 답 초기화
-        setCurrentIndex((prev) => (prev + 1 < quiz.length ? prev + 1 : prev)); // 다음 문제로 이동
+        if (currentIndex + 1 < quiz.length) {
+            setSelectedAnswer(null); // 선택한 답 초기화
+            setShowDescription(false); // 설명 초기화
+            setCurrentIndex((prev) => prev + 1); // 다음 문제로 이동
+        } else {
+            setShowPopup(true); // 모든 문제를 푼 경우 팝업 표시
+        }
+    };
+    
+    const handleClosePopup = () => {
+        setShowPopup(false); // 팝업 닫기
+        navigate("/home"); // 홈 페이지로 이동
     };
 
-    if (quiz.length === 0) return <p>Loading...</p>; // 로딩 중 처리
+    if (isSuccess && quiz.length === 0) return <p>Loading...</p>; // 로딩 중 처리
 
     const currentQuestion = quiz[currentIndex]; // 현재 문제
 
-    console.log(currentQuestion);
-
     return (
         <QuizContainer>
+            {isSuccess ?
             <QuizDiv>
                 <Question>
-                    <p>{currentQuestion.text}</p>
+                    <p>{currentQuestion.question}</p>
                 </Question>
                 <OXbuttonDiv>
                     <OXButton
-                        isCorrect={selectedAnswer === "O" && currentQuestion.correctAnswer === "O"}
-                        isWrong={selectedAnswer === "O" && currentQuestion.correctAnswer !== "O"}
+                        isCorrect={selectedAnswer === "O" && currentQuestion.answer === "O"}
+                        isWrong={selectedAnswer === "O" && currentQuestion.answer !== "O"}
                         onClick={() => handleAnswer("O")}
                         disabled={selectedAnswer !== null}
                     >
@@ -62,8 +93,8 @@ const Quiz = (props: QuizProps) => {
                         </svg>
                     </OXButton>
                     <OXButton
-                        isCorrect={selectedAnswer === "X" && currentQuestion.correctAnswer === "X"}
-                        isWrong={selectedAnswer === "X" && currentQuestion.correctAnswer !== "X"}
+                        isCorrect={selectedAnswer === "X" && currentQuestion.answer === "X"}
+                        isWrong={selectedAnswer === "X" && currentQuestion.answer !== "X"}
                         onClick={() => handleAnswer("X")}
                         disabled={selectedAnswer !== null}
                     >
@@ -83,11 +114,30 @@ const Quiz = (props: QuizProps) => {
                         </svg>
                     </OXButton>
                 </OXbuttonDiv>
+                {showDescription && <Description>{currentQuestion.description}</Description>}
                 <Button onClick={handleNext} disabled={selectedAnswer === null}>
                     다음
                 </Button>
             </QuizDiv>
+            :
+            <Popup>
+                <PopupContent>
+                    <p>퀴즈를 생성할 예문이 부족합니다.</p>
+                    <p>예문 생성 후에 다시 시도하세요.</p>
+                    <CloseButton onClick={handleClosePopup}>확인</CloseButton>
+                </PopupContent>
+            </Popup>
+            }
             <NavBar currentPage={"quiz"} />
+            {showPopup && (
+                <Popup>
+                    <PopupContent>
+                        <p>맞은 개수: {correctCount}</p>
+                        <p>틀린 개수: {quiz.length - correctCount}</p>
+                        <CloseButton onClick={handleClosePopup}>확인</CloseButton>
+                    </PopupContent>
+                </Popup>
+            )}
         </QuizContainer>
     );
 };
@@ -107,14 +157,14 @@ const QuizDiv = styled.div`
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: space-between;
+    justify-content: space-around;
 `;
 
 const Question = styled.div`
     position: relative;
     width: 293px;
     padding: 20px;
-    margin: 20px 10px;
+    margin: 100px 10px 10px 10px;
     border-radius: 13px;
     background: #f6f6f6;
     box-shadow: 4px 0px 7px 2px rgba(0, 0, 0, 0.1);
@@ -145,7 +195,7 @@ const OXButton = styled.button<{ isCorrect: boolean; isWrong: boolean }>`
     height: 120px;
     border-radius: 10.4px;
     background: ${({ isCorrect, isWrong }) =>
-        isCorrect ? "#A8E6A1" : isWrong ? "#F6A6A6" : "#F6F6F6"};
+        isCorrect ? "#00daaa" : isWrong ? "#F6A6A6" : "#F6F6F6"};
     box-shadow: 3.2px 0px 5.6px 1.6px rgba(0, 0, 0, 0.1);
     display: flex;
     justify-content: center;
@@ -159,9 +209,19 @@ const OXButton = styled.button<{ isCorrect: boolean; isWrong: boolean }>`
     }
 `;
 
+const Description = styled.div`
+    margin: 20px;
+    padding: 10px;
+    background: #f0f0f0;
+    border-radius: 8px;
+    box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.1);
+    font-size: 16px;
+    text-align: center;
+`;
+
 const Button = styled.button`
     border-radius: 10px;
-    background: #d9d9d9;
+    background: #00daaa;
     width: 166px;
     padding: 15px 0px;
     text-align: center;
@@ -173,5 +233,40 @@ const Button = styled.button`
     &:disabled {
         background: #f6f6f6;
         cursor: not-allowed;
+    }
+`;
+
+const Popup = styled.div`
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+`;
+
+const PopupContent = styled.div`
+    background: white;
+    width: 250px;
+    height: 150px;
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+`;
+
+const CloseButton = styled.button`
+    margin-top: 20px;
+    padding: 10px 20px;
+    background: #00daaa;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+
+    &:hover {
+        background: #c9c9c9;
     }
 `;

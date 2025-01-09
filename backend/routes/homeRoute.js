@@ -35,9 +35,7 @@ router.get("/", async (req, res) => {
             },
         });
 
-        // 추천 노래 가져오기
-        const songData = await getRandomSong(req); //랜덤 노래 생성
-        req.session.songData = songData; // 세션에 저장
+        const songData = req.session.songData;
 
         // 응답 데이터 생성
         res.status(200).json({

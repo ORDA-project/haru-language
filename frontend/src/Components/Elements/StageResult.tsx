@@ -168,7 +168,7 @@ const StageResult = ({
       </CardList>
 
       <Button onClick={() => setStage(1)}>다른 예문 생성하기</Button>
-      {errorMessage && <p>{errorMessage}</p>}
+      
     </Stage>
   );
 };
