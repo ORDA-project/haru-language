@@ -185,8 +185,57 @@ async function recommendQuote(userId) {
   }
 }
 
+
+async function generateQuiz(userId) {
+  try {
+    // 최근 생성된 예문 3개 가져오기
+    const recentExamples = await Example.findAll({
+      where: { user_id: userId },
+      order: [["created_at", "DESC"]],
+      limit: 3,
+    });
+
+    if (recentExamples.length === 0) {
+      throw new Error("최근 생성된 예문 기록이 없습니다.");
+    }
+
+    // GPT 요청을 위한 주제 수집
+    const topics = recentExamples.map((example) => example.description).join("\n");
+
+    // GPT로 OX 퀴즈 생성 요청
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are a quiz generator. Based on the given topics, create 5 OX quiz questions. Each question should include:\n" +
+            "- A question text that can be answered with 'O' or 'X'.\n" +
+            "- Clearly indicate the correct answer ('O' or 'X').\n" +
+            "Return the result as a JSON array of questions, with each question having 'question' and 'answer' fields."
+        },
+        {
+          role: "user",
+          content: `The topics are:\n${topics}`,
+        },
+      ],
+      max_tokens: 600,
+    });
+
+    const rawContent = response.choices[0].message.content;
+    const cleanedContent = rawContent.replace(/```json|```/g, "").trim();
+    const quizQuestions = JSON.parse(cleanedContent);
+ 
+    return quizQuestions;
+  } catch (error) {
+    console.error("Error generating quiz:", error.message);
+    throw new Error("Failed to generate quiz.");
+  }
+}
+
 module.exports = {
   generateExamples,
   getAnswer,
   recommendQuote,
+  generateQuiz,
 };
