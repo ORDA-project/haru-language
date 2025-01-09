@@ -11,12 +11,10 @@ const exampleRoutes = require("./routes/exampleRoute"); // 예문생성 라우�
 const questionRoutes = require("./routes/questionRoute");
 const ttsRoutes = require("./routes/ttsRoute");
 const recommandRoutes = require("./routes/recommandRoute");
-<<<<<<< HEAD
 const songLyricRoutes = require('./routes/songLyricRoute');
-const songYoutubeRoutes = require("./routes/songYoutubeRoute");
-=======
+// const songYoutubeRoutes = require("./routes/songYoutubeRoute");
 const quizRoutes = require("./routes/quizRoute");
->>>>>>> 34411ed6af519c783687e85648d797ef857038bc
+
 
 
 const { sequelize } = require("./models"); // Sequelize 인스턴스 가져오기
@@ -31,19 +29,12 @@ app.use(express.json());
 // CORS 활성화
 app.use(cors(corsConfig));
 
-<<<<<<< HEAD
-app.use(cors({
-  origin: 'http://localhost:3000', // 프런트엔드 도메인
-  credentials: true,  // 쿠키를 사용하려면 이 옵션도 활성화
-}));
-=======
 app.use(
   cors({
-    origin: "http://localhost:8000", // 프런트엔드 도메인
+    origin: "http://localhost:3000", // 프런트엔드 도메인
     credentials: true, // 쿠키를 사용하려면 이 옵션도 활성화
   })
 );
->>>>>>> 34411ed6af519c783687e85648d797ef857038bc
 
 // 세션 설정
 app.use(
@@ -92,7 +83,7 @@ app.use("/home", homeRoutes);
 app.use('/songLyric', songLyricRoutes);
 
 // 유튜브 노래 검색 라우트 등록
-app.use("/songYoutube", songYoutubeRoutes);
+// app.use("/songYoutube", songYoutubeRoutes);
 
 // 예문 생성 라우트 등록
 app.use("/example", exampleRoutes);
