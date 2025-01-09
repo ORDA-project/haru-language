@@ -5,6 +5,7 @@ import Question from "./Components/Pages/Question";
 import Example from "./Components/Pages/Example";
 import Introduction from "./Components/Pages/Introduction";
 import Startlogin from "./Components/Pages/Startlogin";
+import SongRecommend from "./Components/Pages/SongRecommend";
 
 const router = createBrowserRouter([ 
   {
@@ -27,6 +28,10 @@ const router = createBrowserRouter([
     path: "/",
     element: <Startlogin />,
   },
+  {
+    path: "/song-recommend",
+    element: <SongRecommend />,
+  }
 ]);
 
 function App() {
