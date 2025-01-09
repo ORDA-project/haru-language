@@ -12,14 +12,12 @@ interface HomeProps {
 }
 
 const Home = ({ Login = true }: HomeProps) => {
-    const [isLogin, setLogin] = useState<boolean>(true);
     const [userName, setUserName] = useState<string>("");
     const [visitCount, setVisitCount] = useState<number>(0);
     const [mostVisitedDay, setMostVisitedDay] = useState<string>("");
     const [recommendation, setRecommendation] = useState<string>("");
 
     useEffect(() => {
-        setLogin(Login);
         axios({
             method: "GET",
             url: "http://localhost:8000/home",
@@ -36,12 +34,11 @@ const Home = ({ Login = true }: HomeProps) => {
             .catch((err) => {
                 console.error("Error fetching user data:", err);
             });
-    }, [Login]);
+    }, []);
 
     return (
         <HomeContainer>
             <HomeHeader />
-            {isLogin ? (
                 <HomeDiv>
                     <HomeInfo
                         userName={userName}
@@ -53,9 +50,6 @@ const Home = ({ Login = true }: HomeProps) => {
                     {/* <HomeInfo userName={"진희"} visitCount={10} mostVisitedDay={"월요일"} recommendation={"Santa Tell Me by Ariana Grande"}/> */}
                     <StatusCheck />
                 </HomeDiv>
-            ) : (
-                <div>로그인 후 이용 가능</div>
-            )}
             <NavBar currentPage={"Home"} />
         </HomeContainer>
     );

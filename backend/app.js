@@ -12,6 +12,7 @@ const questionRoutes = require("./routes/questionRoute");
 const ttsRoutes = require("./routes/ttsRoute");
 const recommandRoutes = require("./routes/recommandRoute");
 const songLyricRoutes = require('./routes/songLyricRoute');
+const quizRoute = require("./routes/quizRoute");
 // const songYoutubeRoutes = require("./routes/songYoutubeRoute");
 
 const { sequelize } = require("./models");
@@ -24,11 +25,6 @@ app.use(express.json());
 
 // CORS 활성화
 app.use(cors(corsConfig));
-
-app.use(cors({
-  origin: 'http://localhost:3000', // 프런트엔드 도메인
-  credentials: true,  // 쿠키를 사용하려면 이 옵션도 활성화
-}));
 
 // 세션 설정
 app.use(
@@ -73,6 +69,7 @@ app.use('/songLyric', songLyricRoutes);
 app.use("/example", exampleRoutes);
 app.use("/question", questionRoutes);
 app.use("/recommand", recommandRoutes);
+app.use("/quiz", quizRoute);
 app.use("/api", ttsRoutes);
 
 // 상태 확인용 홈 라우트

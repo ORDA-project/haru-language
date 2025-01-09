@@ -68,13 +68,20 @@ const ChatBot = () => {
       setMessages((prev) => [...prev, { type: "user", content: currentInput }]);
 
       try {
-        const response = await axios.post("http://localhost:8000/question", {
-          userId: 1,
-          question: currentInput,
+        axios({
+          method: "POST",
+          url: "http://localhost:8000/question",
+          data: { question: currentInput },
+          headers: { "Content-Type": "application/json" },
+          withCredentials: true,
+        }).then((res) => {
+          const botResponse = res.data.answer.answer;
+          console.log(botResponse);
+          setMessages((prev) => [...prev, { type: "bot", content: botResponse }]);
+        }).catch((error) => {
+          console.log(error);
         });
-
-        const botResponse = response.data.answer.answer;
-        setMessages((prev) => [...prev, { type: "bot", content: botResponse }]);
+        
       } catch (error: any) {
         console.error("Error during request:", error);
         const errorMessage =

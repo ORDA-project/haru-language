@@ -117,6 +117,8 @@ const Content = styled.div`
     overflow: hidden;
     text-overflow:ellipsis;
     margin: 20px 0;
+    line-height: 22px;
+    max-height: 44px;
 `;
 
 const StyledSpan = styled.span`

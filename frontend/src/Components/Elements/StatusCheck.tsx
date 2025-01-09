@@ -1,8 +1,10 @@
 import styled from "styled-components";
+import { useNavigate } from "react-router-dom";
 
 interface StatusProps {}
 
 const StatusCheck = (props: StatusProps) => {
+
   const progressRecords = [
     {
       date: "09/30",
