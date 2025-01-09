@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import HomeInfo from "../Elements/HomeInfo"; // 기존 HomeInfo를 가져옵니다.
 import NavBar from "../Templates/Navbar";
-import HomeHeader from "../Elements/HomeHeader";
+import HomeHeader from "../Templates/HomeHeader";
 import StatusCheck from "../Elements/StatusCheck";
 import axios from "axios";
 // import Login from "../Pages/Login";
@@ -69,6 +69,8 @@ const HomeContainer = styled.div`
 `;
 
 const HomeDiv = styled.div`
-    padding: 5vw;
-    transform: translateY(calc(10vh + 5vw));
+    height: calc(87vh - 100px);
+    padding: 3vh 5vw;
+    transform: translateY(10vh);
+    overflow-y: scroll;
 `;

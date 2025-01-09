@@ -56,7 +56,7 @@ const StageResult = ({
     const dialogueB = examples[currentIndex].dialogue.B.english;
 
     // 두 텍스트를 결합
-    const textToRead = `${dialogueA}\n${dialogueB}`;
+    const textToRead = `${dialogueA}\n${dialogueB}\n${dialogueA}\n${dialogueB}\n${dialogueA}\n${dialogueB}`;
 
     try {
       const response = await fetch("http://localhost:8000/api/tts", {

@@ -19,20 +19,20 @@ const { sequelize } = require("./models"); // Sequelize 인스턴스 가져오�
 const app = express();
 const port = process.env.PORT || 8000;
 
-
 // JSON 본문 파싱을 위한 미들웨어 추가
 app.use(express.json());
 
 // CORS 활성화
 app.use(cors(corsConfig));
 
-app.use(cors({
-  origin: 'http://localhost:8000', // 프런트엔드 도메인
-  credentials: true,  // 쿠키를 사용하려면 이 옵션도 활성화
-}));
+app.use(
+  cors({
+    origin: "http://localhost:8000", // 프런트엔드 도메인
+    credentials: true, // 쿠키를 사용하려면 이 옵션도 활성화
+  })
+);
 
 // 세션 설정
-/*
 app.use(
   session({
     key: "user_sid",
@@ -53,12 +53,12 @@ app.use(
     },
   })
 );
-*/
+
 // 소셜 로그인 라우트 등록
 app.use("/auth", socialLoginRoutes);
 
 // 홈화면 라우트 등록
-app.use("/home", homeRoutes); 
+app.use("/home", homeRoutes);
 
 // 예문 생성 라우트 등록
 app.use("/example", exampleRoutes);
@@ -66,7 +66,7 @@ app.use("/example", exampleRoutes);
 // 질문 생성 라우트 등록
 app.use("/question", questionRoutes);
 
-//추천-명언, 노래래
+//추천-명언, 노래
 app.use("/recommand", recommandRoutes);
 
 app.use("/quiz", quizRoutes);
@@ -97,5 +97,3 @@ app.get("/", (req, res) => {
 
 //set GOOGLE_APPLICATION_CREDENTIALS=./config/google-cloud-key.json
 //$env:GOOGLE_APPLICATION_CREDENTIALS="./config/google-cloud-key.json"
-
-

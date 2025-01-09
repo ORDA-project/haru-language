@@ -11,6 +11,26 @@ export const Stage = styled.div`
   overflow: hidden;
   font-family: "KoPubWorldDotum_Pro", sans-serif;
   position: relative; /* 화살표 버튼 위치 고정을 위한 설정 */
+  background-color: #ecfffb;
+`;
+
+// 닫기 버튼 스타일
+export const CloseButton = styled.button`
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 40px;
+  height: 40px;
+  background: none;
+  border: none;
+  font-size: 30px;
+  color: #333;
+  cursor: pointer;
+  transition: color 0.3s;
+
+  &:hover {
+    color: #00daaa; /* Hover 시 색상 변경 */
+  }
 `;
 
 // 페이지 인디케이터 스타일
@@ -43,27 +63,24 @@ export const Content = styled.div`
 export const Title = styled.h1`
   font-size: 22px;
   font-weight: 700;
-  line-height: 170%; /* 37.4px */
-  text-align: left; /* 글씨 왼쪽 정렬 */
+  line-height: 170%;
+  text-align: left;
   color: #000;
   white-space: pre-wrap;
-  width: 90%; /* 글씨의 최대 너비 조정 */
-  margin-left: 10px; /* 약간 오른쪽으로 이동 */
-  margin-top: 100px; /* Dot과의 간격 */
+  width: 90%;
+  margin-left: 10px;
+  margin-top: 100px;
 `;
 
 // 설명 텍스트 스타일
 export const Description = styled.p<{ isFirstPage?: boolean }>`
   font-size: ${(props) => (props.isFirstPage ? "25px" : "20px")};
   font-weight: ${(props) => (props.isFirstPage ? "700" : "500")};
-  line-height: 170%; /* 첫 페이지와 나머지 간격 동일 */
+  line-height: 170%;
   color: #000;
-  text-align: ${(props) =>
-    props.isFirstPage ? "center" : "left"}; /* 첫 페이지에서만 중앙 정렬 */
-  width: ${(props) =>
-    props.isFirstPage ? "100%" : "90%"}; /* 첫 페이지에서만 너비 확장 */
-  margin-top: ${(props) =>
-    props.isFirstPage ? "20px" : "10px"}; /* 간격 조정 */
+  text-align: ${(props) => (props.isFirstPage ? "center" : "left")};
+  width: ${(props) => (props.isFirstPage ? "100%" : "90%")};
+  margin-top: ${(props) => (props.isFirstPage ? "20px" : "10px")};
 `;
 
 // 이미지 자리 스타일
@@ -79,14 +96,14 @@ export const Placeholder = styled.div`
   border-radius: 10px;
 `;
 
-// 오른쪽 화살표 버튼 스타일
-export const ImageButton = styled.button`
-  position: absolute; /* 위치 고정 */
-  bottom: 50px; /* 아래에서 50px */
-  right: calc(50% - 45px); /* 화면 중앙에 고정 */
-  width: 90px;
-  height: 90px;
-  background-color: #d9d9d9; /* 어두운 버튼 배경 */
+// 화살표 버튼 스타일
+export const ImageButton = styled.button<{ position: "left" | "right" }>`
+  position: absolute;
+  bottom: 50px;
+  ${(props) => (props.position === "left" ? "left: 20px;" : "right: 20px;")}
+  width: 60px;
+  height: 60px;
+  background-color: #d9d9d9;
   border: none;
   border-radius: 50%;
   display: flex;
@@ -95,11 +112,13 @@ export const ImageButton = styled.button`
   cursor: pointer;
 
   &:hover {
-    background-color: #d9d9d9; /* hover 상태에서도 동일한 색 */
+    background-color: #c8c8c8;
   }
 `;
 
-export const Icon = styled.img`
-  width: 40px;
-  height: 40px;
+// 화살표 아이콘 스타일
+export const Icon = styled.img<{ flipped?: boolean }>`
+  width: 30px;
+  height: 30px;
+  transform: ${(props) => (props.flipped ? "scaleX(-1)" : "none")};
 `;

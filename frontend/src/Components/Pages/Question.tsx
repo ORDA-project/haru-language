@@ -32,7 +32,7 @@ const ChatBot = () => {
           {
             type: "bot",
             content: `안녕하세요, ${
-              response.data.name || "사용자"
+              response.data.userData?.name || "사용자"
             }님! 학습 관련 도움이 필요하신가요?`,
           },
         ]);

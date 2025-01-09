@@ -109,7 +109,7 @@ export default App;
 
 const ExampleContainer = styled.div`
   width: 100vw;
-  height: 100vh;
+  height: calc(100vh - 100px);
 `;
 
 const ExampleDiv = styled.div`
