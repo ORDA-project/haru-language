@@ -88,8 +88,7 @@ router.get("/callback", async (req, res) => {
         await UserActivity.findOrCreate({
             where: { user_id: user.id },
             defaults: {
-                visit_count: 0,
-                most_visited_day: null,
+                visit_count: 1,
             },
         });
 

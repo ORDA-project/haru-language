@@ -30,10 +30,11 @@ router.get("/", async (req, res) => {
         const [activity] = await UserActivity.findOrCreate({
             where: { user_id: userId },
             defaults: {
-                visit_count: 0,
-                most_visited_day: null,
+                visit_count: 1,
+                createAt: new Date(),
             },
         });
+ 
 
         const songData = req.session.songData;
 
@@ -43,7 +44,7 @@ router.get("/", async (req, res) => {
             userData: {
                 name: user.name,
                 visitCount: activity.visit_count,
-                mostVisitedDay: activity.most_visited_day,
+                mostVisitedDay: activity.mostVisitedDay,
                 recommendation: songData
                     ? `${songData.Title} by ${songData.Artist}`
                     : "추천할 노래가 없습니다.",

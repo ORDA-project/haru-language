@@ -40,11 +40,11 @@ app.use(
       password: process.env.DB_PASSWORD,
       database: process.env.DB_NAME,
       clearExpired: true,
-      checkExpirationInterval: 1000 * 60 * 10,
-      expiration: 1000 * 60 * 10,
+      checkExpirationInterval: 1000 * 60 * 1440, //하루루
+      expiration: 1000 * 60 * 1440,
     }),
     cookie: {
-      maxAge: 1000 * 60 * 10,
+      maxAge: 1000 * 60 * 1440,
       httpOnly: true,
       secure: false,
     },
