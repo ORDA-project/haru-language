@@ -10,6 +10,8 @@ export const Stage = styled.div`
     overflow: hidden;
 `;
 
+
+
 export const Description = styled.div`
     position: relative;
     width: 293px;
@@ -88,7 +90,9 @@ export const Label = styled.label`
     flex-direction: column;
     align-items: center;
     background-color: #ffffff;
-    margin: 20px;
+    padding: 40px 20px;
+    border: 5px dotted #00daaa;
+    border-radius: 10px;
 `;
 
 export const Text = styled.p`

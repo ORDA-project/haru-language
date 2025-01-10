@@ -13,10 +13,16 @@ router.get("/", async (req, res) => {
       });
     }
 
-    // 세션에서 가사 바로 반환
+    const formattedLyric = songData.Lyric.replace(/(.{1,40})(\s|$)/g, "$1\n").trim();
+
+    // 세션에서 가사와 노래 정보를 반환
     return res.status(200).json({
       result: true,
-      Lyric: songData.Lyric, // 세션에서 가사 반환
+      songData: {
+        Artist: songData.Artist,
+        Title: songData.Title,
+        Lyric: formattedLyric, // HTML-friendly 가사
+      },
     });
   } catch (error) {
     console.error("가사 조회 실패:", error.message);

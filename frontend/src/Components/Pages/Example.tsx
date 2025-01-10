@@ -113,5 +113,7 @@ const ExampleContainer = styled.div`
 `;
 
 const ExampleDiv = styled.div`
-  text-align: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 `;

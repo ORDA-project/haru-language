@@ -1,5 +1,6 @@
 const express = require("express");
-const { User, UserActivity, Song } = require("../models");
+const { User, UserActivity } = require("../models");
+const { getRandomSong } = require("../services/songService");
 
 const router = express.Router();
 
@@ -14,12 +15,10 @@ router.get("/", async (req, res) => {
 
     try {
         const userId = req.session.user.userId;
-
         console.log(userId);
 
         // 사용자 정보 가져오기
-        const user = await User.findOne({
-            where: {id: userId}});
+        const user = await User.findOne({ where: { id: userId } });
         if (!user) {
             return res.status(404).json({
                 success: false,
@@ -32,23 +31,22 @@ router.get("/", async (req, res) => {
             where: { user_id: userId },
             defaults: {
                 visit_count: 1,
-                most_visited_day: null,
+                createAt: new Date(),
             },
         });
+ 
 
-        // 노래 추천 데이터 가져오기
-        const songs = await Song.findAll(); // 모든 노래 가져오기
-        const song = songs[Math.floor(Math.random() * songs.length)]; // 랜덤으로 하나 선택
+        const songData = req.session.songData;
 
-        // 응답 데이터 생성 
-        res.json({
+        // 응답 데이터 생성
+        res.status(200).json({
             result: true,
             userData: {
                 name: user.name,
                 visitCount: activity.visit_count,
-                mostVisitedDay: activity.most_visited_day,
-                recommendation: song
-                    ? `${song.title} by ${song.artist}`
+                mostVisitedDay: activity.mostVisitedDay,
+                recommendation: songData
+                    ? `${songData.Title} by ${songData.Artist}`
                     : "추천할 노래가 없습니다.",
             },
         });

@@ -3,6 +3,7 @@ const axios = require("axios");
 const fs = require("fs");
 const path = require("path");
 const { User, UserActivity } = require("../models");
+const {getRandomSong} = require("../services/songService");
 
 require("dotenv").config();
 
@@ -87,14 +88,18 @@ router.get("/callback", async (req, res) => {
         await UserActivity.findOrCreate({
             where: { user_id: user.id },
             defaults: {
-                visit_count: 0,
-                most_visited_day: null,
+                visit_count: 1,
             },
         });
 
+        // 추천 노래 가져오기
+        const songData = await getRandomSong(req); //랜덤 노래 생성
+
         // 세션에 사용자 정보 저장
         req.session.user = { userId: user.id, name: user.name, email: user.email };
-        console.log(req.session.user); // 세션에 저장된 사용자 정보 확인
+        req.session.songData = songData; // 세션에 저장
+    
+        console.log(req.session.user, req.session.songData); // 세션에 저장된 사용자 정보 확인
 
 
         // 로그인 성공 후 홈으로 리다이렉트

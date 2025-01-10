@@ -1,8 +1,9 @@
 const express = require("express");
 const axios = require("axios");
 const { User, UserActivity } = require("../models");
+const { getRandomSong } = require("../services/songService"); // 랜덤 노래 생성 서비스 추가
 
-require("dotenv").config(); 
+require("dotenv").config();
 
 const router = express.Router();
 
@@ -33,7 +34,6 @@ router.get("/callback", async (req, res) => {
                     code: code,
                 },
                 headers: { "Content-Type": "application/x-www-form-urlencoded" },
-
             }
         );
 
@@ -44,32 +44,37 @@ router.get("/callback", async (req, res) => {
             headers: { Authorization: `Bearer ${access_token}` },
         });
 
-        const { id } = userResponse.data; //kakao 고유 사용자 ID
-        const { nickname } = userResponse.data.properties;
+        const kakaoId = userResponse.data.id; // Kakao 고유 사용자 ID
+        const name = userResponse.data.properties?.nickname || `User_${kakaoId}`; // 닉네임 기본값 처리
 
-        // 사용자 정보 저장 또는 업데이트 (Sequelize)
+        // 사용자 정보 저장 또는 업데이트
         const [user] = await User.findOrCreate({
-            where: { social_id: id, social_provider: "kakao" },
-            defaults: { name: nickname },
+            where: { social_id: kakaoId, social_provider: "kakao" },
+            defaults: { name },
         });
 
         // 사용자 활동 데이터가 없으면 생성
         await UserActivity.findOrCreate({
             where: { user_id: user.id },
             defaults: {
-                visit_count: 0,
-                most_visited_day: null,
+                visit_count: 1, // 첫 로그인 시 방문 횟수 1
             },
         });
 
-        // 세션에 사용자 정보 저장
+        // 추천 노래 가져오기
+        const songData = await getRandomSong(req); // 랜덤 노래 생성
+
+        // 세션에 사용자 및 노래 정보 저장
         req.session.user = { userId: user.id, name: user.name };
+        req.session.songData = songData;
+
+        console.log("세션 확인:", req.session);
 
         // 로그인 성공 후 홈으로 리다이렉트
-        res.redirect("/home");
+        res.redirect("http://localhost:3000/home");
 
     } catch (err) {
-        console.error(err.message);
+        console.error("카카오 로그인 실패:", err.message);
         res.status(500).send("Kakao Authentication Failed");
     }
 });
