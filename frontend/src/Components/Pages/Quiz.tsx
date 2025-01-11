@@ -3,8 +3,9 @@ import styled from "styled-components";
 import { useNavigate } from "react-router-dom"; // React Router로 홈 이동
 import NavBar from "../Templates/Navbar";
 import axios from "axios";
+import { Spinner } from "basic-loading";
 
-interface QuizProps {}
+interface QuizProps { }
 
 interface Question {
     question: string; // 질문 텍스트
@@ -31,9 +32,9 @@ const Quiz = (props: QuizProps) => {
             withCredentials: true,
         })
             .then((res) => {
-                if(!res.data.success){
+                if (!res.data.success) {
                     setSuccess(false);
-                    const {message} = res.data;
+                    const { message } = res.data;
                     setMessage(message);
                 } else {
                     const quizData: Question[] = res.data.quiz; // API에서 받아온 데이터를 설정
@@ -64,69 +65,87 @@ const Quiz = (props: QuizProps) => {
             setShowPopup(true); // 모든 문제를 푼 경우 팝업 표시
         }
     };
-    
+
     const handleClosePopup = () => {
         setShowPopup(false); // 팝업 닫기
         navigate("/home"); // 홈 페이지로 이동
     };
 
-    if (isSuccess && quiz.length === 0) return <p>Loading...</p>; // 로딩 중 처리
+    if (isSuccess && quiz.length === 0) {
+        return (
+
+            <Stage>
+                <Span>문제을 만들고 있어요.</Span>
+                <Span>잠시 기다려주세요.</Span>
+                <Spinner
+                    option={{
+                        size: 50,
+                        bgColor: "#00daaa",
+                        barColor: "rgba(0, 218, 171, 0.44)",
+                    }}
+                />
+            </Stage>
+
+        )
+    }
+
+    ; // 로딩 중 처리
 
     const currentQuestion = quiz[currentIndex]; // 현재 문제
 
     return (
         <QuizContainer>
             {isSuccess ?
-            <QuizDiv>
-                <Question>
-                    <p>{currentQuestion.question}</p>
-                </Question>
-                <OXbuttonDiv>
-                    <OXButton
-                        isCorrect={selectedAnswer === "O" && currentQuestion.answer === "O"}
-                        isWrong={selectedAnswer === "O" && currentQuestion.answer !== "O"}
-                        onClick={() => handleAnswer("O")}
-                        disabled={selectedAnswer !== null}
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96" fill="none">
-                            <circle cx="48" cy="48" r="45.2" stroke="black" strokeWidth="5.6" />
-                        </svg>
-                    </OXButton>
-                    <OXButton
-                        isCorrect={selectedAnswer === "X" && currentQuestion.answer === "X"}
-                        isWrong={selectedAnswer === "X" && currentQuestion.answer !== "X"}
-                        onClick={() => handleAnswer("X")}
-                        disabled={selectedAnswer !== null}
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="90" height="90" viewBox="0 0 90 90" fill="none">
-                            <path
-                                d="M3.39999 3.3999L86.6 86.5999"
-                                stroke="black"
-                                strokeWidth="5.91269"
-                                strokeLinecap="round"
-                            />
-                            <path
-                                d="M86.6 3.3999L3.4 86.5999"
-                                stroke="black"
-                                strokeWidth="5.91269"
-                                strokeLinecap="round"
-                            />
-                        </svg>
-                    </OXButton>
-                </OXbuttonDiv>
-                {showDescription && <Description>{currentQuestion.description}</Description>}
-                <Button onClick={handleNext} disabled={selectedAnswer === null}>
-                    다음
-                </Button>
-            </QuizDiv>
-            :
-            <Popup>
-                <PopupContent>
-                    <p>퀴즈를 생성할 예문이 부족합니다.</p>
-                    <p>예문 생성 후에 다시 시도하세요.</p>
-                    <CloseButton onClick={handleClosePopup}>확인</CloseButton>
-                </PopupContent>
-            </Popup>
+                <QuizDiv>
+                    <Question>
+                        <p>{currentQuestion.question}</p>
+                    </Question>
+                    <OXbuttonDiv>
+                        <OXButton
+                            isCorrect={selectedAnswer === "O" && currentQuestion.answer === "O"}
+                            isWrong={selectedAnswer === "O" && currentQuestion.answer !== "O"}
+                            onClick={() => handleAnswer("O")}
+                            disabled={selectedAnswer !== null}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96" fill="none">
+                                <circle cx="48" cy="48" r="45.2" stroke="black" strokeWidth="5.6" />
+                            </svg>
+                        </OXButton>
+                        <OXButton
+                            isCorrect={selectedAnswer === "X" && currentQuestion.answer === "X"}
+                            isWrong={selectedAnswer === "X" && currentQuestion.answer !== "X"}
+                            onClick={() => handleAnswer("X")}
+                            disabled={selectedAnswer !== null}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="90" height="90" viewBox="0 0 90 90" fill="none">
+                                <path
+                                    d="M3.39999 3.3999L86.6 86.5999"
+                                    stroke="black"
+                                    strokeWidth="5.91269"
+                                    strokeLinecap="round"
+                                />
+                                <path
+                                    d="M86.6 3.3999L3.4 86.5999"
+                                    stroke="black"
+                                    strokeWidth="5.91269"
+                                    strokeLinecap="round"
+                                />
+                            </svg>
+                        </OXButton>
+                    </OXbuttonDiv>
+                    {showDescription && <Description>{currentQuestion.description}</Description>}
+                    <Button onClick={handleNext} disabled={selectedAnswer === null}>
+                        다음
+                    </Button>
+                </QuizDiv>
+                :
+                <Popup>
+                    <PopupContent>
+                        <p>퀴즈를 생성할 예문이 부족합니다.</p>
+                        <p>예문 생성 후에 다시 시도하세요.</p>
+                        <CloseButton onClick={handleClosePopup}>확인</CloseButton>
+                    </PopupContent>
+                </Popup>
             }
             <NavBar currentPage={"quiz"} />
             {showPopup && (
@@ -269,4 +288,19 @@ const CloseButton = styled.button`
     &:hover {
         background: #c9c9c9;
     }
+`;
+
+const Span = styled.span`
+    font-size: 24px;
+    margin: 10px 0;
+`;
+
+const Stage = styled.div`
+    width: 100vw;
+    height: calc(100vh - 100px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
 `;
