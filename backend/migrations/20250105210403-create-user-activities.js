@@ -21,18 +21,8 @@ module.exports = {
             },
             visit_count: {
                 type: Sequelize.INTEGER,
-                defaultValue: 0,
+                defaultValue: 1, // 처음 방문 시 방문 횟수는 1로 설정
             },
-            most_visited_day: {
-                type: Sequelize.STRING,
-            },
-            sunday_count: { type: Sequelize.INTEGER, defaultValue: 0 },
-            monday_count: { type: Sequelize.INTEGER, defaultValue: 0 },
-            tuesday_count: { type: Sequelize.INTEGER, defaultValue: 0 },
-            wednesday_count: { type: Sequelize.INTEGER, defaultValue: 0 },
-            thursday_count: { type: Sequelize.INTEGER, defaultValue: 0 },
-            friday_count: { type: Sequelize.INTEGER, defaultValue: 0 },
-            saturday_count: { type: Sequelize.INTEGER, defaultValue: 0 },
             createdAt: {
                 allowNull: false,
                 type: Sequelize.DATE,
@@ -45,6 +35,7 @@ module.exports = {
             },
         });
 
+        // user_activities 테이블에 외래 키 제약 조건 추가
         await queryInterface.addConstraint('user_activities', {
             fields: ['user_id'],
             type: 'foreign key',
@@ -59,6 +50,7 @@ module.exports = {
     },
 
     async down(queryInterface, Sequelize) {
+        // 테이블 롤백 시 user_activities 테이블 삭제
         await queryInterface.dropTable("user_activities");
     },
 };
