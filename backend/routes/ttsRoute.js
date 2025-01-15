@@ -4,14 +4,17 @@ const { readTextWithTTS } = require("../services/ttsService");
 
 router.post("/tts", async (req, res) => {
     try {
-        // 요청 본문에서 text 추출
-        const { text } = req.body;
+        // 요청 본문에서 text와 speed 추출
+        const { text, speed } = req.body;
         if (!text) {
-            return res.status(400).json({ error: "Text is required" });
+            return res.status(400).json({ error: "텍스트가 필요합니다" });
         }
 
+        // 속도 유효성 검사 (0.1 ~ 2.0 범위)
+        const speakingRate = speed && speed >= 0.1 && speed <= 2.0 ? speed : 0.7;
+
         // TTS 처리
-        const audioContent = await readTextWithTTS(text);
+        const audioContent = await readTextWithTTS(text, speakingRate);
 
         // 응답으로 MP3 데이터 전송
         res.json({ audioContent: audioContent.toString("base64") });

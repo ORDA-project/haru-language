@@ -29,7 +29,8 @@ app.use(cors(corsConfig));
 
 app.use(
   cors({
-    origin: "http://localhost:8000", // 프런트엔드 도메인
+    origin: "http://localhost:3000", // 프런트엔드 도메인
+    methods: ['GET', 'POST', 'PUT', 'DELETE'], // 허용할 HTTP 메서드
     credentials: true, // 쿠키를 사용하려면 이 옵션도 활성화
   })
 );
@@ -73,11 +74,11 @@ app.use((req, res, next) => {
 app.use("/auth", socialLoginRoutes);
 app.use("/home", homeRoutes);
 app.use('/songLyric', songLyricRoutes);
-// app.use("/songYoutube", songYoutubeRoutes);
+app.use("/songYoutube", songYoutubeRoutes);
 app.use("/example", exampleRoutes);
 app.use("/question", questionRoutes);
 app.use("/recommand", recommandRoutes);
-app.use("/quiz", quizRoute);
+app.use("/quiz", quizRoutes);
 app.use("/api", ttsRoutes);
 
 // 상태 확인용 홈 라우트

@@ -25,16 +25,38 @@ router.get("/check", (req, res) => {
 
 // 로그아웃 라우트
 // 로그아웃 코드를 따로 팔지 아니면 묶을지 못 정해서 일단 여기 뒀습니다...!
-router.get("/logout", (req, res) => {
-    req.session.destroy((err) => {
-        if (err) {
-            console.error("세션 삭제 실패:", err);
-            return res.status(500).send("Failed to log out.");
+router.get("/logout", async (req, res) => {
+    try {
+        // (선택) OAuth 토큰 무효화
+        const accessToken = req.session.token; // 저장된 토큰
+        if (accessToken) {
+            await axios.post(
+                "https://kapi.kakao.com/v1/user/logout",
+                {},
+                { headers: { Authorization: `Bearer ${accessToken}` } }
+            );
         }
-        res.clearCookie("user_sid"); // 세션 쿠키 삭제
-        res.send("Logged out successfully."); //일단 간단한 문구로 실행 확인
-        // res.redirect("/"); //로그아웃 후 처음으로 리다이렉트
-    });
+
+        // 세션 삭제
+        req.session.destroy((err) => {
+            if (err) {
+                console.error("세션 삭제 실패:", err);
+                return res.status(500).send("Failed to log out.");
+            }
+            // 클라이언트 쿠키 삭제
+            res.clearCookie("user_sid");
+
+            // 캐시 제거 (선택)
+            res.setHeader("Cache-Control", "no-store");
+            res.setHeader("Pragma", "no-cache");
+
+            // 로그아웃 성공 메시지 또는 리다이렉트
+            res.redirect("/"); // 로그아웃 후 기본 페이지로 이동
+        });
+    } catch (error) {
+        console.error("로그아웃 처리 실패:", error);
+        res.status(500).send("Failed to log out.");
+    }
 });
 
 module.exports = router;

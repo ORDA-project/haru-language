@@ -7,9 +7,10 @@ const ttsClient = new textToSpeech.TextToSpeechClient();
 /**
  * 텍스트 데이터를 받아 TTS로 변환 후 MP3 데이터 반환
  * @param {string} text - 변환할 텍스트
+ * @param {number} speed - 말하기 속도 (기본: 0.7)
  * @returns {Buffer} - MP3 음성 데이터
  */
-async function readTextWithTTS(text) {
+async function readTextWithTTS(text, speed = 0.7) {
   try {
     // Google TTS 요청 구성
     const request = {
@@ -21,6 +22,7 @@ async function readTextWithTTS(text) {
       },
       audioConfig: {
         audioEncoding: "MP3", // MP3 형식으로 변환
+        speakingRate: speed,
       },
     };
 
