@@ -48,8 +48,6 @@ const Home = ({ Login = true }: HomeProps) => {
           mostVisitedDay={mostVisitedDay}
           recommendation={recommendation}
         />
-        {/* 예시 데이터 */}
-        {/* <HomeInfo userName={"진희"} visitCount={10} mostVisitedDay={"월요일"} recommendation={"Santa Tell Me by Ariana Grande"}/> */}
         <StatusCheck />
       </HomeDiv>
       <NavBar currentPage={"Home"} />
