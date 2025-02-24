@@ -21,15 +21,15 @@ const HomeInfo = ({
 
   const [isPopupVisible, setIsPopupVisible] = useState(false);
 
-  const openPopup = () => setIsPopupVisible(true);
-  const closePopup = () => setIsPopupVisible(false);
+  // const openPopup = () => setIsPopupVisible(true);
+  // const closePopup = () => setIsPopupVisible(false);
 
-  const quoteData = {
-    quote:
-      "The only limit to our realization of tomorrow is our doubts of today.",
-    translation: "내일 실현의 유일한 한계는 오늘의 의심이다.",
-    source: "Franklin D. Roosevelt",
-  };
+  // const quoteData = {
+  //   quote:
+  //     "The only limit to our realization of tomorrow is our doubts of today.",
+  //   translation: "내일 실현의 유일한 한계는 오늘의 의심이다.",
+  //   source: "Franklin D. Roosevelt",
+  // };
 
   useEffect(() => {
     if (isPopupVisible) {
@@ -52,120 +52,35 @@ const HomeInfo = ({
           오늘로 벌써 <StyledSpan>3번째</StyledSpan> 방문하셨어요.
         </Text>
       </div>
-      <Alarm>
-        <div>
-          <div
-            style={{ fontSize: "16px", fontWeight: 700, lineHeight: "150%" }}
-          >
-            {mostVisitedDay} 알람 바로가기
-          </div>
-          <div style={{ fontSize: "11px", lineHeight: "150%" }}>
-            <span>
-              {userName}님은 하루언어를
-              <br /> {mostVisitedDay}금요일에 자주 이용하시는군요!
-            </span>
-          </div>
-        </div>
-        <div>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="22"
-            height="17"
-            viewBox="0 0 22 17"
-            fill="none"
-          >
-            <path
-              d="M2 7.4C1.39249 7.4 0.9 7.89249 0.9 8.5C0.9 9.10751 1.39249 9.6 2 9.6V7.4ZM20.7778 9.27782C21.2074 8.84824 21.2074 8.15176 20.7778 7.72218L13.7775 0.721825C13.3479 0.292249 12.6514 0.292249 12.2218 0.721825C11.7922 1.1514 11.7922 1.84788 12.2218 2.27746L18.4444 8.5L12.2218 14.7225C11.7922 15.1521 11.7922 15.8486 12.2218 16.2782C12.6514 16.7078 13.3479 16.7078 13.7775 16.2782L20.7778 9.27782ZM2 9.6H20V7.4H2V9.6Z"
-              fill="black"
-              fill-opacity="0.6"
-            />
-          </svg>
-        </div>
-      </Alarm>
-      <Quote onClick={openPopup}>
-        <div style={{ width: "180px" }}>
-          <div
-            style={{
-              fontSize: "16px",
-              fontWeight: 700,
-              lineHeight: "150%",
-              margin: "20px 0",
-            }}
-          >
-            <span>오늘의 추천 명언</span>
-          </div>
-          <Content>
-            <span>"The only limit to our realization of... of today."</span>
-          </Content>
-        </div>
-        <Icon>
-          <div style={{ top: "0", left: "-50px" }}>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="80"
-              height="70"
-              viewBox="0 0 80 70"
-              fill="none"
-            >
-              <path
-                d="M31.77 14.27C24.835 21.2 21.73 28.07 20.57 36.03C22.5186 35.0671 24.7278 34.7654 26.8632 35.1703C28.9986 35.5753 30.9439 36.6649 32.4047 38.2743C33.8655 39.8837 34.7621 41.9252 34.9589 44.0898C35.1557 46.2543 34.6419 48.424 33.4954 50.2705C32.3488 52.1169 30.6319 53.5396 28.6045 54.323C26.5771 55.1064 24.3497 55.208 22.2595 54.6124C20.1692 54.0167 18.3299 52.7563 17.02 51.0218C15.7102 49.2874 15.001 47.1735 15 45C15.005 32.04 17.64 21.33 28.235 10.73C28.7044 10.2606 29.3411 9.99684 30.005 9.99684C30.6689 9.99684 31.3056 10.2606 31.775 10.73C32.2444 11.1994 32.5081 11.8361 32.5081 12.5C32.5081 13.1639 32.2394 13.8006 31.77 14.27ZM61.775 14.27C54.84 21.2 51.73 28.07 50.575 36.03C52.524 35.0683 54.7332 34.7677 56.8683 35.1738C59.0034 35.5798 60.948 36.6704 62.4079 38.2804C63.8678 39.8903 64.7635 41.9321 64.9593 44.0966C65.1551 46.2611 64.6405 48.4305 63.4932 50.2764C62.346 52.1222 60.6286 53.5441 58.6011 54.3268C56.5736 55.1094 54.3463 55.2102 52.2563 54.6139C50.1664 54.0176 48.3276 52.7567 47.0183 51.022C45.709 49.2873 45.0005 47.1733 45 45C45.005 32.04 47.64 21.33 58.235 10.73C58.7044 10.2606 59.3411 9.99684 60.005 9.99684C60.6689 9.99684 61.3056 10.2606 61.775 10.73C62.2444 11.1994 62.5081 11.8361 62.5081 12.5C62.5081 13.1639 62.2444 13.8006 61.775 14.27Z"
-                fill="#FFA6A8"
-              />
-            </svg>
-          </div>
-          <div style={{ top: "-40px", left: "20px" }}>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="80"
-              height="80"
-              viewBox="0 0 80 80"
-              fill="none"
-            >
-              <path
-                d="M48.23 55.73C55.165 48.8 58.27 41.93 59.43 33.97C57.4814 34.9329 55.2722 35.2346 53.1368 34.8297C51.0014 34.4247 49.0561 33.3351 47.5953 31.7257C46.1345 30.1163 45.2379 28.0748 45.0411 25.9102C44.8443 23.7457 45.3581 21.576 46.5046 19.7295C47.6512 17.8831 49.3681 16.4604 51.3955 15.677C53.4229 14.8936 55.6503 14.792 57.7405 15.3876C59.8308 15.9833 61.6701 17.2437 62.98 18.9782C64.2898 20.7126 64.999 22.8265 65 25C64.995 37.96 62.36 48.67 51.765 59.27C51.2956 59.7394 50.6589 60.0032 49.995 60.0032C49.3311 60.0032 48.6944 59.7394 48.225 59.27C47.7556 58.8006 47.4919 58.1639 47.4919 57.5C47.4919 56.8361 47.7606 56.1994 48.23 55.73ZM18.225 55.73C25.16 48.8 28.27 41.93 29.425 33.97C27.476 34.9317 25.2668 35.2323 23.1317 34.8262C20.9966 34.4202 19.052 33.3296 17.5921 31.7196C16.1322 30.1097 15.2365 28.0679 15.0407 25.9034C14.8449 23.7389 15.3595 21.5695 16.5068 19.7236C17.654 17.8778 19.3714 16.4559 21.3989 15.6732C23.4264 14.8906 25.6537 14.7898 27.7437 15.3861C29.8336 15.9824 31.6724 17.2433 32.9817 18.978C34.291 20.7127 34.9995 22.8267 35 25C34.995 37.96 32.36 48.67 21.765 59.27C21.2956 59.7394 20.6589 60.0032 19.995 60.0032C19.3311 60.0032 18.6944 59.7394 18.225 59.27C17.7556 58.8006 17.4919 58.1639 17.4919 57.5C17.4919 56.8361 17.7556 56.1994 18.225 55.73Z"
-                fill="#FCC21B"
-              />
-            </svg>
-          </div>
-        </Icon>
-      </Quote>
-      {isPopupVisible && (
-        <PopupOverlay onClick={closePopup}>
-          <PopupContent onClick={(e) => e.stopPropagation()}>
-            <CloseButton onClick={closePopup}>X</CloseButton>
-            <SpeakerIcon>
-              <img src={speaker} alt="Speaker Icon" />
-            </SpeakerIcon>
-            <QuoteText>{quoteData.quote}</QuoteText>
-            <Translation>{quoteData.translation}</Translation>
-            <Source>{quoteData.source}</Source>
-            <DownloadButton>
-              <img src={download} alt="Download Icon" />
-              다운로드
-            </DownloadButton>
-          </PopupContent>
-        </PopupOverlay>
-      )}
+      <OneLine>
+        <Title style={{ backgroundColor: "#00E8B6" }}>
+          <span>오늘의 한줄 영어</span>
+        </Title>
+        <Content1>
+          <div>Have you ever played a game?</div>
+          <div>게임을 해 본 적이 있어?</div>
+        </Content1>
 
+        <OnelineIcon>
+          <Div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="27" height="22" viewBox="0 0 27 22" fill="none">
+            <path d="M2 9.40005C1.2268 9.40005 0.6 10.0269 0.6 10.8C0.6 11.5732 1.2268 12.2 2 12.2L2 9.40005ZM26.0899 11.79C26.6367 11.2433 26.6367 10.3568 26.0899 9.8101L17.1804 0.900555C16.6337 0.353821 15.7472 0.353821 15.2005 0.900555C14.6538 1.44729 14.6538 2.33372 15.2005 2.88045L23.1201 10.8001L15.2005 18.7196C14.6538 19.2664 14.6538 20.1528 15.2005 20.6995C15.7472 21.2463 16.6337 21.2463 17.1804 20.6995L26.0899 11.79ZM2 12.2L25.1 12.2001L25.1 9.40005L2 9.40005L2 12.2Z" fill="black" />
+          </svg>
+          </Div>
+        </OnelineIcon>
+      </OneLine>
       <SongRecommend
         onClick={() => {
           navigate("/song-recommend");
         }}
       >
         <div style={{ width: "180px" }}>
-          <div
-            style={{
-              fontSize: "16px",
-              fontWeight: 700,
-              lineHeight: "150%",
-              margin: "20px 0",
-            }}
-          >
+          <Title>
             <span>오늘의 추천 팝송</span>
-          </div>
-          <Content>
+          </Title>
+          <Content2>
             <span>{recommendation}</span>
-          </Content>
+          </Content2>
         </div>
         <Icon>
           <div style={{ top: "10px", left: "-60px" }}>
@@ -295,7 +210,26 @@ const HomeInfo = ({
 
 export default HomeInfo;
 
-const Div = styled.div``;
+const Div = styled.div`
+  border-radius: 70px; 
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.00) 0%, #00DAAA 100%);
+  width: 50%; 
+  height: 50px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+
+  & svg {
+    transform: translateX(-15px);
+  }
+`;
+
+const Title = styled.div`
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 150%;
+  // margin: 20px 0;
+`;
 
 const Text = styled.p`
   font-size: 24px;
@@ -304,7 +238,25 @@ const Text = styled.p`
   margin: 20px 0;
 `;
 
-const Content = styled.div`
+const Content1 = styled.div`
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 150%;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 20px 0;
+  line-height: 30px;
+  max-height: 90px;
+  display: flex;
+  flex-direction: column;
+
+  // & div {
+  //   padding: 3px 0;
+  // }
+`;
+
+const Content2 = styled.div`
   font-size: 22px;
   font-weight: 700;
   line-height: 150%;
@@ -321,35 +273,17 @@ const StyledSpan = styled.span`
   font-weight: 700;
 `;
 
-const Alarm = styled.div`
+const OnelineIcon = styled.div`
+  width: 100%;
   display: flex;
-  padding: 10px 20px;
-  justify-content: space-between;
-  align-items: center;
-  border-radius: 20px;
-  background: #d2deed;
-  box-shadow: 0px 3px 7px 2px rgba(0, 0, 0, 0.05);
-  margin: 20px 0;
+  flex-direction: column;
+  align-items: flex-end;
 `;
-
-const Quote = styled.div`
-  height: 120px;
-  display: flex;
-  padding: 0 20px;
-  justify-content: space-between;
-  align-items: center;
-  border-radius: 20px;
-  background: #fff;
-  box-shadow: 0px 3px 7px 2px rgba(0, 0, 0, 0.05);
-  margin: 20px 0;
-`;
-
-const QuoteIcon = styled.div``;
 
 const SongRecommend = styled.div`
   height: 120px;
   display: flex;
-  padding: 0 20px;
+  padding: 20px;
   justify-content: space-between;
   align-items: center;
   border-radius: 20px;
@@ -377,94 +311,17 @@ const StudyStatus = styled.div`
   box-shadow: 0px 3px 7px 2px rgba(0, 0, 0, 0.05);
   margin: 20px 0;
 `;
-const PopupOverlay = styled.div`
-  position: fixed; /* 화면 전체를 덮도록 고정 */
-  top: 0;
-  left: 0;
-  width: 100%; /* 화면 전체 너비 */
-  height: 100%; /* 화면 전체 높이 */
-  background: rgba(0, 0, 0, 0.5); /* 반투명 검정 배경 */
-  display: flex;
-  justify-content: center; /* 팝업을 수평 중앙에 배치 */
-  align-items: center; /* 팝업을 수직 중앙에 배치 */
-  z-index: 1000; /* 다른 요소 위에 표시 */
-`;
 
-const PopupContent = styled.div`
-  background: linear-gradient(180deg, #fff0a7, #90eed9);
-  padding: 20px 30px;
+const OneLine = styled.div`
+  height: 200px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: flex-start;
+  padding: 20px;
   border-radius: 20px;
-  width: 300px;
-  text-align: center;
-  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.25);
-  position: relative;
-`;
-
-const CloseButton = styled.button`
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  background: transparent;
-  border: none;
-  font-size: 18px;
-  cursor: pointer;
-  font-weight: bold;
-  color: #333;
-
-  &:hover {
-    color: #ff0000;
-  }
-`;
-
-const SpeakerIcon = styled.div`
-  margin: 0 auto 10px;
-  width: 51px;
-  height: 51px;
-
-  svg {
-    width: 100%;
-    height: 100%;
-  }
-`;
-
-const QuoteText = styled.p`
-  font-size: 18px;
-  font-weight: 700;
-  margin: 10px 0;
-  color: #333;
-`;
-
-const Translation = styled.p`
-  font-size: 14px;
-  margin: 5px 0 15px;
-  color: #555;
-`;
-
-const Source = styled.p`
-  font-size: 12px;
-  color: #888;
-  margin-bottom: 20px;
-`;
-
-const DownloadButton = styled.button`
-  display: flex;
-  align-items: center;
-  justify-content: center; /* 오른쪽으로 정렬 */
-  gap: 8px; /* 아이콘과 텍스트 간격 */
-  background: transparent;
-  border: none;
-  font-size: 14px;
-  color: #333;
-  font-weight: 600;
-  cursor: pointer;
-  width: 100%; /* 버튼이 전체 너비를 차지하도록 설정 */
-
-  img {
-    width: 20px; /* 아이콘 크기 조정 */
-    height: 20px;
-  }
-
-  &:hover {
-    color: #007bff;
-  }
+  background: #fff;
+  box-shadow: 0px 3px 7px 2px rgba(0, 0, 0, 0.05);
+  margin: 20px 0;
+  border: 4px solid #00DAAA;
 `;
