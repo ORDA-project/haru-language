@@ -11,10 +11,9 @@ const exampleRoutes = require("./routes/exampleRoute");
 const questionRoutes = require("./routes/questionRoute");
 const ttsRoutes = require("./routes/ttsRoute");
 const recommandRoutes = require("./routes/recommandRoute");
-const songLyricRoutes = require('./routes/songLyricRoute');
+const songLyricRoutes = require("./routes/songLyricRoute");
 const songYoutubeRoutes = require("./routes/songYoutubeRoute");
 const quizRoutes = require("./routes/quizRoute");
-
 
 const { sequelize } = require("./models");
 
@@ -30,7 +29,7 @@ app.use(cors(corsConfig));
 app.use(
   cors({
     origin: "http://localhost:3000", // 프런트엔드 도메인
-    methods: ['GET', 'POST', 'PUT', 'DELETE'], // 허용할 HTTP 메서드
+    methods: ["GET", "POST", "PUT", "DELETE"], // 허용할 HTTP 메서드
     credentials: true, // 쿠키를 사용하려면 이 옵션도 활성화
   })
 );
@@ -73,7 +72,7 @@ app.use((req, res, next) => {
 // 라우트 설정
 app.use("/auth", socialLoginRoutes);
 app.use("/home", homeRoutes);
-app.use('/songLyric', songLyricRoutes);
+app.use("/songLyric", songLyricRoutes);
 app.use("/songYoutube", songYoutubeRoutes);
 app.use("/example", exampleRoutes);
 app.use("/question", questionRoutes);

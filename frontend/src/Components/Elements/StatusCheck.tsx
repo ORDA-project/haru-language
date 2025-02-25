@@ -4,8 +4,7 @@ import { useNavigate } from "react-router-dom";
 interface StatusProps {}
 
 const StatusCheck = (props: StatusProps) => {
-
-    const navigate = useNavigate();
+  const navigate = useNavigate();
 
   const progressRecords = [
     {
