@@ -76,71 +76,41 @@ router.get("/callback", async (req, res) => {
             defaults: { name, email },
         });
 
-        // 이름과 이메일 업데이트 (기존 사용자일 경우)
         if (!userCreated) {
             user.name = name;
             user.email = email;
             await user.save();
         }
 
-        // 방문 기록 업데이트 로직
-        const today = new Date();
-        today.setHours(0, 0, 0, 0); // 오늘 자정으로 설정
-
-        // 오늘 날짜의 방문 기록 확인
-        let visitCount = 1; // 기본 방문 횟수
-        const userActivity = await UserActivity.findOne({
-            where: {
-                user_id: user.id,
-                createdAt: {
-                    [Op.gte]: today, // 오늘 이후 데이터만 조회
-                    [Op.lt]: new Date(today.getTime() + 24 * 60 * 60 * 1000), // 내일 자정 이전까지
-                },
-            },
-        });
-
-        if (!userActivity) {
-            const newUserActivity = await UserActivity.create({
-                user_id: user.id,
-                visit_count: 1,
-            });
-            visitCount = newUserActivity.visit_count; // 새로 생성된 방문 횟수
-        } else {
-            visitCount = userActivity.visit_count; // 기존 방문 횟수
-            console.log("오늘 이미 방문 기록이 존재합니다. visit_count는 증가하지 않습니다.");
-        }
+        // 방문 기록 업데이트 (하루 00:00 기준)
+        const userActivity = await UserActivity.updateVisit(user.id);
+        const visitCount = userActivity.visit_count;
 
         // 최다 방문 요일 계산
-        const activities = await UserActivity.findAll({
-            where: { user_id: user.id },
-            attributes: ["createdAt"], // createdAt 필드만 가져오기
-        });
+        const mostVisitedDaysData = await UserActivity.getMostVisitedDays(user.id);
+        const mostVisitedDays = mostVisitedDaysData.mostVisitedDays.join(", "); 
 
-        const dayCounts = activities.reduce((counts, activity) => {
-            const day = new Date(activity.createdAt).toLocaleDateString("en-US", { weekday: "long" });
-            counts[day] = (counts[day] || 0) + 1;
-            return counts;
-        }, {});
-
-        const maxVisits = Math.max(...Object.values(dayCounts)); // 가장 높은 방문 횟수
-        const mostVisitedDays = Object.keys(dayCounts).filter(day => dayCounts[day] === maxVisits);
-
-        // 세션에 사용자 정보 및 방문 데이터 저장
+        // 세션에 사용자 정보 저장
         req.session.user = {
             userId: user.id,
             name: user.name,
             email: user.email,
-            visitCount: visitCount, // visitCount 변수 사용
-            mostVisitedDays: mostVisitedDays.join(", "), // 최다 방문 요일
+            visitCount: visitCount, 
+            mostVisitedDays: mostVisitedDays, 
         };
 
         // 추천 노래 가져오기
-        const songData = await getRandomSong(req); // 랜덤 노래 생성
+        const songData = await getRandomSong(req);
         req.session.songData = songData; // 세션에 저장
 
-        console.log(req.session.user, req.session.songData); // 세션에 저장된 사용자 정보 확인
-
-        // 로그인 성공 후 홈으로 리다이렉트
+        // 추가 정보 입력 안 했으면 리디렉트
+        /*
+        if (!user.gender || !user.goal) {
+            return res.redirect("http://localhost:3000/userdetails");
+        } 
+        */
+        
+        // 로그인 성공 후 홈으로 리디렉트
         res.redirect("http://localhost:3000/home");
 
     } catch (err) {
