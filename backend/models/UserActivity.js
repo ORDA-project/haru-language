@@ -1,111 +1,118 @@
-const { DataTypes, Op } = require('sequelize');
-const sequelize = require('../db'); // 데이터베이스 연결을 위한 Sequelize 인스턴스 가져오기
+const { DataTypes, Op } = require("sequelize");
+const sequelize = require("../db");
 
 const UserActivity = sequelize.define("UserActivity", {
-  id: {
-    type: DataTypes.INTEGER,
-    primaryKey: true,
-    autoIncrement: true, // 자동 증가 ID
-  },
-  user_id: {
-    type: DataTypes.INTEGER,
-    allowNull: false, // 필수 입력 값
-    references: {
-      model: "users", // 참조할 테이블 이름
-      key: "id", // 참조할 테이블의 필드
+    id: {
+        type: DataTypes.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
     },
-  },
-  visit_count: {
-    type: DataTypes.INTEGER,
-    defaultValue: 1, // 초기 방문 횟수를 1로 설정
-  },
-  createdAt: {
-    type: DataTypes.DATE,
-    allowNull: false,
-    defaultValue: sequelize.literal('CURRENT_TIMESTAMP'), // 생성 시 자동으로 현재 시간 설정
-  },
-  updatedAt: {
-    type: DataTypes.DATE,
-    allowNull: false,
-    defaultValue: sequelize.literal('CURRENT_TIMESTAMP'),
-  },
+    user_id: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+            model: "users",
+            key: "id",
+        },
+        onDelete: "CASCADE",
+    },
+    visit_count: {
+        type: DataTypes.INTEGER,
+        defaultValue: 1,
+    }
 }, {
-  tableName: "user_activities", // 데이터베이스 테이블 이름 명시
-  timestamps: true, // createdAt 및 updatedAt 자동 관리
+    tableName: "user_activities",
+    timestamps: true, 
+    underscored: false,
 });
 
-// 방문 횟수 업데이트 또는 새로운 방문 기록 생성 함수
+// 방문 횟수 업데이트 함수 (하루 00:00 기준)
 UserActivity.updateVisit = async function (userId) {
-  // 오늘 날짜를 기준으로 데이터를 검색
-  const today = new Date();
-  today.setHours(0, 0, 0, 0); // 시간을 0으로 설정해 날짜만 비교
+    // 오늘 날짜 (00:00 기준)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // 오늘 00:00:00 기준
 
-  const userActivity = await UserActivity.findOne({
-    where: {
-      user_id: userId,
-      createdAt: {
-        [Op.gte]: today, // 오늘 이후 생성된 기록 검색
-      },
-    },
-  });
+    // 사용자의 마지막 방문 기록 조회
+    const lastActivity = await UserActivity.findOne({
+        where: { user_id: userId },
+        order: [["createdAt", "DESC"]], // 최신 방문 기록 조회
+    });
 
-  if (userActivity) {
-    // 오늘 이미 방문한 기록이 있다면 visit_count 증가
-    userActivity.visit_count += 1;
-    await userActivity.save();
-    console.log("오늘 이미 방문한 기록 업데이트:", userActivity);
-    return userActivity;
-  }
+    if (lastActivity) {
+        // 마지막 방문 날짜 가져오기 (00:00 기준)
+        const lastVisitDate = new Date(lastActivity.createdAt);
+        lastVisitDate.setHours(0, 0, 0, 0); // 마지막 방문 날짜 00:00 기준
 
-  // 오늘 첫 방문이라면 새 기록 생성
-  const newUserActivity = await UserActivity.create({
-    user_id: userId,
-    visit_count: 1,
-  });
-  console.log("새로운 방문 기록 생성:", newUserActivity);
-  return newUserActivity;
+        // 마지막 방문 날짜와 오늘 날짜를 비교하여 문자열 형태로 비교 (타임존 이슈 방지)
+        if (lastVisitDate.toDateString() === today.toDateString()) {
+            console.log(`같은 날 방문: visit_count 유지 (${lastActivity.visit_count})`);
+            return lastActivity;
+        }
+
+        // 새로운 날이 되면 visit_count 증가
+        const newVisit = await UserActivity.create({
+            user_id: userId,
+            visit_count: lastActivity.visit_count + 1, // 기존 visit_count +1
+        });
+        console.log(`다음 날 방문: visit_count 증가 (${newVisit.visit_count})`);
+        return newVisit;
+    }
+
+    // 첫 로그인이라면 visit_count = 1로 설정
+    const firstVisit = await UserActivity.create({
+        user_id: userId,
+        visit_count: 1,
+    });
+    console.log("첫 로그인: visit_count = 1");
+    return firstVisit;
 };
 
 // 사용자가 가장 많이 방문한 요일 계산 함수
 UserActivity.getMostVisitedDays = async function (userId) {
-  // 해당 사용자의 모든 활동 기록 가져오기
-  const activities = await UserActivity.findAll({
-    where: { user_id: userId },
-    attributes: ['createdAt'], // createdAt 필드만 가져오기
-  });
+    // 사용자의 모든 방문 기록 가져오기
+    const activities = await UserActivity.findAll({
+        where: { user_id: userId },
+        attributes: ["createdAt"], // 방문 날짜만 가져오기
+    });
 
-  // 요일별 방문 횟수 계산
-  const dayCounts = activities.reduce((counts, activity) => {
-    // createdAt을 로컬 시간으로 변환
-    const localTime = new Date(activity.createdAt).toLocaleString("en-US", { timeZone: "Asia/Seoul" });
-    const day = new Date(localTime).toLocaleDateString("en-US", { weekday: "long" });
-    counts[day] = (counts[day] || 0) + 1;
-    return counts;
-  }, {});
+    // 요일별 방문 횟수 계산
+    const dayCounts = activities.reduce((counts, activity) => {
+        const visitDate = new Date(activity.createdAt);
+        const formatter = new Intl.DateTimeFormat("en-US", { weekday: "long", timeZone: "Asia/Seoul" });
+        const day = formatter.format(visitDate); // 한국 시간 기준으로 요일 변환
 
-  // 최다 방문 요일 계산
-  const maxVisits = Math.max(...Object.values(dayCounts)); // 가장 높은 방문 횟수
-  const mostVisitedDays = Object.keys(dayCounts).filter(day => dayCounts[day] === maxVisits);
+        counts[day] = (counts[day] || 0) + 1;
+        return counts;
+    }, {});
 
-  return {
-    mostVisitedDays, // 최다 방문 요일 (복수 가능)
-    visitCounts: maxVisits, // 최다 방문 요일의 방문 횟수
-  };
+    console.log("요일별 방문 횟수:", dayCounts);
+
+    // 가장 많이 방문한 요일 찾기
+    const maxVisits = Math.max(...Object.values(dayCounts)); // 가장 높은 방문 횟수
+    const mostVisitedDays = Object.keys(dayCounts).filter(day => dayCounts[day] === maxVisits); // 가장 많이 방문한 요일 찾기
+
+    return {
+        mostVisitedDays, // 최다 방문 요일 (여러 개 가능)
+        visitCounts: dayCounts, // 요일별 방문 횟수
+    };
 };
 
 // 특정 요일의 방문 횟수를 계산하는 함수
 UserActivity.getDayCount = async function (userId, day) {
-  // 해당 사용자의 모든 활동 기록 가져오기
-  const activities = await UserActivity.findAll({
-    where: { user_id: userId },
-    attributes: ['createdAt'], // createdAt 필드만 가져오기
-  });
+    // 해당 사용자의 모든 활동 기록 가져오기
+    const activities = await UserActivity.findAll({
+        where: { user_id: userId },
+        attributes: ["createdAt"], 
+    });
 
-  // 주어진 요일 방문 횟수 계산
-  return activities.reduce((count, activity) => {
-    const activityDay = new Date(activity.createdAt).toLocaleDateString("en-US", { weekday: "long" });
-    return activityDay === day ? count + 1 : count;
-  }, 0);
+    // 주어진 요일 방문 횟수 계산
+    return activities.reduce((count, activity) => {
+        const visitDate = new Date(activity.createdAt);
+        const formatter = new Intl.DateTimeFormat("en-US", { weekday: "long", timeZone: "Asia/Seoul" });
+        const activityDay = formatter.format(visitDate); // 한국 시간 기준 변환
+
+        return activityDay === day ? count + 1 : count;
+    }, 0);
 };
 
 module.exports = UserActivity;

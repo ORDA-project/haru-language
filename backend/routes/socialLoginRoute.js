@@ -41,17 +41,18 @@ router.get("/logout", async (req, res) => {
         req.session.destroy((err) => {
             if (err) {
                 console.error("세션 삭제 실패:", err);
-                return res.status(500).send("Failed to log out.");
+                return res.status(500).send("로그아웃 실패");
             }
             // 클라이언트 쿠키 삭제
             res.clearCookie("user_sid");
 
-            // 캐시 제거 (선택)
+            // 캐시 제거
             res.setHeader("Cache-Control", "no-store");
             res.setHeader("Pragma", "no-cache");
 
             // 로그아웃 성공 메시지 또는 리다이렉트
-            res.redirect("/"); // 로그아웃 후 기본 페이지로 이동
+            console.log(`로그아웃 성공`);
+            res.redirect("http://localhost:3000"); // 로그아웃 후 기본 페이지로 이동
         });
     } catch (error) {
         console.error("로그아웃 처리 실패:", error);
