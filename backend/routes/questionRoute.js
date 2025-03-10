@@ -1,17 +1,14 @@
 const express = require("express");
-const { getAnswer } = require("../services/gptService");
-const {
-  getQuestionsAndAnswersByUserId,
-} = require("../services/historyService");
+const { getAnswer } = require("../services/questionService");
+const { getQuestionsAndAnswersByUserId } = require("../services/historyService");
 require("dotenv").config({ path: "../.env" });
 
 const router = express.Router();
 
+// 질문 → GPT 답변 생성 API
 router.post("/", async (req, res) => {
   const { userId } = req.session.user;
-  console.log(userId);
   const { question } = req.body;
-  console.log("Request received:", { userId, question });
 
   if (!userId || !question) {
     return res.status(400).json({ message: "userId와 question은 필수입니다." });
@@ -19,17 +16,14 @@ router.post("/", async (req, res) => {
 
   try {
     const result = await getAnswer(question, userId);
-    console.log("Answer generated:", result);
-
-    res.send({
-      answer: result,
-    });
+    res.send({ answer: result });
   } catch (error) {
     console.error("Error generating answer:", error);
     res.status(500).send({ message: "Error generating answer", error });
   }
 });
 
+// 사용자 ID로 질문과 답변 조회 API
 router.get("/:userId", async (req, res) => {
   const { userId } = req.params;
 
@@ -37,9 +31,7 @@ router.get("/:userId", async (req, res) => {
     const questionsAndAnswers = await getQuestionsAndAnswersByUserId(userId);
 
     if (!questionsAndAnswers.length) {
-      return res
-        .status(404)
-        .json({ message: "해당 유저의 질문과 답변이 없습니다." });
+      return res.status(404).json({ message: "해당 유저의 질문과 답변이 없습니다." });
     }
 
     res.status(200).json({

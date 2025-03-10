@@ -8,15 +8,14 @@ require("dotenv").config();
 const corsConfig = require("./config/corsConfig");
 const socialLoginRoutes = require("./routes/socialLoginRoute");
 const homeRoutes = require("./routes/homeRoute");
-const exampleRoutes = require("./routes/exampleRoute");
-const questionRoutes = require("./routes/questionRoute");
 const ttsRoutes = require("./routes/ttsRoute");
-const recommandRoutes = require("./routes/recommandRoute");
 const songLyricRoutes = require('./routes/songLyricRoute');
 const songYoutubeRoutes = require("./routes/songYoutubeRoute");
-const quizRoutes = require("./routes/quizRoute");
 const userdetailsRoutes = require("./routes/userdetailsRoute");
 
+const exampleRoutes = require("./routes/exampleRoute");
+const questionRoutes = require("./routes/questionRoute");
+const writingRoutes = require("./routes/writingRoute");
 
 const { sequelize } = require("./models");
 
@@ -82,11 +81,11 @@ app.use("/home", homeRoutes);
 app.use("/userdetails", userdetailsRoutes);
 app.use('/songLyric', songLyricRoutes);
 app.use("/songYoutube", songYoutubeRoutes);
+app.use("/api", ttsRoutes);
+
 app.use("/example", exampleRoutes);
 app.use("/question", questionRoutes);
-app.use("/recommand", recommandRoutes);
-app.use("/quiz", quizRoutes);
-app.use("/api", ttsRoutes);
+app.use("/writing", writingRoutes);
 
 // 상태 확인용 홈 라우트
 app.get("/", (req, res) => {
