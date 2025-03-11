@@ -1,5 +1,5 @@
 const sequelize = require('../db');
-const { DataTypes } = require('sequelize');
+const { Sequelize } = require("sequelize");
 const Question = require('./Question');
 const Answer = require('./Answer');
 const Example = require('./Example');
@@ -8,9 +8,12 @@ const Dialogue = require('./Dialogue');
 const Song = require('./Song');
 const User = require('./User');
 const UserActivity = require('./UserActivity');
-const Quote = require('./Quote');
 const UserInterest = require("./UserInterest");
 const UserBook = require("./UserBook");
+const WritingQuestion = require("./WritingQuestion");
+const WritingRecord = require("./WritingRecord");
+const WritingExample = require("./WritingExample");
+
 
 // 관계 설정
 Question.hasMany(Answer, { foreignKey: 'question_id', onDelete: 'CASCADE' });
@@ -31,17 +34,24 @@ UserInterest.belongsTo(User, { foreignKey: "user_id" });
 User.hasMany(UserBook, { foreignKey: "user_id", onDelete: "CASCADE" });
 UserBook.belongsTo(User, { foreignKey: "user_id" });
 
+WritingQuestion.hasMany(WritingExample, { foreignKey: "writing_question_id", onDelete: "CASCADE" });
+WritingExample.belongsTo(WritingQuestion, { foreignKey: "writing_question_id" });
+
+
 module.exports = {
     sequelize,
+    Sequelize,
     Question,
     Answer,
     Example,
     ExampleItem,
     Dialogue,
-    Quote,
     Song,
     User,
     UserActivity,
     UserInterest,
     UserBook,
+    WritingQuestion,
+    WritingRecord,
+    WritingExample,
   };

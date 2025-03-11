@@ -1,43 +1,33 @@
 const express = require("express");
 const cors = require("cors");
 const session = require("express-session");
-const MySQLStore = require("express-mysql-session")(session);
-const cookieParser = require("cookie-parser");
 require("dotenv").config();
 
+const MySQLStore = require("express-mysql-session")(session);
+const cookieParser = require("cookie-parser");
 const corsConfig = require("./config/corsConfig");
+
 const socialLoginRoutes = require("./routes/socialLoginRoute");
 const homeRoutes = require("./routes/homeRoute");
-const exampleRoutes = require("./routes/exampleRoute");
-const questionRoutes = require("./routes/questionRoute");
 const ttsRoutes = require("./routes/ttsRoute");
-const recommandRoutes = require("./routes/recommandRoute");
 const songLyricRoutes = require('./routes/songLyricRoute');
 const songYoutubeRoutes = require("./routes/songYoutubeRoute");
-const quizRoutes = require("./routes/quizRoute");
 const userdetailsRoutes = require("./routes/userdetailsRoute");
 
+const exampleRoutes = require("./routes/exampleRoute");
+const questionRoutes = require("./routes/questionRoute");
+const writingRoutes = require("./routes/writingRoute");
 
 const { sequelize } = require("./models");
 
 const app = express();
 const port = process.env.PORT || 8000;
 
-// JSON 본문 파싱
 app.use(express.json());
 
 app.use(cookieParser());
 
-// CORS 활성화
 app.use(cors(corsConfig));
-
-app.use(
-  cors({
-    origin: "http://localhost:3000", // 프런트엔드 도메인
-    methods: ['GET', 'POST', 'PUT', 'DELETE'], // 허용할 HTTP 메서드
-    credentials: true, // 쿠키를 사용하려면 이 옵션도 활성화
-  })
-);
 
 // 세션 설정
 app.use(
@@ -82,11 +72,11 @@ app.use("/home", homeRoutes);
 app.use("/userdetails", userdetailsRoutes);
 app.use('/songLyric', songLyricRoutes);
 app.use("/songYoutube", songYoutubeRoutes);
+app.use("/api", ttsRoutes);
+
 app.use("/example", exampleRoutes);
 app.use("/question", questionRoutes);
-app.use("/recommand", recommandRoutes);
-app.use("/quiz", quizRoutes);
-app.use("/api", ttsRoutes);
+app.use("/writing", writingRoutes);
 
 // 상태 확인용 홈 라우트
 app.get("/", (req, res) => {
