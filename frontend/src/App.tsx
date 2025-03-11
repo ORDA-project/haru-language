@@ -7,6 +7,7 @@ import Introduction from "./Components/Pages/Introduction";
 import Startlogin from "./Components/Pages/Startlogin";
 import SongRecommend from "./Components/Pages/SongRecommend";
 import Quiz from "./Components/Pages/Quiz";
+import MyPage from "./Components/Pages/MyPage";
 
 const router = createBrowserRouter([
   {
@@ -37,6 +38,10 @@ const router = createBrowserRouter([
     path: "/quiz",
     element: <Quiz />,
   },
+  {
+    path: "/mypage",
+    element: <MyPage />
+  }
 ]);
 
 function App() {

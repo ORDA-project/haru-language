@@ -5,6 +5,8 @@ interface StatusProps {}
 
 const StatusCheck = (props: StatusProps) => {
 
+    const navigate = useNavigate();
+
   const progressRecords = [
     {
       date: "09/30",
@@ -93,7 +95,7 @@ const StatusCheck = (props: StatusProps) => {
 
   return (
     <StatusContainer>
-      <Button>진도 점검 하러 가기</Button>
+      {/* <Button onClick={() => {navigate("/quiz");}}>진도 점검 하러 가기</Button> */}
       <StatusRecord>
         <RecordTitle>지난 시간에는 이런 걸 배웠어요📝</RecordTitle>
         {progressRecords.map((record, index) => (
@@ -140,6 +142,7 @@ const StatusRecord = styled.div`
   align-items: flex-start;
   padding: 15px;
   box-shadow: 0px 3px 7px rgba(0, 0, 0, 0.1);
+  margin: 10px;
 `;
 
 const RecordTitle = styled.div`

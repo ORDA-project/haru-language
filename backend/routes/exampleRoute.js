@@ -1,9 +1,9 @@
 const express = require("express");
 const multer = require("multer");
-const { detectText } = require("../services/visionService");
-const { generateExamples, recommendQuote } = require("../services/gptService");
-const { getExamplesByUserId } = require("../services/historyService");
 const fs = require("fs");
+const { detectText } = require("../services/ocrService");
+const { generateExamples } = require("../services/exampleService");
+const { getExamplesByUserId } = require("../services/historyService");
 require("dotenv").config({ path: "../.env" });
 
 const router = express.Router();
@@ -21,18 +21,13 @@ const upload = multer({
   },
 });
 
-// 업로드 및 Vision API 호출 라우트
+// OCR → GPT 예문 생성 API
 router.post("/", upload.single("image"), async (req, res) => {
-  console.log("File uploaded:", req.file); // 업로드된 파일 정보 확인
+  console.log("File uploaded:", req.file);
   const filePath = req.file.path;
   const { userId } = req.session.user;
 
-  console.log(req.session.user);
-
-  console.log(userId);
-
   if (!userId) {
-    // userId가 없을 경우 에러 반환
     return res.status(400).json({ message: "userId는 필수입니다." });
   }
 
@@ -43,19 +38,13 @@ router.post("/", upload.single("image"), async (req, res) => {
     // Step 2: GPT API로 예문 생성
     const gptResponse = await generateExamples(extractedText, userId);
 
-    // 명언 업데이트
-    const updatedQuote = await recommendQuote(userId);
-
-
     // 업로드된 파일 삭제
     fs.unlinkSync(filePath);
 
-    // 최종 결과 반환
     res.send({
-      extractedText, // 추출된 텍스트 반환
-      generatedExample: gptResponse,
+      extractedText, // OCR 결과
+      generatedExample: gptResponse, // GPT 응답 결과
     });
-
   } catch (error) {
     console.error("Error generating examples:", error);
 
@@ -68,24 +57,25 @@ router.post("/", upload.single("image"), async (req, res) => {
   }
 });
 
-router.get('/:userId', async (req, res) => {
+// 사용자 ID로 예문 조회 API
+router.get("/:userId", async (req, res) => {
   const { userId } = req.params;
 
   try {
     const examples = await getExamplesByUserId(userId);
 
     if (!examples.length) {
-      return res.status(404).json({ message: '해당 유저의 예문이 없습니다.' });
+      return res.status(404).json({ message: "해당 유저의 예문이 없습니다." });
     }
 
     res.status(200).json({
-      message: '예문 조회 성공',
+      message: "예문 조회 성공",
       data: examples,
     });
   } catch (error) {
-    console.error('예문 조회 API 오류:', error.message);
+    console.error("예문 조회 API 오류:", error.message);
     res.status(500).json({
-      message: '예문 조회 중 오류가 발생했습니다.',
+      message: "예문 조회 중 오류가 발생했습니다.",
       error: error.message,
     });
   }
