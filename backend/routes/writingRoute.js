@@ -1,6 +1,6 @@
 const express = require("express");
 const { correctWriting, translateWriting } = require("../services/writingService");
-const { WritingRecord } = require("../models");
+const { WritingRecord, WritingQuestion } = require("../models");
 
 const router = express.Router();
 
@@ -27,7 +27,6 @@ router.post("/correct", async (req, res) => {
     });
   }
 });
-
 
  // 한국어 → 영어 번역 API 
 router.post("/translate", async (req, res) => {
@@ -102,6 +101,62 @@ router.get("/records/:userId/:writingQuestionId", async (req, res) => {
     console.error("Error fetching writing records for question:", error.message);
     res.status(500).json({
       message: "Writing 질문에 대한 기록 조회 중 오류가 발생했습니다.",
+      error: error.message,
+    });
+  }
+});
+
+// 특정 WritingQuestion 반환 API
+router.get("/question/:writingQuestionId", async (req, res) => {
+  try {
+    const { writingQuestionId } = req.params;
+
+    const question = await WritingQuestion.findOne({ where: { id: writingQuestionId } });
+
+    if (!question) {
+      return res.status(404).json({ message: "해당 ID에 대한 Writing 질문이 없습니다." });
+    }
+
+    res.status(200).json({
+      message: "Writing 질문 조회 성공",
+      data: {
+        id: question.id,
+        englishQuestion: question.question_text,
+        koreanQuestion: question.korean_text,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching writing question:", error.message);
+    res.status(500).json({
+      message: "Writing 질문 조회 중 오류가 발생했습니다.",
+      error: error.message,
+    });
+  }
+});
+
+// 전체 WritingQuestion 목록 조회 API
+router.get("/questions", async (req, res) => {
+  try {
+    const questions = await WritingQuestion.findAll({
+      order: [["createdAt", "ASC"]],
+    });
+
+    if (!questions.length) {
+      return res.status(404).json({ message: "등록된 Writing 질문이 없습니다." });
+    }
+
+    res.status(200).json({
+      message: "Writing 질문 전체 조회 성공",
+      data: questions.map(q => ({
+        id: q.id,
+        englishQuestion: q.question_text,
+        koreanQuestion: q.korean_text,
+      })),
+    });
+  } catch (error) {
+    console.error("Error fetching all writing questions:", error.message);
+    res.status(500).json({
+      message: "Writing 질문 전체 조회 중 오류가 발생했습니다.",
       error: error.message,
     });
   }

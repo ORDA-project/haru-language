@@ -7,7 +7,11 @@ const WritingQuestion = sequelize.define("WritingQuestion", {
         primaryKey: true,
         autoIncrement: true,
     },
-    question_text: {
+    question_text: { 
+        type: DataTypes.TEXT,
+        allowNull: false,
+    },
+    korean_text: { 
         type: DataTypes.TEXT,
         allowNull: false,
     }
