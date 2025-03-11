@@ -13,6 +13,9 @@ const UserBook = require("./UserBook");
 const WritingQuestion = require("./WritingQuestion");
 const WritingRecord = require("./WritingRecord");
 const WritingExample = require("./WritingExample");
+const Friend = require("./Friend"); 
+const Invitation = require("./Invitation"); 
+const Notification = require("./Notification");
 
 
 // 관계 설정
@@ -37,6 +40,17 @@ UserBook.belongsTo(User, { foreignKey: "user_id" });
 WritingQuestion.hasMany(WritingExample, { foreignKey: "writing_question_id", onDelete: "CASCADE" });
 WritingExample.belongsTo(WritingQuestion, { foreignKey: "writing_question_id" });
 
+User.hasMany(Friend, { foreignKey: "user_id", as: "FriendsAsUser", onDelete: "CASCADE" });
+User.hasMany(Friend, { foreignKey: "friend_id", as: "FriendsAsFriend", onDelete: "CASCADE" });
+Friend.belongsTo(User, { foreignKey: "user_id", as: "UserDetails" });
+Friend.belongsTo(User, { foreignKey: "friend_id", as: "FriendDetails" });
+
+User.hasMany(Invitation, { foreignKey: "inviter_id", onDelete: "CASCADE" });
+Invitation.belongsTo(User, { foreignKey: "inviter_id" });
+
+User.hasMany(Notification, { foreignKey: "user_id", onDelete: "CASCADE" });
+Notification.belongsTo(User, { foreignKey: "user_id" });
+
 
 module.exports = {
     sequelize,
@@ -54,4 +68,7 @@ module.exports = {
     WritingQuestion,
     WritingRecord,
     WritingExample,
+    Friend,
+    Invitation,
+    Notification,
   };
