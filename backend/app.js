@@ -15,7 +15,8 @@ const recommandRoutes = require("./routes/recommandRoute");
 const songLyricRoutes = require('./routes/songLyricRoute');
 const songYoutubeRoutes = require("./routes/songYoutubeRoute");
 const quizRoutes = require("./routes/quizRoute");
-const userdetailsRoutes = require("./routes/userdetailsRoute");
+const userDetailsRoutes = require("./routes/userDetailsRoute");
+const friendRoutes = require("./routes/friendRoute"); 
 
 
 const { sequelize } = require("./models");
@@ -53,8 +54,8 @@ app.use(
       password: process.env.DB_PASSWORD,
       database: process.env.DB_NAME,
       clearExpired: true,
-      checkExpirationInterval: 1000 * 60 * 10, // 10분마다 만료된 세션 정리
-      expiration: 1000 * 60 * 10, // 10분 후 자동 로그아웃
+      checkExpirationInterval: 1000 * 60 * 60, // 60분마다 만료된 세션 정리
+      expiration: 1000 * 60 * 60, // 60분 후 자동 로그아웃
     }),
     cookie: {
       maxAge: 1000 * 60 * 10,
@@ -79,7 +80,8 @@ app.use((req, res, next) => {
 // 라우트 설정
 app.use("/auth", socialLoginRoutes);
 app.use("/home", homeRoutes);
-app.use("/userdetails", userdetailsRoutes);
+app.use("/userDetails", userDetailsRoutes);
+app.use("/friends", friendRoutes);
 app.use('/songLyric', songLyricRoutes);
 app.use("/songYoutube", songYoutubeRoutes);
 app.use("/example", exampleRoutes);

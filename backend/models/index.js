@@ -11,6 +11,9 @@ const UserActivity = require('./UserActivity');
 const Quote = require('./Quote');
 const UserInterest = require("./UserInterest");
 const UserBook = require("./UserBook");
+const Friend = require("./Friend"); 
+const Invitation = require("./Invitation"); 
+const Notification = require("./Notification");
 
 // 관계 설정
 Question.hasMany(Answer, { foreignKey: 'question_id', onDelete: 'CASCADE' });
@@ -31,6 +34,16 @@ UserInterest.belongsTo(User, { foreignKey: "user_id" });
 User.hasMany(UserBook, { foreignKey: "user_id", onDelete: "CASCADE" });
 UserBook.belongsTo(User, { foreignKey: "user_id" });
 
+User.hasMany(Friend, { foreignKey: "user_id", as: "FriendsAsUser", onDelete: "CASCADE" });
+User.hasMany(Friend, { foreignKey: "friend_id", as: "FriendsAsFriend", onDelete: "CASCADE" });
+Friend.belongsTo(User, { foreignKey: "user_id", as: "UserDetails" });
+Friend.belongsTo(User, { foreignKey: "friend_id", as: "FriendDetails" });
+
+User.hasMany(Invitation, { foreignKey: "inviter_id", onDelete: "CASCADE" });
+Invitation.belongsTo(User, { foreignKey: "inviter_id" });
+
+User.hasMany(Notification, { foreignKey: "user_id", onDelete: "CASCADE" });
+Notification.belongsTo(User, { foreignKey: "user_id" });
 module.exports = {
     sequelize,
     Question,
@@ -44,4 +57,7 @@ module.exports = {
     UserActivity,
     UserInterest,
     UserBook,
+    Friend,
+    Invitation,
+    Notification
   };
