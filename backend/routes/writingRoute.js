@@ -4,10 +4,7 @@ const { WritingRecord } = require("../models");
 
 const router = express.Router();
 
-/**
- * ✏️ [1] 문장 첨삭 API (POST /writing-question/correct)
- * - 사용자의 영어 문장을 분석하여 문법적으로 올바르게 수정하고 피드백 제공
- */
+// 문장 첨삭 API 
 router.post("/correct", async (req, res) => {
   try {
     const { text, userId, writingQuestionId } = req.body;
@@ -31,10 +28,8 @@ router.post("/correct", async (req, res) => {
   }
 });
 
-/**
- * 🌎 [2] 한국어 → 영어 번역 API (POST /writing-question/translate)
- * - 사용자의 한국어 문장을 영어로 번역하고 설명 제공
- */
+
+ // 한국어 → 영어 번역 API 
 router.post("/translate", async (req, res) => {
   try {
     const { text, userId, writingQuestionId } = req.body;
@@ -58,10 +53,7 @@ router.post("/translate", async (req, res) => {
   }
 });
 
-/**
- * 📜 [3] 사용자의 모든 Writing 기록 조회 (GET /writing-question/records/:userId)
- * - 사용자가 첨삭/번역한 모든 기록을 반환
- */
+// 사용자의 모든 Writing 기록 조회 
 router.get("/records/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
@@ -88,10 +80,7 @@ router.get("/records/:userId", async (req, res) => {
   }
 });
 
-/**
- * 📜 [4] 특정 Writing 질문에 대한 사용자의 기록 조회 (GET /writing-question/records/:userId/:writingQuestionId)
- * - 특정 Writing 질문에 대한 사용자의 첨삭/번역 기록을 반환
- */
+// 특정 Writing 질문에 대한 사용자의 기록 조회
 router.get("/records/:userId/:writingQuestionId", async (req, res) => {
   try {
     const { userId, writingQuestionId } = req.params;

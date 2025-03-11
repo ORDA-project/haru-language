@@ -1,11 +1,19 @@
-module.exports = (sequelize, DataTypes) => {
-    const WritingQuestion = sequelize.define("WritingQuestion", {
-      question_text: {
+const { DataTypes } = require("sequelize");
+const sequelize = require("../db");
+
+const WritingQuestion = sequelize.define("WritingQuestion", {
+    id: {
+        type: DataTypes.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
+    },
+    question_text: {
         type: DataTypes.TEXT,
         allowNull: false,
-      }
-    });
-  
-    return WritingQuestion;
-  };
-  
+    }
+}, {
+    tableName: "writing_questions",
+    timestamps: true,
+});
+
+module.exports = WritingQuestion;

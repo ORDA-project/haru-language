@@ -1,9 +1,7 @@
 const { WritingRecord, WritingExample, WritingQuestion } = require("../models");
 const callGPT = require("./gptService");
 
-/**
- * ✏️ [1] 영어 문장 첨삭 (Grammar Correction + WritingRecord 저장)
- */
+// 영어 문장 첨삭
 async function correctWriting(text, userId, writingQuestionId = null) {
   try {
     const prompt =
@@ -24,7 +22,7 @@ async function correctWriting(text, userId, writingQuestionId = null) {
       writing_question_id: writingQuestionId,
       original_text: text,
       processed_text: correctionData.correctedText,
-      feedback: JSON.stringify(correctionData.feedback), // 배열을 JSON 문자열로 변환하여 저장
+      feedback: JSON.stringify(correctionData.feedback), 
       type: "correction",
     });
 
@@ -32,7 +30,7 @@ async function correctWriting(text, userId, writingQuestionId = null) {
       originalText: text,
       processedText: correctionData.correctedText,
       hasErrors: correctionData.hasErrors,
-      feedback: correctionData.feedback, // 배열 형태 그대로 반환
+      feedback: correctionData.feedback, 
     };
   } catch (error) {
     console.error("Error in writing correction:", error.message);
@@ -41,14 +39,11 @@ async function correctWriting(text, userId, writingQuestionId = null) {
 }
 
 
-/**
- * 🌎 [2] 한국어 → 영어 번역 & WritingRecord 저장
- */
+// 한국어 → 영어 번역
 async function translateWriting(text, userId, writingQuestionId) {
   try {
-    // WritingQuestion 테이블에서 질문 가져오기
     const question = await WritingQuestion.findOne({ where: { id: writingQuestionId } });
-    const example = await WritingExample.findOne({ where: { question_id: writingQuestionId } });
+    const example = await WritingExample.findOne({ where: { writing_question_id: writingQuestionId } });
 
     if (!question) {
       throw new Error("해당 Writing 질문을 찾을 수 없습니다.");
@@ -65,9 +60,8 @@ async function translateWriting(text, userId, writingQuestionId) {
       "**Question:**\n" +
       `"${question.question_text}"\n\n` +
       "**Example Response:**\n" +
-      `Korean: "${example.original_text}"\n` +
-      `English Translation: "${example.corrected_text}"\n` +
-      `Explanation: "${example.feedback}"\n\n` +
+      `Korean: "${example.example}"\n` + 
+      `English Translation: "${example.translation}"\n\n` + 
       "**User's Input:**\n" +
       `Korean: "${text}"\n\n` +
       "Return a JSON object with:\n" +
@@ -78,26 +72,31 @@ async function translateWriting(text, userId, writingQuestionId) {
     const response = await callGPT(prompt, text, 600);
     const translationData = JSON.parse(response);
 
+    console.log("GPT 응답 데이터:", translationData);
+    console.log("translatedText 값:", translationData?.translatedText);
+
     // 문장별로 단어 랜덤 배열 적용
     const sentencePairs = translationData.translatedText.map(sentence => ({
       originalSentence: sentence,
       shuffledWords: shuffleArray(sentence.split(" ")), // 단어 단위 랜덤 배열 적용
     }));
 
+    const processedText = translationData.translatedText.join(" "); // 번역된 문장을 하나의 문자열로 저장
+
     // WritingRecord 테이블에 저장
     const record = await WritingRecord.create({
       user_id: userId,
       writing_question_id: writingQuestionId,
       original_text: text,
-      processed_text: JSON.stringify(translationData.translatedText), // 번역된 문장을 배열로 저장
-      feedback: JSON.stringify(translationData.feedback), // 배열을 JSON 문자열로 변환하여 저장
+      processed_text: processedText, 
+      feedback: JSON.stringify(translationData.feedback), 
       type: "translation",
     });
 
     return {
       originalText: text,
-      sentencePairs: sentencePairs, // 각 문장의 원본과 랜덤 배열된 단어 쌍
-      feedback: translationData.feedback, // JSON 배열 형태로 반환
+      sentencePairs: sentencePairs, 
+      feedback: translationData.feedback, 
     };
   } catch (error) {
     console.error("Error in writing translation:", error.message);
@@ -105,9 +104,7 @@ async function translateWriting(text, userId, writingQuestionId) {
   }
 }
 
-/**
- * 🌀 배열 랜덤 섞기 함수 (Fisher-Yates Shuffle)
- */
+// 배열 랜덤 섞기 함수 (Fisher-Yates Shuffle)
 function shuffleArray(array) {
   const shuffled = [...array]; // 원본 배열 복사
   for (let i = shuffled.length - 1; i > 0; i--) {

@@ -1,39 +1,32 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../db");
 
-const WritingRecord = sequelize.define("WritingRecord", {
+const WritingExample = sequelize.define("WritingExample", {
     id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
         autoIncrement: true,
     },
-    user_id: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-    },
     writing_question_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
+        references: {
+            model: "writing_questions", 
+            key: "id",
+        },
+        onDelete: "CASCADE",
     },
-    original_text: {
+    example: {
         type: DataTypes.TEXT,
         allowNull: false,
     },
-    processed_text: {
+    translation: {
         type: DataTypes.TEXT,
-        allowNull: false,
-    },
-    feedback: {
-        type: DataTypes.TEXT,
-        allowNull: true,
-    },
-    type: {
-        type: DataTypes.ENUM("correction", "translation"),
         allowNull: false,
     }
 }, {
-    tableName: "writing_records",
+    tableName: "writing_examples",
     timestamps: true,
 });
 
-module.exports = WritingRecord;
+module.exports = WritingExample;
