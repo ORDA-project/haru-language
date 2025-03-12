@@ -20,9 +20,15 @@ const friendService = {
 
   // 초대 응답 처리 (수락/거절)
   respondToInvitation: async ({ token, response, inviteeId }) => {
-    const invitation = await Invitation.findOne({ where: { token, status: "pending" } });
+    const invitation = await Invitation.findOne({ where: { token } });
     if (!invitation) {
       console.log("유효하지 않은 초대");
+      return null;
+    }
+
+
+    if (invitation.status !== "pending") {
+      console.log("이미 사용된 초대");
       return null;
     }
 
@@ -96,7 +102,7 @@ const friendService = {
   // 친구에게 "콕 찌르기" 알림 보내기
   sendNotification: async ({ senderId, receiverId }) => {
     try {
-     
+
       if (!senderId || !receiverId) {
         return { error: "잘못된 요청입니다." };
       }
@@ -137,23 +143,39 @@ const friendService = {
     }
   },
 
-  // 읽지 않은 알림 조회
+  // 읽지 않은 알림 조회 후 읽음 처리
   getUnreadNotifications: async (userId) => {
     try {
-      return await Notification.findAll({
+      // 읽지 않은 알림 조회
+      const notifications = await Notification.findAll({
         where: { user_id: userId, is_read: false },
-        order: [["id", "DESC"]],
+        include: [{
+          model: User,
+          as: "NotificationSender",
+          attributes: ["name"]
+        }],
+        attributes: ["id", "message"]
       });
+
+      // 조회한 알림을 읽음 처리
+      await Notification.update(
+        { is_read: true },
+        { where: { user_id: userId, is_read: false } }
+      );
+
+      return notifications;
     } catch (error) {
       console.error("읽지 않은 알림 조회 오류:", error);
       return [];
     }
   },
 
-  // 특정 알림 읽음 처리 (읽고 삭제)
-  markNotificationAsReadAndDelete: async (user_id) => {
+  // 읽음 처리된 알림 삭제
+  deleteReadNotifications: async (userId) => {
     try {
-      const deletedCount = await Notification.destroy({ where: { user_id } });
+      const deletedCount = await Notification.destroy({
+        where: { user_id: userId, is_read: true } // ✅ 읽음 상태인 알림만 삭제
+      });
       if (deletedCount === 0) {
         return { message: "삭제할 알림이 없습니다." };
       }
@@ -162,7 +184,6 @@ const friendService = {
       return { error: "알림 삭제 중 오류 발생" };
     }
   }
-
 }
 
 module.exports = friendService;
