@@ -52,7 +52,7 @@ router.post("/notifications/send", async (req, res) => {
     }
 });
 
-// 로그인 시 읽지 않은 알림 조회
+// 로그인 시 읽지 않은 알림 조회 후 읽음 처리 
 router.get("/notifications/unread/:userId", async (req, res) => {
     try {
         const notifications = await friendService.getUnreadNotifications(req.params.userId);
@@ -62,18 +62,17 @@ router.get("/notifications/unread/:userId", async (req, res) => {
     }
 });
 
-// 특정 알림 읽음 처리 (읽고 삭제)
+// 읽음 처리된 알림 삭제
 router.post("/notifications/read", async (req, res) => {
-
     try {
         if (!req.body.user_id) {
             return res.status(400).json({ message: "user_id가 필요합니다." });
         }
 
-        const result = await friendService.markNotificationAsReadAndDelete(req.body.user_id);
+        const result = await friendService.deleteReadNotifications(req.body.user_id);
         res.json(result);
     } catch (error) {
-        console.error("알림 읽음 처리 오류:", error);
+        console.error("알림 삭제 오류:", error);
         res.status(500).json({ message: "서버 오류 발생" });
     }
 });

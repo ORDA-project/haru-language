@@ -48,8 +48,11 @@ Friend.belongsTo(User, { foreignKey: "friend_id", as: "FriendDetails" });
 User.hasMany(Invitation, { foreignKey: "inviter_id", onDelete: "CASCADE" });
 Invitation.belongsTo(User, { foreignKey: "inviter_id" });
 
-User.hasMany(Notification, { foreignKey: "user_id", onDelete: "CASCADE" });
-Notification.belongsTo(User, { foreignKey: "user_id" });
+User.hasMany(Notification, { foreignKey: "user_id", as: "ReceivedNotifications", onDelete: "CASCADE" });
+Notification.belongsTo(User, { foreignKey: "user_id", as: "NotifiedUser" }); 
+
+User.hasMany(Notification, { foreignKey: "sender_id", as: "SentNotifications", onDelete: "CASCADE" });
+Notification.belongsTo(User, { foreignKey: "sender_id", as: "NotificationSender" }); 
 
 
 module.exports = {

@@ -1,12 +1,12 @@
 const express = require("express");
 const router = express.Router();
-const userService = require("../services/userService");
+const userDetailsService = require("../services/userDetailsService");
 
 // 사용자 정보 조회
 router.get("/info", async (req, res) => {
     try {
         const userId = req.session.user ? req.session.user.userId : null;
-        const userInfo = await userService.getUserInfo(userId);
+        const userInfo = await userDetailsService.getUserInfo(userId);
         res.json(userInfo);
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -17,7 +17,7 @@ router.get("/info", async (req, res) => {
 router.post("/", async (req, res) => {
     try {
         const userId = req.session.user ? req.session.user.userId : null;
-        const result = await userService.createUserInfo(userId, req.body);
+        const result = await userDetailsService.createUserInfo(userId, req.body);
         res.json(result);
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -28,7 +28,7 @@ router.post("/", async (req, res) => {
 router.put("/", async (req, res) => {
     try {
         const userId = req.session.user ? req.session.user.userId : null;
-        const result = await userService.updateUserInfo(userId, req.body);
+        const result = await userDetailsService.updateUserInfo(userId, req.body);
         res.json(result);
     } catch (error) {
         res.status(500).json({ message: error.message });

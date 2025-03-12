@@ -18,14 +18,14 @@ const Invitation = sequelize.define("Invitation", {
     token: {
         type: DataTypes.STRING,
         allowNull: false,
-        unique: true  // ✅ 중복 방지를 위해 고유값 설정
+        unique: true  
     },
     status: {
         type: DataTypes.ENUM("pending", "accepted", "rejected"),
         defaultValue: "pending"
     }
 }, {
-    tableName: "invitations",  // ✅ 테이블 이름 유지
+    tableName: "invitations", 
     timestamps: true,
     underscored: true
 });
