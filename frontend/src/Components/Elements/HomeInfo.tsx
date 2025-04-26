@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
+import CheckIcons from './CheckIcons';
 import download from "../../Images/download.png";
 import speaker from "../../Images/speaker.png";
 
@@ -20,6 +21,7 @@ const HomeInfo = ({
   const navigate = useNavigate();
 
   const [isPopupVisible, setIsPopupVisible] = useState(false);
+  const [checkNum, setCheckNum] = useState<number>(3);
 
   // const openPopup = () => setIsPopupVisible(true);
   // const closePopup = () => setIsPopupVisible(false);
@@ -53,9 +55,18 @@ const HomeInfo = ({
         </Text>
       </div>
       <OneLine>
-        <Title style={{ backgroundColor: "#00E8B6" }}>
-          <span>오늘의 한줄 영어</span>
-        </Title>
+        <div style={{display: "flex", alignItems: "center"}}>
+          <Title style={{ backgroundColor: "#00E8B6", height: "min-content", padding: "5px"}}>
+            <span>오늘의 한줄 영어</span>
+          </Title>
+          {/* <CheckDiv>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="12" fill="#00DAAA" />
+              <path d="M5.59961 12.3201L10.8509 16.8001L18.3996 7.20007" stroke="black" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </CheckDiv> */}
+          <CheckIcons checkNum={checkNum} />
+        </div>
         <Content1>
           <div>Have you ever played a game?</div>
           <div>게임을 해 본 적이 있어?</div>
@@ -63,9 +74,9 @@ const HomeInfo = ({
 
         <OnelineIcon>
           <Div>
-          <svg xmlns="http://www.w3.org/2000/svg" width="27" height="22" viewBox="0 0 27 22" fill="none">
-            <path d="M2 9.40005C1.2268 9.40005 0.6 10.0269 0.6 10.8C0.6 11.5732 1.2268 12.2 2 12.2L2 9.40005ZM26.0899 11.79C26.6367 11.2433 26.6367 10.3568 26.0899 9.8101L17.1804 0.900555C16.6337 0.353821 15.7472 0.353821 15.2005 0.900555C14.6538 1.44729 14.6538 2.33372 15.2005 2.88045L23.1201 10.8001L15.2005 18.7196C14.6538 19.2664 14.6538 20.1528 15.2005 20.6995C15.7472 21.2463 16.6337 21.2463 17.1804 20.6995L26.0899 11.79ZM2 12.2L25.1 12.2001L25.1 9.40005L2 9.40005L2 12.2Z" fill="black" />
-          </svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="27" height="22" viewBox="0 0 27 22" fill="none">
+              <path d="M2 9.40005C1.2268 9.40005 0.6 10.0269 0.6 10.8C0.6 11.5732 1.2268 12.2 2 12.2L2 9.40005ZM26.0899 11.79C26.6367 11.2433 26.6367 10.3568 26.0899 9.8101L17.1804 0.900555C16.6337 0.353821 15.7472 0.353821 15.2005 0.900555C14.6538 1.44729 14.6538 2.33372 15.2005 2.88045L23.1201 10.8001L15.2005 18.7196C14.6538 19.2664 14.6538 20.1528 15.2005 20.6995C15.7472 21.2463 16.6337 21.2463 17.1804 20.6995L26.0899 11.79ZM2 12.2L25.1 12.2001L25.1 9.40005L2 9.40005L2 12.2Z" fill="black" />
+            </svg>
           </Div>
         </OnelineIcon>
       </OneLine>
@@ -230,6 +241,10 @@ const Title = styled.div`
   line-height: 150%;
   // margin: 20px 0;
 `;
+
+// const CheckDiv = styled.div`
+//   margin: 0 5px;
+// `;
 
 const Text = styled.p`
   font-size: 24px;

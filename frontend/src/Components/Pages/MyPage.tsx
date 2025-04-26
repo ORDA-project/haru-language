@@ -39,11 +39,11 @@ export default function MyPage() {
                         <Img>
                         </Img>
                         <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-evenly", margin: "0 20px" }}>
-                            <span style={{ fontSize: "24px", fontWeight: 700, color: "white" }}>{userData.userName}</span>
-                            <span style={{ fontSize: "18px", fontWeight: 500, color: "white" }}>{userData.visitCount}번째 방문했어요!</span>
+                            <span style={{ fontSize: "24px", fontWeight: 700, color: "black" }}>{userData.userName}</span>
+                            <span style={{ fontSize: "18px", fontWeight: 500, color: "black" }}>{userData.visitCount}번째 방문했어요!</span>
                         </div>
                     </div>
-                    <div style={{ margin: "15px 0", display: "flex", alignItems: "center", justifyContent: "space-evenly"}}>
+                    <div style={{ margin: "15px 0", display: "flex", alignItems: "center", justifyContent: "space-evenly" }}>
                         <div style={{ padding: "10px 20px", alignItems: "center", borderRadius: "60px", background: "white", height: "fit-content" }}>여성</div>
                         <div style={{ padding: "10px 20px", alignItems: "center", borderRadius: "60px", background: "white", height: "fit-content" }}>회화</div>
                         <IconDiv>
@@ -56,24 +56,34 @@ export default function MyPage() {
             </Div>
             <Div>
                 <FriendList>
-                    <Title>
-                        나의 친구({friendList.length})
-                    </Title>
-                    {friendList.map((friend) => {
-                        return (
-                            <FriendBox>
-                                <div style={{display: "flex", alignItems: "center"}}>
-                                <Img>
-                                </Img>
-                                <span style={{margin: "0 10px"}}>{friend.userName}</span>
-                                </div>
-                                <div style={{display: "flex", flexDirection: "column", height: "80px", justifyContent: "space-evenly"}}>
-                                    <Button>콕 찌르기</Button>
-                                    <span>학습 7회, 작문 15회</span>
-                                </div>
-                            </FriendBox>
-                        );
-                    })}
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "30px"}}>
+                        <Title>
+                            나의 친구({friendList.length})
+                        </Title>
+                        <FriendLink>
+                            <span style={{padding: "10px"}}>친구링크 복사</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="27" height="28" viewBox="0 0 27 28" fill="none">
+                                <path d="M10.1242 17.3749L16.8742 10.6249M12.3742 7.24986L12.895 6.64686C13.9501 5.59197 15.3809 4.99941 16.8729 4.99951C18.3648 4.99962 19.7956 5.59239 20.8505 6.64742C21.9054 7.70245 22.4979 9.13332 22.4978 10.6253C22.4977 12.1172 21.9049 13.548 20.8499 14.6029L20.2492 15.1249M14.6242 20.7499L14.1775 21.3506C13.1099 22.4055 11.6695 22.9971 10.1686 22.9971C8.6677 22.9971 7.22729 22.4055 6.15966 21.3506C5.63329 20.8306 5.21537 20.2112 4.93015 19.5285C4.64492 18.8457 4.49805 18.1131 4.49805 17.3732C4.49805 16.6332 4.64492 15.9006 4.93015 15.2179C5.21537 14.5351 5.63329 13.9158 6.15966 13.3957L6.74916 12.8749" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                        </FriendLink>
+                    </div>
+                    <FriendsDiv>
+                        {friendList.map((friend) => {
+                            return (
+                                <FriendBox>
+                                    <div style={{ display: "flex", alignItems: "center" }}>
+                                        <Img>
+                                        </Img>
+                                        <span style={{ margin: "0 10px" }}>{friend.userName}</span>
+                                    </div>
+                                    <div style={{ display: "flex", flexDirection: "column", height: "80px", justifyContent: "space-evenly" }}>
+                                        <Button>콕 찌르기</Button>
+                                        <span>학습 7회, 작문 15회</span>
+                                    </div>
+                                </FriendBox>
+                            );
+                        })}
+                    </FriendsDiv>
                 </FriendList>
             </Div>
             <NavBar currentPage={"Home"} />
@@ -87,7 +97,7 @@ const MyPageContainer = styled.div`
 `;
 
 const Div = styled.div`
-    padding: 3vh 5vw;
+    padding: 2vh 5vw;
 `;
 
 const Button = styled.button`
@@ -104,7 +114,7 @@ const Profile = styled.div`
     // height: 50px;
     padding: 20px;
     border-radius: 20px;
-    background: #6775F6;
+    background: #FFB547;
 `;
 
 const FriendList = styled.div`
@@ -113,10 +123,24 @@ const FriendList = styled.div`
     overflow: scroll;
 `;
 
+const FriendLink = styled.div`
+    border-radius: 30px;
+    border: 4px solid #00DAAA;
+    background: #FFF;
+    /* 기본 음영 */
+    box-shadow: 0px 3px 7px 2px rgba(0, 0, 0, 0.05);
+    display: inline-flex;
+    height: 30px;
+    padding: 4px 18px;
+    justify-content: flex-end;
+    align-items: center;
+    flex-shrink: 0;
+`;
+
 const Title = styled.div`
     color: #000;
     font-family: KoPubWorldDotum_Pro;
-    font-size: 22px;
+    font-size: 25px;
     font-style: normal;
     font-weight: 700;
     line-height: 150%; /* 30px */
@@ -142,6 +166,10 @@ const IconDiv = styled.div`
   & svg {
     transform: translateX(-15px);
   }
+`;
+
+const FriendsDiv = styled.div`
+
 `;
 
 const FriendBox = styled.div`

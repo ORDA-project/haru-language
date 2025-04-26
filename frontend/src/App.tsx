@@ -8,6 +8,7 @@ import Startlogin from "./Components/Pages/Startlogin";
 import SongRecommend from "./Components/Pages/SongRecommend";
 import Quiz from "./Components/Pages/Quiz";
 import MyPage from "./Components/Pages/MyPage";
+import MyAccount from "./Components/Pages/MyAccount";
 
 const router = createBrowserRouter([
   {
@@ -41,6 +42,10 @@ const router = createBrowserRouter([
   {
     path: "/mypage",
     element: <MyPage />
+  },
+  {
+    path: "/myaccount",
+    element: <MyAccount />
   }
 ]);
 

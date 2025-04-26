@@ -65,6 +65,6 @@ const HomeContainer = styled.div`
 const HomeDiv = styled.div`
   height: calc(87vh - 100px);
   padding: 3vh 5vw;
-  transform: translateY(10vh);
+  transform: translateY(6vh);
   overflow-y: scroll;
 `;
