@@ -61,7 +61,7 @@ UserActivity.updateVisit = async function (user_id) {
     return firstVisit;
 };
 
-// ✅ 사용자가 가장 많이 방문한 요일 계산
+// 사용자가 가장 많이 방문한 요일 계산
 UserActivity.getMostVisitedDays = async function (user_id) {
     const activities = await UserActivity.findAll({
         where: { user_id },
