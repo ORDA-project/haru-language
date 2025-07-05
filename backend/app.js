@@ -1,52 +1,42 @@
 const express = require("express");
 const cors = require("cors");
 const session = require("express-session");
+const cookieParser = require("cookie-parser");
+const MySQLStore = require("express-mysql-session")(session);
 require("dotenv").config();
 
-const MySQLStore = require("express-mysql-session")(session);
-const cookieParser = require("cookie-parser");
 const corsConfig = require("./config/corsConfig");
-
-const socialLoginRoutes = require("./routes/socialLoginRoute");
-const homeRoutes = require("./routes/homeRoute");
-const ttsRoutes = require("./routes/ttsRoute");
-const songLyricRoutes = require('./routes/songLyricRoute');
-const songYoutubeRoutes = require("./routes/songYoutubeRoute");
-const userDetailsRoutes = require("./routes/userDetailsRoute");
-const friendRoutes = require("./routes/friendRoute"); 
-
-const exampleRoutes = require("./routes/exampleRoute");
-const questionRoutes = require("./routes/questionRoute");
-const writingRoutes = require("./routes/writingRoute");
-
+const routes = require("./routes");
 const { sequelize } = require("./models");
 
 const app = express();
-const port = process.env.PORT || 8000;
+const PORT = process.env.PORT || 8000;
 
+// JSON 요청 파싱, 쿠키 파싱, CORS 설정
 app.use(express.json());
-
 app.use(cookieParser());
-
 app.use(cors(corsConfig));
+
+// MySQL 기반 세션 저장소 설정
+const sessionStore = new MySQLStore({
+  host: process.env.DB_HOST,
+  port: process.env.DB_PORT,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  clearExpired: true,
+  checkExpirationInterval: 1000 * 60 * 60,
+  expiration: 1000 * 60 * 60,
+});
 
 // 세션 설정
 app.use(
   session({
     key: "user_sid",
-    secret: process.env.SESSION_SECRET || "default_secret", // 기본값 추가
+    secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
-    store: new MySQLStore({
-      host: process.env.DB_HOST,
-      port: process.env.DB_PORT,
-      user: process.env.DB_USER,
-      password: process.env.DB_PASSWORD,
-      database: process.env.DB_NAME,
-      clearExpired: true,
-      checkExpirationInterval: 1000 * 60 * 60, // 60분마다 만료된 세션 정리
-      expiration: 1000 * 60 * 60, // 60분 후 자동 로그아웃
-    }),
+    store: sessionStore,
     cookie: {
       maxAge: 1000 * 60 * 10,
       httpOnly: true,
@@ -56,42 +46,30 @@ app.use(
   })
 );
 
-// 세션 체크 미들웨어
+// 로그인 상태 확인 (미인증 사용자는 프론트엔드로 리디렉트)
 app.use((req, res, next) => {
-  console.log("세션 상태 확인:", req.session.user);
-  console.log("쿠키 상태 확인:", req.cookies);
   if (req.session.user || req.path === "/" || req.path.startsWith("/auth")) {
-    next();
-  } else {
-    res.redirect("http://localhost:3000");
+    return next();
   }
+  res.redirect("http://localhost:3000");
 });
 
-// 라우트 설정
-app.use("/auth", socialLoginRoutes);
-app.use("/home", homeRoutes);
-app.use("/userDetails", userDetailsRoutes);
-app.use("/friends", friendRoutes);
-app.use('/songLyric', songLyricRoutes);
-app.use("/songYoutube", songYoutubeRoutes);
-app.use("/api", ttsRoutes);
+// 라우터 연결
+app.use("/", routes);
 
-app.use("/example", exampleRoutes);
-app.use("/question", questionRoutes);
-app.use("/writing", writingRoutes);
-
-// 상태 확인용 홈 라우트
+// 상태 확인용 라우트
 app.get("/", (req, res) => {
-  res.status(200).send("Backend server is running.");
+  res.status(200).send("백엔드 서버가 실행 중입니다.");
 });
 
-// Sequelize 동기화 및 서버 실행
+// DB 동기화 후 서버 시작
 (async () => {
   try {
     await sequelize.sync({ force: false });
-    console.log("모든 테이블이 성공적으로 동기화되었습니다!");
-    app.listen(port, () => {
-      console.log(`Server running on http://localhost:${port}`);
+    console.log("모든 테이블이 성공적으로 동기화되었습니다.");
+
+    app.listen(PORT, () => {
+      console.log(`서버 실행 중: http://localhost:${PORT}`);
     });
   } catch (error) {
     console.error("테이블 동기화 실패:", error);
