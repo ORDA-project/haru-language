@@ -8,7 +8,7 @@ const Notification = sequelize.define("Notification", {
         primaryKey: true,
         autoIncrement: true,
     },
-    user_id: { // 알림을 받은 사용자
+    user_id: { 
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
@@ -17,7 +17,7 @@ const Notification = sequelize.define("Notification", {
         },
         onDelete: "CASCADE",
     },
-    sender_id: { // 알림을 보낸 사용자 (추가)
+    sender_id: { 
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
@@ -38,8 +38,5 @@ const Notification = sequelize.define("Notification", {
     tableName: "notifications",
     timestamps: false,
 });
-
-Notification.belongsTo(User, { foreignKey: "sender_id", as: "Sender" }); //  발신자 관계 설정
-Notification.belongsTo(User, { foreignKey: "user_id", as: "Receiver" }); //  수신자 관계 설정
 
 module.exports = Notification;
