@@ -1,120 +1,97 @@
 const express = require("express");
 const axios = require("axios");
 const fs = require("fs");
-const path = require("path");
 const { User, UserActivity } = require("../models");
-const { sequelize } = require("../db"); // Sequelize 인스턴스 가져오기
-const { Op } = require("sequelize"); // Sequelize에서 Op 가져오기
 const { getRandomSong } = require("../services/songService");
-
-require("dotenv").config();
 
 const router = express.Router();
 
-// JSON 파일 경로 (환경 변수에서 읽기)
-const googleCredentialsPath = process.env.GOOGLE_CREDENTIALS_PATH;
+// 환경 변수 및 구글 인증 파일 로드
+const credentialsPath = process.env.GOOGLE_CREDENTIALS_PATH;
+let googleConfig;
 
-// JSON 파일 읽기
-let googleCredentials;
 try {
-    const fileContent = fs.readFileSync(googleCredentialsPath, "utf8");
-    googleCredentials = JSON.parse(fileContent);
+    const raw = fs.readFileSync(credentialsPath, "utf8");
+    googleConfig = JSON.parse(raw).web;
 } catch (err) {
-    console.error("Google JSON 파일 읽기 실패:", err.message);
-    process.exit(1); // JSON 파일이 없으면 서버 실행 중단
+    console.error("Google 인증 JSON 로드 실패:", err.message);
+    process.exit(1);
 }
 
-// Google API 설정
-const GOOGLE_CLIENT_ID = googleCredentials.web.client_id;
-const GOOGLE_CLIENT_SECRET = googleCredentials.web.client_secret;
-const GOOGLE_REDIRECT_URI = googleCredentials.web.redirect_uris[0];
+// 구글 인증 상수 정의
+const GOOGLE_AUTH_BASE_URL = "https://accounts.google.com/o/oauth2/auth";
+const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
+const GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v2/userinfo";
+const { client_id, client_secret, redirect_uris } = googleConfig;
+const REDIRECT_URI = redirect_uris[0];
 
-// Google 로그인 페이지로 리다이렉트
+// Google 로그인 URL로 리디렉트
 router.get("/", (req, res) => {
-    const googleAuthURL = `https://accounts.google.com/o/oauth2/auth?response_type=code&client_id=${GOOGLE_CLIENT_ID}&redirect_uri=${GOOGLE_REDIRECT_URI}&scope=email%20profile`;
-    console.log("Google Auth URL:", googleAuthURL);
-    res.redirect(googleAuthURL);
+    const authURL = `${GOOGLE_AUTH_BASE_URL}?response_type=code&client_id=${client_id}&redirect_uri=${REDIRECT_URI}&scope=email%20profile`;
+    res.redirect(authURL);
 });
 
-// Google에서 Authorization Code 받기
+// OAuth 콜백 처리
 router.get("/callback", async (req, res) => {
     const { code } = req.query;
-
-    if (!code) {
-        return res.status(400).send("Authorization code is missing.");
-    }
+    if (!code) return res.status(400).send("Authorization code is missing.");
 
     try {
-        // Access Token 요청
-        const tokenResponse = await axios.post(
-            "https://oauth2.googleapis.com/token",
-            null,
-            {
-                params: {
-                    code: code,
-                    client_id: GOOGLE_CLIENT_ID,
-                    client_secret: GOOGLE_CLIENT_SECRET,
-                    redirect_uri: GOOGLE_REDIRECT_URI,
-                    grant_type: "authorization_code",
-                },
-                headers: { "Content-Type": "application/x-www-form-urlencoded" },
-            }
-        );
-
-        const { access_token } = tokenResponse.data;
-
-        // 사용자 정보 요청
-        const userResponse = await axios.get("https://www.googleapis.com/oauth2/v2/userinfo", {
-            headers: { Authorization: `Bearer ${access_token}` },
+        // 토큰 요청
+        const tokenRes = await axios.post(GOOGLE_TOKEN_URL, null, {
+            params: {
+                code,
+                client_id,
+                client_secret,
+                redirect_uri: REDIRECT_URI,
+                grant_type: "authorization_code",
+            },
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
         });
 
-        const { id, name, email } = userResponse.data;
+        const accessToken = tokenRes.data.access_token;
 
-        // 사용자 정보 저장 또는 업데이트
-        const [user, userCreated] = await User.findOrCreate({
+        // 사용자 정보 요청
+        const userRes = await axios.get(GOOGLE_USERINFO_URL, {
+            headers: { Authorization: `Bearer ${accessToken}` },
+        });
+
+        const { id, name, email } = userRes.data;
+
+        // 사용자 DB 저장 또는 갱신
+        const [user, created] = await User.findOrCreate({
             where: { social_id: id, social_provider: "google" },
             defaults: { name, email },
         });
 
-        if (!userCreated) {
+        if (!created) {
             user.name = name;
             user.email = email;
             await user.save();
         }
 
-        // 방문 기록 업데이트 (하루 00:00 기준)
-        const userActivity = await UserActivity.updateVisit(user.id);
-        const visitCount = userActivity.visit_count;
+        // 방문 기록 및 통계 처리
+        const activity = await UserActivity.updateVisit(user.id);
+        const { visit_count } = activity;
+        const { mostVisitedDays } = await UserActivity.getMostVisitedDays(user.id);
+        const mostVisited = mostVisitedDays.join(", ");
 
-        // 최다 방문 요일 계산
-        const mostVisitedDaysData = await UserActivity.getMostVisitedDays(user.id);
-        const mostVisitedDays = mostVisitedDaysData.mostVisitedDays.join(", "); 
-
-        // 세션에 사용자 정보 저장
+        // 세션 저장
         req.session.user = {
             userId: user.id,
             name: user.name,
             email: user.email,
-            visitCount: visitCount, 
-            mostVisitedDays: mostVisitedDays, 
+            visitCount: visit_count,
+            mostVisitedDays: mostVisited,
         };
 
-        // 추천 노래 가져오기
-        const songData = await getRandomSong(req);
-        req.session.songData = songData; // 세션에 저장
+        req.session.songData = await getRandomSong(req);
 
-        // 추가 정보 입력 안 했으면 리디렉트
-        /*
-        if (!user.gender || !user.goal) {
-            return res.redirect("http://localhost:3000/userdetails");
-        } 
-        */
-        
-        // 로그인 성공 후 홈으로 리디렉트
+        // 홈으로 리디렉트
         res.redirect("http://localhost:3000/home");
 
     } catch (err) {
-        console.error("Google Authentication Failed:", err.message);
+        console.error("Google 인증 처리 오류:", err.message);
         res.status(500).send("Google Authentication Failed");
     }
 });
