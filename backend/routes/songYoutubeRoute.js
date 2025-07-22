@@ -1,16 +1,21 @@
 const express = require("express");
 const { google } = require("googleapis");
-require("dotenv").config(); // .env에서 API Key 로드
+require("dotenv").config();
 
 const router = express.Router();
+
+// 유튜브 API 키 확인
+if (!process.env.YOUTUBE_API_KEY) {
+  throw new Error("YOUTUBE_API_KEY가 .env에 설정되어 있지 않습니다.");
+}
 
 // 유튜브 API 클라이언트 설정
 const youtube = google.youtube({
   version: "v3",
-  auth: process.env.YOUTUBE_API_KEY, // .env 파일에서 API Key를 가져옵니다.
+  auth: process.env.YOUTUBE_API_KEY,
 });
 
-// 노래 제목과 아티스트를 기반으로 유튜브 비디오 링크를 가져오는 함수
+// 유튜브 링크 검색 함수
 async function getYoutubeVideoUrl(Title, Artist) {
   try {
     const query = `${Title} ${Artist}`;
@@ -18,16 +23,21 @@ async function getYoutubeVideoUrl(Title, Artist) {
       part: "snippet",
       q: query,
       type: "video",
-      maxResults: 1, // 첫 번째 결과만 가져옵니다.
+      maxResults: 1,
     });
 
     if (!response.data.items || response.data.items.length === 0) {
       throw new Error("유튜브에서 비디오를 찾을 수 없습니다.");
     }
 
-    const video = response.data.items[0]; // 첫 번째 비디오 정보
-    const videoUrl = `https://www.youtube.com/watch?v=${video.id.videoId}`;
-    const embedUrl = `https://www.youtube.com/embed/${video.id.videoId}`;
+    const videoId = response.data.items[0]?.id?.videoId;
+
+    if (!videoId) {
+      throw new Error("비디오 ID를 찾을 수 없습니다.");
+    }
+
+    const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
+    const embedUrl = `https://www.youtube.com/embed/${videoId}`;
     return { videoUrl, embedUrl };
   } catch (error) {
     console.error("유튜브 API 요청 실패:", error.message);
@@ -35,25 +45,69 @@ async function getYoutubeVideoUrl(Title, Artist) {
   }
 }
 
-// 로그인 후 세션에 저장된 노래 정보를 바탕으로 유튜브 링크를 반환하는 라우터
-router.get("/", async (req, res) => {
+// 세션 링크에서 videoId 추출하는 함수
+function extractVideoIdFromUrl(url) {
   try {
-    const Title = req.session.songData?.Title; // 세션에서 노래 제목 가져오기
-    const Artist = req.session.songData?.Artist; // 세션에서 아티스트 가져오기
+    const parsed = new URL(url);
 
-    if (!Title || !Artist) {
-      return res.status(400).json({ result: false, message: "노래 제목이나 아티스트가 없습니다." });
+    if (parsed.hostname === "youtu.be") {
+      return parsed.pathname.slice(1); // e.g., /abc123 → abc123
     }
 
-    // 유튜브 링크 가져오기
+    if (parsed.hostname.includes("youtube.com")) {
+      return parsed.searchParams.get("v"); // e.g., watch?v=abc123
+    }
+
+    return null;
+  } catch (e) {
+    return null;
+  }
+}
+
+// 유튜브 링크 반환 라우터
+router.get("/", async (req, res) => {
+  try {
+    const songData = req.session.songData;
+
+    if (!songData || !songData.Title || !songData.Artist) {
+      return res.status(400).json({
+        result: false,
+        message: "노래 정보가 세션에 없습니다.",
+      });
+    }
+
+    const { Title, Artist, youtubeLink } = songData;
+
+    if (youtubeLink) {
+      const videoId = extractVideoIdFromUrl(youtubeLink);
+
+      if (videoId) {
+        const embedUrl = `https://www.youtube.com/embed/${videoId}`;
+
+        return res.status(200).json({
+          result: true,
+          videoUrl: youtubeLink,
+          embedUrl,
+          title: Title,
+          artist: Artist,
+          source: "session",
+        });
+      }
+    }
+
+    // 없거나 videoId를 추출할 수 없을 경우 → API 호출
     const { videoUrl, embedUrl } = await getYoutubeVideoUrl(Title, Artist);
 
-    res.status(200).json({
+    // 세션에 저장
+    req.session.songData.youtubeLink = videoUrl;
+
+    return res.status(200).json({
       result: true,
-      videoUrl: videoUrl, //유튜브 페이지로 이동할 때 사용
-      embedUrl: embedUrl, // HTML로 현재 페이지에 삽입할 때
+      videoUrl,
+      embedUrl,
       title: Title,
       artist: Artist,
+      source: "api",
     });
   } catch (error) {
     console.error("유튜브 비디오 링크 조회 실패:", error.message);
