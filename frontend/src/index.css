@@ -1,9 +1,43 @@
-* {
-  font-family: KoPubWorldDotum_Pro;
-  font-style: normal;
-  font-weight: 500;
+@import "tailwindcss";
+
+@theme {
+  --font-family-base: KoPubWorldDotum_Pro, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-weight-medium: 500;
+  --spacing-7_5: 1.875rem; /* 30px */
+  --spacing-12_5: 3.125rem; /* 50px */
+  --spacing-15: 3.75rem; /* 60px */
+  --spacing-25: 6.25rem; /* 100px */
+  --spacing-30: 7.5rem; /* 120px */
+  --spacing-75: 18.75rem; /* 300px */
+  --animate-fadeIn: fadeIn 1s ease-in-out;
+  --border-width-8: 8px;
 }
 
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+* {
+  font-family: var(--font-family-base);
+  font-style: normal;
+  font-weight: var(--font-weight-medium);
+}
+
+html,
 body {
-  margin: 0;
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100%;
+}
+
+#root {
+  width: 100%;
+  max-width: 100%;
 }
