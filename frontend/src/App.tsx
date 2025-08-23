@@ -1,4 +1,5 @@
 import { RouterProvider, createBrowserRouter } from "react-router-dom";
+import { Provider } from "jotai";
 import Navbar from "./Components/Templates/Navbar";
 import Home from "./Components/Pages/Home";
 import Question from "./Components/Pages/Question";
@@ -12,7 +13,7 @@ import MyPage from "./Components/Pages/MyPage";
 const router = createBrowserRouter([
   {
     path: "/home",
-    element: <Home Login={true} />,
+    element: <Home />,
   },
   {
     path: "/question",
@@ -40,12 +41,16 @@ const router = createBrowserRouter([
   },
   {
     path: "/mypage",
-    element: <MyPage />
-  }
+    element: <MyPage />,
+  },
 ]);
 
 function App() {
-  return <RouterProvider router={router} />;
+  return (
+    <Provider>
+      <RouterProvider router={router} />
+    </Provider>
+  );
 }
 
 export default App;
