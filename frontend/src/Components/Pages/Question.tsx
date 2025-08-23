@@ -3,18 +3,6 @@ import axios from "axios";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import NavBar from "../Templates/Navbar";
-import {
-  ChatBotContainer,
-  MessageList,
-  MessageBubble,
-  InputContainer,
-  TextInput,
-  SendButton,
-  MicButton,
-  FontSizeContainer,
-  FontSizeLabel,
-  FontSizeButton,
-} from "../../Styles/Question";
 import Mike from "../../Images/mike.png";
 import Send from "../../Images/sendicon.png";
 
@@ -116,28 +104,45 @@ const ChatBot = () => {
   };
 
   return (
-    <div>
-      <ChatBotContainer>
-        <FontSizeContainer>
-          <FontSizeLabel>폰트 크기</FontSizeLabel>
-          <div style={{ display: "flex", gap: "10px" }}>
-            <FontSizeButton onClick={() => handleFontSizeChange(14)}>
+    <div className="w-full h-full flex flex-col items-center max-w-[440px] mx-auto shadow-[0_0_10px_0_rgba(0,0,0,0.1)] bg-[#F7F8FB]">
+      <div className="h-[calc(100vh-160px)] w-full max-w-[440px] box-border mx-auto flex flex-col justify-end bg-gray-100">
+        <div className="flex items-center justify-center mb-5 pt-2">
+          <label className="text-base font-bold mr-2">폰트 크기</label>
+          <div className="flex gap-2">
+            <button 
+              onClick={() => handleFontSizeChange(14)}
+              className="px-3 py-2 text-sm border border-gray-300 rounded bg-white shadow-sm hover:bg-gray-50 active:bg-gray-200 active:shadow-inner cursor-pointer"
+            >
               작게
-            </FontSizeButton>
-            <FontSizeButton onClick={() => handleFontSizeChange(18)}>
+            </button>
+            <button 
+              onClick={() => handleFontSizeChange(18)}
+              className="px-3 py-2 text-sm border border-gray-300 rounded bg-white shadow-sm hover:bg-gray-50 active:bg-gray-200 active:shadow-inner cursor-pointer"
+            >
               중간
-            </FontSizeButton>
-            <FontSizeButton onClick={() => handleFontSizeChange(22)}>
+            </button>
+            <button 
+              onClick={() => handleFontSizeChange(22)}
+              className="px-3 py-2 text-sm border border-gray-300 rounded bg-white shadow-sm hover:bg-gray-50 active:bg-gray-200 active:shadow-inner cursor-pointer"
+            >
               크게
-            </FontSizeButton>
+            </button>
           </div>
-        </FontSizeContainer>
-        <MessageList>
+        </div>
+        <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-2">
           {messages.map((msg, index) => (
-            <MessageBubble
+            <div
               key={index}
-              isUser={msg.type === "user"}
-              fontSize={fontSize}
+              className={`max-w-[70%] p-4 my-1 rounded-lg relative shadow-md font-bold leading-relaxed ${
+                msg.type === "user"
+                  ? "bg-teal-400 text-white self-end"
+                  : "bg-white text-gray-800 self-start"
+              } ${
+                msg.type === "user"
+                  ? "after:content-[''] after:absolute after:top-2 after:-right-2 after:border-l-[10px] after:border-l-teal-400 after:border-t-[10px] after:border-t-transparent after:border-b-[10px] after:border-b-transparent"
+                  : "after:content-[''] after:absolute after:top-2 after:-left-2 after:border-r-[10px] after:border-r-white after:border-t-[10px] after:border-t-transparent after:border-b-[10px] after:border-b-transparent"
+              }`}
+              style={{ fontSize: `${fontSize}px` }}
             >
               {msg.type === "bot" ? (
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>
@@ -146,25 +151,32 @@ const ChatBot = () => {
               ) : (
                 msg.content
               )}
-            </MessageBubble>
+            </div>
           ))}
-        </MessageList>
-        <InputContainer>
-          <MicButton onClick={handleMicClick}>
-            <img src={Mike} alt="마이크" />
-          </MicButton>
-          <TextInput
+        </div>
+        <div className="flex items-center p-1 bg-white border-t border-gray-300 w-full box-border shadow-inner">
+          <button 
+            onClick={handleMicClick}
+            className="bg-gray-400 text-white border-none rounded-full w-10 h-10 flex justify-center items-center cursor-pointer hover:bg-teal-500"
+          >
+            <img src={Mike} alt="마이크" className="w-7 h-7" />
+          </button>
+          <input
             type="text"
             value={userInput}
             onChange={(e) => setUserInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="내용을 입력하세요."
+            className="flex-1 p-2 border border-gray-300 rounded-full mx-4 text-base"
           />
-          <SendButton onClick={handleSend}>
-            <img src={Send} alt="전송" />
-          </SendButton>
-        </InputContainer>
-      </ChatBotContainer>
+          <button 
+            onClick={handleSend}
+            className="bg-teal-400 text-white border-none rounded-full w-12 h-12 flex justify-center items-center cursor-pointer hover:bg-teal-500"
+          >
+            <img src={Send} alt="전송" className="ml-0.5 w-12 h-12" />
+          </button>
+        </div>
+      </div>
       <NavBar currentPage={"Question"} />
     </div>
   );

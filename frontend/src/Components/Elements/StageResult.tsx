@@ -1,18 +1,5 @@
 import React, { useState } from "react";
 import { Example } from "../../types"; // Import Example type
-import {
-  Button,
-  Stage,
-  Card,
-  CardList,
-  Context,
-  DotContainer,
-  Dot,
-  ButtonContainer,
-  MoveButton,
-  SpeakButton,
-  Description,
-} from "../../Styles/Example";
 
 
 interface StageResultProps {
@@ -84,42 +71,45 @@ const StageResult = ({
   };
 
   return (
-    <Stage>
-      <Description>
+    <div className="w-full h-[calc(100vh-100px)] flex flex-col items-center justify-center overflow-hidden">
+      <div className="relative w-[293px] p-5 m-2 rounded-xl bg-gray-100 shadow-lg text-left after:content-[''] after:absolute after:top-1/2 after:right-full after:w-0 after:h-0 after:border-l-5 after:border-l-transparent after:border-t-2 after:border-t-transparent after:border-b-2 after:border-b-transparent after:border-r-5 after:border-r-gray-100">
         <p>{description}</p>
-      </Description>
-      <CardList>
+      </div>
+      <div className="flex overflow-auto justify-center">
         {examples.length > 0 && (
-          <Card key={examples[currentIndex].id}>
+          <div className="w-[293px] p-5 m-2 rounded-xl bg-gray-100 shadow-lg flex-shrink-0 text-left">
             {/* 카드 인덱스를 점으로 표시 */}
-            <DotContainer>
+            <div className="flex justify-center my-2 -translate-y-2">
               {examples.map((_, index) => (
-                <Dot
+                <div
                   key={index}
-                  isActive={index === currentIndex}
+                  className={`w-2 h-2 mx-1 rounded-full cursor-pointer hover:bg-teal-400 ${
+                    index === currentIndex ? "bg-teal-400" : "bg-gray-400"
+                  }`}
                   onClick={() => handleDotClick(index)}
                 />
               ))}
-            </DotContainer>
-            <Context>
-              <strong>{examples[currentIndex].context}</strong>
-            </Context>
-            <p>
+            </div>
+            <strong className="bg-teal-400 px-1">
+              {examples[currentIndex].context}
+            </strong>
+            <p className="mt-2">
               <strong>A:</strong> {examples[currentIndex].dialogue.A.english}
             </p>
-            <p style={{ color: "grey" }}>
+            <p className="text-gray-500">
               {examples[currentIndex].dialogue.A.korean}
             </p>
-            <p>
+            <p className="mt-2">
               <strong>B:</strong> {examples[currentIndex].dialogue.B.english}
             </p>
-            <p style={{ color: "grey" }}>
+            <p className="text-gray-500">
               {examples[currentIndex].dialogue.B.korean}
             </p>
-            <ButtonContainer>
-              <MoveButton
+            <div className="flex justify-between mt-4">
+              <button
                 onClick={handlePreviousCard}
                 disabled={currentIndex === 0}
+                className="border-none bg-transparent translate-y-4 disabled:opacity-0"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -133,8 +123,11 @@ const StageResult = ({
                     fill="black"
                   />
                 </svg>
-              </MoveButton>
-              <SpeakButton onClick={handleTTS}>
+              </button>
+              <button 
+                onClick={handleTTS}
+                className="rounded-full bg-teal-400 w-20 h-20 border-none active:bg-teal-300 focus:bg-teal-300"
+              >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   width="41"
@@ -147,10 +140,11 @@ const StageResult = ({
                     fill="black"
                   />
                 </svg>
-              </SpeakButton>
-              <MoveButton
+              </button>
+              <button
                 onClick={handleNextCard}
                 disabled={currentIndex === examples.length - 1}
+                className="border-none bg-transparent translate-y-4 disabled:opacity-0"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -164,15 +158,20 @@ const StageResult = ({
                     fill="black"
                   />
                 </svg>
-              </MoveButton>
-            </ButtonContainer>
-          </Card>
+              </button>
+            </div>
+          </div>
         )}
-      </CardList>
+      </div>
 
-      <Button onClick={() => setStage(1)}>다른 예문 생성하기</Button>
+      <button 
+        onClick={() => setStage(1)}
+        className="p-5 bg-teal-400 text-lg font-bold text-white border-none rounded cursor-pointer mt-5"
+      >
+        다른 예문 생성하기
+      </button>
       
-    </Stage>
+    </div>
   );
 };
 

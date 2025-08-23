@@ -7,7 +7,6 @@ import StageCrop from "../Elements/StageCrop";
 import StageLoading from "../Elements/StageLoading";
 import StageResult from "../Elements/StageResult";
 import { Example } from "../types"; // Example type definition
-import styled from "styled-components";
 import NavBar from "../Templates/Navbar";
 
 const App = () => {
@@ -84,36 +83,28 @@ const App = () => {
   };
 
   return (
-    <ExampleContainer>
-    <ExampleDiv>
-      {stage === 1 && <StageUpload handleFileUpload={handleFileUpload} />}
-      {stage === 2 && uploadedImage && (
-        <StageCrop uploadedImage={uploadedImage} cropperRef={cropperRef} handleCrop={handleCrop} handleBackToUpload={handleBackToUpload} />
-      )}
-      {stage === 3 && <StageLoading />}
-      {stage === 4 && (
-        <StageResult
-          description={description}
-          examples={examples}
-          errorMessage={errorMessage}
-          setStage={setStage}
-        />
-      )}
-    </ExampleDiv>
-    <NavBar currentPage={"Example"} />
-    </ExampleContainer>
+    <div className="w-full h-full flex flex-col items-center max-w-[440px] mx-auto shadow-[0_0_10px_0_rgba(0,0,0,0.1)] bg-[#F7F8FB]">
+      <div className="h-[calc(100vh-80px)] p-0 px-3 w-full max-w-[440px] box-border mx-auto overflow-y-scroll">
+        <div className="flex justify-center items-center h-full">
+          {stage === 1 && <StageUpload handleFileUpload={handleFileUpload} />}
+          {stage === 2 && uploadedImage && (
+            <StageCrop uploadedImage={uploadedImage} cropperRef={cropperRef} handleCrop={handleCrop} handleBackToUpload={handleBackToUpload} />
+          )}
+          {stage === 3 && <StageLoading />}
+          {stage === 4 && (
+            <StageResult
+              description={description}
+              examples={examples}
+              errorMessage={errorMessage}
+              setStage={setStage}
+            />
+          )}
+        </div>
+      </div>
+      <NavBar currentPage={"Example"} />
+    </div>
   );
 };
 
 export default App;
 
-const ExampleContainer = styled.div`
-  width: 100vw;
-  height: calc(100vh - 100px);
-`;
-
-const ExampleDiv = styled.div`
-  display: flex;
-  justify-content: center;
-  align-items: center;
-`;

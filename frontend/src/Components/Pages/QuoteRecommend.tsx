@@ -1,5 +1,4 @@
 import React from "react";
-import styled from "styled-components";
 
 interface PopupProps {
   quote: string;
@@ -15,78 +14,18 @@ const QuoteRecommend = ({
   onClose,
 }: PopupProps) => {
   return (
-    <PopupContainer>
-      <PopupContent>
-        <CloseButton onClick={onClose}>✖</CloseButton>
-        <AudioIcon>🔊</AudioIcon>
-        <QuoteText>{quote}</QuoteText>
-        <TranslationText>{translation}</TranslationText>
-        <SourceText>{source}</SourceText>
-        <DownloadButton>다운로드</DownloadButton>
-      </PopupContent>
-    </PopupContainer>
+    <div className="fixed top-0 left-0 w-full h-screen bg-black bg-opacity-50 flex justify-center items-center z-50">
+      <div className="bg-gradient-to-b from-[#fdf7e8] to-[#ffe5e5] rounded-[15px] p-[20px] text-center w-[300px] max-w-[90%] relative">
+        <button className="absolute top-[10px] right-[10px] bg-none border-none text-[20px] cursor-pointer" onClick={onClose}>✖</button>
+        <div className="text-[30px] mb-[10px]">🔊</div>
+        <p className="text-[18px] font-bold mb-[10px]">{quote}</p>
+        <p className="text-[16px] mb-[10px]">{translation}</p>
+        <p className="text-[14px] text-gray-500 mb-[20px]">{source}</p>
+        <button className="bg-[#f5a623] border-none text-white p-[10px_20px] rounded-[5px] cursor-pointer">다운로드</button>
+      </div>
+    </div>
   );
 };
 
 export default QuoteRecommend;
 
-const PopupContainer = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-`;
-
-const PopupContent = styled.div`
-  background: linear-gradient(180deg, #fdf7e8 0%, #ffe5e5 100%);
-  border-radius: 15px;
-  padding: 20px;
-  text-align: center;
-  width: 300px;
-`;
-
-const CloseButton = styled.button`
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  background: none;
-  border: none;
-  font-size: 20px;
-  cursor: pointer;
-`;
-
-const AudioIcon = styled.div`
-  font-size: 30px;
-  margin-bottom: 10px;
-`;
-
-const QuoteText = styled.p`
-  font-size: 18px;
-  font-weight: bold;
-  margin-bottom: 10px;
-`;
-
-const TranslationText = styled.p`
-  font-size: 16px;
-  margin-bottom: 10px;
-`;
-
-const SourceText = styled.p`
-  font-size: 14px;
-  color: gray;
-  margin-bottom: 20px;
-`;
-
-const DownloadButton = styled.button`
-  background: #f5a623;
-  border: none;
-  color: white;
-  padding: 10px 20px;
-  border-radius: 5px;
-  cursor: pointer;
-`;

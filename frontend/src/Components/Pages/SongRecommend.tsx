@@ -1,5 +1,4 @@
 import { useState } from "react";
-import styled from "styled-components";
 import NavBar from "../Templates/Navbar";
 import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
@@ -37,66 +36,35 @@ const SongRecommend = (props: RecommendProps) => {
     }, []);
 
     return (
-        <RecommendContainer>
-            {/* 뒤로가기 버튼 */}
-            <div style={{position: "fixed", margin: "40px 30px"}} onClick={() => {navigate("/home")}}>
-                <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30" fill="none">
-                    <path d="M14.2969 23.4375L5.85938 15L14.2969 6.5625M7.03125 15H24.1406" stroke="black" stroke-width="2.8125" stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
+        <div className="w-full h-full flex flex-col items-center max-w-[440px] mx-auto shadow-[0_0_10px_0_rgba(0,0,0,0.1)] bg-[#F7F8FB]">
+            <div className="h-[calc(100vh-80px)] p-0 px-3 w-full max-w-[440px] box-border mx-auto overflow-y-scroll">
+                {/* 뒤로가기 버튼 */}
+                <div className="py-6" onClick={() => {navigate("/home")}}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30" fill="none">
+                        <path d="M14.2969 23.4375L5.85938 15L14.2969 6.5625M7.03125 15H24.1406" stroke="black" strokeWidth="2.8125" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                </div>
+                <div className="flex flex-col">
+                    <div>
+                        {/* YouTube container */}
+                    </div>
+                    <div className="w-full bg-[#00daaa]">
+                        <div className="p-[10px_20px] text-[22px] font-bold">
+                            {title}
+                        </div>
+                        <div className="p-[10px_20px] text-[18px]">
+                            {artist}
+                        </div>
+                    </div>
+                    <span className="whitespace-pre-wrap p-3">
+                        <span>{lyric}</span>
+                    </span>
+                </div>
             </div>
-            <RecommendDiv>
-                <Youtube>
-
-                </Youtube>
-                <SongInfo>
-                    <Title>
-                        {title}
-                    </Title>
-                    <Artist>
-                        {artist}
-                    </Artist>
-                </SongInfo>
-                <Lyrics>
-                    <span>{lyric}</span>
-                </Lyrics>
-            </RecommendDiv>
             <NavBar currentPage={"Home"} />
-        </RecommendContainer>
+        </div>
     );
 }
 
-const RecommendContainer = styled.div`
-    width: 100vw;
-    height: 100vh;
-`;
-
-const RecommendDiv = styled.div`
-    display: flex;
-    flex-direction: column;
-`;
-
-const Youtube = styled.div`
-
-`;
-
-const SongInfo = styled.div`
-    width: 100vw;
-    background-color: #00daaa;
-`;
-
-const Lyrics = styled.span`
-  white-space: pre-wrap;
-`;
-
-const Title = styled.div`
-    padding: 10px 20px;
-    font-size: 22px;
-    font-weight: 700;
-`;
-
-const Artist = styled.div`
-    padding: 10px 20px;
-    font-size: 18px;
-`;
 
 export default SongRecommend;
