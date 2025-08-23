@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
-import styled from "styled-components";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import download from "../../Images/download.png";
 import speaker from "../../Images/speaker.png";
 
@@ -9,6 +8,7 @@ interface HomeInfoProps {
   visitCount?: number;
   mostVisitedDay?: string;
   recommendation?: string;
+  isLoggedIn?: boolean;
 }
 
 const HomeInfo = ({
@@ -16,6 +16,7 @@ const HomeInfo = ({
   visitCount,
   mostVisitedDay,
   recommendation,
+  isLoggedIn,
 }: HomeInfoProps) => {
   const navigate = useNavigate();
 
@@ -45,45 +46,71 @@ const HomeInfo = ({
 
   return (
     <>
-      <div>
-        <Text>
-          <span>{userName}</span>님, 반가워요.
-          <br />
-          오늘로 벌써 <StyledSpan>3번째</StyledSpan> 방문하셨어요.
-        </Text>
-      </div>
-      <OneLine>
-        <Title style={{ backgroundColor: "#00E8B6" }}>
+      {isLoggedIn ? (
+        <div>
+          <p className="text-[24px] leading-[150%] font-medium my-[20px]">
+            <span>{userName}</span>님, 반가워요.
+            <br />
+            오늘로 벌써 <span className="font-bold">{visitCount}번째</span>{" "}
+            방문하셨어요.
+          </p>
+        </div>
+      ) : (
+        <div className="flex flex-col items-start justify-center gap-1 my-2">
+          <div className="text-[24px] leading-[150%] font-medium">
+            로그인이 필요합니다.
+          </div>
+          <Link
+            to="/"
+            className="text-[16px] leading-[150%] font-medium underline-offset-4 underline"
+          >
+            로그인 및 회원가입
+          </Link>
+        </div>
+      )}
+      <div className="h-[200px] flex flex-col justify-start items-start p-[20px] rounded-[20px] bg-white shadow-[0px_3px_7px_2px_rgba(0,0,0,0.05)] my-[20px] border-4 border-[#00DAAA]">
+        <div className="text-[16px] font-bold leading-[150%] bg-[#00E8B6]">
           <span>오늘의 한줄 영어</span>
-        </Title>
-        <Content1>
+        </div>
+        <div className="text-[22px] font-bold leading-[150%] w-full overflow-hidden text-ellipsis my-[20px] max-h-[90px] flex flex-col">
           <div>Have you ever played a game?</div>
           <div>게임을 해 본 적이 있어?</div>
-        </Content1>
+        </div>
 
-        <OnelineIcon>
-          <Div>
-          <svg xmlns="http://www.w3.org/2000/svg" width="27" height="22" viewBox="0 0 27 22" fill="none">
-            <path d="M2 9.40005C1.2268 9.40005 0.6 10.0269 0.6 10.8C0.6 11.5732 1.2268 12.2 2 12.2L2 9.40005ZM26.0899 11.79C26.6367 11.2433 26.6367 10.3568 26.0899 9.8101L17.1804 0.900555C16.6337 0.353821 15.7472 0.353821 15.2005 0.900555C14.6538 1.44729 14.6538 2.33372 15.2005 2.88045L23.1201 10.8001L15.2005 18.7196C14.6538 19.2664 14.6538 20.1528 15.2005 20.6995C15.7472 21.2463 16.6337 21.2463 17.1804 20.6995L26.0899 11.79ZM2 12.2L25.1 12.2001L25.1 9.40005L2 9.40005L2 12.2Z" fill="black" />
-          </svg>
-          </Div>
-        </OnelineIcon>
-      </OneLine>
-      <SongRecommend
+        <div className="w-full flex flex-col items-end">
+          <div className="rounded-[70px] bg-gradient-to-r from-transparent to-[#00DAAA] w-1/2 h-[50px] flex justify-end items-center">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="27"
+              height="22"
+              viewBox="0 0 27 22"
+              fill="none"
+              className="-translate-x-[15px]"
+            >
+              <path
+                d="M2 9.40005C1.2268 9.40005 0.6 10.0269 0.6 10.8C0.6 11.5732 1.2268 12.2 2 12.2L2 9.40005ZM26.0899 11.79C26.6367 11.2433 26.6367 10.3568 26.0899 9.8101L17.1804 0.900555C16.6337 0.353821 15.7472 0.353821 15.2005 0.900555C14.6538 1.44729 14.6538 2.33372 15.2005 2.88045L23.1201 10.8001L15.2005 18.7196C14.6538 19.2664 14.6538 20.1528 15.2005 20.6995C15.7472 21.2463 16.6337 21.2463 17.1804 20.6995L26.0899 11.79ZM2 12.2L25.1 12.2001L25.1 9.40005L2 9.40005L2 12.2Z"
+                fill="black"
+              />
+            </svg>
+          </div>
+        </div>
+      </div>
+      <div
+        className="h-[120px] flex px-5 py-2 justify-between items-center rounded-[20px] bg-white shadow-[0px_3px_7px_2px_rgba(0,0,0,0.05)] cursor-pointer"
         onClick={() => {
           navigate("/song-recommend");
         }}
       >
-        <div style={{ width: "180px" }}>
-          <Title>
+        <div className="w-full">
+          <div className="text-[16px] font-bold leading-[150%]">
             <span>오늘의 추천 팝송</span>
-          </Title>
-          <Content2>
+          </div>
+          <div className="text-xl font-bold max-w-4/5 text-ellipsis">
             <span>{recommendation}</span>
-          </Content2>
+          </div>
         </div>
-        <Icon>
-          <div style={{ top: "10px", left: "-60px" }}>
+        <div className="h-[120px]">
+          <div className="relative top-[10px] left-[-60px]">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="63"
@@ -97,30 +124,29 @@ const HomeInfo = ({
               />
             </svg>
           </div>
-          <div style={{ top: "-20px", left: "-25px" }}>
+          <div className="relative top-[-20px] left-[-25px]">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="53"
               height="53"
               viewBox="0 0 53 53"
               fill="none"
-              style={{}}
             >
               <path
                 d="M10.75 50.125C15.0992 50.125 18.625 46.5992 18.625 42.25C18.625 37.9008 15.0992 34.375 10.75 34.375C6.40076 34.375 2.875 37.9008 2.875 42.25C2.875 46.5992 6.40076 50.125 10.75 50.125Z"
                 fill="#CAE85D"
                 stroke="#CAE85D"
-                stroke-width="4"
-                stroke-linecap="round"
-                stroke-linejoin="round"
+                strokeWidth="4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
               />
               <path
                 d="M42.25 47.5C46.5992 47.5 50.125 43.9742 50.125 39.625C50.125 35.2758 46.5992 31.75 42.25 31.75C37.9008 31.75 34.375 35.2758 34.375 39.625C34.375 43.9742 37.9008 47.5 42.25 47.5Z"
                 fill="#CAE85D"
                 stroke="#CAE85D"
-                stroke-width="4"
-                stroke-linecap="round"
-                stroke-linejoin="round"
+                strokeWidth="4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
               />
               <path
                 d="M50.125 2.875L18.625 10.75V21.25L50.125 13.375V2.875Z"
@@ -129,13 +155,13 @@ const HomeInfo = ({
               <path
                 d="M18.625 42.25V21.25M18.625 21.25V10.75L50.125 2.875V13.375M18.625 21.25L50.125 13.375M50.125 39.625V13.375"
                 stroke="#CAE85D"
-                stroke-width="4"
-                stroke-linecap="round"
-                stroke-linejoin="round"
+                strokeWidth="4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
               />
             </svg>
           </div>
-          <div style={{ top: "-100px", left: "20px" }}>
+          <div className="relative top-[-100px] left-[20px]">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="63"
@@ -149,18 +175,14 @@ const HomeInfo = ({
               />
             </svg>
           </div>
-        </Icon>
-      </SongRecommend>
-      <StudyStatus>
-        <div
-          style={{ display: "flex", flexDirection: "column", width: "100%" }}
-        >
-          <div
-            style={{ fontSize: "20px", fontWeight: 700, lineHeight: "150%" }}
-          >
+        </div>
+      </div>
+      <div className="h-[120px] flex p-[0_20px] justify-between items-center rounded-[20px] bg-white shadow-[0px_3px_7px_2px_rgba(0,0,0,0.05)] my-[20px]">
+        <div className="flex flex-col w-full">
+          <div className="text-[20px] font-bold leading-[150%]">
             7번 남았어요!
           </div>
-          <div style={{ fontSize: "14px", lineHeight: "150%" }}>
+          <div className="text-[14px] leading-[150%]">
             <span>
               7번 더 오면 시즌 2를
               <br />
@@ -168,7 +190,7 @@ const HomeInfo = ({
             </span>
           </div>
         </div>
-        <div style={{ height: "100%" }}>
+        <div className="h-full">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="104"
@@ -202,126 +224,10 @@ const HomeInfo = ({
             />
           </svg>
         </div>
-      </StudyStatus>
-      <hr style={{ strokeWidth: "0.5px", stroke: "#B4B2B3" }} />
+      </div>
+      <hr className="border-t border-[#B4B2B3]" />
     </>
   );
 };
 
 export default HomeInfo;
-
-const Div = styled.div`
-  border-radius: 70px; 
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.00) 0%, #00DAAA 100%);
-  width: 50%; 
-  height: 50px;
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-
-  & svg {
-    transform: translateX(-15px);
-  }
-`;
-
-const Title = styled.div`
-  font-size: 16px;
-  font-weight: 700;
-  line-height: 150%;
-  // margin: 20px 0;
-`;
-
-const Text = styled.p`
-  font-size: 24px;
-  line-height: 150%;
-  font-weight: 500;
-  margin: 20px 0;
-`;
-
-const Content1 = styled.div`
-  font-size: 22px;
-  font-weight: 700;
-  line-height: 150%;
-  width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin: 20px 0;
-  line-height: 30px;
-  max-height: 90px;
-  display: flex;
-  flex-direction: column;
-
-  // & div {
-  //   padding: 3px 0;
-  // }
-`;
-
-const Content2 = styled.div`
-  font-size: 22px;
-  font-weight: 700;
-  line-height: 150%;
-  width: max-content;
-  max-width: 50vw;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin: 20px 0;
-  line-height: 22px;
-  max-height: 44px;
-`;
-
-const StyledSpan = styled.span`
-  font-weight: 700;
-`;
-
-const OnelineIcon = styled.div`
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-`;
-
-const SongRecommend = styled.div`
-  height: 120px;
-  display: flex;
-  padding: 20px;
-  justify-content: space-between;
-  align-items: center;
-  border-radius: 20px;
-  background: #fff;
-  box-shadow: 0px 3px 7px 2px rgba(0, 0, 0, 0.05);
-  margin: 20px 0;
-`;
-
-const Icon = styled.div`
-  height: 120px;
-
-  & div {
-    position: relative;
-  }
-`;
-
-const StudyStatus = styled.div`
-  height: 120px;
-  display: flex;
-  padding: 0 20px;
-  justify-content: space-between;
-  align-items: center;
-  border-radius: 20px;
-  background: #fff;
-  box-shadow: 0px 3px 7px 2px rgba(0, 0, 0, 0.05);
-  margin: 20px 0;
-`;
-
-const OneLine = styled.div`
-  height: 200px;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  align-items: flex-start;
-  padding: 20px;
-  border-radius: 20px;
-  background: #fff;
-  box-shadow: 0px 3px 7px 2px rgba(0, 0, 0, 0.05);
-  margin: 20px 0;
-  border: 4px solid #00DAAA;
-`;
