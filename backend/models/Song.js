@@ -1,5 +1,5 @@
 const { DataTypes } = require('sequelize');
-const sequelize = require('../db');  // Sequelize 인스턴스
+const sequelize = require('../db');  
 
 const Song = sequelize.define('Song', {
   id: {

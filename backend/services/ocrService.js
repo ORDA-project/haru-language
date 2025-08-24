@@ -1,29 +1,30 @@
+const fs = require("fs");
 const vision = require("@google-cloud/vision");
 
-
-// 환경 변수 확인 로그 추가
-console.log("GOOGLE_APPLICATION_CREDENTIALS:", process.env.GOOGLE_APPLICATION_CREDENTIALS);
-
-
-// Google Cloud Vision 클라이언트 초기화
-const client = new vision.ImageAnnotatorClient();
-
-/**
- * Vision API를 사용해 이미지에서 텍스트 추출
- * @param {string} filePath 업로드된 파일 경로
- * @returns {string} 추출된 텍스트
- */
-async function detectText(filePath) {
-  const [result] = await client.textDetection(filePath);
-  const detections = result.textAnnotations;
-
-  if (!detections || detections.length === 0) {
-    throw new Error("No text detected");
+function makeClient() {
+  if (process.env.GOOGLE_CREDENTIALS_JSON) {
+    const c = JSON.parse(process.env.GOOGLE_CREDENTIALS_JSON);
+    return new vision.ImageAnnotatorClient({
+      credentials: { client_email: c.client_email, private_key: c.private_key },
+      projectId: c.project_id,
+    });
   }
-
-  return detections[0].description;
+  if (process.env.GOOGLE_CREDENTIALS_B64) {
+    const path = "/tmp/gcp-credentials.json";
+    fs.writeFileSync(path, Buffer.from(process.env.GOOGLE_CREDENTIALS_B64, "base64"));
+    process.env.GOOGLE_APPLICATION_CREDENTIALS = path;
+  }
+  return new vision.ImageAnnotatorClient();
 }
 
-module.exports = {
-  detectText,
-};
+const client = makeClient();
+
+/** 이미지에서 텍스트 추출 */
+async function detectText(filePath) {
+  const [result] = await client.textDetection(filePath);
+  const texts = result?.textAnnotations || [];
+  if (!texts.length) throw new Error("No text detected");
+  return texts[0].description;
+}
+
+module.exports = { detectText };
