@@ -54,16 +54,14 @@ router.get("/list/:userId", async (req, res) => {
     }
 
     const friends = await friendService.getFriends(userId);
-    if (!friends || friends.length === 0) {
-      return res.status(404).json({ message: "친구 목록이 존재하지 않습니다." });
-    }
+    const formatted = (friends || [])
+      .map(f => ({
+        id: f.FriendDetails?.id ?? null,
+        name: f.FriendDetails?.name ?? null,
+      }))
+      .filter(x => x.id !== null); // 연관 끊긴 행 제거
+    return res.status(200).json({ friends: formatted });
 
-    const formatted = friends.map(f => ({
-      id: f.FriendDetails.id,
-      name: f.FriendDetails.name
-    }));
-
-    res.status(200).json({ friends: formatted });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

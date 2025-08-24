@@ -61,6 +61,7 @@ const friendService = {
         model: User,
         as: "FriendDetails",
         attributes: ["id", "name"],
+        required: true,
       }],
     });
 
