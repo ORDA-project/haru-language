@@ -24,7 +24,7 @@ const UserActivity = sequelize.define("UserActivity", {
 }, {
   tableName: "user_activities",
   timestamps: true,
-  underscored: true,
+  underscored: false,
 });
 
 // 공통 요일 포맷터

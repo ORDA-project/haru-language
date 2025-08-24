@@ -16,8 +16,9 @@ const Song = sequelize.define('Song', {
     allowNull: false,
   },
 }, {
-  tableName: 'songs', // 테이블 이름 명시
-  timestamps: true, // created_at과 updated_at 자동 생성
+  tableName: 'songs', 
+  timestamps: true, 
+  underscored: false,
 });
 
 module.exports = Song;
