@@ -51,7 +51,8 @@ app.use((req, res, next) => {
   if (req.session.user || req.path === "/" || req.path.startsWith("/auth")) {
     return next();
   }
-  res.redirect("http://localhost:3000");
+  // res.redirect("http://localhost:3000");
+  res.status(401).json({ error: "Unauthorized" });
 });
 
 // 라우터 연결
