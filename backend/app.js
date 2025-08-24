@@ -1,90 +1,107 @@
+require("dotenv").config();
+
 const express = require("express");
 const cors = require("cors");
 const session = require("express-session");
 const cookieParser = require("cookie-parser");
 const MySQLStore = require("express-mysql-session")(session);
-
-// IPv6 경로로 먼저 붙다가 타임아웃 나는 현상 방지 
 const dns = require("dns");
 dns.setDefaultResultOrder("ipv4first");
 
-require("dotenv").config();
+const PROD = process.env.NODE_ENV === "production";
+const PORT = process.env.PORT || 8000;
+const SERVER_URL = process.env.SERVER_URL || `http://localhost:${PORT}`;
+const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:3000";
+const LOG_LEVEL = process.env.LOG_LEVEL || (PROD ? "warn" : "debug");
 
-const corsConfig = require("./config/corsConfig");
-const routes = require("./routes");
+const allow = (lvl) => ["debug","info","warn","error"].indexOf(lvl) >= ["debug","info","warn","error"].indexOf(LOG_LEVEL);
+const log = {
+  debug: (...a) => allow("debug") && console.debug(...a),
+  info:  (...a) => allow("info")  && console.info(...a),
+  warn:  (...a) => allow("warn")  && console.warn(...a),
+  error: (...a) => console.error(...a),
+};
+
 const { sequelize } = require("./models");
 
-const app = express();
-const PORT = process.env.PORT || 8000;
+function parseDatabaseUrl(urlStr) {
+  try {
+    const u = new URL(urlStr);
+    return {
+      host: u.hostname,
+      port: Number(u.port || 3306),
+      user: decodeURIComponent(u.username),
+      password: decodeURIComponent(u.password),
+      database: u.pathname.replace(/^\//, ""),
+      ssl: { rejectUnauthorized: false },
+    };
+  } catch { return null; }
+}
 
-// JSON 요청 파싱, 쿠키 파싱, CORS 설정
-app.use(express.json());
-app.use(cookieParser());
-app.use(cors(corsConfig));
-
-// MySQL 기반 세션 저장소 설정
-const sessionStore = new MySQLStore({
+const urlCfg = process.env.DATABASE_URL ? parseDatabaseUrl(process.env.DATABASE_URL) : null;
+const sessionConn = urlCfg || {
   host: process.env.DB_HOST,
-  port: process.env.DB_PORT,
+  port: Number(process.env.DB_PORT || 3306),
   user: process.env.DB_USERNAME,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
   ssl: { rejectUnauthorized: false },
-  clearExpired: true,
-  checkExpirationInterval: 1000 * 60 * 60,
-  expiration: 1000 * 60 * 60,
-});
+};
 
-// 세션 설정
-app.use(
-  session({
-    key: "user_sid",
-    secret: process.env.SESSION_SECRET,
-    resave: false,
-    saveUninitialized: false,
-    store: sessionStore,
-    cookie: {
-      maxAge: 1000 * 60 * 10,
-      httpOnly: true,
-      secure: false,
-      sameSite: "lax",
-    },
-  })
-);
+const app = express();
+app.set("trust proxy", 1);          // 프록시 뒤 HTTPS/쿠키용
+app.use(express.json());
+app.use(cookieParser());
 
-// 로그인 상태 확인 (미인증 사용자는 프론트엔드로 리디렉트)
+// 프론트 생기면 origin을 [process.env.CLIENT_URL]로 제한
+app.use(cors({ origin: (o, cb) => cb(null, true), credentials: true }));
+
+app.use(session({
+  key: "user_sid",
+  secret: process.env.SESSION_SECRET || "change-me",
+  resave: false,
+  saveUninitialized: false,
+  store: new MySQLStore({
+    ...sessionConn,
+    clearExpired: true,
+    checkExpirationInterval: 1000 * 60 * 10,
+    expiration: 1000 * 60 * 60,
+  }),
+  proxy: true,
+  cookie: {
+    maxAge: 1000 * 60 * 10,
+    httpOnly: true,
+    secure: PROD,
+    sameSite: PROD ? "none" : "lax",
+  },
+}));
+
+// 인증 필요 없는 경로 허용
 app.use((req, res, next) => {
-  if (req.session.user || req.path === "/" || req.path.startsWith("/auth")) {
-    return next();
-  }
-  // res.redirect("http://localhost:3000");
-  res.status(401).json({ error: "Unauthorized" });
+  if (req.session.user || req.path === "/" || req.path.startsWith("/auth") || req.path.startsWith("/health")) return next();
+  return res.status(401).json({ error: "Unauthorized" });
 });
 
-// Render용 헬스 체크 라우트 추가 
-app.get("/healthz", (req, res) => {
-  res.status(200).send("OK");
+// 헬스체크
+app.get("/healthz", (_req, res) => res.status(200).send("OK"));
+app.get("/health", (_req, res) => res.json({ ok: true, env: process.env.NODE_ENV || "dev" }));
+app.get("/health/db", async (_req, res) => {
+  try { await sequelize.query("SELECT 1"); res.json({ ok: true }); }
+  catch (e) { res.status(500).json({ ok: false, error: e.message }); }
 });
 
-// 라우터 연결
+// 라우팅
+const routes = require("./routes");
 app.use("/", routes);
+app.get("/", (_req, res) => res.status(200).send("백엔드 서버가 실행 중입니다."));
 
-// 상태 확인용 라우트
-app.get("/", (req, res) => {
-  res.status(200).send("백엔드 서버가 실행 중입니다.");
-});
-
-// DB 동기화 후 서버 시작
+// 서버 시작: dev는 sync, prod는 migrate로 관리 (Start: `npx sequelize-cli db:migrate && node app.js`)
 (async () => {
   try {
-    await sequelize.sync({ force: false });
-    console.log("모든 테이블이 성공적으로 동기화되었습니다.");
-
-    app.listen(PORT, () => {
-      console.log(`서버 실행 중: http://localhost:${PORT}`);
-    });
-  } catch (error) {
-    console.error("테이블 동기화 실패:", error);
+    if (!PROD) { await sequelize.sync({ force: false }); log.info("[DEV] sequelize.sync 완료"); }
+    app.listen(PORT, () => { if (PROD) console.log("ready"); else log.info(`서버 실행 중: ${SERVER_URL}`); });
+  } catch (err) {
+    log.error("서버 시작 실패:", err);
     process.exit(1);
   }
 })();

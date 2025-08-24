@@ -1,7 +1,14 @@
-const corsConfig = {
-  origin: process.env.FRONTEND_URL || "http://localhost:3000",
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  credentials: true,
-};
+const allowList = [
+  process.env.CLIENT_URL,        // 배포 프론트
+  "http://localhost:3000",         // 로컬 프론트
+].filter(Boolean);
 
-module.exports = corsConfig;
+module.exports = {
+  origin(origin, cb) {
+    if (!origin || allowList.includes(origin)) return cb(null, true); 
+    return cb(new Error("Not allowed by CORS"));
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+};

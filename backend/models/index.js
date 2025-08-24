@@ -28,7 +28,7 @@ ExampleItem.belongsTo(Example, { foreignKey: 'example_id' });
 ExampleItem.hasMany(Dialogue, { foreignKey: 'example_item_id', onDelete: 'CASCADE' });
 Dialogue.belongsTo(ExampleItem, { foreignKey: 'example_item_id' });
 
-User.hasOne(UserActivity, { foreignKey: 'user_id' });  
+User.hasMany(UserActivity, { foreignKey: 'user_id', onDelete: 'CASCADE' });
 UserActivity.belongsTo(User, { foreignKey: 'user_id' });
 
 User.hasMany(UserInterest, { foreignKey: "user_id", onDelete: "CASCADE" });
