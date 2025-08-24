@@ -3,6 +3,11 @@ const cors = require("cors");
 const session = require("express-session");
 const cookieParser = require("cookie-parser");
 const MySQLStore = require("express-mysql-session")(session);
+
+// IPv6 경로로 먼저 붙다가 타임아웃 나는 현상 방지 
+const dns = require("dns");
+dns.setDefaultResultOrder("ipv4first");
+
 require("dotenv").config();
 
 const corsConfig = require("./config/corsConfig");
@@ -21,9 +26,10 @@ app.use(cors(corsConfig));
 const sessionStore = new MySQLStore({
   host: process.env.DB_HOST,
   port: process.env.DB_PORT,
-  user: process.env.DB_USER,
+  user: process.env.DB_USERNAME,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
+  ssl: { rejectUnauthorized: false },
   clearExpired: true,
   checkExpirationInterval: 1000 * 60 * 60,
   expiration: 1000 * 60 * 60,
@@ -53,6 +59,11 @@ app.use((req, res, next) => {
   }
   // res.redirect("http://localhost:3000");
   res.status(401).json({ error: "Unauthorized" });
+});
+
+// Render용 헬스 체크 라우트 추가 
+app.get("/healthz", (req, res) => {
+  res.status(200).send("OK");
 });
 
 // 라우터 연결
