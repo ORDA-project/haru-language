@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useAtom } from "jotai";
 import { userAtom, logoutAtom } from "../../store/authStore";
 import { useNavigate } from "react-router-dom";
+import { useErrorHandler } from "../../hooks/useErrorHandler";
 import {
   ProfileCard,
   FriendList,
@@ -22,6 +23,7 @@ export default function MyPage() {
   const [user] = useAtom(userAtom);
   const [, logout] = useAtom(logoutAtom);
   const navigate = useNavigate();
+  const { showSuccess, showError, handleError } = useErrorHandler();
   const [showAccountInfo, setShowAccountInfo] = useState(false);
 
   const friendList = [
@@ -52,9 +54,27 @@ export default function MyPage() {
     interest: "회화",
   });
 
-  const handleLogout = () => {
-    logout();
-    navigate("/");
+  const handleLogout = async () => {
+    try {
+      // 로그아웃 진행 중 토스트 표시
+      showSuccess('로그아웃 중', '잠시만 기다려주세요...');
+      
+      // 로그아웃 처리
+      logout();
+      
+      // 성공 토스트 표시
+      showSuccess('로그아웃 완료', '안전하게 로그아웃되었습니다.');
+      
+      // 약간의 딜레이 후 로그인 페이지로 이동
+      setTimeout(() => {
+        navigate("/");
+      }, 1000);
+      
+    } catch (error) {
+      console.error("Logout error:", error);
+      handleError(error);
+      showError('로그아웃 실패', '로그아웃 중 오류가 발생했습니다.');
+    }
   };
 
   const handleNextClick = () => {

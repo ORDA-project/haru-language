@@ -1,28 +1,36 @@
 import LogoImg from "../../Images/LogoImg.png";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { useErrorHandler } from "../../hooks/useErrorHandler";
+import { apiClient } from "../../utils/errorHandler";
 
 interface HomeHeaderProps {}
 
 const HomeHeader = (props: HomeHeaderProps) => {
-  const navigate = useNavigate(); // useNavigate 위치 수정
+  const navigate = useNavigate();
+  const { showSuccess, showError, showInfo, handleError } = useErrorHandler();
 
   const LogOut = async () => {
     try {
+      // 로그아웃 진행 중 토스트 표시
+      showInfo('로그아웃 중', '잠시만 기다려주세요...');
+      
       // 로그아웃 요청
-      const res = await axios({
-        method: "GET",
-        url: "http://localhost:8000/auth/logout",
-        withCredentials: true, // 자격 증명 포함
-      });
+      const res = await apiClient.get("/auth/logout");
 
       // 요청 성공 시
       console.log("Logged out successfully:", res);
-      navigate("/"); // 홈으로 리다이렉트
+      showSuccess('로그아웃 완료', '안전하게 로그아웃되었습니다.');
+      
+      // 약간의 딜레이 후 로그인 페이지로 이동
+      setTimeout(() => {
+        navigate("/");
+      }, 1000);
     } catch (error) {
       // 에러 처리
       console.error("Error during logout:", error);
-      alert("로그아웃 실패. 다시 시도해주세요.");
+      handleError(error);
+      showError('로그아웃 실패', '로그아웃 중 오류가 발생했습니다.');
     }
   };
 

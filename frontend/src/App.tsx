@@ -9,6 +9,8 @@ import Startlogin from "./Components/Pages/Startlogin";
 import SongRecommend from "./Components/Pages/SongRecommend";
 import Quiz from "./Components/Pages/Quiz";
 import MyPage from "./Components/Pages/MyPage";
+import ErrorBoundary from "./Components/Elements/ErrorBoundary";
+import ErrorProvider from "./Components/Providers/ErrorProvider";
 
 const router = createBrowserRouter([
   {
@@ -48,7 +50,11 @@ const router = createBrowserRouter([
 function App() {
   return (
     <Provider>
-      <RouterProvider router={router} />
+      <ErrorBoundary>
+        <ErrorProvider>
+          <RouterProvider router={router} />
+        </ErrorProvider>
+      </ErrorBoundary>
     </Provider>
   );
 }
