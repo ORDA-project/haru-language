@@ -1,6 +1,41 @@
 const express = require("express");
 const router = express.Router();
 
+/**
+ * @swagger
+ * /songLyric:
+ *   get:
+ *     summary: 추천된 노래의 가사 조회
+ *     description: 세션에 저장된 추천 노래의 가사를 반환합니다
+ *     tags: [Songs]
+ *     responses:
+ *       200:
+ *         description: 가사 조회 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 result:
+ *                   type: boolean
+ *                   example: true
+ *                 songData:
+ *                   type: object
+ *                   properties:
+ *                     Artist:
+ *                       type: string
+ *                       example: "BTS"
+ *                     Title:
+ *                       type: string
+ *                       example: "Dynamite"
+ *                     Lyric:
+ *                       type: string
+ *                       example: "Cos I-I-I'm in the stars tonight..."
+ *       404:
+ *         description: 추천된 노래가 없거나 가사 정보가 없음
+ *       500:
+ *         description: 서버 오류
+ */
 router.get("/", async (req, res) => {
   try {
     // 세션에서 songData 가져오기

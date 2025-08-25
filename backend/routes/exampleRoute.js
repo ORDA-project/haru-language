@@ -21,7 +21,44 @@ const upload = multer({
   },
 });
 
-// OCR → GPT 예문 생성 API
+/**
+ * @swagger
+ * /example:
+ *   post:
+ *     summary: 이미지에서 텍스트 추출 후 예문 생성
+ *     description: 업로드된 이미지에서 OCR을 통해 텍스트를 추출하고 GPT를 사용하여 예문을 생성합니다
+ *     tags: [Examples]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               image:
+ *                 type: string
+ *                 format: binary
+ *                 description: 텍스트 추출할 이미지 파일 (최대 5MB)
+ *     responses:
+ *       200:
+ *         description: 예문 생성 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 extractedText:
+ *                   type: string
+ *                   description: OCR로 추출된 텍스트
+ *                   example: "Hello world"
+ *                 generatedExample:
+ *                   type: object
+ *                   description: GPT로 생성된 예문 데이터
+ *       400:
+ *         description: userId가 필수임 또는 잘못된 파일 형식
+ *       500:
+ *         description: 예문 생성 중 오류 발생
+ */
 router.post("/", upload.single("image"), async (req, res) => {
   console.log("File uploaded:", req.file);
   const filePath = req.file.path;
@@ -57,7 +94,42 @@ router.post("/", upload.single("image"), async (req, res) => {
   }
 });
 
-// 사용자 ID로 예문 조회 API
+/**
+ * @swagger
+ * /example/{userId}:
+ *   get:
+ *     summary: 사용자별 예문 조회
+ *     description: 특정 사용자 ID로 저장된 예문 목록을 조회합니다
+ *     tags: [Examples]
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 사용자 ID
+ *         example: 1
+ *     responses:
+ *       200:
+ *         description: 예문 조회 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "예문 조회 성공"
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     description: 예문 데이터
+ *       404:
+ *         description: 해당 유저의 예문이 없음
+ *       500:
+ *         description: 예문 조회 중 오류 발생
+ */
 router.get("/:userId", async (req, res) => {
   const { userId } = req.params;
 

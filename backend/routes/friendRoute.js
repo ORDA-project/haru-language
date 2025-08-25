@@ -2,7 +2,30 @@ const express = require("express");
 const router = express.Router();
 const friendService = require("../services/friendService");
 
-// 친구 초대 링크 생성
+/**
+ * @swagger
+ * /friends/invite:
+ *   post:
+ *     summary: 친구 초대 링크 생성
+ *     tags: [Friends]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               inviterId:
+ *                 type: integer
+ *                 example: 1
+ *     responses:
+ *       200:
+ *         description: 초대 링크 생성 성공
+ *       400:
+ *         description: inviterId가 필요함
+ *       500:
+ *         description: 서버 오류
+ */
 router.post("/invite", async (req, res) => {
   try {
     const { inviterId } = req.body;
@@ -20,7 +43,42 @@ router.post("/invite", async (req, res) => {
   }
 });
 
-// 친구 초대 응답 (수락/거절)
+/**
+ * @swagger
+ * /friends/respond:
+ *   post:
+ *     summary: 친구 초대 응답
+ *     description: 친구 초대를 수락하거나 거절합니다
+ *     tags: [Friends]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               token:
+ *                 type: string
+ *                 example: "invite_token_123"
+ *               response:
+ *                 type: string
+ *                 enum: [accept, reject]
+ *                 example: "accept"
+ *               inviteeId:
+ *                 type: integer
+ *                 example: 2
+ *     responses:
+ *       200:
+ *         description: 응답 처리 성공
+ *       400:
+ *         description: 필수 파라미터 누락
+ *       404:
+ *         description: 유효하지 않은 초대
+ *       409:
+ *         description: 이미 친구 관계
+ *       500:
+ *         description: 서버 오류
+ */
 router.post("/respond", async (req, res) => {
   try {
     const { token, response, inviteeId } = req.body;
@@ -45,7 +103,43 @@ router.post("/respond", async (req, res) => {
   }
 });
 
-// 친구 목록 조회
+/**
+ * @swagger
+ * /friends/list/{userId}:
+ *   get:
+ *     summary: 친구 목록 조회
+ *     tags: [Friends]
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         example: 1
+ *     responses:
+ *       200:
+ *         description: 친구 목록 조회 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 friends:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                       name:
+ *                         type: string
+ *       400:
+ *         description: userId가 필요함
+ *       404:
+ *         description: 친구 목록이 존재하지 않음
+ *       500:
+ *         description: 서버 오류
+ */
 router.get("/list/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
@@ -69,7 +163,33 @@ router.get("/list/:userId", async (req, res) => {
   }
 });
 
-// 친구 삭제
+/**
+ * @swagger
+ * /friends/remove:
+ *   delete:
+ *     summary: 친구 삭제
+ *     tags: [Friends]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               userId:
+ *                 type: integer
+ *                 example: 1
+ *               friendId:
+ *                 type: integer
+ *                 example: 2
+ *     responses:
+ *       200:
+ *         description: 친구 삭제 성공
+ *       400:
+ *         description: userId와 friendId가 필요함
+ *       500:
+ *         description: 서버 오류
+ */
 router.delete("/remove", async (req, res) => {
   try {
     const { userId, friendId } = req.body;
@@ -88,7 +208,36 @@ router.delete("/remove", async (req, res) => {
   }
 });
 
-// 친구에게 콕 찌르기 (알림 전송)
+/**
+ * @swagger
+ * /friends/notifications/send:
+ *   post:
+ *     summary: 친구에게 알림 전송
+ *     description: 친구에게 콕 찌르기 알림을 전송합니다
+ *     tags: [Friends]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               senderId:
+ *                 type: integer
+ *                 example: 1
+ *               receiverId:
+ *                 type: integer
+ *                 example: 2
+ *     responses:
+ *       200:
+ *         description: 알림 전송 성공
+ *       400:
+ *         description: senderId와 receiverId가 필요함
+ *       403:
+ *         description: 친구가 아닌 사용자
+ *       500:
+ *         description: 서버 오류
+ */
 router.post("/notifications/send", async (req, res) => {
   try {
     const { senderId, receiverId } = req.body;
@@ -110,7 +259,45 @@ router.post("/notifications/send", async (req, res) => {
   }
 });
 
-// 읽지 않은 알림 조회 후 읽음 처리
+/**
+ * @swagger
+ * /friends/notifications/unread/{userId}:
+ *   get:
+ *     summary: 읽지 않은 알림 조회
+ *     tags: [Friends]
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         example: 1
+ *     responses:
+ *       200:
+ *         description: 읽지 않은 알림 조회 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 notifications:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                       message:
+ *                         type: string
+ *                       sender_name:
+ *                         type: string
+ *       404:
+ *         description: 읽지 않은 알림이 없음
+ *       500:
+ *         description: 서버 오류
+ */
 router.get("/notifications/unread/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
@@ -133,7 +320,30 @@ router.get("/notifications/unread/:userId", async (req, res) => {
   }
 });
 
-// 읽음 처리된 알림 삭제
+/**
+ * @swagger
+ * /friends/notifications/read:
+ *   post:
+ *     summary: 읽은 알림 삭제
+ *     tags: [Friends]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               user_id:
+ *                 type: integer
+ *                 example: 1
+ *     responses:
+ *       200:
+ *         description: 읽은 알림 삭제 성공
+ *       400:
+ *         description: user_id가 필요함
+ *       500:
+ *         description: 서버 오류
+ */
 router.post("/notifications/read", async (req, res) => {
   try {
     const { user_id } = req.body;

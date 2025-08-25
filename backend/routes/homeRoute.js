@@ -2,8 +2,46 @@ const express = require("express");
 const { User } = require("../models");
 const router = express.Router();
 
-
-// 로그인한 사용자의 정보, 방문 통계, 추천 노래를 반환
+/**
+ * @swagger
+ * /home:
+ *   get:
+ *     summary: 홈 화면 데이터 조회
+ *     description: 로그인한 사용자의 정보, 방문 통계, 추천 노래를 반환
+ *     tags: [Home]
+ *     responses:
+ *       200:
+ *         description: 홈 데이터 조회 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 result:
+ *                   type: boolean
+ *                   example: true
+ *                 userData:
+ *                   type: object
+ *                   properties:
+ *                     name:
+ *                       type: string
+ *                       example: "홍길동"
+ *                     visitCount:
+ *                       type: number
+ *                       example: 5
+ *                     mostVisitedDay:
+ *                       type: string
+ *                       example: "월요일"
+ *                     recommendation:
+ *                       type: string
+ *                       example: "Dynamite by BTS"
+ *       401:
+ *         description: 로그인이 필요함
+ *       404:
+ *         description: 사용자 데이터를 찾을 수 없음
+ *       500:
+ *         description: 서버 오류
+ */
 router.get("/", async (req, res) => {
     const sessionUser = req.session.user;
     if (!sessionUser) {

@@ -6,6 +6,7 @@ const MySQLStore = require("express-mysql-session")(session);
 require("dotenv").config();
 
 const corsConfig = require("./config/corsConfig");
+const { swaggerUi, specs } = require("./config/swagger");
 const routes = require("./routes");
 const { sequelize } = require("./models");
 
@@ -48,11 +49,14 @@ app.use(
 
 // 로그인 상태 확인 (미인증 사용자는 프론트엔드로 리디렉트)
 app.use((req, res, next) => {
-  if (req.session.user || req.path === "/" || req.path.startsWith("/auth")) {
+  if (req.session.user || req.path === "/" || req.path.startsWith("/auth") || req.path.startsWith("/api-docs")) {
     return next();
   }
   res.redirect("http://localhost:3000");
 });
+
+// Swagger 설정
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 
 // 라우터 연결
 app.use("/", routes);

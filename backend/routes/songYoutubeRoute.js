@@ -64,7 +64,45 @@ function extractVideoIdFromUrl(url) {
   }
 }
 
-// 유튜브 링크 반환 라우터
+/**
+ * @swagger
+ * /songYoutube:
+ *   get:
+ *     summary: 추천된 노래의 유튜브 링크 조회
+ *     description: 세션에 저장된 추천 노래의 유튜브 비디오 링크를 반환합니다. 세션에 링크가 없으면 YouTube API를 통해 검색합니다.
+ *     tags: [Songs]
+ *     responses:
+ *       200:
+ *         description: 유튜브 링크 조회 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 result:
+ *                   type: boolean
+ *                   example: true
+ *                 videoUrl:
+ *                   type: string
+ *                   example: "https://www.youtube.com/watch?v=gdZLi9oWNZg"
+ *                 embedUrl:
+ *                   type: string
+ *                   example: "https://www.youtube.com/embed/gdZLi9oWNZg"
+ *                 title:
+ *                   type: string
+ *                   example: "Dynamite"
+ *                 artist:
+ *                   type: string
+ *                   example: "BTS"
+ *                 source:
+ *                   type: string
+ *                   enum: [session, api]
+ *                   example: "session"
+ *       400:
+ *         description: 노래 정보가 세션에 없음
+ *       500:
+ *         description: 유튜브 비디오 링크 조회 실패
+ */
 router.get("/", async (req, res) => {
   try {
     const songData = req.session.songData;

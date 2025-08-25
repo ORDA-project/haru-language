@@ -10,7 +10,28 @@ router.use("/google", googleRouter);
 // Kakao 로그인 라우터
 router.use("/kakao", kakaoRouter);
 
-// 세션 상태 확인
+/**
+ * @swagger
+ * /auth/check:
+ *   get:
+ *     summary: 로그인 상태 확인
+ *     description: 현재 세션의 로그인 상태를 확인합니다
+ *     tags: [Authentication]
+ *     responses:
+ *       200:
+ *         description: 세션 상태 조회 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 isLoggedIn:
+ *                   type: boolean
+ *                   example: true
+ *                 user:
+ *                   type: object
+ *                   nullable: true
+ */
 router.get("/check", (req, res) => {
   const user = req.session.user;
   res.json({
@@ -19,7 +40,24 @@ router.get("/check", (req, res) => {
   });
 });
 
-// 로그아웃 라우터
+/**
+ * @swagger
+ * /auth/logout:
+ *   get:
+ *     summary: 로그아웃
+ *     description: 현재 세션을 종료하고 로그아웃을 수행합니다
+ *     tags: [Authentication]
+ *     responses:
+ *       200:
+ *         description: 로그아웃 성공
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *               example: "Logout successful"
+ *       500:
+ *         description: 로그아웃 실패
+ */
 router.get("/logout", async (req, res) => {
   try {
     const accessToken = req.session.token;
