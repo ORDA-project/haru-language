@@ -45,7 +45,9 @@ const router = createBrowserRouter([
     path: "/mypage",
     element: <MyPage />,
   },
-]);
+], {
+  basename: import.meta.env.PROD ? "/haru-language" : "/"
+});
 
 function App() {
   return (
