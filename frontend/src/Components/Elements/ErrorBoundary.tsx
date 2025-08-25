@@ -68,7 +68,7 @@ class ErrorBoundary extends Component<Props, State> {
                 예상치 못한 오류가 발생했습니다. 잠시 후 다시 시도해주세요.
               </p>
 
-              {process.env.NODE_ENV === 'development' && this.state.error && (
+              {import.meta.env.DEV && this.state.error && (
                 <div className="collapse collapse-arrow bg-base-200 mb-4">
                   <input type="checkbox" />
                   <div className="collapse-title text-sm font-medium">
