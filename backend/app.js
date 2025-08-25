@@ -41,22 +41,51 @@ app.use(
     cookie: {
       maxAge: 1000 * 60 * 10,
       httpOnly: true,
-      secure: false,
-      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     },
   })
 );
 
 // 로그인 상태 확인 (미인증 사용자는 프론트엔드로 리디렉트)
 app.use((req, res, next) => {
-  if (req.session.user || req.path === "/" || req.path.startsWith("/auth") || req.path.startsWith("/api-docs")) {
+  if (
+    req.session.user ||
+    req.path === "/" ||
+    req.path.startsWith("/auth") ||
+    req.path.startsWith("/api-docs")
+  ) {
     return next();
   }
-  res.redirect("http://localhost:3000");
+
+  // 리퍼러에서 origin 정보를 가져와서 적절한 프론트엔드 URL로 리디렉트
+  const referer = req.get("Referer") || req.headers.origin;
+  let redirectUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+
+  if (referer) {
+    try {
+      const refererUrl = new URL(referer);
+      const origin = `${refererUrl.protocol}//${refererUrl.host}`;
+
+      // 허용된 도메인인지 확인
+      const allowedOrigins = [
+        "http://localhost:3000",
+        "https://orda-project.github.io/haru-language",
+      ];
+
+      if (allowedOrigins.some((allowed) => origin.startsWith(allowed))) {
+        redirectUrl = origin;
+      }
+    } catch (err) {
+      console.warn("Invalid referer URL:", referer);
+    }
+  }
+
+  res.redirect(redirectUrl);
 });
 
 // Swagger 설정
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs));
 
 // 라우터 연결
 app.use("/", routes);

@@ -27,6 +27,15 @@ const REDIRECT_URI = redirect_uris[0];
 
 // Google 로그인 URL로 리디렉트
 router.get("/", (req, res) => {
+    // 리퍼러에서 origin 정보를 가져와서 세션에 저장
+    const referer = req.get('Referer') || req.headers.origin;
+    if (referer) {
+        const refererUrl = new URL(referer);
+        const origin = `${refererUrl.protocol}//${refererUrl.host}`;
+        req.session.loginOrigin = origin;
+        console.log('Google login origin saved:', origin);
+    }
+    
     const authURL = `${GOOGLE_AUTH_BASE_URL}?response_type=code&client_id=${client_id}&redirect_uri=${REDIRECT_URI}&scope=email%20profile`;
     res.redirect(authURL);
 });
@@ -87,12 +96,28 @@ router.get("/callback", async (req, res) => {
 
         req.session.songData = await getRandomSong(req);
 
-        // 홈으로 리디렉트
-        res.redirect("http://localhost:3000/home");
+        // 원래 로그인을 시도한 도메인으로 리디렉트
+        const loginOrigin = req.session.loginOrigin;
+        const redirectUrl = loginOrigin || process.env.FRONTEND_URL || "http://localhost:3000";
+        
+        console.log('Google login success, redirecting to:', `${redirectUrl}?loginSuccess=true&userName=${encodeURIComponent(user.name)}`);
+        
+        // 세션에서 origin 정보 삭제
+        delete req.session.loginOrigin;
+        
+        res.redirect(`${redirectUrl}?loginSuccess=true&userName=${encodeURIComponent(user.name)}`);
 
     } catch (err) {
         console.error("Google 인증 처리 오류:", err.message);
-        res.status(500).send("Google Authentication Failed");
+        
+        // 에러 시에도 원래 도메인으로 리다이렉트
+        const loginOrigin = req.session.loginOrigin;
+        const redirectUrl = loginOrigin || process.env.FRONTEND_URL || "http://localhost:3000";
+        
+        // 세션에서 origin 정보 삭제
+        delete req.session.loginOrigin;
+        
+        res.redirect(`${redirectUrl}?loginError=true&errorMessage=${encodeURIComponent('Google 로그인에 실패했습니다.')}`);
     }
 });
 
