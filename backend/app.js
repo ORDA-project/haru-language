@@ -2,6 +2,7 @@ require("dotenv").config();
 
 const express = require("express");
 const cors = require("cors");
+const corsConfig = require("./config/corsConfig"); 
 const session = require("express-session");
 const cookieParser = require("cookie-parser");
 const MySQLStore = require("express-mysql-session")(session);
@@ -11,10 +12,11 @@ dns.setDefaultResultOrder("ipv4first");
 const PROD = process.env.NODE_ENV === "production";
 const PORT = process.env.PORT || 8000;
 const SERVER_URL = process.env.SERVER_URL || `http://localhost:${PORT}`;
-const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:3000";
+const CLIENT_URL = (process.env.CLIENT_URL || "http://localhost:3000").replace(/\/$/, "");
 const LOG_LEVEL = process.env.LOG_LEVEL || (PROD ? "warn" : "debug");
 
-const allow = (lvl) => ["debug","info","warn","error"].indexOf(lvl) >= ["debug","info","warn","error"].indexOf(LOG_LEVEL);
+const LEVELS = ["debug", "info", "warn", "error"];
+const allow = (lvl) => LEVELS.indexOf(lvl) >= LEVELS.indexOf(LOG_LEVEL);
 const log = {
   debug: (...a) => allow("debug") && console.debug(...a),
   info:  (...a) => allow("info")  && console.info(...a),
@@ -24,6 +26,7 @@ const log = {
 
 const { sequelize } = require("./models");
 
+// Railway/Render DATABASE_URL 파싱(있으면 사용)
 function parseDatabaseUrl(urlStr) {
   try {
     const u = new URL(urlStr);
@@ -49,13 +52,19 @@ const sessionConn = urlCfg || {
 };
 
 const app = express();
-app.set("trust proxy", 1);          // 프록시 뒤 HTTPS/쿠키용
+
+// 프록시 뒤(HTTPS)에서 secure 쿠키 허용
+app.set("trust proxy", 1);
+
+// 본문/쿠키 파서
 app.use(express.json());
 app.use(cookieParser());
 
-// 프론트 생기면 origin을 [process.env.CLIENT_URL]로 제한
-app.use(cors({ origin: (o, cb) => cb(null, true), credentials: true }));
+// 화이트리스트 기반 CORS + 프리플라이트 허용
+app.use(cors(corsConfig));
+app.options("*", cors(corsConfig));
 
+// 세션(쿠키는 prod에서 SameSite=None; Secure)
 app.use(session({
   key: "user_sid",
   secret: process.env.SESSION_SECRET || "change-me",
@@ -78,7 +87,12 @@ app.use(session({
 
 // 인증 필요 없는 경로 허용
 app.use((req, res, next) => {
-  if (req.session.user || req.path === "/" || req.path.startsWith("/auth") || req.path.startsWith("/health")) return next();
+  if (
+    req.session.user ||
+    req.path === "/" ||
+    req.path.startsWith("/auth") ||
+    req.path.startsWith("/health")
+  ) return next();
   return res.status(401).json({ error: "Unauthorized" });
 });
 
@@ -95,11 +109,17 @@ const routes = require("./routes");
 app.use("/", routes);
 app.get("/", (_req, res) => res.status(200).send("백엔드 서버가 실행 중입니다."));
 
-// 서버 시작: dev는 sync, prod는 migrate로 관리 (Start: `npx sequelize-cli db:migrate && node app.js`)
+// 서버 시작(dev는 sync, prod는 마이그레이션으로 관리: Start 명령에서 실행)
 (async () => {
   try {
-    if (!PROD) { await sequelize.sync({ force: false }); log.info("[DEV] sequelize.sync 완료"); }
-    app.listen(PORT, () => { if (PROD) console.log("ready"); else log.info(`서버 실행 중: ${SERVER_URL}`); });
+    if (!PROD) {
+      await sequelize.sync({ force: false });
+      log.info("[DEV] sequelize.sync 완료");
+    }
+    app.listen(PORT, () => {
+      if (PROD) console.log("ready");
+      else log.info(`서버 실행 중: ${SERVER_URL}`);
+    });
   } catch (err) {
     log.error("서버 시작 실패:", err);
     process.exit(1);
