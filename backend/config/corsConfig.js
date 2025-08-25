@@ -1,6 +1,6 @@
 const allowedOrigins = [
   "http://localhost:3000",
-  "https://orda-project.github.io/haru-language",
+  "https://orda-project.github.io",
   process.env.FRONTEND_URL
 ].filter(Boolean); // undefined 값 제거
 
@@ -9,7 +9,13 @@ const corsConfig = {
     // origin이 없는 경우 (모바일 앱, postman 등) 허용
     if (!origin) return callback(null, true);
     
-    if (allowedOrigins.includes(origin)) {
+    // 정확한 매치 또는 GitHub Pages 서브패스 허용
+    const isAllowed = allowedOrigins.some(allowed => 
+      origin === allowed || 
+      (allowed === "https://orda-project.github.io" && origin.startsWith("https://orda-project.github.io"))
+    );
+    
+    if (isAllowed) {
       callback(null, true);
     } else {
       console.warn(`CORS blocked origin: ${origin}`);
