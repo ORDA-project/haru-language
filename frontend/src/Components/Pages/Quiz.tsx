@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom"; // React Router로 홈 이동
 import NavBar from "../Templates/Navbar";
 import axios from "axios";
+import { API_ENDPOINTS } from "../../config/api";
 import { Spinner } from "basic-loading";
 
 interface QuizProps { }
@@ -26,7 +27,7 @@ const Quiz = (props: QuizProps) => {
     useEffect(() => {
         axios({
             method: "POST",
-            url: "http://localhost:8000/quiz",
+            url: API_ENDPOINTS.quiz,
             headers: { "Content-Type": "application/json" },
             withCredentials: true,
         })

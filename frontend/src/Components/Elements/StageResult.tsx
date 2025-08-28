@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Example } from "../../types"; // Import Example type
+import { API_ENDPOINTS } from "../../config/api";
 
 
 interface StageResultProps {
@@ -48,7 +49,7 @@ const StageResult = ({
     console.log(textToRead);
 
     try {
-      const response = await fetch("http://localhost:8000/api/tts", {
+      const response = await fetch(API_ENDPOINTS.tts, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

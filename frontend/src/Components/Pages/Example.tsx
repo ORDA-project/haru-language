@@ -2,6 +2,7 @@ import React, { useState, useRef, ChangeEvent } from "react";
 import Cropper from "react-cropper";
 import "cropperjs/dist/cropper.css";
 import axios from "axios";
+import { API_ENDPOINTS } from "../../config/api";
 import StageUpload from "../Elements/StageUpload";
 import StageCrop from "../Elements/StageCrop";
 import StageLoading from "../Elements/StageLoading";
@@ -51,7 +52,7 @@ const App = () => {
       formData.append("image", dataURItoBlob(imageData));
 
       const response = await axios.post(
-        "http://localhost:8000/example",
+        API_ENDPOINTS.example,
         formData,
         {
           headers: { "Content-Type": "multipart/form-data" },

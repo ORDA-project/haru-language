@@ -3,6 +3,7 @@ import NavBar from "../Templates/Navbar";
 import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import axios from "axios";
+import { API_ENDPOINTS } from "../../config/api";
 
 interface RecommendProps {
 
@@ -19,7 +20,7 @@ const SongRecommend = (props: RecommendProps) => {
     useEffect(() => {
         axios({
             method: "GET",
-            url: "http://localhost:8000/songLyric",
+            url: API_ENDPOINTS.songLyric,
             withCredentials: true,
         }).then((res) => {
             const {Title} = res.data.songData;

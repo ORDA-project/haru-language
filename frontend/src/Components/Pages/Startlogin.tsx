@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAtom } from "jotai";
 import { setUserAtom } from "../../store/authStore";
 import { useErrorHandler } from "../../hooks/useErrorHandler";
+import { API_ENDPOINTS } from "../../config/api";
 import googlelogo from "../../Images/google_logo.png";
 import logo from "../../Images/LogoImg.png"; // 로고 이미지
 import kakaologo from "../../Images/kakaologo.png"; // 카카오 로고 이미지 추가
@@ -100,14 +101,14 @@ const Login: React.FC = () => {
     try {
       console.log(
         "🚨 Google login clicked - redirecting to:",
-        "https://haru-language-server.onrender.com/auth/google"
+        `${API_ENDPOINTS.auth}/google`
       );
       
       // 로그인 시도 토스트 표시
       showInfo('로그인 진행 중', 'Google 로그인 페이지로 이동합니다...');
       
       // Google OAuth 엔드포인트로 리다이렉트
-      window.location.href = "https://haru-language-server.onrender.com/auth/google";
+      window.location.href = `${API_ENDPOINTS.auth}/google`;
     } catch (error) {
       console.error("Google login redirect error:", error);
       handleError(error);
@@ -119,14 +120,14 @@ const Login: React.FC = () => {
     try {
       console.log(
         "🚨 Kakao login clicked - redirecting to:",
-        "https://haru-language-server.onrender.com/auth/kakao"
+        `${API_ENDPOINTS.auth}/kakao`
       );
       
       // 로그인 시도 토스트 표시
       showInfo('로그인 진행 중', 'Kakao 로그인 페이지로 이동합니다...');
       
       // Kakao OAuth 엔드포인트로 리다이렉트
-      window.location.href = "https://haru-language-server.onrender.com/auth/kakao";
+      window.location.href = `${API_ENDPOINTS.auth}/kakao`;
     } catch (error) {
       console.error("Kakao login redirect error:", error);
       handleError(error);

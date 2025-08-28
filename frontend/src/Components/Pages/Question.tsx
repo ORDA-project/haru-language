@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { API_ENDPOINTS } from "../../config/api";
 import NavBar from "../Templates/Navbar";
 import Mike from "../../Images/mike.png";
 import Send from "../../Images/sendicon.png";
@@ -18,7 +19,7 @@ const ChatBot = () => {
     const fetchUserData = async () => {
       try {
         // Home 페이지와 동일한 API 요청
-        const response = await axios.get("http://localhost:8000/home", {
+        const response = await axios.get(API_ENDPOINTS.home, {
           withCredentials: true, // 쿠키 포함
         });
 
@@ -58,7 +59,7 @@ const ChatBot = () => {
       try {
         axios({
           method: "POST",
-          url: "http://localhost:8000/question",
+          url: API_ENDPOINTS.question,
           data: { question: currentInput },
           headers: { "Content-Type": "application/json" },
           withCredentials: true,

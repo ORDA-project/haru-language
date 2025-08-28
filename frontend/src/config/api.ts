@@ -9,6 +9,7 @@ export const API_ENDPOINTS = {
   friends: `${API_BASE_URL}/friends`,
   example: `${API_BASE_URL}/example`,
   question: `${API_BASE_URL}/question`,
+  quiz: `${API_BASE_URL}/quiz`,
   writing: `${API_BASE_URL}/writing`,
   tts: `${API_BASE_URL}/api/tts`,
 } as const;

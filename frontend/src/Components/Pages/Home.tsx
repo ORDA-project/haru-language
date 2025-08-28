@@ -6,6 +6,7 @@ import NavBar from "../Templates/Navbar";
 import HomeHeader from "../Templates/HomeHeader";
 import StatusCheck from "../Elements/StatusCheck";
 import { isLoggedInAtom, userAtom, setUserAtom } from "../../store/authStore";
+import { API_ENDPOINTS } from "../../config/api";
 import axios from "axios";
 
 const Home = () => {
@@ -26,7 +27,7 @@ const Home = () => {
     console.log("✅ Making API call to /home (always)");
     axios({
       method: "GET",
-      url: "http://localhost:8000/home",
+      url: API_ENDPOINTS.home,
       withCredentials: true,
     })
       .then((res) => {

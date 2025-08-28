@@ -18,7 +18,7 @@ export default function ProfileCard({
 }: ProfileCardProps) {
   return (
     <div className="mb-6">
-      <div className="w-full rounded-[20px] bg-[#ffb547] px-6 py-8 shadow-lg">
+      <div className="w-full rounded-[20px] bg-[#6770F6] px-6 py-8 shadow-lg">
         <div className="flex flex-col">
           {/* 상단: 이미지와 사용자 정보 */}
           <div className="flex items-center mb-4">

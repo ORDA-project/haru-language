@@ -14,7 +14,7 @@ interface AccountProfileProps {
 export default function AccountProfile({ userData }: AccountProfileProps) {
   return (
     <div className="mb-6">
-      <div className="w-full rounded-[20px] bg-[#ffb547] p-6 shadow-lg">
+      <div className="w-full rounded-[20px] bg-[#6770F6] p-6 shadow-lg">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
             <div className="w-16 h-16 bg-white rounded-full mr-4 flex items-center justify-center shadow-md overflow-hidden">
