@@ -106,7 +106,7 @@ const ChatBot = () => {
 
   return (
     <div className="w-full h-full flex flex-col items-center max-w-[440px] mx-auto shadow-[0_0_10px_0_rgba(0,0,0,0.1)] bg-[#F7F8FB]">
-      <div className="h-[calc(100vh-160px)] w-full max-w-[440px] box-border mx-auto flex flex-col justify-end bg-gray-100">
+      <div className="h-[calc(100vh-80px)] w-full max-w-[440px] box-border mx-auto flex flex-col justify-end bg-gray-100">
         <div className="flex items-center justify-center mb-5 pt-2">
           <label className="text-base font-bold mr-2">폰트 크기</label>
           <div className="flex gap-2">

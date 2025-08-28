@@ -74,7 +74,7 @@ const Quiz = (props: QuizProps) => {
     if (isSuccess && quiz.length === 0) {
         return (
             <div className="w-full h-full flex flex-col items-center max-w-[440px] mx-auto shadow-[0_0_10px_0_rgba(0,0,0,0.1)] bg-[#F7F8FB]">
-                <div className="h-[calc(100vh-160px)] w-full max-w-[440px] box-border mx-auto flex flex-col items-center justify-center overflow-hidden">
+                <div className="h-[calc(100vh-80px)] w-full max-w-[440px] box-border mx-auto flex flex-col items-center justify-center overflow-hidden">
                     <span className="text-[24px] my-[10px]">문제을 만들고 있어요.</span>
                     <span className="text-[24px] my-[10px]">잠시 기다려주세요.</span>
                     <Spinner

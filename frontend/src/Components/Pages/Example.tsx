@@ -48,9 +48,18 @@ const App = () => {
 
   const handleGenerateExamples = async (imageData: string) => {
     try {
+      console.log("🔍 Starting example generation...");
+      console.log("🔍 Image data type:", typeof imageData);
+      console.log("🔍 Image data preview:", imageData.substring(0, 50) + "...");
+      console.log("🔍 API Endpoint:", API_ENDPOINTS.example);
+      
+      const blob = dataURItoBlob(imageData);
+      console.log("🔍 Blob created:", blob.type, blob.size, "bytes");
+      
       const formData = new FormData();
-      formData.append("image", dataURItoBlob(imageData));
+      formData.append("image", blob, "cropped-image.png");
 
+      console.log("🔍 FormData prepared, sending request...");
       const response = await axios.post(
         API_ENDPOINTS.example,
         formData,
@@ -60,14 +69,19 @@ const App = () => {
         }
       );
 
-      console.log(response.data);
+      console.log("✅ Response received:", response.data);
       const { generatedExample, audioContent } = response.data;
       setDescription(generatedExample.description);
       setExamples(generatedExample.examples);
       setStage(4); // Show result
     } catch (error) {
+      console.error("❌ Error generating examples:", error);
+      if (axios.isAxiosError(error)) {
+        console.error("❌ Response status:", error.response?.status);
+        console.error("❌ Response data:", error.response?.data);
+        console.error("❌ Request config:", error.config);
+      }
       setErrorMessage("Failed to generate examples.");
-      console.error("Error generating examples:", error);
       setStage(1); // Reset to initial state
     }
   };
