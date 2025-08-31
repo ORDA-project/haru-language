@@ -2,7 +2,7 @@ const express = require("express");
 const multer = require("multer");
 const fs = require("fs");
 const { detectText } = require("../services/ocrService");
-const { generateExamples } = require("../services/exampleService");
+const generateExamples = require("../services/exampleService");
 const { getExamplesByUserId } = require("../services/historyService");
 require("dotenv").config({ path: "../.env" });
 
@@ -25,7 +25,7 @@ const upload = multer({
 router.post("/", upload.single("image"), async (req, res) => {
   console.log("File uploaded:", req.file);
   const filePath = req.file.path;
-  const { userId } = req.session.user;
+  const userId = req.session.user;
 
   if (!userId) {
     return res.status(400).json({ message: "userId는 필수입니다." });
