@@ -1,6 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import rightarrow from "../../Images/rightarrow.png";
 import { useNavigate } from "react-router-dom";
+import { useAtom } from "jotai";
+import { userAtom, isLoggedInAtom, checkUserOnboardingAtom } from "../../store/authStore";
 import Image1 from "/intro1.png";
 import Image2 from "/intro2.gif";
 import Image3 from "/intro3.gif";
@@ -54,6 +56,9 @@ const pages: Page[] = [
 
 const Introduction: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<number>(0);
+  const [user] = useAtom(userAtom);
+  const [isLoggedIn] = useAtom(isLoggedInAtom);
+  const [, checkOnboarding] = useAtom(checkUserOnboardingAtom);
   const navigate = useNavigate();
 
   const handleNext = (): void => {
@@ -61,15 +66,35 @@ const Introduction: React.FC = () => {
       setCurrentPage((prev) => prev + 1);
     } else {
       console.log("마지막 페이지: 하루 언어 시작하기 버튼 클릭");
-      // 로그인 상태에 따라 다른 페이지로 이동
-      navigate("/home");
+      handleStartApp();
     }
   };
 
-  const handleStartApp = (): void => {
+  const handleStartApp = async (): Promise<void> => {
     console.log("하루 언어 시작하기 버튼 클릭");
-    // 로그인 상태에 따라 다른 페이지로 이동
-    navigate("/home");
+    
+    // 로그인되지 않은 경우 홈으로 이동
+    if (!isLoggedIn || !user) {
+      navigate("/home");
+      return;
+    }
+
+    try {
+      // 온보딩 상태 확인
+      const isOnboarded = await checkOnboarding();
+      
+      if (isOnboarded) {
+        // 이미 온보딩 완료된 사용자는 홈으로
+        navigate("/home");
+      } else {
+        // 최초 로그인 사용자는 프로필 설정 페이지로
+        navigate("/mypage/edit");
+      }
+    } catch (error) {
+      console.error("Onboarding check failed:", error);
+      // 오류 발생 시 홈으로 이동
+      navigate("/home");
+    }
   };
 
   const handlePrev = (): void => {

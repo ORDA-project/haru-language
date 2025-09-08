@@ -57,23 +57,22 @@ export default function MyPage() {
   const handleLogout = async () => {
     try {
       // 로그아웃 진행 중 토스트 표시
-      showSuccess('로그아웃 중', '잠시만 기다려주세요...');
-      
+      showSuccess("로그아웃 중", "잠시만 기다려주세요...");
+
       // 로그아웃 처리
       logout();
-      
+
       // 성공 토스트 표시
-      showSuccess('로그아웃 완료', '안전하게 로그아웃되었습니다.');
-      
+      showSuccess("로그아웃 완료", "안전하게 로그아웃되었습니다.");
+
       // 약간의 딜레이 후 로그인 페이지로 이동
       setTimeout(() => {
         navigate("/");
       }, 1000);
-      
     } catch (error) {
       console.error("Logout error:", error);
       handleError(error);
-      showError('로그아웃 실패', '로그아웃 중 오류가 발생했습니다.');
+      showError("로그아웃 실패", "로그아웃 중 오류가 발생했습니다.");
     }
   };
 
@@ -87,7 +86,7 @@ export default function MyPage() {
 
   return (
     <div className="w-full h-full flex flex-col items-center max-w-[440px] mx-auto shadow-[0_0_10px_0_rgba(0,0,0,0.1)] bg-[#F5F6FA]">
-      <div className="h-[calc(100vh-80px)] p-0 px-5 w-full max-w-[440px] box-border mx-auto overflow-y-scroll">
+      <div className="h-[calc(100vh-72px)] p-0 px-5 w-full max-w-[440px] box-border mx-auto overflow-y-scroll">
         {!showAccountInfo ? (
           // 첫 번째 화면 (프로필 + 친구 목록)
           <>

@@ -28,6 +28,7 @@ const Login: React.FC = () => {
     const loginError = searchParams.get("loginError");
     const errorMessage = searchParams.get("errorMessage");
     const userName = searchParams.get("userName");
+    const userId = searchParams.get("userId");
 
     console.log("=== Startlogin useEffect ===");
     console.log("All searchParams:", Object.fromEntries(searchParams));
@@ -40,6 +41,7 @@ const Login: React.FC = () => {
     console.log("loginError value:", loginError, "type:", typeof loginError);
     console.log("errorMessage value:", errorMessage);
     console.log("userName value:", userName, "type:", typeof userName);
+    console.log("userId value:", userId, "type:", typeof userId);
     console.log("Raw URL search string:", window.location.search);
 
     if (loginSuccess === "true" && userName) {
@@ -47,18 +49,25 @@ const Login: React.FC = () => {
 
       try {
         // 로그인 성공 시 사용자 정보를 전역 상태에 저장
-        setUserData({ name: userName });
-        
-        // 성공 토스트 표시
-        showSuccess('로그인 성공', `${userName}님 환영합니다!`);
+        setUserData({
+          name: userName,
+          id: userId || undefined, // userId가 있으면 사용, 없으면 undefined
+        });
 
-        console.log("✅ setUserData called with:", { name: userName });
+        // 성공 토스트 표시
+        showSuccess("로그인 성공", `${userName}님 환영합니다!`);
+
+        console.log("✅ setUserData called with:", {
+          name: userName,
+          id: userId,
+        });
 
         // URL에서 로그인 성공 파라미터 제거
         const newUrl = new URL(window.location.href);
-        newUrl.searchParams.delete('loginSuccess');
-        newUrl.searchParams.delete('userName');
-        window.history.replaceState({}, '', newUrl.toString());
+        newUrl.searchParams.delete("loginSuccess");
+        newUrl.searchParams.delete("userName");
+        newUrl.searchParams.delete("userId");
+        window.history.replaceState({}, "", newUrl.toString());
 
         // atomWithStorage가 sessionStorage에 저장할 시간을 주기 위해 setTimeout 사용
         setTimeout(() => {
@@ -76,26 +85,35 @@ const Login: React.FC = () => {
       } catch (error) {
         console.error("❌ Error during login process:", error);
         handleError(error);
-        showError('로그인 중 오류가 발생했습니다', '다시 시도해주세요.');
+        showError("로그인 중 오류가 발생했습니다", "다시 시도해주세요.");
       }
     } else if (loginError === "true") {
       // 로그인 실패 처리
       console.log("❌ Login error detected");
-      const displayMessage = errorMessage || '로그인에 실패했습니다. 다시 시도해주세요.';
-      showError('로그인 실패', displayMessage);
-      
+      const displayMessage =
+        errorMessage || "로그인에 실패했습니다. 다시 시도해주세요.";
+      showError("로그인 실패", displayMessage);
+
       // URL에서 에러 파라미터 제거
       const newUrl = new URL(window.location.href);
-      newUrl.searchParams.delete('loginError');
-      newUrl.searchParams.delete('errorMessage');
-      window.history.replaceState({}, '', newUrl.toString());
+      newUrl.searchParams.delete("loginError");
+      newUrl.searchParams.delete("errorMessage");
+      window.history.replaceState({}, "", newUrl.toString());
     } else if (loginSuccess || loginError || userName) {
       console.log("❌ Login conditions not met");
       console.log("loginSuccess === 'true':", loginSuccess === "true");
       console.log("userName exists:", !!userName);
       console.log("loginError === 'true':", loginError === "true");
     }
-  }, [searchParams, setUserData, navigate, showSuccess, showError, showInfo, handleError]);
+  }, [
+    searchParams,
+    setUserData,
+    navigate,
+    showSuccess,
+    showError,
+    showInfo,
+    handleError,
+  ]);
 
   const handleGoogleLogin = () => {
     try {
@@ -103,16 +121,16 @@ const Login: React.FC = () => {
         "🚨 Google login clicked - redirecting to:",
         `${API_ENDPOINTS.auth}/google`
       );
-      
+
       // 로그인 시도 토스트 표시
-      showInfo('로그인 진행 중', 'Google 로그인 페이지로 이동합니다...');
-      
+      showInfo("로그인 진행 중", "Google 로그인 페이지로 이동합니다...");
+
       // Google OAuth 엔드포인트로 리다이렉트
       window.location.href = `${API_ENDPOINTS.auth}/google`;
     } catch (error) {
       console.error("Google login redirect error:", error);
       handleError(error);
-      showError('로그인 오류', 'Google 로그인을 시도할 수 없습니다.');
+      showError("로그인 오류", "Google 로그인을 시도할 수 없습니다.");
     }
   };
 
@@ -122,16 +140,16 @@ const Login: React.FC = () => {
         "🚨 Kakao login clicked - redirecting to:",
         `${API_ENDPOINTS.auth}/kakao`
       );
-      
+
       // 로그인 시도 토스트 표시
-      showInfo('로그인 진행 중', 'Kakao 로그인 페이지로 이동합니다...');
-      
+      showInfo("로그인 진행 중", "Kakao 로그인 페이지로 이동합니다...");
+
       // Kakao OAuth 엔드포인트로 리다이렉트
       window.location.href = `${API_ENDPOINTS.auth}/kakao`;
     } catch (error) {
       console.error("Kakao login redirect error:", error);
       handleError(error);
-      showError('로그인 오류', 'Kakao 로그인을 시도할 수 없습니다.');
+      showError("로그인 오류", "Kakao 로그인을 시도할 수 없습니다.");
     }
   };
 
@@ -158,15 +176,10 @@ const Login: React.FC = () => {
         <div className="flex flex-col items-center justify-center gap-4 w-full">
           <button
             onClick={handleGoogleLogin}
-            disabled
-            className="w-full max-w-[18.75rem] h-[3.125rem] bg-gray-100 border border-gray-200 rounded-full flex items-center justify-center gap-2.5 cursor-not-allowed text-base font-semibold text-gray-400 shadow-sm opacity-60"
+            className="w-full max-w-[18.75rem] h-[3.125rem] bg-white border border-gray-300 rounded-full flex items-center justify-center gap-2.5 cursor-pointer text-base font-semibold text-gray-800 shadow-md transition-all duration-300 hover:bg-gray-50 hover:scale-105 active:scale-95"
           >
-            <img
-              src={googlelogo}
-              alt="구글 로고"
-              className="w-6 h-6 opacity-50"
-            />
-            구글로 연결하기 (준비중)
+            <img src={googlelogo} alt="구글 로고" className="w-6 h-6" />
+            구글로 연결하기
           </button>
 
           <button

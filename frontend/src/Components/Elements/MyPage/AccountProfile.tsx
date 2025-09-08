@@ -1,4 +1,7 @@
 import { ChevronRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useAtom } from "jotai";
+import { userAtom } from "../../../store/authStore";
 
 interface UserDataProps {
   userName: string;
@@ -12,6 +15,13 @@ interface AccountProfileProps {
 }
 
 export default function AccountProfile({ userData }: AccountProfileProps) {
+  const navigate = useNavigate();
+  const [user] = useAtom(userAtom);
+
+  const handleEditClick = () => {
+    console.log("Edit button clicked, user:", user);
+    navigate("/mypage/edit");
+  };
   return (
     <div className="mb-6">
       <div className="w-full rounded-[20px] bg-[#6770F6] p-6 shadow-lg">
@@ -29,7 +39,10 @@ export default function AccountProfile({ userData }: AccountProfileProps) {
               <h2 className="text-black font-bold text-xl mb-4">
                 {userData.userName}
               </h2>
-              <button className="rounded-[70px] bg-gradient-to-r from-transparent to-white py-3 px-6 hover:opacity-90 transition-opacity shadow-md flex items-center justify-end w-full">
+              <button
+                onClick={handleEditClick}
+                className="rounded-[70px] bg-gradient-to-r from-transparent to-white py-3 px-6 hover:opacity-90 transition-opacity shadow-md flex items-center justify-end w-full"
+              >
                 <span className="text-gray-600 text-sm mr-2">
                   수정하러 가기
                 </span>

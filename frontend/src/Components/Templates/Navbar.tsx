@@ -10,7 +10,7 @@ const NavBar = ({ currentPage }: NavBarProps) => {
   const location = useLocation();
 
   return (
-    <div className="flex items-center justify-around bg-[#00daaa] fixed bottom-0 left-0 right-0 w-full max-w-[440px] mx-auto box-border h-[80px]">
+    <div className="flex items-center justify-around bg-[#00daaa] fixed bottom-0 left-0 right-0 w-full max-w-[440px] mx-auto box-border h-[72px]">
       {/* 예문 버튼 */}
       <NavLink
         to="/example"
@@ -35,7 +35,7 @@ const NavBar = ({ currentPage }: NavBarProps) => {
         className="flex flex-col items-center justify-center no-underline text-[12px] font-medium h-full"
       >
         {location.pathname === "/home" ? (
-          <div className="bg-[#00daaa] w-[80px] h-[80px] rounded-full flex flex-col justify-center items-center -translate-y-[30px]">
+          <div className="bg-[#00daaa] w-[72px] h-[72px] rounded-full flex flex-col justify-center items-center">
             <div className="flex justify-center items-center">
               <Icons.home fill="white" fillOpacity="1" />
             </div>
@@ -44,7 +44,7 @@ const NavBar = ({ currentPage }: NavBarProps) => {
             </span>
           </div>
         ) : (
-          <div className="bg-[#00daaa] w-[80px] h-[80px] rounded-full flex flex-col justify-center items-center -translate-y-[30px]">
+          <div className="bg-[#00daaa] w-[72px] h-[72px] rounded-full flex flex-col justify-center items-center">
             <div className="flex justify-center items-center">
               <Icons.home />
             </div>
@@ -59,15 +59,26 @@ const NavBar = ({ currentPage }: NavBarProps) => {
       <NavLink
         to="/mypage"
         className={`flex flex-col items-center justify-center no-underline text-[12px] font-medium h-full ${
-          location.pathname === "/mypage"
+          location.pathname === "/mypage" ||
+          location.pathname.startsWith("/mypage/edit")
             ? "text-white"
             : "text-black text-opacity-50"
         }`}
       >
         <div className="m-[5px]">
           <Icons.profile
-            stroke={location.pathname === "/mypage" ? "white" : "black"}
-            strokeOpacity={location.pathname === "/mypage" ? "1" : "0.5"}
+            stroke={
+              location.pathname === "/mypage" ||
+              location.pathname.startsWith("/mypage/edit")
+                ? "white"
+                : "black"
+            }
+            strokeOpacity={
+              location.pathname === "/mypage" ||
+              location.pathname.startsWith("/mypage/edit")
+                ? "1"
+                : "0.5"
+            }
           />
         </div>
         <span className="text-[12px]">프로필</span>
