@@ -1,6 +1,8 @@
 const express = require("express");
 const { getAnswer } = require("../services/questionService");
-const { getQuestionsAndAnswersByUserId } = require("../services/historyService");
+const {
+  getQuestionsAndAnswersByUserId,
+} = require("../services/historyService");
 require("dotenv").config({ path: "../.env" });
 
 const router = express.Router();
@@ -16,7 +18,8 @@ router.post("/", async (req, res) => {
 
   try {
     const result = await getAnswer(question, userId);
-    res.send({ answer: result });
+    // result.answer는 이미 문자열이므로 그대로 전송
+    res.send({ answer: result.answer });
   } catch (error) {
     console.error("Error generating answer:", error);
     res.status(500).send({ message: "Error generating answer", error });

@@ -73,12 +73,12 @@ app.use(session({
   store: new MySQLStore({
     ...sessionConn,
     clearExpired: true,
-    checkExpirationInterval: 1000 * 60 * 10,
-    expiration: 1000 * 60 * 60,
+    checkExpirationInterval: 1000 * 60 * 60 * 24, // 24시간마다 만료된 세션 정리
+    expiration: 1000 * 60 * 60 * 24 * 7, // 7일 = 1000ms * 60초 * 60분 * 24시간 * 7일
   }),
   proxy: true,
   cookie: {
-    maxAge: 1000 * 60 * 10,
+    maxAge: 1000 * 60 * 60 * 24 * 7, // 7일 = 1000ms * 60초 * 60분 * 24시간 * 7일
     httpOnly: true,
     secure: PROD,
     sameSite: PROD ? "none" : "lax",
