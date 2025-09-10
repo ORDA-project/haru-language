@@ -239,7 +239,7 @@ const App = () => {
   };
 
   return (
-    <div className="w-full h-[calc(100vh-72px)] flex flex-col max-w-[440px] mx-auto bg-[#F7F8FB]">
+    <div className="w-full h-[calc(100vh-72px)] flex flex-col max-w-[440px] mx-auto bg-[#F7F8FB] shadow-[0_0_10px_0_rgba(0,0,0,0.1)]">
       {stage === 1 && (
         <StageUpload
           handleFileUpload={handleFileUpload}

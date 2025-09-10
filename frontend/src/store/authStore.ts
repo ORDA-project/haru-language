@@ -1,12 +1,13 @@
 import { atom } from "jotai";
 import { atomWithStorage, createJSONStorage } from "jotai/utils";
-import { API_ENDPOINTS } from '../config/api';
+import { API_ENDPOINTS } from "../config/api";
 
 // 사용자 타입 정의
 interface User {
   name: string;
   email?: string;
   id?: string;
+  userId?: string;
   token?: string;
   isOnboarded?: boolean;
 }
@@ -63,8 +64,8 @@ export const checkUserOnboardingAtom = atom(null, async (get, set) => {
 
   try {
     const response = await fetch(`${API_ENDPOINTS.userDetails}/info`, {
-      method: 'GET',
-      credentials: 'include', // 세션 쿠키 포함
+      method: "GET",
+      credentials: "include", // 세션 쿠키 포함
     });
 
     if (response.ok) {
@@ -77,7 +78,7 @@ export const checkUserOnboardingAtom = atom(null, async (get, set) => {
     }
     return false;
   } catch (error) {
-    console.error('Error checking user onboarding:', error);
+    console.error("Error checking user onboarding:", error);
     return false;
   }
 });

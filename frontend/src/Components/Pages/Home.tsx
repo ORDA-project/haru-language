@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useAtom } from "jotai";
 import { useSearchParams } from "react-router-dom";
+import axios from "axios";
 import HomeInfo from "../Elements/HomeInfo";
 import NavBar from "../Templates/Navbar";
 import HomeHeader from "../Templates/HomeHeader";
@@ -8,7 +9,16 @@ import StatusCheck from "../Elements/StatusCheck";
 import { isLoggedInAtom, userAtom, setUserAtom } from "../../store/authStore";
 import { API_ENDPOINTS } from "../../config/api";
 import { useErrorHandler } from "../../hooks/useErrorHandler";
-import axios from "axios";
+
+// User 타입 정의 (authStore와 동일)
+interface User {
+  name: string;
+  email?: string;
+  id?: string;
+  userId?: string;
+  token?: string;
+  isOnboarded?: boolean;
+}
 
 const Home = () => {
   const [searchParams] = useSearchParams();
@@ -52,18 +62,19 @@ const Home = () => {
           throw new Error("서버에서 올바르지 않은 응답을 받았습니다.");
         }
 
-        const { name, visitCount, mostVisitedDay, recommendation } =
+        const { name, visitCount, mostVisitedDay, recommendation, userId } =
           res.data.userData;
         console.log(
           "✅ User data:",
           name,
           visitCount,
           mostVisitedDay,
-          recommendation
+          recommendation,
+          userId
         );
 
         // 사용자 정보를 전역 상태에 저장
-        setUserData({ name });
+        setUserData({ name, userId });
         setVisitCount(visitCount || 0);
         setMostVisitedDay(mostVisitedDay || "");
         setRecommendation(recommendation || "추천 곡이 없습니다");
@@ -133,7 +144,7 @@ const Home = () => {
             recommendation={recommendation}
             isLoggedIn={isLoggedIn}
           />
-          <StatusCheck />
+          <StatusCheck userId={user?.userId} />
         </>
       </div>
       <NavBar currentPage={"Home"} />

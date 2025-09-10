@@ -1,5 +1,6 @@
 import { RouterProvider, createBrowserRouter } from "react-router-dom";
 import { Provider } from "jotai";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Navbar from "./Components/Templates/Navbar";
 import Home from "./Components/Pages/Home";
 import Question from "./Components/Pages/Question";
@@ -54,15 +55,30 @@ const router = createBrowserRouter([
   basename: import.meta.env.PROD ? "/haru-language" : "/"
 });
 
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 3,
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      refetchOnWindowFocus: false,
+    },
+    mutations: {
+      retry: 1,
+    },
+  },
+});
+
 function App() {
   return (
-    <Provider>
-      <ErrorBoundary>
-        <ErrorProvider>
-          <RouterProvider router={router} />
-        </ErrorProvider>
-      </ErrorBoundary>
-    </Provider>
+    <QueryClientProvider client={queryClient}>
+      <Provider>
+        <ErrorBoundary>
+          <ErrorProvider>
+            <RouterProvider router={router} />
+          </ErrorProvider>
+        </ErrorBoundary>
+      </Provider>
+    </QueryClientProvider>
   );
 }
 

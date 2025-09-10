@@ -190,7 +190,7 @@ export default function UserProfileEdit({}: UserProfileEditProps) {
     ];
 
     return (
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-6">
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-6 shadow-[0_0_10px_0_rgba(0,0,0,0.1)]">
         {questions.map((question) => (
           <div key={question.id} className="space-y-4">
             {/* 시스템 메시지 */}
@@ -327,7 +327,7 @@ export default function UserProfileEdit({}: UserProfileEditProps) {
   }
 
   return (
-    <div className="w-full h-screen flex flex-col max-w-[440px] mx-auto bg-gray-50">
+    <div className="w-full h-screen flex flex-col max-w-[440px] mx-auto bg-gray-50 shadow-[0_0_10px_0_rgba(0,0,0,0.1)]">
       {/* 헤더 영역 */}
       <div className="flex items-center justify-between p-4 bg-white border-b border-gray-200">
         <button
