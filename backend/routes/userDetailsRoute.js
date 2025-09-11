@@ -1,11 +1,7 @@
 ﻿const express = require("express");
 const router = express.Router();
 const { User, UserInterest, UserBook } = require("../models");
-
-// ?몄뀡?먯꽌 social_id 異붿텧?섎뒗 ?좏떥 ?⑥닔
-const getSocialIdFromSession = (req) => {
-  return req.session?.user?.social_id || null;
-};
+const { getUserIdBySocialId, getSocialIdFromSession } = require("../utils/userUtils");
 
 /**
  * @openapi
@@ -33,7 +29,7 @@ const getSocialIdFromSession = (req) => {
  *                   example: "swagger"
  *                 name:
  *                   type: string
- *                   example: "?띻만??
+ *                   example: "홍길동"
  *                 email:
  *                   type: string
  *                   example: "hong@test.com"
@@ -113,7 +109,7 @@ router.get("/info", async (req, res) => {
  *             properties:
  *               name:
  *                 type: string
- *                 example: "?띻만??
+ *                 example: "홍길동"
  *               email:
  *                 type: string
  *                 example: "hong@test.com"
@@ -163,15 +159,15 @@ router.post("/", async (req, res) => {
 
       const { interests, books, ...userFields } = req.body;
 
-      // User 湲곕낯 ?뺣낫 ?낅뜲?댄듃
+      // User 기본 정보 업데이트
       await user.update(userFields);
 
-      // UserInterest 泥섎━
+      // UserInterest 처리
       if (interests && Array.isArray(interests)) {
-        // 湲곗〈 愿?ъ궗 ??젣
+        // 기존 관심사 삭제
         await UserInterest.destroy({ where: { user_id: user.id } });
         
-        // ?덈줈??愿?ъ궗 異붽?
+        // 새로운 관심사 추가
         if (interests.length > 0) {
           const interestRecords = interests.map(interest => ({
             user_id: user.id,
@@ -181,12 +177,12 @@ router.post("/", async (req, res) => {
         }
       }
 
-      // UserBook 泥섎━
+      // UserBook 처리
       if (books && Array.isArray(books)) {
-        // 湲곗〈 梨???젣
+        // 기존 책 삭제
         await UserBook.destroy({ where: { user_id: user.id } });
         
-        // ?덈줈??梨?異붽?
+        // 새로운 책 추가
         if (books.length > 0) {
           const bookRecords = books.map(book => ({
             user_id: user.id,
@@ -226,7 +222,7 @@ router.post("/", async (req, res) => {
  *             properties:
  *               name:
  *                 type: string
- *                 example: "?띻만??
+ *                 example: "홍길동"
  *               email:
  *                 type: string
  *                 example: "hong@test.com"
@@ -274,10 +270,10 @@ router.put("/", async (req, res) => {
 
       const { interests, books, ...userFields } = req.body;
 
-      // User 湲곕낯 ?뺣낫 ?낅뜲?댄듃
+      // User 기본 정보 업데이트
       await user.update(userFields);
 
-      // UserInterest 泥섎━
+      // UserInterest 처리
       if (interests && Array.isArray(interests)) {
         await UserInterest.destroy({ where: { user_id: user.id } });
         
@@ -290,7 +286,7 @@ router.put("/", async (req, res) => {
         }
       }
 
-      // UserBook 泥섎━
+      // UserBook 처리
       if (books && Array.isArray(books)) {
         await UserBook.destroy({ where: { user_id: user.id } });
         

@@ -4,7 +4,6 @@ const { WritingRecord, WritingQuestion, WritingExample, User } = require("../mod
 const { getUserIdBySocialId } = require("../utils/userUtils");
 const router = express.Router();
 
-
 /**
  * @openapi
  * /writing/correct:
@@ -39,31 +38,31 @@ const router = express.Router();
  *       500:
  *         description: Error correcting writing
  */
-// 臾몄옣 泥⑥궘 API 
+// 문장 첨삭 API 
 router.post("/correct", async (req, res) => {
   try {
     const { text, userId, writingQuestionId } = req.body;
 
     if (!text || !userId) {
-      return res.status(400).json({ message: "text? userId???꾩닔?낅땲??" });
+      return res.status(400).json({ message: "text와 userId는 필수입니다." });
     }
 
-    // social_id瑜??ㅼ젣 DB id濡?蹂??
+    // social_id를 실제 DB id로 변환
     const actualUserId = await getUserIdBySocialId(userId);
     if (!actualUserId) {
-      return res.status(404).json({ message: "?ъ슜?먮? 李얠쓣 ???놁뒿?덈떎." });
+      return res.status(404).json({ message: "사용자를 찾을 수 없습니다." });
     }
 
     const result = await correctWriting(text, actualUserId, writingQuestionId || null);
 
     res.status(200).json({
-      message: "泥⑥궘 ?꾨즺",
+      message: "첨삭 완료",
       data: result,
     });
   } catch (error) {
     console.error("Error correcting writing:", error.message);
     res.status(500).json({
-      message: "臾몄옣 泥⑥궘 以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.",
+      message: "문장 첨삭 중 오류가 발생했습니다.",
       error: error.message,
     });
   }
@@ -85,7 +84,7 @@ router.post("/correct", async (req, res) => {
  *             properties:
  *               text:
  *                 type: string
- *                 example: "?섎뒗 留ㅼ씪 ?숆탳??媛꾨떎."
+ *                 example: "나는 매일 학교에 간다."
  *               userId:
  *                 type: string
  *                 example: "test123"
@@ -103,31 +102,31 @@ router.post("/correct", async (req, res) => {
  *       500:
  *         description: Error translating writing
  */
-// ?쒓뎅?????곸뼱 踰덉뿭 API 
+// 한국어 → 영어 번역 API 
 router.post("/translate", async (req, res) => {
   try {
     const { text, userId, writingQuestionId } = req.body;
 
     if (!text || !userId || !writingQuestionId) {
-      return res.status(400).json({ message: "text, userId, writingQuestionId???꾩닔?낅땲??" });
+      return res.status(400).json({ message: "text, userId, writingQuestionId는 필수입니다." });
     }
 
-    // social_id瑜??ㅼ젣 DB id濡?蹂??
+    // social_id를 실제 DB id로 변환
     const actualUserId = await getUserIdBySocialId(userId);
     if (!actualUserId) {
-      return res.status(404).json({ message: "?ъ슜?먮? 李얠쓣 ???놁뒿?덈떎." });
+      return res.status(404).json({ message: "사용자를 찾을 수 없습니다." });
     }
 
     const result = await translateWriting(text, actualUserId, writingQuestionId);
 
     res.status(200).json({
-      message: "踰덉뿭 ?꾨즺",
+      message: "번역 완료",
       data: result,
     });
   } catch (error) {
     console.error("Error translating writing:", error.message);
     res.status(500).json({
-      message: "踰덉뿭 以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.",
+      message: "번역 중 오류가 발생했습니다.",
       error: error.message,
     });
   }
@@ -156,19 +155,19 @@ router.post("/translate", async (req, res) => {
  *       500:
  *         description: Server error
  */
-// ?ъ슜?먯쓽 紐⑤뱺 Writing 湲곕줉 議고쉶 
+// 사용자의 모든 Writing 기록 조회 
 router.get("/records/:userId", async (req, res) => {
   try {
     const { userId } = req.params; // social_id
 
-    // social_id瑜??ㅼ젣 DB id濡?蹂??
+    // social_id를 실제 DB id로 변환
     const actualUserId = await getUserIdBySocialId(userId);
     if (!actualUserId) {
-      return res.status(404).json({ message: "?ъ슜?먮? 李얠쓣 ???놁뒿?덈떎." });
+      return res.status(404).json({ message: "사용자를 찾을 수 없습니다." });
     }
 
     const records = await WritingRecord.findAll({
-      where: { user_id: actualUserId }, // ?ㅼ젣 DB id ?ъ슜
+      where: { user_id: actualUserId }, // 실제 DB id 사용
       order: [["createdAt", "DESC"]],
     });
 
@@ -176,19 +175,19 @@ router.get("/records/:userId", async (req, res) => {
 
     if (!safeRecords.length) {
       return res.status(200).json({ 
-        message: "?대떦 ?ъ슜?먯쓽 Writing 湲곕줉???놁뒿?덈떎.",
-        data: []  // 鍮?諛곗뿴 諛섑솚
+        message: "해당 사용자의 Writing 기록이 없습니다.",
+        data: []  // 빈 배열 반환
       });
     }
 
     res.status(200).json({
-      message: "?ъ슜?먯쓽 Writing 湲곕줉 議고쉶 ?깃났",
+      message: "사용자의 Writing 기록 조회 성공",
       data: safeRecords,
     });
   } catch (error) {
     console.error("Error fetching user writing records:", error.message);
     res.status(500).json({
-      message: "Writing 湲곕줉 議고쉶 以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.",
+      message: "Writing 기록 조회 중 오류가 발생했습니다.",
       error: error.message,
     });
   }
@@ -223,19 +222,19 @@ router.get("/records/:userId", async (req, res) => {
  *       500:
  *         description: Server error
  */
-// ?뱀젙 Writing 吏덈Ц??????ъ슜?먯쓽 湲곕줉 議고쉶
+// 특정 Writing 질문에 대한 사용자의 기록 조회
 router.get("/records/:userId/:writingQuestionId", async (req, res) => {
   try {
     const { userId, writingQuestionId } = req.params;
 
-    // social_id瑜??ㅼ젣 DB id濡?蹂??
+    // social_id를 실제 DB id로 변환
     const actualUserId = await getUserIdBySocialId(userId);
     if (!actualUserId) {
-      return res.status(404).json({ message: "?ъ슜?먮? 李얠쓣 ???놁뒿?덈떎." });
+      return res.status(404).json({ message: "사용자를 찾을 수 없습니다." });
     }
 
     const records = await WritingRecord.findAll({
-      where: { user_id: actualUserId, writing_question_id: writingQuestionId }, // ?ㅼ젣 DB id ?ъ슜
+      where: { user_id: actualUserId, writing_question_id: writingQuestionId }, // 실제 DB id 사용
       order: [["createdAt", "DESC"]],
     });
 
@@ -243,19 +242,19 @@ router.get("/records/:userId/:writingQuestionId", async (req, res) => {
 
     if (!safeRecords.length) {
       return res.status(200).json({  
-        message: "?대떦 Writing 吏덈Ц??????ъ슜?먯쓽 湲곕줉???놁뒿?덈떎.",
-        data: []  // 鍮?諛곗뿴 諛섑솚
+        message: "해당 Writing 질문에 대한 사용자의 기록이 없습니다.",
+        data: []  // 빈 배열 반환
       });
     }
 
     res.status(200).json({
-      message: "?뱀젙 Writing 吏덈Ц??????ъ슜?먯쓽 湲곕줉 議고쉶 ?깃났",
+      message: "특정 Writing 질문에 대한 사용자의 기록 조회 성공",
       data: safeRecords,
     });
   } catch (error) {
     console.error("Error fetching writing records for question:", error.message);
     res.status(500).json({
-      message: "Writing 吏덈Ц?????湲곕줉 議고쉶 以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.",
+      message: "Writing 질문에 대한 기록 조회 중 오류가 발생했습니다.",
       error: error.message,
     });
   }
@@ -283,7 +282,7 @@ router.get("/records/:userId/:writingQuestionId", async (req, res) => {
  *       500:
  *         description: Server error
  */
-// ?뱀젙 WritingQuestion 諛섑솚 API
+// 특정 WritingQuestion 반환 API
 router.get("/question/:writingQuestionId", async (req, res) => {
   try {
     const { writingQuestionId } = req.params;
@@ -291,11 +290,11 @@ router.get("/question/:writingQuestionId", async (req, res) => {
     const question = await WritingQuestion.findOne({ where: { id: writingQuestionId } });
 
     if (!question) {
-      return res.status(404).json({ message: "?대떦 ID?????Writing 吏덈Ц???놁뒿?덈떎." });
+      return res.status(404).json({ message: "해당 ID에 대한 Writing 질문이 없습니다." });
     }
 
     res.status(200).json({
-      message: "Writing 吏덈Ц 議고쉶 ?깃났",
+      message: "Writing 질문 조회 성공",
       data: {
         id: question.id,
         englishQuestion: question.question_text,
@@ -305,7 +304,7 @@ router.get("/question/:writingQuestionId", async (req, res) => {
   } catch (error) {
     console.error("Error fetching writing question:", error.message);
     res.status(500).json({
-      message: "Writing 吏덈Ц 議고쉶 以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.",
+      message: "Writing 질문 조회 중 오류가 발생했습니다.",
       error: error.message,
     });
   }
@@ -324,16 +323,16 @@ router.get("/question/:writingQuestionId", async (req, res) => {
  *       500:
  *         description: Server error
  */
-// ?꾩껜 WritingQuestion 紐⑸줉 議고쉶 API
+// 전체 WritingQuestion 목록 조회 API
 router.get("/questions", async (req, res) => {
   try {
     const questions = await WritingQuestion.findAll({
       order: [["createdAt", "ASC"]],
     });
 
-    // 鍮?諛곗뿴?댁뼱??200 諛섑솚
+    // 빈 배열이어도 200 반환
     res.status(200).json({
-      message: "Writing 吏덈Ц 議고쉶 ?깃났",
+      message: "Writing 질문 조회 성공",
       data: questions.map(q => ({
         id: q.id,
         englishQuestion: q.question_text,
@@ -343,7 +342,7 @@ router.get("/questions", async (req, res) => {
   } catch (error) {
     console.error("Error fetching all writing questions:", error.message);
     res.status(500).json({
-      message: "Writing 吏덈Ц 議고쉶 以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.",
+      message: "Writing 질문 조회 중 오류가 발생했습니다.",
       error: error.message,
     });
   }

@@ -14,7 +14,23 @@ async function correctWriting(text, userId, writingQuestionId = null) {
       "Provide only the JSON output.";
 
     const response = await callGPT(prompt, `Please correct and provide feedback for: "${text}"`, 500);
-    const correctionData = JSON.parse(response);
+    
+    // JSON 파싱 안전성 개선
+    let correctionData;
+    try {
+      correctionData = JSON.parse(response);
+      // 응답 구조 검증
+      if (!correctionData.correctedText || typeof correctionData.hasErrors !== 'boolean' || !Array.isArray(correctionData.feedback)) {
+        throw new Error("GPT 응답 형식이 올바르지 않습니다");
+      }
+    } catch (parseError) {
+      console.warn("GPT 응답 파싱 실패:", parseError.message);
+      correctionData = {
+        correctedText: text,
+        hasErrors: false,
+        feedback: ["첨삭 처리 중 오류가 발생했습니다."]
+      };
+    }
 
     // WritingRecord 테이블에 저장
     const record = await WritingRecord.create({
@@ -33,13 +49,12 @@ async function correctWriting(text, userId, writingQuestionId = null) {
       feedback: correctionData.feedback, 
     };
   } catch (error) {
-    console.error("Error in writing correction:", error.message);
-    throw new Error("Failed to correct writing.");
+    console.error("문장 첨삭 오류:", error.message);
+    throw new Error("문장 첨삭에 실패했습니다.");
   }
 }
 
-
-// 한국어 → 영어 번역
+// 한국어 -> 영어 번역
 async function translateWriting(text, userId, writingQuestionId) {
   try {
     const question = await WritingQuestion.findOne({ where: { id: writingQuestionId } });
@@ -70,7 +85,22 @@ async function translateWriting(text, userId, writingQuestionId) {
       "Provide only the JSON output.";
 
     const response = await callGPT(prompt, text, 600);
-    const translationData = JSON.parse(response);
+    
+    // JSON 파싱 안전성 개선
+    let translationData;
+    try {
+      translationData = JSON.parse(response);
+      // 응답 구조 검증
+      if (!Array.isArray(translationData.translatedText) || !Array.isArray(translationData.feedback)) {
+        throw new Error("GPT 응답 형식이 올바르지 않습니다");
+      }
+    } catch (parseError) {
+      console.warn("GPT 응답 파싱 실패:", parseError.message);
+      translationData = {
+        translatedText: [text], // 원본 텍스트를 배열로 반환
+        feedback: ["번역 처리 중 오류가 발생했습니다."]
+      };
+    }
 
     console.log("GPT 응답 데이터:", translationData);
     console.log("translatedText 값:", translationData?.translatedText);
@@ -99,8 +129,8 @@ async function translateWriting(text, userId, writingQuestionId) {
       feedback: translationData.feedback, 
     };
   } catch (error) {
-    console.error("Error in writing translation:", error.message);
-    throw new Error("Failed to translate writing.");
+    console.error("번역 처리 오류:", error.message);
+    throw new Error("번역에 실패했습니다.");
   }
 }
 

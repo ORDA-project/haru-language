@@ -5,7 +5,7 @@ const googleRouter = require("../login/googleLogin");
 const kakaoRouter = require("../login/kakaoLogin");
 
 
-// Google 濡쒓렇???쇱슦??
+// Google 로그인 라우터
 /**
  * @openapi
  * /auth/google:
@@ -19,7 +19,7 @@ const kakaoRouter = require("../login/kakaoLogin");
  */
 router.use("/google", googleRouter);
 
-// Kakao 濡쒓렇???쇱슦??
+// Kakao 로그인 라우터
 /**
  * @openapi
  * /auth/kakao:
@@ -34,7 +34,7 @@ router.use("/google", googleRouter);
 router.use("/kakao", kakaoRouter);
 
 
-// ?몄뀡 ?곹깭 ?뺤씤
+// 세션 상태 확인
 /**
  * @openapi
  * /auth/check:
@@ -58,7 +58,7 @@ router.use("/kakao", kakaoRouter);
  *                   nullable: true
  *                   example:
  *                     id: "123"
- *                     name: "?띻만??
+ *                     name: "홍길동"
  */
 router.get("/check", (req, res) => {
   const user = req.session.user;
@@ -69,7 +69,7 @@ router.get("/check", (req, res) => {
 });
 
 
-// 濡쒓렇?꾩썐 ?쇱슦??
+// 로그아웃 라우터
 /**
  * @openapi
  * /auth/logout:
@@ -85,33 +85,22 @@ router.get("/check", (req, res) => {
  */
 router.get("/logout", async (req, res) => {
   try {
-    const accessToken = req.session.token;
-
-    // 移댁뭅??濡쒓렇?꾩썐 ?붿껌 (?좏깮 ?ы빆)
-    if (accessToken) {
-      await axios.post(
-        "https://kapi.kakao.com/v1/user/logout",
-        {},
-        { headers: { Authorization: `Bearer ${accessToken}` } }
-      );
-    }
-
-    // ?몄뀡 ?쒓굅 諛?荑좏궎 ??젣
+    // 세션 제거 및 쿠키 삭제
     req.session.destroy((err) => {
       if (err) {
-        console.error("?몄뀡 ??젣 ?ㅽ뙣:", err);
-        return res.status(500).send("濡쒓렇?꾩썐 ?ㅽ뙣");
+        console.error("세션 삭제 실패:", err);
+        return res.status(500).send("로그아웃 실패");
       }
 
       res.clearCookie("user_sid");
       res.setHeader("Cache-Control", "no-store");
       res.setHeader("Pragma", "no-cache");
 
-      console.log("濡쒓렇?꾩썐 ?깃났");
+      console.log("로그아웃 성공");
       res.status(200).send("Logout successful");
     });
   } catch (error) {
-    console.error("濡쒓렇?꾩썐 泥섎━ ?ㅽ뙣:", error.message || error);
+    console.error("로그아웃 처리 실패:", error.message || error);
     res.status(500).send("Failed to log out.");
   }
 });

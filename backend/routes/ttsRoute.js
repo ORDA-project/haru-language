@@ -42,19 +42,19 @@ const { readTextWithTTS } = require("../services/ttsService");
 
 router.post("/tts", async (req, res) => {
     try {
-        // ?붿껌 蹂몃Ц?먯꽌 text? speed 異붿텧
+        // 요청 본문에서 text와 speed 추출
         const { text, speed } = req.body;
         if (!text) {
-            return res.status(400).json({ error: "?띿뒪?멸? ?꾩슂?⑸땲?? });
+            return res.status(400).json({ error: "텍스트가 필요합니다" });
         }
 
-        // ?띾룄 ?좏슚??寃??(0.1 ~ 2.0 踰붿쐞)
+        // 속도 유효성 검사 (0.1 ~ 2.0 범위)
         const speakingRate = speed && speed >= 0.1 && speed <= 2.0 ? speed : 0.7;
 
-        // TTS 泥섎━
+        // TTS 처리
         const audioContent = await readTextWithTTS(text, speakingRate);
 
-        // ?묐떟?쇰줈 MP3 ?곗씠???꾩넚
+        // 응답으로 MP3 데이터 전송
         res.json({ audioContent: audioContent.toString("base64") });
     } catch (error) {
         console.error("Error in TTS route:", error);

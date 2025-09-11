@@ -5,7 +5,13 @@ require("dotenv").config({ path: "../.env" });
 let ttsClient;
 try {
   // JSON 문자열을 파싱해서 사용
+  if (!process.env.GOOGLE_CREDENTIALS_JSON) {
+    throw new Error("GOOGLE_CREDENTIALS_JSON 환경변수가 설정되지 않았습니다.");
+  }
   const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS_JSON);
+  if (!credentials.client_email || !credentials.private_key || !credentials.project_id) {
+    throw new Error("Google Cloud 인증 정보가 불완전합니다.");
+  }
   ttsClient = new textToSpeech.TextToSpeechClient({
     credentials: credentials,
     projectId: credentials.project_id,

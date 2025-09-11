@@ -42,17 +42,17 @@ const router = express.Router();
  *         description: Error generating answer
  */
 
-// 吏덈Ц -> GPT ?듬? ?앹꽦 API
+// 질문 -> GPT 답변 생성 API
 router.post("/", async (req, res) => {
   const sessionUser = req.session.user;  
   const { question } = req.body;
 
   if (!sessionUser?.userId || !question) {
-    return res.status(400).json({ message: "濡쒓렇?멸낵 吏덈Ц???꾩슂?⑸땲??" });
+    return res.status(400).json({ message: "로그인과 질문이 필요합니다" });
   }
 
   try {
-    // ?몄뀡??userId瑜?吏곸젒 ?ъ슜 (?대? DB??primary key)
+    // 세션의 userId를 직접 사용 (이미 DB의 primary key)
     const result = await getAnswer(question, sessionUser.userId); 
     res.send({ answer: result.answer });
   } catch (error) {
@@ -84,38 +84,38 @@ router.post("/", async (req, res) => {
  *       500:
  *         description: Server error
  */
-// ?ъ슜??ID濡?吏덈Ц怨??듬? 議고쉶 API
+// 사용자 ID로 질문과 답변 조회 API
 router.get("/:userId", async (req, res) => {
   const { userId } = req.params; // social_id
 
   try {
-    // social_id瑜??ㅼ젣 DB id濡?蹂??
+    // social_id를 실제 DB id로 변환
     const user = await User.findOne({ where: { social_id: userId } });
     if (!user) {
-      return res.status(404).json({ message: "?ъ슜?먮? 李얠쓣 ???놁뒿?덈떎." });
+      return res.status(404).json({ message: "사용자를 찾을 수 없습니다." });
     }
 
-    // ?ㅼ젣 DB id濡?議고쉶
+    // 실제 DB id로 조회
     const questionsAndAnswers = await getQuestionsAndAnswersByUserId(user.id);
 
-    // ?덉쟾?섍쾶 泥섎━
+    // 안전하게 처리
     const safeData = questionsAndAnswers || [];
 
     if (!safeData.length) {
       return res.status(200).json({ 
-        message: "?대떦 ?좎???吏덈Ц怨??듬????놁뒿?덈떎.",
-        data: []  // 鍮?諛곗뿴 諛섑솚
+        message: "해당 사용자의 질문과 답변이 없습니다.",
+        data: []  // 빈 배열 반환
       });
     }
 
     res.status(200).json({
-      message: "吏덈Ц怨??듬? 議고쉶 ?깃났",
+      message: "질문과 답변 조회 성공",
       data: safeData,
     });
   } catch (error) {
-    console.error("吏덈Ц怨??듬? 議고쉶 API ?ㅻ쪟:", error.message);
+    console.error("질문과 답변 조회 API 오류:", error.message);
     res.status(500).json({
-      message: "吏덈Ц怨??듬? 議고쉶 以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.",
+      message: "질문과 답변 조회 중 오류가 발생했습니다.",
       error: error.message,
     });
   }

@@ -1,15 +1,6 @@
 ﻿const express = require("express");
 const router = express.Router();
 
-// 媛쒕컻?섍꼍???꾨땲硫?404 諛섑솚
-if (process.env.NODE_ENV === "production") {
-  router.use("*", (req, res) => {
-    res.status(404).json({ error: "Not found" });
-  });
-  module.exports = router;
-  return;
-}
-
 /**
  * @openapi
  * /swagger-test-login:
@@ -39,22 +30,22 @@ if (process.env.NODE_ENV === "production") {
  *                       example: "test123"
  *                     name:
  *                       type: string
- *                       example: "?띻만??
+ *                       example: "í™ê¸¸ë™"
  */
 router.post("/", (req, res) => {
   req.session.user = {
-    userId: 4,                    // DB??primary key (?ㅼ젣 test ?좎???id)
-    social_id: "test123",         // OAuth ID  
-    social_provider: "swagger",   // OAuth ?쒓났??
-    name: "?띻만??,
+    userId: 4,
+    social_id: "test123",
+    social_provider: "swagger",
+    name: "홍길동", // 깨진 문자 수정
     visitCount: 1,
     mostVisitedDays: "Monday",
   };
 
   req.session.save((err) => {
     if (err) {
-      console.error("?몄뀡 ????ㅽ뙣:", err);
-      return res.status(500).json({ error: "?몄뀡 ????ㅽ뙣" });
+      console.error("세션 저장 실패:", err); // 깨진 문자 수정
+      return res.status(500).json({ error: "세션 저장 실패" }); // 깨진 문자 수정
     }
     res.json({
       message: "Swagger test user logged in",

@@ -1,17 +1,17 @@
 ﻿const express = require("express");
 const router = express.Router();
 
-// 紐⑤뱢蹂??쇱슦???곌껐
-router.use("/auth", require("./socialLoginRoute"));         // ?뚯뀥 濡쒓렇??
-router.use("/home", require("./homeRoute"));                // ?덊솕硫?愿??
-router.use("/userDetails", require("./userDetailsRoute"));  // ?좎? ?곸꽭 ?뺣낫
-router.use("/friends", require("./friendRoute"));           // 移쒓뎄 湲곕뒫
-router.use("/songLyric", require("./songLyricRoute"));      // 媛???쒓났
-router.use("/songYoutube", require("./songYoutubeRoute"));  // ?좏뒠釉??곸긽 留곹겕
-router.use("/api", require("./ttsRoute"));                  // TTS 湲곕뒫
-router.use("/example", require("./exampleRoute"));          // ?덉젣 API
-router.use("/question", require("./questionRoute"));        // 吏덈Ц 湲곕뒫
-router.use("/writing", require("./writingRoute"));          // ?묐Ц 湲곕뒫
-router.use("/swagger-test-login", require("./swaggerTestRoute")); // (媛쒕컻) swagger ?꾪븳 ?뚯뒪??濡쒓렇??
+// 모듈별 라우트 연결
+router.use("/auth", require("./socialLoginRoute"));         // 소셜 로그인
+router.use("/home", require("./homeRoute"));                // 홈화면 관련
+router.use("/userDetails", require("./userDetailsRoute"));  // 유저 상세 정보
+router.use("/friends", require("./friendRoute"));           // 친구 기능
+router.use("/songLyric", require("./songLyricRoute"));      // 가사 제공
+router.use("/songYoutube", require("./songYoutubeRoute"));  // 유튜브 영상 링크
+router.use("/api", require("./ttsRoute"));                  // TTS 기능
+router.use("/example", require("./exampleRoute"));          // 예제 API
+router.use("/question", require("./questionRoute"));        // 질문 기능
+router.use("/writing", require("./writingRoute"));          // 작문 기능
+router.use("/swagger-test-login", require("./swaggerTestRoute")); // (개발) swagger 위한 테스트 로그인
 
 module.exports = router;

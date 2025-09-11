@@ -25,7 +25,7 @@ const router = express.Router();
  *                   properties:
  *                     name:
  *                       type: string
- *                       example: "?띻만??
+ *                       example: "홍길동"
  *                     visitCount:
  *                       type: integer
  *                       example: 5
@@ -34,7 +34,7 @@ const router = express.Router();
  *                       example: "Monday"
  *                     recommendation:
  *                       type: string
- *                       example: "醫뗭? ??by IU"
+ *                       example: "좋은 날 by IU"
  *       401:
  *         description: Unauthorized (not logged in)
  *       404:
@@ -42,28 +42,28 @@ const router = express.Router();
  *       500:
  *         description: Failed to fetch home data
  */
-// 濡쒓렇?명븳 ?ъ슜?먯쓽 ?뺣낫, 諛⑸Ц ?듦퀎, 異붿쿇 ?몃옒瑜?諛섑솚
+// 로그인한 사용자의 정보, 방문 통계, 추천 노래를 반환
 router.get("/", async (req, res) => {
   const sessionUser = req.session.user;
   if (!sessionUser) {
     return res.status(401).json({
       result: false,
-      message: "濡쒓렇?몄씠 ?꾩슂?⑸땲??",
+      message: "로그인이 필요합니다",
     });
   }
 
   try {
-    // userId濡?吏곸젒 李얘린 (DB primary key ?ъ슜)
+    // userId로 직접 찾기 (DB primary key 사용)
     const user = await User.findByPk(sessionUser.userId);
 
     if (!user) {
       return res.status(404).json({
         result: false,
-        message: "?ъ슜???곗씠?곕? 李얠쓣 ???놁뒿?덈떎.",
+        message: "사용자 데이터를 찾을 수 없습니다.",
       });
     }
 
-    const { visitCount = 1, mostVisitedDays = "?곗씠???놁쓬" } = sessionUser;
+    const { visitCount = 1, mostVisitedDays = "데이터 없음" } = sessionUser;
     const songData = req.session.songData;
 
     return res.status(200).json({
@@ -74,14 +74,14 @@ router.get("/", async (req, res) => {
         mostVisitedDay: mostVisitedDays,
         recommendation: songData
           ? `${songData.Title} by ${songData.Artist}`
-          : "異붿쿇???몃옒媛 ?놁뒿?덈떎.",
+          : "추천된 노래가 없습니다.",
       },
     });
   } catch (error) {
-    console.error("???곗씠??媛?몄삤湲??ㅽ뙣:", error.message);
+    console.error("홈 데이터 가져오기 실패:", error.message);
     return res.status(500).json({
       result: false,
-      error: "???곗씠?곕? 媛?몄삤?????ㅽ뙣?덉뒿?덈떎.",
+      error: "홈 데이터를 가져오는데 실패했습니다.",
     });
   }
 });

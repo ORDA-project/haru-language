@@ -109,7 +109,7 @@ const friendService = {
     await Notification.create({
       user_id: receiverId,
       sender_id: senderId,
-      message: `${sender.name}님이 당신을 찔렀습니다!`,
+      message: `${sender.name}님이 당신을 콕 찔렀습니다!`,
       is_read: false,
     });
 

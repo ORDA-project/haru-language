@@ -16,14 +16,17 @@ async function generateExamples(inputSentence, userId) {
 
   let gptResponse;
   try {
-    // GPT가 순수 JSON으로 응답하면 그대로 파싱
     gptResponse = JSON.parse(result);
-  } catch {
-    // 파싱 실패 시에도 프론트가 기대하는 동일 키로 반환
+    // 응답 구조 검증
+    if (!gptResponse.generatedExample || !gptResponse.generatedExample.extractedSentence) {
+      throw new Error("GPT 응답 형식이 올바르지 않습니다");
+    }
+  } catch (parseError) {
+    console.warn("GPT 응답 파싱 실패:", parseError.message);
     gptResponse = {
       generatedExample: {
         extractedSentence: inputSentence,
-        description: result || "",
+        description: result || "예문 생성 중 오류가 발생했습니다.",
         examples: [],
       },
     };

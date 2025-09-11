@@ -18,8 +18,14 @@ async function callGPT(prompt, userInput, maxTokens = 600) {
 
     return response.choices[0].message.content.trim();
   } catch (error) {
-    console.error("Error calling GPT:", error.message);
-    throw new Error("GPT API 호출 실패");
+    console.error("GPT API 호출 오류:", error.message);
+    if (error.response?.status === 429) {
+      throw new Error("GPT API 요청 한도 초과. 잠시 후 다시 시도해주세요.");
+    } else if (error.response?.status === 401) {
+      throw new Error("GPT API 인증 실패. API 키를 확인해주세요.");
+    } else {
+      throw new Error(`GPT API 호출 실패: ${error.message}`);
+    }
   }
 }
 

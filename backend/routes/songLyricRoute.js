@@ -27,10 +27,10 @@ const router = express.Router();
  *                       example: "IU"
  *                     Title:
  *                       type: string
- *                       example: "醫뗭? ??
+ *                       example: "좋은 날"
  *                     Lyric:
  *                       type: string
- *                       example: "?ㅻ뒛? 醫뗭? ??n?덈Т?섎룄 醫뗭? ??
+ *                       example: "오늘은 좋은 날\n너무나도 좋은 날"
  *       404:
  *         description: No recommended song or no lyric found
  *       500:
@@ -38,42 +38,42 @@ const router = express.Router();
  */
 router.get("/", async (req, res) => {
   try {
-    // ?몄뀡?먯꽌 songData 媛?몄삤湲?
+    // 세션에서 songData 가져오기
     const songData = req.session.songData;
 
-    // ?몄뀡??異붿쿇???몃옒媛 ?놁쓣 寃쎌슦
+    // 세션에 추천된 노래가 없을 경우
     if (!songData) {
       return res.status(404).json({
         result: false,
-        message: "異붿쿇???몃옒媛 ?놁뒿?덈떎.",
+        message: "추천된 노래가 없습니다.",
       });
     }
 
-    // 媛???뺣낫媛 ?녿뒗 寃쎌슦
+    // 가사 정보가 없는 경우
     if (!songData.Lyric) {
       return res.status(404).json({
         result: false,
-        message: "媛???뺣낫媛 ?놁뒿?덈떎.",
+        message: "가사 정보가 없습니다.",
       });
     }
 
-    // 媛??以꾨컮轅?泥섎━ (40??湲곗?)
+    // 가사 줄바꿈 처리 (40자 기준)
     const formattedLyric = songData.Lyric.replace(/(.{1,40})(\s|$)/g, "$1\n").trim();
 
-    // ?몄뀡?먯꽌 媛?ъ? ?몃옒 ?뺣낫瑜?諛섑솚
+    // 세션에서 가사와 노래 정보를 반환
     return res.status(200).json({
       result: true,
       songData: {
         Artist: songData.Artist,
         Title: songData.Title,
-        Lyric: formattedLyric, // HTML-friendly 媛??
+        Lyric: formattedLyric, // HTML-friendly 가사
       },
     });
   } catch (error) {
-    console.error("媛??議고쉶 ?ㅽ뙣:", error.message);
+    console.error("가사 조회 실패:", error.message);
     return res.status(500).json({
       result: false,
-      message: "媛??議고쉶???ㅽ뙣?덉뒿?덈떎.",
+      message: "가사 조회에 실패했습니다.",
     });
   }
 });

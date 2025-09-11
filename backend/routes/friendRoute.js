@@ -4,7 +4,6 @@ const friendService = require("../services/friendService");
 const { User } = require("../models");
 const { getUserIdBySocialId } = require("../utils/userUtils");
 
-
 /**
  * @openapi
  * /friends/invite:
@@ -41,23 +40,23 @@ const { getUserIdBySocialId } = require("../utils/userUtils");
  *       500:
  *         description: Server error
  */
-// 移쒓뎄 珥덈? 留곹겕 ?앹꽦
+// 친구 초대 링크 생성
 router.post("/invite", async (req, res) => {
   try {
     const { inviterId } = req.body; // social_id
     if (!inviterId) {
-      return res.status(400).json({ message: "inviterId媛 ?꾩슂?⑸땲??" });
+      return res.status(400).json({ message: "inviterId가 필요합니다" });
     }
 
-    // social_id瑜??ㅼ젣 DB id濡?蹂??
+    // social_id를 실제 DB id로 변환
     const actualInviterId = await getUserIdBySocialId(inviterId);
     if (!actualInviterId) {
-      return res.status(404).json({ message: "?ъ슜?먮? 李얠쓣 ???놁뒿?덈떎." });
+      return res.status(404).json({ message: "사용자를 찾을 수 없습니다." });
     }
 
     const inviteLink = await friendService.createInvitation({ inviterId: actualInviterId });
     if (!inviteLink) {
-      return res.status(500).json({ message: "珥덈? 留곹겕 ?앹꽦 以??ㅻ쪟 諛쒖깮" });
+      return res.status(500).json({ message: "초대 링크 생성 중 오류 발생" });
     }
     res.status(200).json({ inviteLink });
   } catch (error) {
@@ -102,18 +101,18 @@ router.post("/invite", async (req, res) => {
  *       500:
  *         description: Server error
  */
-// 移쒓뎄 珥덈? ?묐떟 (?섎씫/嫄곗젅)
+// 친구 초대 응답 (수락/거절)
 router.post("/respond", async (req, res) => {
   try {
-    const { token, response, inviteeId } = req.body; // inviteeId??social_id
+    const { token, response, inviteeId } = req.body; // inviteeId는 social_id
     if (!token || !response || !inviteeId) {
-      return res.status(400).json({ message: "token, response, inviteeId媛 ?꾩슂?⑸땲??" });
+      return res.status(400).json({ message: "token, response, inviteeId가 필요합니다" });
     }
 
-    // social_id瑜??ㅼ젣 DB id濡?蹂??
+    // social_id를 실제 DB id로 변환
     const actualInviteeId = await getUserIdBySocialId(inviteeId);
     if (!actualInviteeId) {
-      return res.status(404).json({ message: "?ъ슜?먮? 李얠쓣 ???놁뒿?덈떎." });
+      return res.status(404).json({ message: "사용자를 찾을 수 없습니다." });
     }
 
     const result = await friendService.respondToInvitation({
@@ -123,17 +122,17 @@ router.post("/respond", async (req, res) => {
     });
 
     return res.status(200).json({
-      message: response === "accept" ? "移쒓뎄 異붽? ?꾨즺" : "珥덈?媛 嫄곗젅?섏뿀?듬땲??"
+      message: response === "accept" ? "친구 추가 완료" : "초대가 거절되었습니다"
     });
 
   } catch (error) {
     if (error.message.includes("NOT_FOUND")) {
-      return res.status(404).json({ message: "?좏슚?섏? ?딆? 珥덈??낅땲??" });
+      return res.status(404).json({ message: "유효하지 않은 초대입니다" });
     }
-    if (error.message.includes("?대? 移쒓뎄")) {
-      return res.status(409).json({ message: "?대? 移쒓뎄?낅땲??" });
+    if (error.message.includes("이미 친구")) {
+      return res.status(409).json({ message: "이미 친구입니다" });
     }
-    res.status(500).json({ message: "?쒕쾭 ?ㅻ쪟 諛쒖깮" });
+    res.status(500).json({ message: "서버 오류 발생" });
   }
 });
 
@@ -170,7 +169,7 @@ router.post("/respond", async (req, res) => {
  *                         example: 1
  *                       name:
  *                         type: string
- *                         example: "?띻만??
+ *                         example: "홍길동"
  *       400:
  *         description: userId missing
  *       404:
@@ -178,18 +177,18 @@ router.post("/respond", async (req, res) => {
  *       500:
  *         description: Server error
  */
-// 移쒓뎄 紐⑸줉 議고쉶
+// 친구 목록 조회
 router.get("/list/:userId", async (req, res) => {
   try {
     const { userId } = req.params; // social_id
     if (!userId) {
-      return res.status(400).json({ message: "userId媛 ?꾩슂?⑸땲??" });
+      return res.status(400).json({ message: "userId가 필요합니다" });
     }
 
-    // social_id瑜??ㅼ젣 DB id濡?蹂??
+    // social_id를 실제 DB id로 변환
     const actualUserId = await getUserIdBySocialId(userId);
     if (!actualUserId) {
-      return res.status(404).json({ message: "?ъ슜?먮? 李얠쓣 ???놁뒿?덈떎." });
+      return res.status(404).json({ message: "사용자를 찾을 수 없습니다." });
     }
 
     const friends = await friendService.getFriends(actualUserId);
@@ -238,20 +237,20 @@ router.get("/list/:userId", async (req, res) => {
  *       500:
  *         description: Server error
  */
-// 移쒓뎄 ??젣
+// 친구 삭제
 router.delete("/remove", async (req, res) => {
   try {
-    const { userId, friendId } = req.body; // ????social_id
+    const { userId, friendId } = req.body; // 둘다 social_id
     if (!userId || !friendId) {
-      return res.status(400).json({ message: "userId? friendId媛 ?꾩슂?⑸땲??" });
+      return res.status(400).json({ message: "userId와 friendId가 필요합니다" });
     }
 
-    // social_id?ㅼ쓣 ?ㅼ젣 DB id濡?蹂??
+    // social_id들을 실제 DB id로 변환
     const actualUserId = await getUserIdBySocialId(userId);
     const actualFriendId = await getUserIdBySocialId(friendId);
 
     if (!actualUserId || !actualFriendId) {
-      return res.status(404).json({ message: "?ъ슜?먮? 李얠쓣 ???놁뒿?덈떎." });
+      return res.status(404).json({ message: "사용자를 찾을 수 없습니다." });
     }
 
     const result = await friendService.removeFriend({
@@ -299,20 +298,20 @@ router.delete("/remove", async (req, res) => {
  *       500:
  *         description: Server error
  */
-// 移쒓뎄?먭쾶 肄?李뚮Ⅴ湲?(?뚮┝ ?꾩넚)
+// 친구에게 콕 찌르기 (푸시 전송)
 router.post("/notifications/send", async (req, res) => {
   try {
-    const { senderId, receiverId } = req.body; // ????social_id
+    const { senderId, receiverId } = req.body; // 둘다 social_id
     if (!senderId || !receiverId) {
-      return res.status(400).json({ message: "senderId? receiverId媛 ?꾩슂?⑸땲??" });
+      return res.status(400).json({ message: "senderId와 receiverId가 필요합니다" });
     }
 
-    // social_id?ㅼ쓣 ?ㅼ젣 DB id濡?蹂??
+    // social_id들을 실제 DB id로 변환
     const actualSenderId = await getUserIdBySocialId(senderId);
     const actualReceiverId = await getUserIdBySocialId(receiverId);
 
     if (!actualSenderId || !actualReceiverId) {
-      return res.status(404).json({ message: "?ъ슜?먮? 李얠쓣 ???놁뒿?덈떎." });
+      return res.status(404).json({ message: "사용자를 찾을 수 없습니다." });
     }
 
     const result = await friendService.sendNotification({
@@ -322,10 +321,10 @@ router.post("/notifications/send", async (req, res) => {
 
     res.status(200).json({ message: result.message });
   } catch (error) {
-    if (error.message.includes("移쒓뎄媛 ?꾨떃?덈떎")) {
+    if (error.message.includes("친구가 아닙니다")) {
       return res.status(403).json({ message: error.message });
     }
-    res.status(500).json({ message: "?뚮┝ ?꾩넚 以??ㅻ쪟 諛쒖깮" });
+    res.status(500).json({ message: "푸시 전송 중 오류 발생" });
   }
 });
 
@@ -354,7 +353,7 @@ router.post("/notifications/send", async (req, res) => {
  *               properties:
  *                 message:
  *                   type: string
- *                   example: "?뚮┝ 議고쉶 ?깃났"
+ *                   example: "푸시 조회 성공"
  *                 notifications:
  *                   type: array
  *                   items:
@@ -365,35 +364,35 @@ router.post("/notifications/send", async (req, res) => {
  *                         example: 1
  *                       message:
  *                         type: string
- *                         example: "?띻만?숇떂???뱀떊??李붾??듬땲??"
+ *                         example: "홍길동님이 당신을 콕 찔렀습니다!"
  *                       senderName:
  *                         type: string
- *                         example: "?띻만??
+ *                         example: "홍길동"
  *       404:
  *         description: User not found
  *       500:
  *         description: Server error
  */
-// ?쎌? ?딆? ?뚮┝ 議고쉶 - ?섏젙??踰꾩쟾
+// 읽지 않은 푸시 조회 - 수정된 버전
 router.get("/notifications/unread/:userId", async (req, res) => {
   try {
     const { userId } = req.params; // social_id
 
-    // social_id瑜??ㅼ젣 DB id濡?蹂??
+    // social_id를 실제 DB id로 변환
     const actualUserId = await getUserIdBySocialId(userId);
     if (!actualUserId) {
-      return res.status(404).json({ message: "?ъ슜?먮? 李얠쓣 ???놁뒿?덈떎." });
+      return res.status(404).json({ message: "사용자를 찾을 수 없습니다." });
     }
 
     const notifications = await friendService.getUnreadNotifications(actualUserId);
 
-    // ?뚮┝???놁뼱??200 諛섑솚 (鍮?諛곗뿴)
+    // 푸시가 없어도 200 반환 (빈 배열)
     res.status(200).json({
-      message: "?쎌? ?딆? ?뚮┝???놁뒿?덈떎",
+      message: "읽지 않은 푸시가 없습니다",
       notifications: (notifications || []).map(n => ({
         id: n.id,
         message: n.message,
-        senderName: n.NotificationSender?.name || "?듬챸"
+        senderName: n.NotificationSender?.name || "익명"
       }))
     });
   } catch (error) {
@@ -429,24 +428,24 @@ router.get("/notifications/unread/:userId", async (req, res) => {
  *       500:
  *         description: Server error
  */
-// ?쎌쓬 泥섎━???뚮┝ ??젣 - ?섏젙??踰꾩쟾
+// 읽음 처리된 푸시 삭제 - 수정된 버전
 router.post("/notifications/read", async (req, res) => {
   try {
     const { userId } = req.body;
     if (!userId) {
-      return res.status(400).json({ message: "userId媛 ?꾩슂?⑸땲??" });
+      return res.status(400).json({ message: "userId가 필요합니다" });
     }
 
-    // social_id瑜??ㅼ젣 DB id濡?蹂??
+    // social_id를 실제 DB id로 변환
     const actualUserId = await getUserIdBySocialId(userId);
     if (!actualUserId) {
-      return res.status(404).json({ message: "?ъ슜?먮? 李얠쓣 ???놁뒿?덈떎." });
+      return res.status(404).json({ message: "사용자를 찾을 수 없습니다." });
     }
 
     const result = await friendService.deleteReadNotifications(actualUserId);
     res.status(200).json({ message: result.message });
   } catch (error) {
-    res.status(500).json({ message: "?쒕쾭 ?ㅻ쪟 諛쒖깮" });
+    res.status(500).json({ message: "서버 오류 발생" });
   }
 });
 
