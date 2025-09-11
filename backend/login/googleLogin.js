@@ -5,15 +5,15 @@ const { getRandomSong } = require("../services/songService");
 
 const router = express.Router();
 
-const GOOGLE_AUTH_URL   = "https://accounts.google.com/o/oauth2/v2/auth";
-const GOOGLE_TOKEN_URL  = "https://oauth2.googleapis.com/token";
+const GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
+const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v2/userinfo";
 
-const client_id     = process.env.GOOGLE_CLIENT_ID;
+const client_id = process.env.GOOGLE_CLIENT_ID;
 const client_secret = process.env.GOOGLE_CLIENT_SECRET;
 // env가 없으면 SERVER_URL 기반으로 조립
-const REDIRECT_URI  = process.env.GOOGLE_REDIRECT_URI || `${process.env.SERVER_URL}/auth/google/callback`;
-const FRONT_HOME    = `${process.env.CLIENT_URL || "http://localhost:3000"}/home`;
+const REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || `${process.env.SERVER_URL}/auth/google/callback`;
+const FRONT_HOME = `${process.env.CLIENT_URL || "http://localhost:3000"}/home`;
 
 // 로그인 시작(구글 동의화면으로 이동)
 router.get("/", (req, res) => {
@@ -72,6 +72,8 @@ router.get("/callback", async (req, res) => {
     // 세션
     req.session.user = {
       userId: user.id,
+      social_id: user.social_id,     // 추가 필요
+      social_provider: user.social_provider,  // 추가 필요
       name: user.name,
       email: user.email,
       visitCount: visit_count,

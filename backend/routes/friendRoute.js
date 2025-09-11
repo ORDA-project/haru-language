@@ -1,18 +1,63 @@
-const express = require("express");
+﻿const express = require("express");
 const router = express.Router();
 const friendService = require("../services/friendService");
+const { User } = require("../models");
+const { getUserIdBySocialId } = require("../utils/userUtils");
 
-// 친구 초대 링크 생성
+
+/**
+ * @openapi
+ * /friends/invite:
+ *   post:
+ *     summary: Create a friend invitation link (uses social_id)
+ *     tags:
+ *       - Friend
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               inviterId:
+ *                 type: string
+ *                 example: "test123"
+ *                 description: User's social_id
+ *     responses:
+ *       200:
+ *         description: Invitation link created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 inviteLink:
+ *                   type: string
+ *                   example: "http://localhost:3000/invite?token=abc123"
+ *       400:
+ *         description: inviterId missing
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Server error
+ */
+// 移쒓뎄 珥덈? 留곹겕 ?앹꽦
 router.post("/invite", async (req, res) => {
   try {
-    const { inviterId } = req.body;
+    const { inviterId } = req.body; // social_id
     if (!inviterId) {
-      return res.status(400).json({ message: "inviterId가 필요합니다." });
+      return res.status(400).json({ message: "inviterId媛 ?꾩슂?⑸땲??" });
     }
 
-    const inviteLink = await friendService.createInvitation({ inviterId });
+    // social_id瑜??ㅼ젣 DB id濡?蹂??
+    const actualInviterId = await getUserIdBySocialId(inviterId);
+    if (!actualInviterId) {
+      return res.status(404).json({ message: "?ъ슜?먮? 李얠쓣 ???놁뒿?덈떎." });
+    }
+
+    const inviteLink = await friendService.createInvitation({ inviterId: actualInviterId });
     if (!inviteLink) {
-      return res.status(500).json({ message: "초대 링크 생성 중 오류 발생" });
+      return res.status(500).json({ message: "珥덈? 留곹겕 ?앹꽦 以??ㅻ쪟 諛쒖깮" });
     }
     res.status(200).json({ inviteLink });
   } catch (error) {
@@ -20,46 +65,140 @@ router.post("/invite", async (req, res) => {
   }
 });
 
-// 친구 초대 응답 (수락/거절)
+/**
+ * @openapi
+ * /friends/respond:
+ *   post:
+ *     summary: Respond to a friend invitation (accept/decline) - uses social_id
+ *     tags:
+ *       - Friend
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               token:
+ *                 type: string
+ *                 example: "abc123def456"
+ *               response:
+ *                 type: string
+ *                 enum: [accept, decline]
+ *                 example: "accept"
+ *               inviteeId:
+ *                 type: string
+ *                 example: "test123"
+ *                 description: Invitee's social_id
+ *     responses:
+ *       200:
+ *         description: Friend response processed
+ *       400:
+ *         description: Missing fields
+ *       404:
+ *         description: Invalid invitation or user not found
+ *       409:
+ *         description: Already friends
+ *       500:
+ *         description: Server error
+ */
+// 移쒓뎄 珥덈? ?묐떟 (?섎씫/嫄곗젅)
 router.post("/respond", async (req, res) => {
   try {
-    const { token, response, inviteeId } = req.body;
+    const { token, response, inviteeId } = req.body; // inviteeId??social_id
     if (!token || !response || !inviteeId) {
-      return res.status(400).json({ message: "token, response, inviteeId가 필요합니다." });
+      return res.status(400).json({ message: "token, response, inviteeId媛 ?꾩슂?⑸땲??" });
     }
 
-    const result = await friendService.respondToInvitation({ token, response, inviteeId });
-    if (result === "invalid") {
-      return res.status(404).json({ message: "유효하지 않은 초대입니다." });
-    }
-    if (result === "already_friends") {
-      return res.status(409).json({ message: "이미 친구입니다." });
-    }
-    if (result === "error") {
-      return res.status(500).json({ message: "친구 추가 중 오류가 발생했습니다." });
+    // social_id瑜??ㅼ젣 DB id濡?蹂??
+    const actualInviteeId = await getUserIdBySocialId(inviteeId);
+    if (!actualInviteeId) {
+      return res.status(404).json({ message: "?ъ슜?먮? 李얠쓣 ???놁뒿?덈떎." });
     }
 
-    return res.status(200).json({ message: response === "accept" ? "친구 추가 완료" : "초대가 거절되었습니다." });
+    const result = await friendService.respondToInvitation({
+      token,
+      response,
+      inviteeId: actualInviteeId
+    });
+
+    return res.status(200).json({
+      message: response === "accept" ? "移쒓뎄 異붽? ?꾨즺" : "珥덈?媛 嫄곗젅?섏뿀?듬땲??"
+    });
+
   } catch (error) {
-    res.status(500).json({ message: "서버 오류 발생" });
+    if (error.message.includes("NOT_FOUND")) {
+      return res.status(404).json({ message: "?좏슚?섏? ?딆? 珥덈??낅땲??" });
+    }
+    if (error.message.includes("?대? 移쒓뎄")) {
+      return res.status(409).json({ message: "?대? 移쒓뎄?낅땲??" });
+    }
+    res.status(500).json({ message: "?쒕쾭 ?ㅻ쪟 諛쒖깮" });
   }
 });
 
-// 친구 목록 조회
+/**
+ * @openapi
+ * /friends/list/{userId}:
+ *   get:
+ *     summary: Get a user's friend list (uses social_id)
+ *     tags:
+ *       - Friend
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           example: "test123"
+ *         description: User's social_id
+ *     responses:
+ *       200:
+ *         description: List of friends
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 friends:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                         example: 1
+ *                       name:
+ *                         type: string
+ *                         example: "?띻만??
+ *       400:
+ *         description: userId missing
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Server error
+ */
+// 移쒓뎄 紐⑸줉 議고쉶
 router.get("/list/:userId", async (req, res) => {
   try {
-    const { userId } = req.params;
+    const { userId } = req.params; // social_id
     if (!userId) {
-      return res.status(400).json({ message: "userId가 필요합니다." });
+      return res.status(400).json({ message: "userId媛 ?꾩슂?⑸땲??" });
     }
 
-    const friends = await friendService.getFriends(userId);
+    // social_id瑜??ㅼ젣 DB id濡?蹂??
+    const actualUserId = await getUserIdBySocialId(userId);
+    if (!actualUserId) {
+      return res.status(404).json({ message: "?ъ슜?먮? 李얠쓣 ???놁뒿?덈떎." });
+    }
+
+    const friends = await friendService.getFriends(actualUserId);
     const formatted = (friends || [])
       .map(f => ({
         id: f.FriendDetails?.id ?? null,
         name: f.FriendDetails?.name ?? null,
       }))
-      .filter(x => x.id !== null); // 연관 끊긴 행 제거
+      .filter(x => x.id !== null);
     return res.status(200).json({ friends: formatted });
 
   } catch (error) {
@@ -67,18 +206,58 @@ router.get("/list/:userId", async (req, res) => {
   }
 });
 
-// 친구 삭제
+/**
+ * @openapi
+ * /friends/remove:
+ *   delete:
+ *     summary: Remove a friend (uses social_id)
+ *     tags:
+ *       - Friend
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               userId:
+ *                 type: string
+ *                 example: "test123"
+ *                 description: User's social_id
+ *               friendId:
+ *                 type: string
+ *                 example: "google_456"
+ *                 description: Friend's social_id
+ *     responses:
+ *       200:
+ *         description: Friend removed successfully
+ *       400:
+ *         description: Missing fields
+ *       404:
+ *         description: User not found or not friends
+ *       500:
+ *         description: Server error
+ */
+// 移쒓뎄 ??젣
 router.delete("/remove", async (req, res) => {
   try {
-    const { userId, friendId } = req.body;
+    const { userId, friendId } = req.body; // ????social_id
     if (!userId || !friendId) {
-      return res.status(400).json({ message: "userId와 friendId가 필요합니다." });
+      return res.status(400).json({ message: "userId? friendId媛 ?꾩슂?⑸땲??" });
     }
 
-    const result = await friendService.removeFriend({ userId, friendId });
-    if (result.error) {
-      return res.status(500).json({ message: result.error });
+    // social_id?ㅼ쓣 ?ㅼ젣 DB id濡?蹂??
+    const actualUserId = await getUserIdBySocialId(userId);
+    const actualFriendId = await getUserIdBySocialId(friendId);
+
+    if (!actualUserId || !actualFriendId) {
+      return res.status(404).json({ message: "?ъ슜?먮? 李얠쓣 ???놁뒿?덈떎." });
     }
+
+    const result = await friendService.removeFriend({
+      userId: actualUserId,
+      friendId: actualFriendId
+    });
 
     res.status(200).json({ message: result.message });
   } catch (error) {
@@ -86,44 +265,135 @@ router.delete("/remove", async (req, res) => {
   }
 });
 
-// 친구에게 콕 찌르기 (알림 전송)
+/**
+ * @openapi
+ * /friends/notifications/send:
+ *   post:
+ *     summary: Send a "poke" notification to a friend (uses social_id)
+ *     tags:
+ *       - Friend
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               senderId:
+ *                 type: string
+ *                 example: "test123"
+ *                 description: Sender's social_id
+ *               receiverId:
+ *                 type: string
+ *                 example: "google_456"
+ *                 description: Receiver's social_id
+ *     responses:
+ *       200:
+ *         description: Notification sent
+ *       400:
+ *         description: Missing fields
+ *       403:
+ *         description: Not friends
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Server error
+ */
+// 移쒓뎄?먭쾶 肄?李뚮Ⅴ湲?(?뚮┝ ?꾩넚)
 router.post("/notifications/send", async (req, res) => {
   try {
-    const { senderId, receiverId } = req.body;
+    const { senderId, receiverId } = req.body; // ????social_id
     if (!senderId || !receiverId) {
-      return res.status(400).json({ message: "senderId와 receiverId가 필요합니다." });
+      return res.status(400).json({ message: "senderId? receiverId媛 ?꾩슂?⑸땲??" });
     }
 
-    const result = await friendService.sendNotification({ senderId, receiverId });
-    if (result.error === "이 사용자는 친구가 아닙니다.") {
-      return res.status(403).json({ message: result.error });
+    // social_id?ㅼ쓣 ?ㅼ젣 DB id濡?蹂??
+    const actualSenderId = await getUserIdBySocialId(senderId);
+    const actualReceiverId = await getUserIdBySocialId(receiverId);
+
+    if (!actualSenderId || !actualReceiverId) {
+      return res.status(404).json({ message: "?ъ슜?먮? 李얠쓣 ???놁뒿?덈떎." });
     }
-    if (result.error) {
-      return res.status(500).json({ message: result.error });
-    }
+
+    const result = await friendService.sendNotification({
+      senderId: actualSenderId,
+      receiverId: actualReceiverId
+    });
 
     res.status(200).json({ message: result.message });
   } catch (error) {
-    res.status(500).json({ message: "알림 전송 중 오류 발생" });
+    if (error.message.includes("移쒓뎄媛 ?꾨떃?덈떎")) {
+      return res.status(403).json({ message: error.message });
+    }
+    res.status(500).json({ message: "?뚮┝ ?꾩넚 以??ㅻ쪟 諛쒖깮" });
   }
 });
 
-// 읽지 않은 알림 조회 후 읽음 처리
+/**
+ * @openapi
+ * /friends/notifications/unread/{userId}:
+ *   get:
+ *     summary: Get unread notifications for a user (uses social_id)
+ *     tags:
+ *       - Friend
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           example: "test123"
+ *         description: User's social_id
+ *     responses:
+ *       200:
+ *         description: Unread notifications retrieved successfully (empty array if no notifications)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "?뚮┝ 議고쉶 ?깃났"
+ *                 notifications:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                         example: 1
+ *                       message:
+ *                         type: string
+ *                         example: "?띻만?숇떂???뱀떊??李붾??듬땲??"
+ *                       senderName:
+ *                         type: string
+ *                         example: "?띻만??
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Server error
+ */
+// ?쎌? ?딆? ?뚮┝ 議고쉶 - ?섏젙??踰꾩쟾
 router.get("/notifications/unread/:userId", async (req, res) => {
   try {
-    const { userId } = req.params;
-    const notifications = await friendService.getUnreadNotifications(userId);
+    const { userId } = req.params; // social_id
 
-    if (!notifications || notifications.length === 0) {
-      return res.status(404).json({ message: "읽지 않은 알림이 없습니다." });
+    // social_id瑜??ㅼ젣 DB id濡?蹂??
+    const actualUserId = await getUserIdBySocialId(userId);
+    if (!actualUserId) {
+      return res.status(404).json({ message: "?ъ슜?먮? 李얠쓣 ???놁뒿?덈떎." });
     }
 
+    const notifications = await friendService.getUnreadNotifications(actualUserId);
+
+    // ?뚮┝???놁뼱??200 諛섑솚 (鍮?諛곗뿴)
     res.status(200).json({
-      message: "읽지 않은 알림 조회 성공",
-      notifications: notifications.map(n => ({
+      message: "?쎌? ?딆? ?뚮┝???놁뒿?덈떎",
+      notifications: (notifications || []).map(n => ({
         id: n.id,
         message: n.message,
-        sender_name: n.NotificationSender?.name || "익명"
+        senderName: n.NotificationSender?.name || "?듬챸"
       }))
     });
   } catch (error) {
@@ -131,22 +401,52 @@ router.get("/notifications/unread/:userId", async (req, res) => {
   }
 });
 
-// 읽음 처리된 알림 삭제
+/**
+ * @openapi
+ * /friends/notifications/read:
+ *   post:
+ *     summary: Delete read notifications for a user (uses social_id)
+ *     tags:
+ *       - Friend
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               userId:
+ *                 type: string
+ *                 example: "test123"
+ *                 description: User's social_id
+ *     responses:
+ *       200:
+ *         description: Notifications deleted successfully
+ *       400:
+ *         description: Missing userId
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Server error
+ */
+// ?쎌쓬 泥섎━???뚮┝ ??젣 - ?섏젙??踰꾩쟾
 router.post("/notifications/read", async (req, res) => {
   try {
-    const { user_id } = req.body;
-    if (!user_id) {
-      return res.status(400).json({ message: "user_id가 필요합니다." });
+    const { userId } = req.body;
+    if (!userId) {
+      return res.status(400).json({ message: "userId媛 ?꾩슂?⑸땲??" });
     }
 
-    const result = await friendService.deleteReadNotifications(user_id);
-    if (result.error) {
-      return res.status(500).json({ message: result.error });
+    // social_id瑜??ㅼ젣 DB id濡?蹂??
+    const actualUserId = await getUserIdBySocialId(userId);
+    if (!actualUserId) {
+      return res.status(404).json({ message: "?ъ슜?먮? 李얠쓣 ???놁뒿?덈떎." });
     }
 
+    const result = await friendService.deleteReadNotifications(actualUserId);
     res.status(200).json({ message: result.message });
   } catch (error) {
-    res.status(500).json({ message: "서버 오류 발생" });
+    res.status(500).json({ message: "?쒕쾭 ?ㅻ쪟 諛쒖깮" });
   }
 });
 

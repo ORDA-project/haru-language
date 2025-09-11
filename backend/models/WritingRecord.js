@@ -24,6 +24,7 @@ const WritingRecord = sequelize.define("WritingRecord", {
 }, {
   tableName: "writing_records",
   timestamps: true,
+  underscored: true,    // 추가: createdAt → created_at 매핑
 });
 
 module.exports = WritingRecord;

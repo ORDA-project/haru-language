@@ -1,8 +1,19 @@
 const textToSpeech = require("@google-cloud/text-to-speech");
-require("dotenv").config({ path: "../.env" }); // .env 파일 로드
+require("dotenv").config({ path: "../.env" }); 
 
 // Google Cloud TTS 클라이언트 초기화
-const ttsClient = new textToSpeech.TextToSpeechClient();
+let ttsClient;
+try {
+  // JSON 문자열을 파싱해서 사용
+  const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS_JSON);
+  ttsClient = new textToSpeech.TextToSpeechClient({
+    credentials: credentials,
+    projectId: credentials.project_id,
+  });
+} catch (error) {
+  console.error("Google Cloud TTS 초기화 실패:", error.message);
+  ttsClient = null;
+}
 
 /**
  * 텍스트 데이터를 받아 TTS로 변환 후 MP3 데이터 반환
@@ -12,6 +23,10 @@ const ttsClient = new textToSpeech.TextToSpeechClient();
  */
 async function readTextWithTTS(text, speed = 0.7) {
   try {
+    if (!ttsClient) {
+      throw new Error("Google Cloud TTS 클라이언트가 초기화되지 않았습니다.");
+    }
+
     // Google TTS 요청 구성
     const request = {
       input: { text },
@@ -34,7 +49,7 @@ async function readTextWithTTS(text, speed = 0.7) {
     return response.audioContent; // MP3 데이터 (Buffer 형식)
   } catch (error) {
     console.error("Error during TTS conversion:", error.message);
-    throw new Error("Failed to read text with TTS.");
+    throw new Error("TTS 변환에 실패했습니다: " + error.message);
   }
 }
 

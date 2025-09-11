@@ -1,16 +1,65 @@
-const express = require("express");
+﻿const express = require("express");
 const axios = require("axios");
 const router = express.Router();
 const googleRouter = require("../login/googleLogin");
 const kakaoRouter = require("../login/kakaoLogin");
 
-// Google 로그인 라우터
+
+// Google 濡쒓렇???쇱슦??
+/**
+ * @openapi
+ * /auth/google:
+ *   get:
+ *     summary: Google OAuth login (redirect)
+ *     tags:
+ *       - Auth
+ *     responses:
+ *       302:
+ *         description: Redirects to Google login
+ */
 router.use("/google", googleRouter);
 
-// Kakao 로그인 라우터
+// Kakao 濡쒓렇???쇱슦??
+/**
+ * @openapi
+ * /auth/kakao:
+ *   get:
+ *     summary: Kakao OAuth login (redirect)
+ *     tags:
+ *       - Auth
+ *     responses:
+ *       302:
+ *         description: Redirects to Kakao login
+ */
 router.use("/kakao", kakaoRouter);
 
-// 세션 상태 확인
+
+// ?몄뀡 ?곹깭 ?뺤씤
+/**
+ * @openapi
+ * /auth/check:
+ *   get:
+ *     summary: Check login session status
+ *     tags:
+ *       - Auth
+ *     responses:
+ *       200:
+ *         description: Returns login state and user info
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 isLoggedIn:
+ *                   type: boolean
+ *                   example: true
+ *                 user:
+ *                   type: object
+ *                   nullable: true
+ *                   example:
+ *                     id: "123"
+ *                     name: "?띻만??
+ */
 router.get("/check", (req, res) => {
   const user = req.session.user;
   res.json({
@@ -19,12 +68,26 @@ router.get("/check", (req, res) => {
   });
 });
 
-// 로그아웃 라우터
+
+// 濡쒓렇?꾩썐 ?쇱슦??
+/**
+ * @openapi
+ * /auth/logout:
+ *   get:
+ *     summary: Logout user and destroy session
+ *     tags:
+ *       - Auth
+ *     responses:
+ *       200:
+ *         description: Logout successful
+ *       500:
+ *         description: Failed to log out
+ */
 router.get("/logout", async (req, res) => {
   try {
     const accessToken = req.session.token;
 
-    // 카카오 로그아웃 요청 (선택 사항)
+    // 移댁뭅??濡쒓렇?꾩썐 ?붿껌 (?좏깮 ?ы빆)
     if (accessToken) {
       await axios.post(
         "https://kapi.kakao.com/v1/user/logout",
@@ -33,22 +96,22 @@ router.get("/logout", async (req, res) => {
       );
     }
 
-    // 세션 제거 및 쿠키 삭제
+    // ?몄뀡 ?쒓굅 諛?荑좏궎 ??젣
     req.session.destroy((err) => {
       if (err) {
-        console.error("세션 삭제 실패:", err);
-        return res.status(500).send("로그아웃 실패");
+        console.error("?몄뀡 ??젣 ?ㅽ뙣:", err);
+        return res.status(500).send("濡쒓렇?꾩썐 ?ㅽ뙣");
       }
 
       res.clearCookie("user_sid");
       res.setHeader("Cache-Control", "no-store");
       res.setHeader("Pragma", "no-cache");
 
-      console.log("로그아웃 성공");
+      console.log("濡쒓렇?꾩썐 ?깃났");
       res.status(200).send("Logout successful");
     });
   } catch (error) {
-    console.error("로그아웃 처리 실패:", error.message || error);
+    console.error("濡쒓렇?꾩썐 泥섎━ ?ㅽ뙣:", error.message || error);
     res.status(500).send("Failed to log out.");
   }
 });

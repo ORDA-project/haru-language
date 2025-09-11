@@ -1,21 +1,21 @@
-const express = require("express");
+﻿const express = require("express");
 const { google } = require("googleapis");
 require("dotenv").config();
 
 const router = express.Router();
 
-// 유튜브 API 키 확인
+// ?좏뒠釉?API ???뺤씤
 if (!process.env.YOUTUBE_API_KEY) {
-  throw new Error("YOUTUBE_API_KEY가 .env에 설정되어 있지 않습니다.");
+  throw new Error("YOUTUBE_API_KEY媛 .env???ㅼ젙?섏뼱 ?덉? ?딆뒿?덈떎.");
 }
 
-// 유튜브 API 클라이언트 설정
+// ?좏뒠釉?API ?대씪?댁뼵???ㅼ젙
 const youtube = google.youtube({
   version: "v3",
   auth: process.env.YOUTUBE_API_KEY,
 });
 
-// 유튜브 링크 검색 함수
+// ?좏뒠釉?留곹겕 寃???⑥닔
 async function getYoutubeVideoUrl(Title, Artist) {
   try {
     const query = `${Title} ${Artist}`;
@@ -27,31 +27,31 @@ async function getYoutubeVideoUrl(Title, Artist) {
     });
 
     if (!response.data.items || response.data.items.length === 0) {
-      throw new Error("유튜브에서 비디오를 찾을 수 없습니다.");
+      throw new Error("?좏뒠釉뚯뿉??鍮꾨뵒?ㅻ? 李얠쓣 ???놁뒿?덈떎.");
     }
 
     const videoId = response.data.items[0]?.id?.videoId;
 
     if (!videoId) {
-      throw new Error("비디오 ID를 찾을 수 없습니다.");
+      throw new Error("鍮꾨뵒??ID瑜?李얠쓣 ???놁뒿?덈떎.");
     }
 
     const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
     const embedUrl = `https://www.youtube.com/embed/${videoId}`;
     return { videoUrl, embedUrl };
   } catch (error) {
-    console.error("유튜브 API 요청 실패:", error.message);
-    throw new Error("유튜브 비디오 링크를 가져오는 데 실패했습니다.");
+    console.error("?좏뒠釉?API ?붿껌 ?ㅽ뙣:", error.message);
+    throw new Error("?좏뒠釉?鍮꾨뵒??留곹겕瑜?媛?몄삤?????ㅽ뙣?덉뒿?덈떎.");
   }
 }
 
-// 세션 링크에서 videoId 추출하는 함수
+// ?몄뀡 留곹겕?먯꽌 videoId 異붿텧?섎뒗 ?⑥닔
 function extractVideoIdFromUrl(url) {
   try {
     const parsed = new URL(url);
 
     if (parsed.hostname === "youtu.be") {
-      return parsed.pathname.slice(1); // e.g., /abc123 → abc123
+      return parsed.pathname.slice(1); // e.g., /abc123 ??abc123
     }
 
     if (parsed.hostname.includes("youtube.com")) {
@@ -64,7 +64,45 @@ function extractVideoIdFromUrl(url) {
   }
 }
 
-// 유튜브 링크 반환 라우터
+/**
+ * @openapi
+ * /song/youtube:
+ *   get:
+ *     summary: Get YouTube video link for a song (from session or YouTube API)
+ *     tags:
+ *       - Song
+ *     responses:
+ *       200:
+ *         description: Returns YouTube video link and embed URL
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 result:
+ *                   type: boolean
+ *                   example: true
+ *                 videoUrl:
+ *                   type: string
+ *                   example: "https://www.youtube.com/watch?v=abc123"
+ *                 embedUrl:
+ *                   type: string
+ *                   example: "https://www.youtube.com/embed/abc123"
+ *                 title:
+ *                   type: string
+ *                   example: "醫뗭? ??
+ *                 artist:
+ *                   type: string
+ *                   example: "IU"
+ *                 source:
+ *                   type: string
+ *                   example: "api"
+ *       400:
+ *         description: Song info not found in session
+ *       500:
+ *         description: Failed to fetch YouTube video link
+ */
+// ?좏뒠釉?留곹겕 諛섑솚 ?쇱슦??
 router.get("/", async (req, res) => {
   try {
     const songData = req.session.songData;
@@ -72,7 +110,7 @@ router.get("/", async (req, res) => {
     if (!songData || !songData.Title || !songData.Artist) {
       return res.status(400).json({
         result: false,
-        message: "노래 정보가 세션에 없습니다.",
+        message: "?몃옒 ?뺣낫媛 ?몄뀡???놁뒿?덈떎.",
       });
     }
 
@@ -95,10 +133,13 @@ router.get("/", async (req, res) => {
       }
     }
 
-    // 없거나 videoId를 추출할 수 없을 경우 → API 호출
+    // ?녾굅??videoId瑜?異붿텧?????놁쓣 寃쎌슦 ??API ?몄텧
     const { videoUrl, embedUrl } = await getYoutubeVideoUrl(Title, Artist);
 
-    // 세션에 저장
+    // ?몄뀡?????
+    if (!req.session.songData) {
+      req.session.songData = {};
+    }
     req.session.songData.youtubeLink = videoUrl;
 
     return res.status(200).json({
@@ -110,10 +151,10 @@ router.get("/", async (req, res) => {
       source: "api",
     });
   } catch (error) {
-    console.error("유튜브 비디오 링크 조회 실패:", error.message);
+    console.error("?좏뒠釉?鍮꾨뵒??留곹겕 議고쉶 ?ㅽ뙣:", error.message);
     res.status(500).json({
       result: false,
-      message: "유튜브 비디오 링크를 가져오는 데 실패했습니다.",
+      message: "?좏뒠釉?鍮꾨뵒??留곹겕瑜?媛?몄삤?????ㅽ뙣?덉뒿?덈떎.",
     });
   }
 });
