@@ -1,6 +1,41 @@
-const express = require("express");
+﻿const express = require("express");
 const router = express.Router();
 
+/**
+ * @openapi
+ * /song/lyric:
+ *   get:
+ *     summary: Get song lyric information from session
+ *     tags:
+ *       - Song
+ *     responses:
+ *       200:
+ *         description: Song lyric and metadata
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 result:
+ *                   type: boolean
+ *                   example: true
+ *                 songData:
+ *                   type: object
+ *                   properties:
+ *                     Artist:
+ *                       type: string
+ *                       example: "IU"
+ *                     Title:
+ *                       type: string
+ *                       example: "좋은 날"
+ *                     Lyric:
+ *                       type: string
+ *                       example: "오늘은 좋은 날\n너무나도 좋은 날"
+ *       404:
+ *         description: No recommended song or no lyric found
+ *       500:
+ *         description: Failed to fetch lyric
+ */
 router.get("/", async (req, res) => {
   try {
     // 세션에서 songData 가져오기

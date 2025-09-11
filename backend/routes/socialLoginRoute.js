@@ -1,16 +1,65 @@
-const express = require("express");
+﻿const express = require("express");
 const axios = require("axios");
 const router = express.Router();
 const googleRouter = require("../login/googleLogin");
 const kakaoRouter = require("../login/kakaoLogin");
 
+
 // Google 로그인 라우터
+/**
+ * @openapi
+ * /auth/google:
+ *   get:
+ *     summary: Google OAuth login (redirect)
+ *     tags:
+ *       - Auth
+ *     responses:
+ *       302:
+ *         description: Redirects to Google login
+ */
 router.use("/google", googleRouter);
 
 // Kakao 로그인 라우터
+/**
+ * @openapi
+ * /auth/kakao:
+ *   get:
+ *     summary: Kakao OAuth login (redirect)
+ *     tags:
+ *       - Auth
+ *     responses:
+ *       302:
+ *         description: Redirects to Kakao login
+ */
 router.use("/kakao", kakaoRouter);
 
+
 // 세션 상태 확인
+/**
+ * @openapi
+ * /auth/check:
+ *   get:
+ *     summary: Check login session status
+ *     tags:
+ *       - Auth
+ *     responses:
+ *       200:
+ *         description: Returns login state and user info
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 isLoggedIn:
+ *                   type: boolean
+ *                   example: true
+ *                 user:
+ *                   type: object
+ *                   nullable: true
+ *                   example:
+ *                     id: "123"
+ *                     name: "홍길동"
+ */
 router.get("/check", (req, res) => {
   const user = req.session.user;
   res.json({
@@ -19,20 +68,23 @@ router.get("/check", (req, res) => {
   });
 });
 
+
 // 로그아웃 라우터
+/**
+ * @openapi
+ * /auth/logout:
+ *   get:
+ *     summary: Logout user and destroy session
+ *     tags:
+ *       - Auth
+ *     responses:
+ *       200:
+ *         description: Logout successful
+ *       500:
+ *         description: Failed to log out
+ */
 router.get("/logout", async (req, res) => {
   try {
-    const accessToken = req.session.token;
-
-    // 카카오 로그아웃 요청 (선택 사항)
-    if (accessToken) {
-      await axios.post(
-        "https://kapi.kakao.com/v1/user/logout",
-        {},
-        { headers: { Authorization: `Bearer ${accessToken}` } }
-      );
-    }
-
     // 세션 제거 및 쿠키 삭제
     req.session.destroy((err) => {
       if (err) {

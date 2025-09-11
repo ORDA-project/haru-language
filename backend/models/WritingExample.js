@@ -27,6 +27,7 @@ const WritingExample = sequelize.define("WritingExample", {
 }, {
     tableName: "writing_examples",
     timestamps: true,
+    underscored: true,   
 });
 
 module.exports = WritingExample;

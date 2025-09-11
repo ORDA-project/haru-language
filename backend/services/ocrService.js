@@ -23,7 +23,7 @@ const client = makeClient();
 async function detectText(filePath) {
   const [result] = await client.textDetection(filePath);
   const texts = result?.textAnnotations || [];
-  if (!texts.length) throw new Error("No text detected");
+  if (!texts.length) throw new Error("이미지에서 텍스트를 감지할 수 없습니다");
   return texts[0].description;
 }
 

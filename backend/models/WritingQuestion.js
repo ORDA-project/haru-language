@@ -18,6 +18,7 @@ const WritingQuestion = sequelize.define("WritingQuestion", {
 }, {
     tableName: "writing_questions",
     timestamps: true,
+    underscored: true,    
 });
 
 module.exports = WritingQuestion;

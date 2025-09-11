@@ -1,23 +1,23 @@
-const express = require("express");
+﻿const express = require("express");
 const { google } = require("googleapis");
 require("dotenv").config();
 
 const router = express.Router();
 
-// 유튜브 API 키 확인
-if (!process.env.YOUTUBE_API_KEY) {
-  throw new Error("YOUTUBE_API_KEY가 .env에 설정되어 있지 않습니다.");
-}
-
-// 유튜브 API 클라이언트 설정
-const youtube = google.youtube({
-  version: "v3",
-  auth: process.env.YOUTUBE_API_KEY,
-});
-
 // 유튜브 링크 검색 함수
 async function getYoutubeVideoUrl(Title, Artist) {
   try {
+    // 환경 변수 검증을 함수 내부에서 실행
+    if (!process.env.YOUTUBE_API_KEY) {
+      throw new Error("YOUTUBE_API_KEY가 .env에 설정되어 있지 않습니다.");
+    }
+
+    // 유튜브 API 클라이언트 설정
+    const youtube = google.youtube({
+      version: "v3",
+      auth: process.env.YOUTUBE_API_KEY,
+    });
+
     const query = `${Title} ${Artist}`;
     const response = await youtube.search.list({
       part: "snippet",
@@ -64,6 +64,44 @@ function extractVideoIdFromUrl(url) {
   }
 }
 
+/**
+ * @openapi
+ * /song/youtube:
+ *   get:
+ *     summary: Get YouTube video link for a song (from session or YouTube API)
+ *     tags:
+ *       - Song
+ *     responses:
+ *       200:
+ *         description: Returns YouTube video link and embed URL
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 result:
+ *                   type: boolean
+ *                   example: true
+ *                 videoUrl:
+ *                   type: string
+ *                   example: "https://www.youtube.com/watch?v=abc123"
+ *                 embedUrl:
+ *                   type: string
+ *                   example: "https://www.youtube.com/embed/abc123"
+ *                 title:
+ *                   type: string
+ *                   example: "좋은 날"
+ *                 artist:
+ *                   type: string
+ *                   example: "IU"
+ *                 source:
+ *                   type: string
+ *                   example: "api"
+ *       400:
+ *         description: Song info not found in session
+ *       500:
+ *         description: Failed to fetch YouTube video link
+ */
 // 유튜브 링크 반환 라우터
 router.get("/", async (req, res) => {
   try {

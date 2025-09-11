@@ -8,6 +8,7 @@ const router = express.Router();
 
 // 환경변수 정리
 const { KAKAO_REST_API_KEY, KAKAO_REDIRECT_URI } = process.env;
+const FRONT_HOME = `${process.env.CLIENT_URL || "http://localhost:3000"}/home`;
 
 // 1. 카카오 로그인 페이지로 리다이렉트
 router.get("/", (req, res) => {
@@ -57,15 +58,17 @@ router.get("/callback", async (req, res) => {
 
         // 세션 저장
         req.session.user = {
-            userId: user.id,
+            userId: user.id,  // DB primary key 
+            social_id: user.social_id, 
+            social_provider: user.social_provider,  
             name: user.name,
             visitCount: activity.visit_count,
             mostVisitedDays: mostVisited.mostVisitedDays.join(", "),
         };
         req.session.songData = songData;
 
-        // 리다이렉트
-        res.redirect("http://localhost:3000/home");
+        // 리다이렉트 - 환경변수 사용
+        res.redirect(FRONT_HOME);
 
     } catch (err) {
         console.error("카카오 로그인 실패:", err.message);

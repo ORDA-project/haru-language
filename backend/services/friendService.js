@@ -16,21 +16,16 @@ const friendService = {
 
   // 초대 응답 처리 (수락/거절)
   respondToInvitation: async ({ token, response, inviteeId }) => {
-    if (!token || !response || !inviteeId) {
-      throw new Error("BAD_REQUEST: token, response, inviteeId는 모두 필수입니다.");
-    }
-
     const invitation = await Invitation.findOne({ where: { token } });
     if (!invitation) throw new Error("NOT_FOUND: 유효하지 않은 초대입니다.");
 
-    if (invitation.status !== "pending") {
-      throw new Error("BAD_REQUEST: 이미 응답된 초대입니다.");
-    }
-
-    invitation.status = response === "accept" ? "accepted" : "rejected";
-    await invitation.save();
+    // status 체크 제거 - 여러 명이 사용할 수 있도록
+    // if (invitation.status !== "pending") {
+    //   throw new Error("BAD_REQUEST: 이미 응답된 초대입니다.");
+    // }
 
     if (response === "accept") {
+      // 이미 친구인지 확인
       const existingFriend = await Friend.findOne({
         where: {
           [Op.or]: [
@@ -44,6 +39,7 @@ const friendService = {
         throw new Error("BAD_REQUEST: 이미 친구입니다.");
       }
 
+      // 친구 관계 생성
       await Friend.bulkCreate([
         { user_id: invitation.inviter_id, friend_id: inviteeId },
         { user_id: inviteeId, friend_id: invitation.inviter_id },
@@ -112,7 +108,8 @@ const friendService = {
 
     await Notification.create({
       user_id: receiverId,
-      message: `${sender.name}님이 당신을 찔렀습니다!`,
+      sender_id: senderId,
+      message: `${sender.name}님이 당신을 콕 찔렀습니다!`,
       is_read: false,
     });
 

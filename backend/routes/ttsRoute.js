@@ -1,6 +1,44 @@
-const express = require("express");
+﻿const express = require("express");
 const router = express.Router();
 const { readTextWithTTS } = require("../services/ttsService");
+
+/**
+ * @openapi
+ * /api/tts:
+ *   post:
+ *     summary: Convert text into speech (TTS)
+ *     tags:
+ *       - TTS
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               text:
+ *                 type: string
+ *                 example: "Hello, how are you?"
+ *               speed:
+ *                 type: number
+ *                 example: 1.0
+ *                 description: Speaking rate (0.1 ~ 2.0, default 0.7)
+ *     responses:
+ *       200:
+ *         description: Base64-encoded MP3 audio
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 audioContent:
+ *                   type: string
+ *                   example: "UklGRkQAAABXQVZFZm10IBAAAAABAAEA..."
+ *       400:
+ *         description: text missing
+ *       500:
+ *         description: Failed to process TTS
+ */
 
 router.post("/tts", async (req, res) => {
     try {
