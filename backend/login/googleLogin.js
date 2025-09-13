@@ -3,24 +3,26 @@ const axios = require("axios");
 const { User, UserActivity } = require("../models");
 const { getRandomSong } = require("../services/songService");
 
+require("dotenv").config();
 const router = express.Router();
 
 const GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v2/userinfo";
 
-const client_id = process.env.GOOGLE_CLIENT_ID;
-const client_secret = process.env.GOOGLE_CLIENT_SECRET;
-// env가 없으면 SERVER_URL 기반으로 조립
-const REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || `${process.env.SERVER_URL}/auth/google/callback`;
-const FRONT_HOME = `${process.env.CLIENT_URL || "http://localhost:3000"}/home`;
+// 환경변수 정리
+const { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI, CLIENT_URL } = process.env;
+const FRONT_HOME =
+  process.env.NODE_ENV === "production"
+    ? `${CLIENT_URL}/home`         
+    : "http://localhost:3000/home";
 
 // 로그인 시작(구글 동의화면으로 이동)
 router.get("/", (req, res) => {
   const p = new URLSearchParams({
     response_type: "code",
-    client_id,
-    redirect_uri: REDIRECT_URI,
+    client_id: GOOGLE_CLIENT_ID,
+    redirect_uri: GOOGLE_REDIRECT_URI,
     scope: "openid email profile",
     access_type: "offline",
     prompt: "consent",
@@ -37,9 +39,9 @@ router.get("/callback", async (req, res) => {
     // 토큰 교환 (폼 바디 전송)
     const body = new URLSearchParams({
       code,
-      client_id,
-      client_secret,
-      redirect_uri: REDIRECT_URI,
+      client_id: GOOGLE_CLIENT_ID,
+      client_secret: GOOGLE_CLIENT_SECRET,
+      redirect_uri: GOOGLE_REDIRECT_URI,
       grant_type: "authorization_code",
     });
     const tokenRes = await axios.post(GOOGLE_TOKEN_URL, body.toString(), {
@@ -83,6 +85,7 @@ router.get("/callback", async (req, res) => {
 
     // 프론트로
     res.redirect(FRONT_HOME);
+
   } catch (err) {
     console.error("Google 인증 오류:", err.response?.data || err.message);
     res.status(500).send("Google Authentication Failed");
