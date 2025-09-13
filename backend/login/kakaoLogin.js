@@ -7,8 +7,11 @@ require("dotenv").config();
 const router = express.Router();
 
 // 환경변수 정리
-const { KAKAO_REST_API_KEY, KAKAO_REDIRECT_URI } = process.env;
-const FRONT_HOME = `${process.env.CLIENT_URL || "http://localhost:3000"}/home`;
+const { KAKAO_REST_API_KEY, KAKAO_REDIRECT_URI, CLIENT_URL } = process.env;
+const FRONT_HOME =
+  process.env.NODE_ENV === "production"
+    ? `${CLIENT_URL}/home`         
+    : "http://localhost:3000/home"; 
 
 // 1. 카카오 로그인 페이지로 리다이렉트
 router.get("/", (req, res) => {

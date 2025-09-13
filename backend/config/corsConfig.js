@@ -2,11 +2,7 @@ const allowedOrigins = [
   "https://orda-project.github.io/haru-language/",
   "https://orda-project.github.io",
   process.env.CLIENT_URL,
-  // 개발환경에서만 localhost 허용
-  ...(process.env.NODE_ENV !== 'production' ? [
-    "http://localhost:3000",  // 프론트엔드 개발서버
-    "http://localhost:8000",  // 백엔드 개발서버
-  ] : [])
+  "http://localhost:3000",
 ].filter(Boolean);
 
 const toOrigin = (v) => {
