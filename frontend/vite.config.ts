@@ -13,7 +13,8 @@ export default defineConfig(async () => {
     server: {
       port: 3000,
       host: true,
-      open: true
+      open: true,
+      historyApiFallback: true
     },
     build: {
       outDir: 'dist',
