@@ -3,7 +3,7 @@ const allowedOrigins = [
   "https://orda-project.github.io",
   process.env.CLIENT_URL,
   "http://localhost:3000",
-  "http://localhost:8000"
+  "https://haru-language-server.onrender.com"
 ].filter(Boolean);
 
 const toOrigin = (v) => {
