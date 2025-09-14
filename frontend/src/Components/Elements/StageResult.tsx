@@ -1,19 +1,6 @@
 import React, { useState } from "react";
 import { Example } from "../../types"; // Import Example type
-import {
-  Button,
-  Stage,
-  Card,
-  CardList,
-  Context,
-  DotContainer,
-  Dot,
-  ButtonContainer,
-  MoveButton,
-  SpeakButton,
-  Description,
-} from "../../Styles/Example";
-
+import { API_ENDPOINTS } from "../../config/api";
 
 interface StageResultProps {
   description: string;
@@ -61,7 +48,7 @@ const StageResult = ({
     console.log(textToRead);
 
     try {
-      const response = await fetch("http://localhost:8000/api/tts", {
+      const response = await fetch(API_ENDPOINTS.tts, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -83,96 +70,209 @@ const StageResult = ({
     }
   };
 
+  // Debug: 콘솔에 데이터 확인
+  console.log("Description:", description);
+  console.log("Examples:", examples);
+  console.log("Examples length:", examples.length);
+  console.log("Current example:", examples[currentIndex]);
+
+  if (examples.length === 0) {
+    return (
+      <div className="w-full h-[calc(100vh-100px)] flex flex-col items-center justify-center">
+        <div className="text-center p-8">
+          <p className="text-lg text-gray-600">
+            예문을 불러오는 중 문제가 발생했습니다.
+          </p>
+          <button
+            onClick={() => setStage(1)}
+            className="mt-4 px-6 py-3 bg-teal-400 text-white rounded-lg"
+          >
+            다시 시도하기
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <Stage>
-      <Description>
-        <p>{description}</p>
-      </Description>
-      <CardList>
-        {examples.length > 0 && (
-          <Card key={examples[currentIndex].id}>
-            {/* 카드 인덱스를 점으로 표시 */}
-            <DotContainer>
+    <div className="w-full h-full flex flex-col bg-[#F7F8FB]">
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 bg-white border-b border-gray-200">
+        <button
+          onClick={() => setStage(1)}
+          className="w-8 h-8 flex items-center justify-center"
+        >
+          <svg
+            className="w-5 h-5 text-gray-600"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 19l-7-7 7-7"
+            />
+          </svg>
+        </button>
+        <div className="text-center">
+          <h1 className="text-lg font-semibold text-gray-800">예문 생성</h1>
+        </div>
+        <div className="w-8"></div>
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto p-4">
+        {/* Description Section */}
+        {description && (
+          <div className="mb-6 p-4 bg-white rounded-2xl shadow-sm border border-gray-100">
+            <p className="text-gray-800 text-center font-medium leading-relaxed">
+              {description}
+            </p>
+          </div>
+        )}
+
+        {/* Examples Section */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          {/* Pagination Dots */}
+          {examples.length > 1 && (
+            <div className="flex justify-center py-4 border-b border-gray-100">
               {examples.map((_, index) => (
-                <Dot
+                <button
                   key={index}
-                  isActive={index === currentIndex}
+                  className={`w-2 h-2 mx-1 rounded-full transition-colors ${
+                    index === currentIndex ? "bg-[#00DAAA]" : "bg-gray-300"
+                  }`}
                   onClick={() => handleDotClick(index)}
                 />
               ))}
-            </DotContainer>
-            <Context>
-              <strong>{examples[currentIndex].context}</strong>
-            </Context>
-            <p>
-              <strong>A:</strong> {examples[currentIndex].dialogue.A.english}
-            </p>
-            <p style={{ color: "grey" }}>
-              {examples[currentIndex].dialogue.A.korean}
-            </p>
-            <p>
-              <strong>B:</strong> {examples[currentIndex].dialogue.B.english}
-            </p>
-            <p style={{ color: "grey" }}>
-              {examples[currentIndex].dialogue.B.korean}
-            </p>
-            <ButtonContainer>
-              <MoveButton
-                onClick={handlePreviousCard}
-                disabled={currentIndex === 0}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="27"
-                  height="21"
-                  viewBox="0 0 27 21"
-                  fill="none"
-                >
-                  <path
-                    d="M25.1997 9.00039C25.9729 9.00039 26.5997 9.62719 26.5997 10.4004C26.5997 11.1736 25.9729 11.8004 25.1997 11.8004L25.1997 9.00039ZM1.10976 11.3903C0.563025 10.8436 0.563024 9.95718 1.10976 9.41044L10.0193 0.500897C10.566 -0.0458371 11.4525 -0.0458372 11.9992 0.500897C12.5459 1.04763 12.5459 1.93406 11.9992 2.4808L4.07961 10.4004L11.9992 18.32C12.5459 18.8667 12.5459 19.7532 11.9992 20.2999C11.4525 20.8466 10.566 20.8466 10.0193 20.2999L1.10976 11.3903ZM25.1997 11.8004L2.09971 11.8004L2.09971 9.00039L25.1997 9.00039L25.1997 11.8004Z"
-                    fill="black"
-                  />
-                </svg>
-              </MoveButton>
-              <SpeakButton onClick={handleTTS}>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="41"
-                  height="41"
-                  viewBox="0 0 41 41"
-                  fill="none"
-                >
-                  <path
-                    d="M25.1003 7.28373C25.1003 5.48373 22.9769 4.53207 21.6336 5.7254L14.1453 12.3837C13.9167 12.5874 13.6214 12.7 13.3153 12.7004H7.18359C6.18961 12.7004 5.23629 13.095 4.53312 13.7976C3.82996 14.5001 3.43448 15.4531 3.43359 16.4471V23.9421C3.43359 24.9366 3.82868 25.8905 4.53194 26.5937C5.2352 27.297 6.18903 27.6921 7.18359 27.6921H13.3169C13.623 27.6924 13.9184 27.8051 14.1469 28.0087L21.6319 34.6637C22.9753 35.8587 25.1003 34.9054 25.1003 33.1071V7.28373ZM15.8086 14.2504L22.6003 8.2104V32.1804L15.8086 26.1421C15.1222 25.5314 14.2356 25.194 13.3169 25.1937H7.18359C6.85207 25.1937 6.53413 25.062 6.29971 24.8276C6.06529 24.5932 5.93359 24.2753 5.93359 23.9437V16.4471C5.93359 16.1155 6.06529 15.7976 6.29971 15.5632C6.53413 15.3288 6.85207 15.1971 7.18359 15.1971H13.3169C14.2354 15.1973 15.122 14.8604 15.8086 14.2504ZM31.7536 10.0287C32.0199 9.83141 32.3537 9.74794 32.6816 9.7967C33.0095 9.84546 33.3045 10.0224 33.5019 10.2887C35.6275 13.1557 36.7724 16.6314 36.7669 20.2004C36.7719 23.7696 35.6264 27.2453 33.5003 30.1121C33.4036 30.2467 33.2811 30.3608 33.14 30.4477C32.9988 30.5346 32.8418 30.5926 32.678 30.6182C32.5143 30.6438 32.347 30.6367 32.1861 30.5971C32.0251 30.5574 31.8736 30.4862 31.7405 30.3875C31.6073 30.2888 31.4951 30.1646 31.4103 30.0222C31.3256 29.8797 31.2701 29.7218 31.2469 29.5577C31.2238 29.3935 31.2336 29.2264 31.2756 29.0661C31.3177 28.9058 31.3912 28.7554 31.4919 28.6237C33.2989 26.1875 34.272 23.2336 34.2669 20.2004C34.2717 17.1678 33.2985 14.2145 31.4919 11.7787C31.394 11.6467 31.3232 11.4967 31.2833 11.3372C31.2435 11.1778 31.2355 11.012 31.2598 10.8495C31.2841 10.6869 31.3403 10.5308 31.425 10.3899C31.5097 10.2491 31.6214 10.1264 31.7536 10.0287ZM28.6719 14.1487C28.8163 14.0705 28.9746 14.0214 29.1379 14.0043C29.3012 13.9872 29.4663 14.0025 29.6237 14.0492C29.7811 14.096 29.9278 14.1733 30.0553 14.2767C30.1828 14.3801 30.2887 14.5077 30.3669 14.6521C31.2603 16.3037 31.7669 18.1937 31.7669 20.2004C31.7678 22.1368 31.2867 24.043 30.3669 25.7471C30.2888 25.8915 30.183 26.0192 30.0555 26.1227C29.928 26.2263 29.7814 26.3037 29.624 26.3506C29.4666 26.3975 29.3015 26.4129 29.1382 26.396C28.9748 26.3791 28.8164 26.3302 28.6719 26.2521C28.5275 26.1739 28.3998 26.0681 28.2963 25.9406C28.1927 25.8132 28.1153 25.6665 28.0684 25.5092C28.0215 25.3518 28.0061 25.1867 28.023 25.0233C28.0399 24.8599 28.0888 24.7015 28.1669 24.5571C28.8669 23.2621 29.2669 21.7787 29.2669 20.1987C29.2674 18.6777 28.8894 17.1805 28.1669 15.8421C28.0095 15.5505 27.9742 15.2084 28.0689 14.8909C28.1636 14.5733 28.3805 14.3064 28.6719 14.1487Z"
-                    fill="black"
-                  />
-                </svg>
-              </SpeakButton>
-              <MoveButton
-                onClick={handleNextCard}
-                disabled={currentIndex === examples.length - 1}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="27"
-                  height="22"
-                  viewBox="0 0 27 22"
-                  fill="none"
-                >
-                  <path
-                    d="M2.00049 9.8002C1.22729 9.8002 0.600488 10.427 0.600488 11.2002C0.600488 11.9734 1.22729 12.6002 2.00049 12.6002L2.00049 9.8002ZM26.0904 12.1901C26.6372 11.6434 26.6372 10.757 26.0904 10.2102L17.1809 1.3007C16.6342 0.753968 15.7477 0.753968 15.201 1.3007C14.6543 1.84744 14.6543 2.73387 15.201 3.2806L23.1206 11.2002L15.201 19.1198C14.6543 19.6665 14.6543 20.553 15.201 21.0997C15.7477 21.6464 16.6342 21.6464 17.1809 21.0997L26.0904 12.1901ZM2.00049 12.6002L25.1005 12.6002L25.1005 9.8002L2.00049 9.8002L2.00049 12.6002Z"
-                    fill="black"
-                  />
-                </svg>
-              </MoveButton>
-            </ButtonContainer>
-          </Card>
-        )}
-      </CardList>
+            </div>
+          )}
 
-      <Button onClick={() => setStage(1)}>다른 예문 생성하기</Button>
-      
-    </Stage>
+          {/* Context Badge */}
+          <div className="p-4 text-center border-b border-gray-100">
+            <span className="inline-block px-4 py-2 bg-[#00DAAA] text-white rounded-full text-sm font-medium">
+              {examples[currentIndex]?.context}
+            </span>
+          </div>
+
+          {/* Dialogue */}
+          <div className="p-6 space-y-6">
+            {/* A's dialogue */}
+            <div className="space-y-3">
+              <div className="flex items-start space-x-3">
+                <div className="w-10 h-10 bg-[#00DAAA] rounded-full flex items-center justify-center flex-shrink-0">
+                  <span className="text-white font-bold text-sm">A</span>
+                </div>
+                <div className="flex-1">
+                  <p className="text-gray-900 font-medium leading-relaxed text-base">
+                    {examples[currentIndex]?.dialogue?.A?.english}
+                  </p>
+                  <p className="text-gray-600 text-sm mt-2">
+                    {examples[currentIndex]?.dialogue?.A?.korean}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* B's dialogue */}
+            <div className="space-y-3">
+              <div className="flex items-start space-x-3">
+                <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
+                  <span className="text-white font-bold text-sm">B</span>
+                </div>
+                <div className="flex-1">
+                  <p className="text-gray-900 font-medium leading-relaxed text-base">
+                    {examples[currentIndex]?.dialogue?.B?.english}
+                  </p>
+                  <p className="text-gray-600 text-sm mt-2">
+                    {examples[currentIndex]?.dialogue?.B?.korean}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Controls */}
+          <div className="flex justify-between items-center p-6 border-t border-gray-100">
+            {/* Previous Button */}
+            <button
+              onClick={handlePreviousCard}
+              disabled={currentIndex === 0}
+              className={`p-3 rounded-full transition-colors ${
+                currentIndex === 0
+                  ? "opacity-30 cursor-not-allowed"
+                  : "hover:bg-gray-100 active:bg-gray-200"
+              }`}
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                className="text-gray-600"
+              >
+                <path
+                  d="M15 18L9 12L15 6"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
+
+            {/* TTS Button */}
+            <button
+              onClick={handleTTS}
+              className="w-14 h-14 bg-[#00DAAA] hover:bg-[#00C495] active:bg-[#00B085] rounded-full flex items-center justify-center transition-colors shadow-lg"
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+                <path d="M3 9v6h4l5 5V4l-5 5H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
+              </svg>
+            </button>
+
+            {/* Next Button */}
+            <button
+              onClick={handleNextCard}
+              disabled={currentIndex === examples.length - 1}
+              className={`p-3 rounded-full transition-colors ${
+                currentIndex === examples.length - 1
+                  ? "opacity-30 cursor-not-allowed"
+                  : "hover:bg-gray-100 active:bg-gray-200"
+              }`}
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                className="text-gray-600"
+              >
+                <path
+                  d="M9 18L15 12L9 6"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        {/* Generate New Button */}
+        <div className="mt-6 text-center">
+          <button
+            onClick={() => setStage(1)}
+            className="px-8 py-3 bg-[#00DAAA] hover:bg-[#00C495] active:bg-[#00B085] text-white font-semibold rounded-full transition-colors shadow-lg"
+          >
+            다른 예문 생성하기
+          </button>
+        </div>
+      </div>
+    </div>
   );
 };
 
