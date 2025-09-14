@@ -6,17 +6,8 @@ const { getRandomSong } = require("../services/songService");
 require("dotenv").config();
 const router = express.Router();
 
-// 환경변수 정리
-const { KAKAO_REST_API_KEY, KAKAO_REDIRECT_URI, CLIENT_URL, LOCAL_CLIENT_URL } =
-  process.env;
-
-// target 선택 함수
-function getFrontHome(req) {
-  if (req.query.dev === "true" && LOCAL_CLIENT_URL) {
-    return `${LOCAL_CLIENT_URL}/home`;
-  }
-  return `${CLIENT_URL}/home`;
-}
+// 환경변수
+const { KAKAO_REST_API_KEY, KAKAO_REDIRECT_URI, CLIENT_URL } = process.env;
 
 // 1. 카카오 로그인 페이지로 리다이렉트
 router.get("/", (req, res) => {
@@ -80,8 +71,8 @@ router.get("/callback", async (req, res) => {
     };
     req.session.songData = songData;
 
-    // 리다이렉트 - 운영 or 로컬
-    res.redirect(getFrontHome(req));
+    // 환경변수 CLIENT_URL 로 리다이렉트
+    res.redirect(`${CLIENT_URL}/home`);
   } catch (err) {
     console.error("카카오 로그인 실패:", err.message);
     res.status(500).send("Kakao Authentication Failed");

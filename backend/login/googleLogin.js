@@ -10,22 +10,13 @@ const GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v2/userinfo";
 
-// 환경변수 정리
+// 환경변수
 const {
   GOOGLE_CLIENT_ID,
   GOOGLE_CLIENT_SECRET,
   GOOGLE_REDIRECT_URI,
   CLIENT_URL,
-  LOCAL_CLIENT_URL,
 } = process.env;
-
-// target 선택 함수
-function getFrontHome(req) {
-  if (req.query.dev === "true" && LOCAL_CLIENT_URL) {
-    return `${LOCAL_CLIENT_URL}/home`;
-  }
-  return `${CLIENT_URL}/home`;
-}
 
 // 로그인 시작(구글 동의화면으로 이동)
 router.get("/", (req, res) => {
@@ -93,8 +84,8 @@ router.get("/callback", async (req, res) => {
     };
     req.session.songData = await getRandomSong(req);
 
-    // 프론트로 - 운영 or 로컬
-    res.redirect(getFrontHome(req));
+    // 환경변수 CLIENT_URL 로 리다이렉트
+    res.redirect(`${CLIENT_URL}/home`);
   } catch (err) {
     console.error("Google 인증 오류:", err.response?.data || err.message);
     res.status(500).send("Google Authentication Failed");
