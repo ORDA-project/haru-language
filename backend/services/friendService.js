@@ -10,8 +10,8 @@ const friendService = {
     const token = crypto.randomBytes(16).toString("hex");
     await Invitation.create({ inviter_id: inviterId, token });
 
-    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
-    return `${frontendUrl}/invite?token=${token}`;
+    const clientUrl = process.env.CLIENT_URL || "http://localhost:3000";
+    return `${clientUrl}/invite?token=${token}`;
   },
 
   // 초대 응답 처리 (수락/거절)
