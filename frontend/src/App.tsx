@@ -11,6 +11,7 @@ import SongRecommend from "./Components/Pages/SongRecommend";
 import Quiz from "./Components/Pages/Quiz";
 import MyPage from "./Components/Pages/MyPage";
 import UserProfileEdit from "./Components/Pages/UserProfileEdit";
+import DailySentence from "./Components/Pages/DailySentence";
 import ErrorBoundary from "./Components/Elements/ErrorBoundary";
 import ErrorProvider from "./Components/Providers/ErrorProvider";
 
@@ -50,6 +51,10 @@ const router = createBrowserRouter([
   {
     path: "/mypage/edit",
     element: <UserProfileEdit />,
+  },
+  {
+    path: "daily-sentence",
+    element: <DailySentence />,
   },
 ], {
   basename: import.meta.env.PROD ? "/haru-language" : "/"
