@@ -69,7 +69,10 @@ const HomeInfo = ({
           </Link>
         </div>
       )}
-      <div className="h-[200px] flex flex-col justify-start items-start p-[20px] rounded-[20px] bg-white shadow-[0px_3px_7px_2px_rgba(0,0,0,0.05)] my-[20px] border-4 border-[#00DAAA]">
+      <div
+        className="h-[200px] flex flex-col justify-start items-start p-[20px] rounded-[20px] bg-white shadow-[0px_3px_7px_2px_rgba(0,0,0,0.05)] my-[20px] border-4 border-[#00DAAA] cursor-pointer"
+        onClick={() => navigate("/daily-sentence")}
+      >
         <div className="text-[16px] font-bold leading-[150%] bg-[#00E8B6]">
           <span>오늘의 한줄 영어</span>
         </div>
