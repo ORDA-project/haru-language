@@ -1,10 +1,19 @@
+import React from "react";
+import { useNavigate } from "react-router-dom";
 import { Icons } from "../Icons";
 
 interface UserSettingsProps {
   onLogout: () => void;
 }
 
-export default function UserSettings({ onLogout }: UserSettingsProps) {
+const UserSettings = React.memo(function UserSettings({
+  onLogout,
+}: UserSettingsProps) {
+  const navigate = useNavigate();
+
+  const handleNavigation = (path: string) => {
+    navigate(path);
+  };
   return (
     <div className="mb-6">
       <div className="w-full space-y-6">
@@ -49,32 +58,55 @@ export default function UserSettings({ onLogout }: UserSettingsProps) {
         <div>
           <h3 className="text-black font-bold text-xl mb-4">앱 정보</h3>
           <div className="bg-white rounded-[16px] flex flex-col gap-5 p-5 shadow-md border border-gray-100">
-            <div className="flex items-center">
+            <button
+              onClick={() => handleNavigation("/help")}
+              className="flex items-center hover:bg-gray-50 p-2 rounded-lg transition-colors"
+            >
               <Icons.help className="w-6 h-6 mr-3" />
               <span>도움말</span>
-            </div>
-            <div className="flex items-center">
+            </button>
+            <button
+              onClick={() => handleNavigation("/announcements")}
+              className="flex items-center hover:bg-gray-50 p-2 rounded-lg transition-colors"
+            >
               <Icons.announcement className="w-6 h-6 mr-3" />
               <span>공지사항</span>
-            </div>
-            <div className="flex items-center">
+            </button>
+            <button
+              onClick={() => handleNavigation("/privacy-policy")}
+              className="flex items-center hover:bg-gray-50 p-2 rounded-lg transition-colors"
+            >
               <span>개인정보처리방침</span>
-            </div>
-            <div className="flex items-center">
+            </button>
+            <button
+              onClick={() => handleNavigation("/terms-of-service")}
+              className="flex items-center hover:bg-gray-50 p-2 rounded-lg transition-colors"
+            >
               <span>서비스 이용약관</span>
-            </div>
-            <div className="flex items-center">
+            </button>
+            <button
+              onClick={() => handleNavigation("/version-info")}
+              className="flex items-center hover:bg-gray-50 p-2 rounded-lg transition-colors"
+            >
               <span>버전정보</span>
-            </div>
-            <div className="flex items-center">
+            </button>
+            <button
+              onClick={() => handleNavigation("/version-info")}
+              className="flex items-center hover:bg-gray-50 p-2 rounded-lg transition-colors"
+            >
               <span>오픈소스 라이센스</span>
-            </div>
-            <div className="flex items-center">
+            </button>
+            <button
+              onClick={() => handleNavigation("/delete-account")}
+              className="flex items-center hover:bg-red-50 p-2 rounded-lg transition-colors text-red-600"
+            >
               <span>회원 탈퇴</span>
-            </div>
+            </button>
           </div>
         </div>
       </div>
     </div>
   );
-}
+});
+
+export default UserSettings;

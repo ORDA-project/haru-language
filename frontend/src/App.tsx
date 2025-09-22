@@ -12,53 +12,76 @@ import Quiz from "./Components/Pages/Quiz";
 import MyPage from "./Components/Pages/MyPage";
 import UserProfileEdit from "./Components/Pages/UserProfileEdit";
 import DailySentence from "./Components/Pages/DailySentence";
+import Announcements from "./Components/Pages/Announcements";
+import PrivacyPolicy from "./Components/Pages/PrivacyPolicy";
+import TermsOfService from "./Components/Pages/TermsOfService";
+import VersionInfo from "./Components/Pages/VersionInfo";
 import ErrorBoundary from "./Components/Elements/ErrorBoundary";
 import ErrorProvider from "./Components/Providers/ErrorProvider";
 
-const router = createBrowserRouter([
+const router = createBrowserRouter(
+  [
+    {
+      path: "/home",
+      element: <Home />,
+    },
+    {
+      path: "/question",
+      element: <Question />,
+    },
+    {
+      path: "/example",
+      element: <Example />,
+    },
+    {
+      path: "/introduction",
+      element: <Introduction />,
+    },
+    {
+      path: "/",
+      element: <Startlogin />,
+    },
+    {
+      path: "/song-recommend",
+      element: <SongRecommend />,
+    },
+    {
+      path: "/quiz",
+      element: <Quiz />,
+    },
+    {
+      path: "/mypage",
+      element: <MyPage />,
+    },
+    {
+      path: "/mypage/edit",
+      element: <UserProfileEdit />,
+    },
+    {
+      path: "daily-sentence",
+      element: <DailySentence />,
+    },
+    {
+      path: "/announcements",
+      element: <Announcements />,
+    },
+    {
+      path: "/privacy-policy",
+      element: <PrivacyPolicy />,
+    },
+    {
+      path: "/terms-of-service",
+      element: <TermsOfService />,
+    },
+    {
+      path: "/version-info",
+      element: <VersionInfo />,
+    },
+  ],
   {
-    path: "/home",
-    element: <Home />,
-  },
-  {
-    path: "/question",
-    element: <Question />,
-  },
-  {
-    path: "/example",
-    element: <Example />,
-  },
-  {
-    path: "/introduction",
-    element: <Introduction />,
-  },
-  {
-    path: "/",
-    element: <Startlogin />,
-  },
-  {
-    path: "/song-recommend",
-    element: <SongRecommend />,
-  },
-  {
-    path: "/quiz",
-    element: <Quiz />,
-  },
-  {
-    path: "/mypage",
-    element: <MyPage />,
-  },
-  {
-    path: "/mypage/edit",
-    element: <UserProfileEdit />,
-  },
-  {
-    path: "daily-sentence",
-    element: <DailySentence />,
-  },
-], {
-  basename: import.meta.env.PROD ? "/haru-language" : "/"
-});
+    basename: import.meta.env.PROD ? "/haru-language" : "/",
+  }
+);
 
 const queryClient = new QueryClient({
   defaultOptions: {

@@ -1,5 +1,5 @@
 import NavBar from "../Templates/Navbar";
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useAtom } from "jotai";
 import { userAtom, logoutAtom } from "../../store/authStore";
 import { useNavigate } from "react-router-dom";
@@ -11,6 +11,13 @@ import {
   UserSettings,
   PageHeader,
 } from "../Elements/MyPage";
+import { useGetUserInfo } from "../../entities/user-details/queries";
+import {
+  useGetFriends,
+  useCreateInvitation,
+  useDeleteFriend,
+} from "../../entities/friends/queries";
+import FriendInvitePopup from "../Elements/FriendInvitePopup";
 
 interface UserDataProps {
   userName: string;
@@ -25,36 +32,58 @@ export default function MyPage() {
   const navigate = useNavigate();
   const { showSuccess, showError, handleError } = useErrorHandler();
   const [showAccountInfo, setShowAccountInfo] = useState(false);
+  const [isEditingFriends, setIsEditingFriends] = useState(false);
+  const [showInvitePopup, setShowInvitePopup] = useState(false);
+  const [copiedInviteLink, setCopiedInviteLink] = useState<string>("");
 
-  const friendList = [
-    {
-      userName: "정찬우",
-      stats: "학습7회, 작문15회",
+  // API queries
+  const { data: userInfo, isLoading: userInfoLoading } = useGetUserInfo();
+  const { data: friendsData, isLoading: friendsLoading } = useGetFriends();
+  const createInvitationMutation = useCreateInvitation();
+  const deleteFriendMutation = useDeleteFriend();
+
+  // Memoized user data derived from API
+  const userData = useMemo((): UserDataProps => {
+    if (userInfoLoading || !userInfo) {
+      return {
+        userName: user?.name || "김진희",
+        visitCount: 17,
+        gender: "여성",
+        interest: "회화",
+      };
+    }
+
+    return {
+      userName: userInfo.name || user?.name || "김진희",
+      visitCount: 17, // This should come from user activity data
+      gender: "여성", // This should come from user details
+      interest: "회화", // This should come from user interests
+    };
+  }, [userInfo, userInfoLoading, user?.name]);
+
+  // Memoized friends list derived from API
+  const friendList = useMemo(() => {
+    if (friendsLoading || !friendsData?.friends) {
+      return [];
+    }
+
+    return friendsData.friends.map((friend) => ({
+      id: friend.id,
+      userName: `친구 ${friend.friendId}`, // This should be the actual friend's name
+      stats: "학습0회, 작문0회", // This should come from friend's activity data
       buttonText: "콕 찌르기",
       buttonColor: "bg-[#00DAAA]",
-    },
-    {
-      userName: "강숙희",
-      stats: "학습1회, 작문8회",
-      buttonText: "콕 찌르기",
-      buttonColor: "bg-[#00DAAA]",
-    },
-    {
-      userName: "장환희",
-      stats: "학습10회, 작문32회",
-      buttonText: "콕 찌르기",
-      buttonColor: "bg-[#00DAAA]",
-    },
-  ];
+      status: friend.status,
+    }));
+  }, [friendsData, friendsLoading]);
 
-  const [userData, setUserData] = useState<UserDataProps>({
-    userName: user?.name || "김진희",
-    visitCount: 17,
-    gender: "여성",
-    interest: "회화",
-  });
+  // Check if friend limit is reached (5 friends max)
+  const isFriendLimitReached = useMemo(() => {
+    return friendList.length >= 5;
+  }, [friendList.length]);
 
-  const handleLogout = async () => {
+  // Memoized event handlers
+  const handleLogout = useCallback(async () => {
     try {
       // 로그아웃 진행 중 토스트 표시
       showSuccess("로그아웃 중", "잠시만 기다려주세요...");
@@ -74,15 +103,67 @@ export default function MyPage() {
       handleError(error);
       showError("로그아웃 실패", "로그아웃 중 오류가 발생했습니다.");
     }
-  };
+  }, [logout, navigate, showSuccess, showError, handleError]);
 
-  const handleNextClick = () => {
+  const handleNextClick = useCallback(() => {
     setShowAccountInfo(true);
-  };
+  }, []);
 
-  const handleBackClick = () => {
+  const handleBackClick = useCallback(() => {
     setShowAccountInfo(false);
-  };
+  }, []);
+
+  const handleCreateInvitation = useCallback(async () => {
+    try {
+      if (!user?.id) {
+        showError("오류", "사용자 정보를 찾을 수 없습니다.");
+        return;
+      }
+
+      const response = await createInvitationMutation.mutateAsync({
+        inviterId: Number(user.id || user.userId),
+      });
+
+      // 클립보드에 링크 복사
+      if (response.inviteLink) {
+        await navigator.clipboard.writeText(response.inviteLink);
+        setCopiedInviteLink(response.inviteLink);
+        setShowInvitePopup(true);
+      }
+
+      showSuccess("초대 링크 생성", "친구 초대 링크가 생성되었습니다!");
+    } catch (error) {
+      console.error("Create invitation error:", error);
+      handleError(error);
+      showError(
+        "초대 링크 생성 실패",
+        "친구 초대 링크 생성 중 오류가 발생했습니다."
+      );
+    }
+  }, [user?.id, createInvitationMutation, showSuccess, showError, handleError]);
+
+  const handleDeleteFriend = useCallback(
+    async (friendId: number) => {
+      try {
+        await deleteFriendMutation.mutateAsync({ friendId });
+        showSuccess("친구 삭제", "친구가 삭제되었습니다.");
+      } catch (error) {
+        console.error("Delete friend error:", error);
+        handleError(error);
+        showError("친구 삭제 실패", "친구 삭제 중 오류가 발생했습니다.");
+      }
+    },
+    [deleteFriendMutation, showSuccess, showError, handleError]
+  );
+
+  const handleEditFriends = useCallback(() => {
+    setIsEditingFriends(!isEditingFriends);
+  }, [isEditingFriends]);
+
+  const handleCloseInvitePopup = useCallback(() => {
+    setShowInvitePopup(false);
+    setCopiedInviteLink("");
+  }, []);
 
   return (
     <div className="w-full h-full flex flex-col items-center max-w-[440px] mx-auto shadow-[0_0_10px_0_rgba(0,0,0,0.1)] bg-[#F5F6FA]">
@@ -92,7 +173,15 @@ export default function MyPage() {
           <>
             <PageHeader title="프로필" />
             <ProfileCard userData={userData} onNextClick={handleNextClick} />
-            <FriendList friendList={friendList} />
+            <FriendList
+              friendList={friendList}
+              isEditing={isEditingFriends}
+              onEditClick={handleEditFriends}
+              onCreateInvitation={handleCreateInvitation}
+              onDeleteFriend={handleDeleteFriend}
+              isLoading={friendsLoading}
+              isFriendLimitReached={isFriendLimitReached}
+            />
           </>
         ) : (
           // 두 번째 화면 (내 계정)
@@ -108,6 +197,13 @@ export default function MyPage() {
         )}
       </div>
       <NavBar currentPage={"Home"} />
+
+      {/* 친구 초대 팝업 */}
+      <FriendInvitePopup
+        isVisible={showInvitePopup}
+        onClose={handleCloseInvitePopup}
+        inviteLink={copiedInviteLink}
+      />
     </div>
   );
 }

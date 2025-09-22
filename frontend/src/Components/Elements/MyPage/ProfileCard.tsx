@@ -1,3 +1,4 @@
+import React from "react";
 import { ArrowRight } from "lucide-react";
 
 interface UserDataProps {
@@ -12,7 +13,7 @@ interface ProfileCardProps {
   onNextClick: () => void;
 }
 
-export default function ProfileCard({
+const ProfileCard = React.memo(function ProfileCard({
   userData,
   onNextClick,
 }: ProfileCardProps) {
@@ -59,4 +60,6 @@ export default function ProfileCard({
       </div>
     </div>
   );
-}
+});
+
+export default ProfileCard;
