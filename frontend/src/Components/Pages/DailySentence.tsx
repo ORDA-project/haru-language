@@ -52,32 +52,34 @@ const DailySentence = () => {
 
     try {
       setIsPlaying(true);
-      
+
       // 현재 모드에 따라 읽을 텍스트 결정
-      const textToRead = languageMode === "korean" 
-        ? currentQuestion.englishQuestion 
-        : currentQuestion.koreanQuestion;
+      const textToRead =
+        languageMode === "korean"
+          ? currentQuestion.englishQuestion
+          : currentQuestion.koreanQuestion;
 
       // TTS API 호출
       const response = await ttsMutation.mutateAsync({
         text: textToRead,
-        speed: 1.0
+        speed: 1.0,
       });
 
       // Base64 오디오 데이터를 Blob으로 변환
-      const audioBlob = new Blob([
-        Uint8Array.from(atob(response.audioContent), c => c.charCodeAt(0))
-      ], { type: 'audio/mpeg' });
+      const audioBlob = new Blob(
+        [Uint8Array.from(atob(response.audioContent), (c) => c.charCodeAt(0))],
+        { type: "audio/mpeg" }
+      );
 
       // 오디오 URL 생성 및 재생
       const audioUrl = URL.createObjectURL(audioBlob);
       const audio = new Audio(audioUrl);
-      
+
       audio.onended = () => {
         setIsPlaying(false);
         URL.revokeObjectURL(audioUrl); // 메모리 정리
       };
-      
+
       audio.onerror = () => {
         console.error("오디오 재생 실패");
         setIsPlaying(false);
@@ -318,17 +320,19 @@ const DailySentence = () => {
                   )}
                 </div>
 
-              <div className="flex items-center justify-between mb-8">
-                <button
-                  onClick={playAudio}
-                  disabled={isPlaying || ttsMutation.isPending}
-                  className="flex items-center space-x-2 bg-[#00DAAA] text-white px-6 py-3 rounded-full disabled:opacity-50 shadow-md"
-                >
-                  <Icons.speaker />
-                  <span className="text-sm font-medium">
-                    {isPlaying || ttsMutation.isPending ? "재생 중..." : "발음 듣기"}
-                  </span>
-                </button>
+                <div className="flex items-center justify-between mb-8">
+                  <button
+                    onClick={playAudio}
+                    disabled={isPlaying || ttsMutation.isPending}
+                    className="flex items-center space-x-2 bg-[#00DAAA] text-white px-6 py-3 rounded-full disabled:opacity-50 shadow-md"
+                  >
+                    <Icons.speaker />
+                    <span className="text-sm font-medium">
+                      {isPlaying || ttsMutation.isPending
+                        ? "재생 중..."
+                        : "발음 듣기"}
+                    </span>
+                  </button>
 
                   <button className="flex items-center space-x-2 bg-gray-100 px-6 py-3 rounded-full shadow-md">
                     <Icons.download />

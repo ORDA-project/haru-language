@@ -7,6 +7,7 @@ import { useErrorHandler } from "../../hooks/useErrorHandler";
 import NavBar from "../Templates/Navbar";
 import Mike from "../../Images/mike.png";
 import Send from "../../Images/sendicon.png";
+import { useGenerateTTS } from "../../entities/tts/queries";
 
 const ChatBot = () => {
   const [messages, setMessages] = useState<
@@ -17,7 +18,9 @@ const ChatBot = () => {
   const [userName, setUserName] = useState("사용자");
   const [loading, setLoading] = useState(false);
   const [sendingMessage, setSendingMessage] = useState(false);
+  const [isPlayingTTS, setIsPlayingTTS] = useState(false);
   const { showError, showWarning, showInfo } = useErrorHandler();
+  const ttsMutation = useGenerateTTS();
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -162,11 +165,71 @@ const ChatBot = () => {
     setFontSize(size);
   };
 
-  const handleMicClick = () => {
-    setMessages((prev) => [
-      ...prev,
-      { type: "bot", content: "음성 입력 기능은 준비 중입니다!" },
-    ]);
+  const handleMicClick = async () => {
+    // 마지막 봇 메시지를 찾아서 TTS로 읽어주기
+    const lastBotMessage = messages
+      .slice()
+      .reverse()
+      .find((msg) => msg.type === "bot");
+
+    if (!lastBotMessage) {
+      showWarning("알림", "읽을 메시지가 없습니다.");
+      return;
+    }
+
+    try {
+      setIsPlayingTTS(true);
+
+      // 마크다운 태그 제거 (간단한 정규식으로)
+      const cleanText = lastBotMessage.content
+        .replace(/#{1,6}\s+/g, "") // 헤더 태그 제거
+        .replace(/\*\*(.*?)\*\*/g, "$1") // 볼드 태그 제거
+        .replace(/\*(.*?)\*/g, "$1") // 이탤릭 태그 제거
+        .replace(/`(.*?)`/g, "$1") // 인라인 코드 태그 제거
+        .replace(/```[\s\S]*?```/g, "") // 코드 블록 제거
+        .replace(/\[(.*?)\]\(.*?\)/g, "$1") // 링크 텍스트만 남기기
+        .replace(/\n+/g, " ") // 줄바꿈을 공백으로
+        .trim();
+
+      if (!cleanText) {
+        showWarning("알림", "읽을 수 있는 텍스트가 없습니다.");
+        return;
+      }
+
+      // TTS API 호출
+      const response = await ttsMutation.mutateAsync({
+        text: cleanText,
+        speed: 1.0,
+      });
+
+      // Base64 오디오 데이터를 Blob으로 변환
+      const audioBlob = new Blob(
+        [Uint8Array.from(atob(response.audioContent), (c) => c.charCodeAt(0))],
+        { type: "audio/mpeg" }
+      );
+
+      // 오디오 URL 생성 및 재생
+      const audioUrl = URL.createObjectURL(audioBlob);
+      const audio = new Audio(audioUrl);
+
+      audio.onended = () => {
+        setIsPlayingTTS(false);
+        URL.revokeObjectURL(audioUrl); // 메모리 정리
+      };
+
+      audio.onerror = () => {
+        console.error("오디오 재생 실패");
+        setIsPlayingTTS(false);
+        URL.revokeObjectURL(audioUrl);
+        showError("재생 오류", "음성 재생에 실패했습니다.");
+      };
+
+      await audio.play();
+    } catch (error) {
+      console.error("TTS 재생 실패:", error);
+      setIsPlayingTTS(false);
+      showError("TTS 오류", "음성 변환에 실패했습니다.");
+    }
   };
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
@@ -229,7 +292,12 @@ const ChatBot = () => {
         <div className="flex items-center p-1 bg-white border-t border-gray-300 w-full box-border shadow-inner">
           <button
             onClick={handleMicClick}
-            className="bg-gray-400 text-white border-none rounded-full w-10 h-10 flex justify-center items-center cursor-pointer hover:bg-teal-500"
+            disabled={isPlayingTTS || ttsMutation.isPending}
+            className={`border-none rounded-full w-10 h-10 flex justify-center items-center cursor-pointer ${
+              isPlayingTTS || ttsMutation.isPending
+                ? "bg-teal-500 opacity-50"
+                : "bg-gray-400 hover:bg-teal-500"
+            }`}
           >
             <img src={Mike} alt="마이크" className="w-7 h-7" />
           </button>
