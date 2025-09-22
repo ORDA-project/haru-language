@@ -1,22 +1,23 @@
-import { useGetQuery, usePostMutation } from '../../hooks/useQuery';
-import { CreateQuestionParams, CreateQuestionResponse, GetQuestionsResponse } from './types';
+import { useGetQuery, usePostMutation } from "../../hooks/useQuery";
+import {
+  CreateQuestionParams,
+  CreateQuestionResponse,
+  GetQuestionsResponse,
+} from "./types";
 
 export const useGetQuestionsByUserId = (userId: number) => {
-  return useGetQuery<GetQuestionsResponse>(
-    `/question/${userId}`,
-    {
-      queryKey: ['questions', userId],
-      enabled: !!userId,
-    }
-  );
+  return useGetQuery<GetQuestionsResponse>(`/question/${userId}`, {
+    queryKey: ["questions", userId],
+    enabled: !!userId,
+  });
 };
 
 export const useCreateQuestion = () => {
   return usePostMutation<CreateQuestionResponse, CreateQuestionParams>(
-    '/question',
+    "/question",
     {
-      showSuccessMessage: 'È8t 1õ<\ Ý1ÈµÈä.',
-      invalidateQueries: [['questions']],
+      showSuccessMessage: "Question Created Successfully",
+      invalidateQueries: [["questions"]],
     }
   );
 };
