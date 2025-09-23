@@ -33,7 +33,14 @@ export const addToastAtom = atom(
     };
     
     const currentToasts = get(toastMessagesAtom);
-    set(toastMessagesAtom, [...currentToasts, newToast]);
+    const updatedToasts = [...currentToasts, newToast];
+    
+    // Limit to maximum 2 toasts
+    if (updatedToasts.length > 2) {
+      updatedToasts.shift(); // Remove the oldest toast
+    }
+    
+    set(toastMessagesAtom, updatedToasts);
   }
 );
 

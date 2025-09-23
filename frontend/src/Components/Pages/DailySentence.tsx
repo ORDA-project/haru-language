@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Icons } from "../Elements/Icons";
 import Navbar from "../Templates/Navbar";
@@ -10,13 +10,7 @@ import {
 import { WritingQuestion } from "../../entities/writing/types";
 import { useGenerateTTS } from "../../entities/tts/queries";
 
-type Step =
-  | "question"
-  | "korean-input"
-  | "english-input"
-  | "correction"
-  | "translation"
-  | "result";
+type Step = "question" | "user-answer" | "sentence-construction" | "result";
 
 type LanguageMode = "korean" | "english";
 
@@ -26,18 +20,18 @@ const DailySentence = () => {
   const [languageMode, setLanguageMode] = useState<LanguageMode>("korean");
   const [currentQuestion, setCurrentQuestion] =
     useState<WritingQuestion | null>(null);
-  const [koreanText, setKoreanText] = useState("");
-  const [englishText, setEnglishText] = useState("");
-  const [correctionResult, setCorrectionResult] = useState<any>(null);
+  const [userAnswer, setUserAnswer] = useState("");
   const [translationResult, setTranslationResult] = useState<any>(null);
+  const [currentSentenceIndex, setCurrentSentenceIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [selectedWords, setSelectedWords] = useState<string[]>([]);
+  const [availableWords, setAvailableWords] = useState<string[]>([]);
 
   // TODO: Get actual user ID from auth context
   const userId = 1;
 
   const { data: questionsData, isLoading: questionsLoading } =
     useWritingQuestions();
-  const correctWritingMutation = useCorrectWriting();
   const translateWritingMutation = useTranslateWriting();
   const ttsMutation = useGenerateTTS();
 
@@ -47,7 +41,7 @@ const DailySentence = () => {
     }
   }, [questionsData]);
 
-  const playAudio = async () => {
+  const playAudio = useCallback(async () => {
     if (!currentQuestion) return;
 
     try {
@@ -91,65 +85,162 @@ const DailySentence = () => {
       console.error("음성 재생 실패:", error);
       setIsPlaying(false);
     }
-  };
+  }, [currentQuestion, languageMode, ttsMutation]);
 
-  const handleStartWriting = () => {
-    if (languageMode === "korean") {
-      setCurrentStep("korean-input");
-    } else {
-      setCurrentStep("english-input");
-    }
-  };
+  const handleStartWriting = useCallback(() => {
+    setCurrentStep("user-answer");
+  }, []);
 
-  const handleKoreanSubmit = () => {
-    if (!koreanText.trim()) return;
-    setCurrentStep("english-input");
-  };
-
-  const handleEnglishSubmit = async () => {
-    if (!englishText.trim() || !currentQuestion) return;
+  const handleUserAnswerSubmit = useCallback(async () => {
+    if (!userAnswer.trim() || !currentQuestion) return;
 
     try {
-      // 문장 첨삭
-      const correctionResponse = await correctWritingMutation.mutateAsync({
-        text: englishText,
+      // 사용자 답변을 번역하여 문장 단위로 나누기
+      const translationResponse = await translateWritingMutation.mutateAsync({
+        text: userAnswer,
         userId,
         writingQuestionId: currentQuestion.id,
       });
-      setCorrectionResult(correctionResponse.data);
-
-      // 한국어 번역 (한국어 모드에서만)
-      if (languageMode === "korean") {
-        const translationResponse = await translateWritingMutation.mutateAsync({
-          text: koreanText,
-          userId,
-          writingQuestionId: currentQuestion.id,
-        });
-        setTranslationResult(translationResponse.data);
+      setTranslationResult(translationResponse.data);
+      setCurrentSentenceIndex(0);
+      // 첫 번째 문장의 단어들로 초기화
+      if (translationResponse.data.sentencePairs[0]) {
+        setAvailableWords([
+          ...translationResponse.data.sentencePairs[0].shuffledWords,
+        ]);
+        setSelectedWords([]);
       }
-
-      setCurrentStep("result");
+      setCurrentStep("sentence-construction");
     } catch (error) {
       console.error("처리 중 오류:", error);
     }
-  };
+  }, [userAnswer, currentQuestion, translateWritingMutation, userId]);
 
-  const handleRestart = () => {
+  const handleNextSentence = useCallback(() => {
+    if (
+      translationResult &&
+      currentSentenceIndex < translationResult.sentencePairs.length - 1
+    ) {
+      const nextIndex = currentSentenceIndex + 1;
+      setCurrentSentenceIndex(nextIndex);
+      // 다음 문장의 단어들로 초기화
+      if (translationResult.sentencePairs[nextIndex]) {
+        setAvailableWords([
+          ...translationResult.sentencePairs[nextIndex].shuffledWords,
+        ]);
+        setSelectedWords([]);
+      }
+    } else {
+      setCurrentStep("result");
+    }
+  }, [translationResult, currentSentenceIndex]);
+
+  const handleRestart = useCallback(() => {
     setCurrentStep("question");
-    setKoreanText("");
-    setEnglishText("");
-    setCorrectionResult(null);
+    setUserAnswer("");
     setTranslationResult(null);
-  };
+    setCurrentSentenceIndex(0);
+    setSelectedWords([]);
+    setAvailableWords([]);
+  }, []);
 
-  const handleModeChange = (mode: LanguageMode) => {
+  const handleModeChange = useCallback((mode: LanguageMode) => {
     setLanguageMode(mode);
     setCurrentStep("question");
-    setKoreanText("");
-    setEnglishText("");
-    setCorrectionResult(null);
+    setUserAnswer("");
     setTranslationResult(null);
-  };
+    setCurrentSentenceIndex(0);
+    setSelectedWords([]);
+    setAvailableWords([]);
+  }, []);
+
+  // 단어를 선택된 영역에 추가
+  const handleWordSelect = useCallback((word: string) => {
+    setSelectedWords((prev) => [...prev, word]);
+    setAvailableWords((prev) => prev.filter((w) => w !== word));
+  }, []);
+
+  // 단어를 선택된 영역에서 제거
+  const handleWordRemove = useCallback((word: string, index: number) => {
+    setSelectedWords((prev) => prev.filter((_, i) => i !== index));
+    setAvailableWords((prev) => [...prev, word]);
+  }, []);
+
+  // 정답 확인
+  const isCorrectAnswer = useCallback(() => {
+    if (
+      !translationResult ||
+      !translationResult.sentencePairs[currentSentenceIndex]
+    ) {
+      return false;
+    }
+    const correctSentence =
+      translationResult.sentencePairs[currentSentenceIndex].originalSentence;
+    const correctWords = correctSentence.split(" ");
+    return (
+      selectedWords.length === correctWords.length &&
+      selectedWords.every((word, index) => word === correctWords[index])
+    );
+  }, [translationResult, currentSentenceIndex, selectedWords]);
+
+  // 단계 이동 함수
+  const handleStepNavigation = useCallback(
+    (targetStep: Step) => {
+      const steps = [
+        "question",
+        "user-answer",
+        "sentence-construction",
+        "result",
+      ];
+      const currentIndex = steps.indexOf(currentStep);
+      const targetIndex = steps.indexOf(targetStep);
+
+      // 이전 단계로만 이동 가능 (데이터 손실 방지)
+      if (targetIndex <= currentIndex) {
+        setCurrentStep(targetStep);
+
+        // 각 단계별 상태 초기화
+        if (targetStep === "question") {
+          setUserAnswer("");
+          setTranslationResult(null);
+          setCurrentSentenceIndex(0);
+          setSelectedWords([]);
+          setAvailableWords([]);
+        } else if (targetStep === "user-answer") {
+          setTranslationResult(null);
+          setCurrentSentenceIndex(0);
+          setSelectedWords([]);
+          setAvailableWords([]);
+        } else if (targetStep === "sentence-construction") {
+          setSelectedWords([]);
+          setAvailableWords([]);
+          // translationResult가 있으면 첫 번째 문장으로 초기화
+          if (translationResult && translationResult.sentencePairs[0]) {
+            setAvailableWords([
+              ...translationResult.sentencePairs[0].shuffledWords,
+            ]);
+            setCurrentSentenceIndex(0);
+          }
+        }
+      }
+    },
+    [currentStep, translationResult]
+  );
+
+  // 이전 단계로 이동
+  const handlePreviousStep = useCallback(() => {
+    const steps = [
+      "question",
+      "user-answer",
+      "sentence-construction",
+      "result",
+    ];
+    const currentIndex = steps.indexOf(currentStep);
+    if (currentIndex > 0) {
+      const previousStep = steps[currentIndex - 1] as Step;
+      handleStepNavigation(previousStep);
+    }
+  }, [currentStep, handleStepNavigation]);
 
   const formatDate = () => {
     const today = new Date();
@@ -215,71 +306,49 @@ const DailySentence = () => {
           {/* Progress Indicator */}
           <div className="px-4 py-4">
             <div className="flex items-center justify-center space-x-2">
-              {languageMode === "korean"
-                ? ["question", "korean-input", "english-input", "result"].map(
-                    (step, index) => (
-                      <div key={step} className="flex items-center">
-                        <div
-                          className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                            currentStep === step
-                              ? "bg-[#00DAAA] text-white"
-                              : [
-                                  "question",
-                                  "korean-input",
-                                  "english-input",
-                                  "result",
-                                ].indexOf(currentStep) > index
-                              ? "bg-[#00DAAA] text-white"
-                              : "bg-gray-200 text-gray-500"
-                          }`}
-                        >
-                          {index + 1}
-                        </div>
-                        {index < 3 && (
-                          <div
-                            className={`w-8 h-0.5 ${
-                              [
-                                "question",
-                                "korean-input",
-                                "english-input",
-                                "result",
-                              ].indexOf(currentStep) > index
-                                ? "bg-[#00DAAA]"
-                                : "bg-gray-200"
-                            }`}
-                          />
-                        )}
-                      </div>
-                    )
-                  )
-                : ["question", "english-input", "result"].map((step, index) => (
-                    <div key={step} className="flex items-center">
-                      <div
-                        className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                          currentStep === step
-                            ? "bg-[#00DAAA] text-white"
-                            : ["question", "english-input", "result"].indexOf(
-                                currentStep
-                              ) > index
-                            ? "bg-[#00DAAA] text-white"
-                            : "bg-gray-200 text-gray-500"
-                        }`}
-                      >
-                        {index + 1}
-                      </div>
-                      {index < 2 && (
-                        <div
-                          className={`w-8 h-0.5 ${
-                            ["question", "english-input", "result"].indexOf(
-                              currentStep
-                            ) > index
-                              ? "bg-[#00DAAA]"
-                              : "bg-gray-200"
-                          }`}
-                        />
-                      )}
+              {[
+                "question",
+                "user-answer",
+                "sentence-construction",
+                "result",
+              ].map((step, index) => {
+                const steps = [
+                  "question",
+                  "user-answer",
+                  "sentence-construction",
+                  "result",
+                ];
+                const currentIndex = steps.indexOf(currentStep);
+                const isCompleted = currentIndex > index;
+                const isCurrent = currentStep === step;
+                const isClickable = index <= currentIndex; // 이전 단계로만 이동 가능
+
+                return (
+                  <div key={step} className="flex items-center">
+                    <div
+                      onClick={() =>
+                        isClickable && handleStepNavigation(step as Step)
+                      }
+                      className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-200 ${
+                        isCurrent
+                          ? "bg-[#00DAAA] text-white"
+                          : isCompleted
+                          ? "bg-[#00DAAA] text-white cursor-pointer hover:bg-[#00C299]"
+                          : "bg-gray-200 text-gray-500"
+                      } ${isClickable ? "cursor-pointer" : "cursor-default"}`}
+                    >
+                      {index + 1}
                     </div>
-                  ))}
+                    {index < 3 && (
+                      <div
+                        className={`w-8 h-0.5 ${
+                          isCompleted ? "bg-[#00DAAA]" : "bg-gray-200"
+                        }`}
+                      />
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
 
@@ -350,204 +419,219 @@ const DailySentence = () => {
             </div>
           )}
 
-          {/* Step 2: Korean Input (Korean Mode Only) */}
-          {currentStep === "korean-input" && languageMode === "korean" && (
+          {/* Step 2: User Answer Input */}
+          {currentStep === "user-answer" && (
             <div className="px-4 py-6">
               <div className="bg-white rounded-3xl p-6 shadow-lg">
+                <div className="flex items-center mb-4">
+                  <button
+                    onClick={handlePreviousStep}
+                    className="flex items-center space-x-2 text-gray-600 hover:text-[#00DAAA] transition-colors"
+                  >
+                    <Icons.arrowLeft />
+                    <span className="text-sm font-medium">이전 단계</span>
+                  </button>
+                </div>
                 <h2 className="text-2xl font-bold mb-2 text-gray-900">
-                  한국어로 답해보세요
+                  자유롭게 답해보세요
                 </h2>
                 <p className="text-gray-600 mb-8 text-lg">
-                  {currentQuestion.koreanQuestion}
+                  {languageMode === "korean"
+                    ? currentQuestion?.koreanQuestion
+                    : currentQuestion?.englishQuestion}
                 </p>
 
                 <textarea
-                  value={koreanText}
-                  onChange={(e) => setKoreanText(e.target.value)}
-                  placeholder="여기에 한국어로 답변을 작성해주세요..."
+                  value={userAnswer}
+                  onChange={(e) => setUserAnswer(e.target.value)}
+                  placeholder={
+                    languageMode === "korean"
+                      ? "여기에 한국어로 답변을 작성해주세요..."
+                      : "Please write your answer in English here..."
+                  }
                   className="w-full h-40 p-5 border-2 border-gray-200 rounded-2xl resize-none focus:outline-none focus:ring-2 focus:ring-[#00DAAA] focus:border-transparent text-lg"
                 />
 
                 <button
-                  onClick={handleKoreanSubmit}
-                  disabled={!koreanText.trim()}
+                  onClick={handleUserAnswerSubmit}
+                  disabled={
+                    !userAnswer.trim() || translateWritingMutation.isPending
+                  }
                   className="w-full bg-[#00DAAA] text-white py-4 rounded-2xl font-bold text-lg mt-6 disabled:opacity-50 shadow-lg hover:shadow-xl transition-shadow"
                 >
-                  다음 단계
+                  {translateWritingMutation.isPending
+                    ? "처리 중..."
+                    : "다음 단계"}
                 </button>
               </div>
             </div>
           )}
 
-          {/* Step 2/3: English Input */}
-          {currentStep === "english-input" && (
+          {/* Step 3: Sentence Construction */}
+          {currentStep === "sentence-construction" && translationResult && (
             <div className="px-4 py-6">
               <div className="bg-white rounded-3xl p-6 shadow-lg">
-                {languageMode === "korean" ? (
-                  <>
-                    <h2 className="text-2xl font-bold mb-2 text-gray-900">
-                      영어로 번역해보세요
-                    </h2>
-                    <p className="text-gray-600 mb-3 text-lg">한국어 답변:</p>
-                    <p className="text-gray-800 mb-8 p-4 bg-gray-50 rounded-2xl text-lg leading-relaxed">
-                      {koreanText}
-                    </p>
-                    <textarea
-                      value={englishText}
-                      onChange={(e) => setEnglishText(e.target.value)}
-                      placeholder="위의 한국어를 영어로 번역해주세요..."
-                      className="w-full h-40 p-5 border-2 border-gray-200 rounded-2xl resize-none focus:outline-none focus:ring-2 focus:ring-[#00DAAA] focus:border-transparent text-lg"
-                    />
-                  </>
-                ) : (
-                  <>
-                    <h2 className="text-2xl font-bold mb-2 text-gray-900">
-                      영어로 답해보세요
-                    </h2>
-                    <p className="text-gray-600 mb-8 text-lg">
-                      {currentQuestion.englishQuestion}
-                    </p>
-                    <textarea
-                      value={englishText}
-                      onChange={(e) => setEnglishText(e.target.value)}
-                      placeholder="여기에 영어로 답변을 작성해주세요..."
-                      className="w-full h-40 p-5 border-2 border-gray-200 rounded-2xl resize-none focus:outline-none focus:ring-2 focus:ring-[#00DAAA] focus:border-transparent text-lg"
-                    />
-                  </>
+                <div className="flex items-center mb-4">
+                  <button
+                    onClick={handlePreviousStep}
+                    className="flex items-center space-x-2 text-gray-600 hover:text-[#00DAAA] transition-colors"
+                  >
+                    <Icons.arrowLeft />
+                    <span className="text-sm font-medium">이전 단계</span>
+                  </button>
+                </div>
+                <h2 className="text-2xl font-bold mb-2 text-gray-900">
+                  문장을 올바른 순서로 배열해보세요
+                </h2>
+                <p className="text-gray-600 mb-6 text-lg">
+                  {translationResult.originalText}
+                </p>
+
+                {/* 현재 문장 */}
+                {translationResult.sentencePairs[currentSentenceIndex] && (
+                  <div className="mb-6">
+                    {/* 선택된 단어들 영역 */}
+                    <div className="bg-gray-100 rounded-2xl p-4 mb-4 min-h-[60px] border-2 border-dashed border-gray-300">
+                      {selectedWords.length === 0 ? (
+                        <p className="text-gray-500 text-center">
+                          단어를 올바른 순서로 배열하세요
+                        </p>
+                      ) : (
+                        <div className="flex flex-wrap gap-2">
+                          {selectedWords.map((word, index) => (
+                            <span
+                              key={`selected-${index}`}
+                              onClick={() => handleWordRemove(word, index)}
+                              className="bg-[#00DAAA] text-white px-4 py-2 rounded-full text-sm font-medium shadow-md cursor-pointer hover:bg-[#00C299] transition-colors"
+                            >
+                              {word}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 사용 가능한 단어들 */}
+                    <div className="flex flex-wrap gap-2 justify-center">
+                      {availableWords.map((word, index) => (
+                        <span
+                          key={`available-${index}`}
+                          onClick={() => handleWordSelect(word)}
+                          className="bg-[#FF6B35] text-white px-4 py-2 rounded-full text-sm font-medium shadow-md cursor-pointer hover:bg-[#E55A2B] transition-colors"
+                        >
+                          {word}
+                        </span>
+                      ))}
+                    </div>
+
+                    {/* 정답 확인 메시지 */}
+                    {selectedWords.length > 0 && (
+                      <div className="mt-4 text-center">
+                        {isCorrectAnswer() ? (
+                          <p className="text-green-600 font-semibold">
+                            ✅ 정답입니다!
+                          </p>
+                        ) : (
+                          <p className="text-gray-500">
+                            단어를 더 추가하거나 순서를 바꿔보세요
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 )}
 
                 <button
-                  onClick={handleEnglishSubmit}
-                  disabled={
-                    !englishText.trim() ||
-                    correctWritingMutation.isPending ||
-                    translateWritingMutation.isPending
-                  }
-                  className="w-full bg-[#00DAAA] text-white py-4 rounded-2xl font-bold text-lg mt-6 disabled:opacity-50 shadow-lg hover:shadow-xl transition-shadow"
+                  onClick={handleNextSentence}
+                  disabled={!isCorrectAnswer()}
+                  className="w-full bg-[#FF6B35] text-white py-4 rounded-2xl font-bold text-lg shadow-lg hover:shadow-xl transition-shadow disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {correctWritingMutation.isPending ||
-                  translateWritingMutation.isPending
-                    ? "처리 중..."
+                  {currentSentenceIndex <
+                  translationResult.sentencePairs.length - 1
+                    ? "다음 문장"
                     : "결과 확인"}
                 </button>
               </div>
             </div>
           )}
 
-          {/* Step 3/4: Result */}
-          {currentStep === "result" && correctionResult && (
+          {/* Step 4: Result */}
+          {currentStep === "result" && translationResult && (
             <div className="px-4 py-6 pb-6">
-              {/* Correction Result */}
+              {/* Back Button */}
+              <div className="mb-4">
+                <button
+                  onClick={handlePreviousStep}
+                  className="flex items-center space-x-2 text-gray-600 hover:text-[#00DAAA] transition-colors"
+                >
+                  <Icons.arrowLeft />
+                  <span className="text-sm font-medium">이전 단계</span>
+                </button>
+              </div>
+
+              {/* Success Message */}
+              <div className="bg-white rounded-3xl p-6 shadow-lg mb-6 text-center">
+                <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
+                  <span className="text-3xl">🎉</span>
+                </div>
+                <h3 className="text-2xl font-bold mb-2 text-gray-900">
+                  전부 다 맞았어요!
+                </h3>
+                <p className="text-lg text-gray-600">훌륭합니다!</p>
+              </div>
+
+              {/* Translation Result */}
               <div className="bg-white rounded-3xl p-6 shadow-lg mb-6">
                 <h3 className="text-xl font-bold mb-6 text-[#00DAAA]">
-                  문법 첨삭 결과
+                  학습 결과
                 </h3>
 
                 <div className="space-y-6">
                   <div>
                     <p className="text-sm text-gray-600 mb-2 font-medium">
-                      원본 문장:
+                      원본 답변:
                     </p>
                     <p className="text-gray-800 text-lg leading-relaxed p-3 bg-gray-50 rounded-xl">
-                      {correctionResult.originalText}
+                      {translationResult.originalText}
                     </p>
                   </div>
 
                   <div>
-                    <p className="text-sm text-gray-600 mb-2 font-medium">
-                      수정된 문장:
+                    <p className="text-sm text-gray-600 mb-3 font-medium">
+                      영어 문장들:
                     </p>
-                    <p className="text-gray-800 font-semibold text-lg leading-relaxed p-3 bg-green-50 rounded-xl border border-green-200">
-                      {correctionResult.processedText}
-                    </p>
-                  </div>
-
-                  {correctionResult.hasErrors && (
-                    <div>
-                      <p className="text-sm text-gray-600 mb-3 font-medium">
-                        피드백:
-                      </p>
-                      <ul className="space-y-3">
-                        {correctionResult.feedback.map(
-                          (feedback: string, index: number) => (
-                            <li
-                              key={index}
-                              className="text-sm text-gray-700 bg-yellow-50 p-4 rounded-xl border border-yellow-200"
-                            >
-                              • {feedback}
-                            </li>
-                          )
-                        )}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Translation Result (Korean Mode Only) */}
-              {languageMode === "korean" && translationResult && (
-                <div className="bg-white rounded-3xl p-6 shadow-lg mb-6">
-                  <h3 className="text-xl font-bold mb-6 text-[#00DAAA]">
-                    번역 결과
-                  </h3>
-
-                  <div className="space-y-6">
-                    <div>
-                      <p className="text-sm text-gray-600 mb-2 font-medium">
-                        원본 한국어:
-                      </p>
-                      <p className="text-gray-800 text-lg leading-relaxed p-3 bg-gray-50 rounded-xl">
-                        {translationResult.originalText}
-                      </p>
-                    </div>
-
-                    <div>
-                      <p className="text-sm text-gray-600 mb-3 font-medium">
-                        번역된 영어:
-                      </p>
-                      {translationResult.sentencePairs.map(
-                        (pair: any, index: number) => (
-                          <div key={index} className="mb-6">
-                            <p className="text-gray-800 font-semibold mb-3 text-lg leading-relaxed p-3 bg-blue-50 rounded-xl border border-blue-200">
+                    {translationResult.sentencePairs.map(
+                      (pair: any, index: number) => (
+                        <div key={index} className="mb-4">
+                          <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
+                            <p className="text-gray-800 font-semibold text-lg leading-relaxed">
                               {pair.originalSentence}
                             </p>
-                            <div className="flex flex-wrap gap-2">
-                              {pair.shuffledWords.map(
-                                (word: string, wordIndex: number) => (
-                                  <span
-                                    key={wordIndex}
-                                    className="bg-[#00DAAA] text-white px-4 py-2 rounded-full text-sm font-medium shadow-md"
-                                  >
-                                    {word}
-                                  </span>
-                                )
-                              )}
-                            </div>
                           </div>
+                        </div>
+                      )
+                    )}
+                  </div>
+
+                  <div>
+                    <p className="text-sm text-gray-600 mb-3 font-medium">
+                      학습 피드백:
+                    </p>
+                    <ul className="space-y-3">
+                      {translationResult.feedback.map(
+                        (feedback: string, index: number) => (
+                          <li
+                            key={index}
+                            className="text-sm text-gray-700 bg-green-50 p-4 rounded-xl border border-green-200"
+                          >
+                            • {feedback}
+                          </li>
                         )
                       )}
-                    </div>
-
-                    <div>
-                      <p className="text-sm text-gray-600 mb-3 font-medium">
-                        번역 피드백:
-                      </p>
-                      <ul className="space-y-3">
-                        {translationResult.feedback.map(
-                          (feedback: string, index: number) => (
-                            <li
-                              key={index}
-                              className="text-sm text-gray-700 bg-blue-50 p-4 rounded-xl border border-blue-200"
-                            >
-                              • {feedback}
-                            </li>
-                          )
-                        )}
-                      </ul>
-                    </div>
+                    </ul>
                   </div>
                 </div>
-              )}
+              </div>
 
               <button
                 onClick={handleRestart}

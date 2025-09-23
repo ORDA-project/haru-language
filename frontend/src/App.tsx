@@ -16,6 +16,7 @@ import Announcements from "./Components/Pages/Announcements";
 import PrivacyPolicy from "./Components/Pages/PrivacyPolicy";
 import TermsOfService from "./Components/Pages/TermsOfService";
 import VersionInfo from "./Components/Pages/VersionInfo";
+import QuestionDetail from "./Components/Pages/QuestionDetail";
 import ErrorBoundary from "./Components/Elements/ErrorBoundary";
 import ErrorProvider from "./Components/Providers/ErrorProvider";
 
@@ -77,16 +78,20 @@ const router = createBrowserRouter(
       path: "/version-info",
       element: <VersionInfo />,
     },
+    {
+      path: "/question-detail/:date",
+      element: <QuestionDetail />,
+    },
   ],
   {
-    basename: import.meta.env.PROD ? "/haru-language" : "/",
+    basename: import.meta.env.PROD ? "/haru-language" : "",
   }
 );
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      retry: 3,
+      retry: 1,
       staleTime: 1000 * 60 * 5, // 5 minutes
       refetchOnWindowFocus: false,
     },
