@@ -16,17 +16,29 @@ const generateDummyWritingQuestions = (): WritingQuestion[] => {
       englishQuestion: "What is your favorite hobby and why?",
       koreanQuestion:
         "당신이 가장 좋아하는 취미는 무엇이며, 그 이유는 무엇인가요?",
+      example: {
+        korean: "나는 게임을 진짜 사랑한다고 생각해. 나는 보드게임을 좋아하지 않지만, 다른 게임들은 좋아해. 나는 독서도 좋아해.",
+        english: "I like playing games like board game. I don't like playing any game. I like reading books.",
+      },
     },
     {
       id: 2,
       englishQuestion: "Describe a memorable trip you have taken.",
       koreanQuestion: "당신이 기억에 남는 여행을 묘사해 주세요.",
+      example: {
+        korean: "나는 작년 여름에 일본을 여행했다. 정말 멋진 경험이었다.",
+        english: "I traveled to Japan last summer. It was a wonderful experience.",
+      },
     },
     {
       id: 3,
       englishQuestion:
         "What are the advantages and disadvantages of online learning?",
       koreanQuestion: "온라인 학습의 장점과 단점은 무엇인가요?",
+      example: {
+        korean: "온라인 학습은 편리하지만 집중하기 어렵다.",
+        english: "Online learning is convenient but hard to concentrate.",
+      },
     },
     {
       id: 4,
@@ -34,6 +46,10 @@ const generateDummyWritingQuestions = (): WritingQuestion[] => {
         "If you could have any superpower, what would it be and why?",
       koreanQuestion:
         "어떤 초능력을 가질 수 있다면, 무엇을 선택하고 그 이유는 무엇인가요?",
+      example: {
+        korean: "나는 시간을 멈출 수 있는 능력을 원한다. 더 많은 일을 할 수 있기 때문이다.",
+        english: "I want the ability to stop time. Because I can do more things.",
+      },
     },
     {
       id: 5,
@@ -41,6 +57,10 @@ const generateDummyWritingQuestions = (): WritingQuestion[] => {
         "Who is your role model and how have they influenced you?",
       koreanQuestion:
         "당신의 롤 모델은 누구이며, 그들은 당신에게 어떤 영향을 미쳤나요?",
+      example: {
+        korean: "나의 롤모델은 선생님이다. 그들은 나에게 인내심을 가르쳐주었다.",
+        english: "My role model is my teacher. They taught me patience.",
+      },
     },
   ];
 };
@@ -154,6 +174,57 @@ export const useCorrectWriting = () => {
   });
 };
 
+// 더미 영어→한국어 번역 결과 생성
+const generateDummyEnglishToKoreanTranslation = (englishText: string): WritingTranslation => {
+  // 사용자 답변을 기반으로 문장 단위로 나누어서 단어 배열 연습 제공
+  let sentencePairs: any[] = [];
+
+  if (englishText.includes("game") && englishText.includes("like")) {
+    sentencePairs = [
+      {
+        englishSentence: "I like playing games like Tetris.",
+        originalSentence: "나는 테트리스 같은 게임을 좋아한다.",
+        shuffledWords: ["나는", "테트리스", "같은", "게임을", "좋아한다."],
+      },
+      {
+        englishSentence: "Games help me relax after work.",
+        originalSentence: "게임은 일 후에 나를 편하게 해준다.",
+        shuffledWords: ["게임은", "일", "후에", "나를", "편하게", "해준다."],
+      },
+    ];
+  } else if (englishText.includes("book") && englishText.includes("read")) {
+    sentencePairs = [
+      {
+        englishSentence: "I enjoy reading books in my free time.",
+        originalSentence: "나는 여가 시간에 책 읽기를 즐긴다.",
+        shuffledWords: ["나는", "여가", "시간에", "책", "읽기를", "즐긴다."],
+      },
+    ];
+  } else {
+    // 기본 예시
+    sentencePairs = [
+      {
+        englishSentence: "This is a great opportunity for me.",
+        originalSentence: "이것은 나에게 좋은 기회이다.",
+        shuffledWords: ["이것은", "나에게", "좋은", "기회이다."],
+      },
+    ];
+  }
+
+  return {
+    originalText: englishText,
+    sentencePairs: sentencePairs,
+    feedback: [
+      "영어 문장을 자연스러운 한국어로 잘 번역했습니다!",
+      "한국어 문장 구조를 올바르게 이해하고 있어요.",
+    ],
+    example: {
+      korean: "나는 게임을 진짜 사랑한다고 생각해. 나는 보드게임을 좋아하지 않지만, 다른 게임들은 좋아해. 나는 독서도 좋아해.",
+      english: "I like playing games like board game. I don't like playing any game. I like reading books.",
+    },
+  };
+};
+
 // 더미 번역 결과 생성 (API 문서 예시 기반)
 const generateDummyTranslation = (koreanText: string): WritingTranslation => {
   // 사용자 답변을 기반으로 문장 단위로 나누어서 단어 배열 연습 제공
@@ -163,10 +234,12 @@ const generateDummyTranslation = (koreanText: string): WritingTranslation => {
     // API 문서 예시: "나는 아침에 커피를 마시고, 저녁에는 산책을 한다."
     sentencePairs = [
       {
+        koreanSentence: "나는 아침에 커피를 마신다.",
         originalSentence: "I drink coffee in the morning.",
         shuffledWords: ["coffee", "I", "morning.", "in", "drink", "the"],
       },
       {
+        koreanSentence: "저녁에는 산책을 한다.",
         originalSentence: "I take a walk in the evening.",
         shuffledWords: ["walk", "in", "the", "evening.", "I", "take", "a"],
       },
@@ -174,10 +247,12 @@ const generateDummyTranslation = (koreanText: string): WritingTranslation => {
   } else if (koreanText.includes("취미")) {
     sentencePairs = [
       {
+        koreanSentence: "나의 가장 좋아하는 취미는 독서이다.",
         originalSentence: "My favorite hobby is reading books.",
         shuffledWords: ["My", "favorite", "hobby", "is", "reading", "books."],
       },
       {
+        koreanSentence: "그것은 나를 편안하게 해주기 때문에 즐긴다.",
         originalSentence: "I enjoy it because it helps me relax.",
         shuffledWords: [
           "I",
@@ -194,10 +269,12 @@ const generateDummyTranslation = (koreanText: string): WritingTranslation => {
   } else if (koreanText.includes("여행")) {
     sentencePairs = [
       {
+        koreanSentence: "나는 지난 여름에 일본에 갔다.",
         originalSentence: "I went to Japan last summer.",
         shuffledWords: ["I", "went", "to", "Japan", "last", "summer."],
       },
       {
+        koreanSentence: "그것은 놀라운 경험이었다.",
         originalSentence: "It was an amazing experience.",
         shuffledWords: ["It", "was", "an", "amazing", "experience."],
       },
@@ -206,6 +283,7 @@ const generateDummyTranslation = (koreanText: string): WritingTranslation => {
     // 기본 예시
     sentencePairs = [
       {
+        koreanSentence: "나는 이것이 좋은 기회라고 생각한다.",
         originalSentence: "I think this is a great opportunity.",
         shuffledWords: [
           "I",
@@ -227,6 +305,10 @@ const generateDummyTranslation = (koreanText: string): WritingTranslation => {
       "번역이 정확합니다! 자연스러운 영어 표현을 잘 사용했어요.",
       "문법적으로 올바른 문장입니다. 더 다양한 표현을 시도해보세요.",
     ],
+    example: {
+      korean: "나는 게임을 진짜 사랑한다고 생각해. 나는 보드게임을 좋아하지 않지만, 다른 게임들은 좋아해. 나는 독서도 좋아해.",
+      english: "I like playing games like board game. I don't like playing any game. I like reading books.",
+    },
   };
 };
 
@@ -244,6 +326,39 @@ export const useTranslateWriting = () => {
         return {
           message: "더미 데이터로 표시됩니다",
           data: generateDummyTranslation(params.text),
+        };
+      }
+    },
+    onSuccess: (data, variables) => {
+      // 관련 쿼리 무효화
+      queryClient.invalidateQueries({
+        queryKey: ["writingRecords", variables.userId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [
+          "writingRecords",
+          variables.userId,
+          variables.writingQuestionId,
+        ],
+      });
+    },
+  });
+};
+
+// 영어 → 한국어 번역
+export const useTranslateEnglishToKorean = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (params: TranslateWritingParams) => {
+      try {
+        return await writingApi.translateEnglishToKorean(params);
+      } catch (error) {
+        // API 오류 시 더미 데이터 반환
+        console.log("영어→한국어 API 오류 발생, 더미 데이터 사용");
+        return {
+          message: "더미 데이터로 표시됩니다",
+          data: generateDummyEnglishToKoreanTranslation(params.text),
         };
       }
     },

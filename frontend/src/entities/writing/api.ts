@@ -36,6 +36,13 @@ export const writingApi = {
     return http.post("/writing/translate", { json: params });
   },
 
+  // 영어 → 한국어 번역
+  translateEnglishToKorean: (
+    params: TranslateWritingParams
+  ): Promise<TranslateWritingResponse> => {
+    return http.post("/writing/translate-english", { json: params });
+  },
+
   // 사용자의 모든 Writing 기록 조회
   getWritingRecords: (userId: number): Promise<GetWritingRecordsResponse> => {
     return http.get(`/writing-question/records/${userId}`);

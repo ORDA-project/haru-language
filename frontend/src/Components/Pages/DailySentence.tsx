@@ -6,6 +6,7 @@ import {
   useWritingQuestions,
   useCorrectWriting,
   useTranslateWriting,
+  useTranslateEnglishToKorean,
 } from "../../entities/writing/queries";
 import { WritingQuestion } from "../../entities/writing/types";
 import { useGenerateTTS } from "../../entities/tts/queries";
@@ -26,6 +27,7 @@ const DailySentence = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [selectedWords, setSelectedWords] = useState<string[]>([]);
   const [availableWords, setAvailableWords] = useState<string[]>([]);
+  const [completedSentences, setCompletedSentences] = useState<boolean[]>([]);
 
   // TODO: Get actual user ID from auth context
   const userId = 1;
@@ -33,6 +35,7 @@ const DailySentence = () => {
   const { data: questionsData, isLoading: questionsLoading } =
     useWritingQuestions();
   const translateWritingMutation = useTranslateWriting();
+  const translateEnglishToKoreanMutation = useTranslateEnglishToKorean();
   const ttsMutation = useGenerateTTS();
 
   useEffect(() => {
@@ -60,24 +63,37 @@ const DailySentence = () => {
       });
 
       // Base64 오디오 데이터를 Blob으로 변환
-      const audioBlob = new Blob(
-        [Uint8Array.from(atob(response.audioContent), (c) => c.charCodeAt(0))],
-        { type: "audio/mpeg" }
-      );
-
-      // 오디오 URL 생성 및 재생
-      const audioUrl = URL.createObjectURL(audioBlob);
+      let audioUrl;
+      
+      if (response.audioContent.startsWith('data:audio/')) {
+        // 더미 데이터의 경우 (data URL 형식)
+        audioUrl = response.audioContent;
+      } else {
+        // 실제 API 응답의 경우 (Base64 문자열)
+        const audioBlob = new Blob(
+          [Uint8Array.from(atob(response.audioContent), (c) => c.charCodeAt(0))],
+          { type: "audio/mpeg" }
+        );
+        audioUrl = URL.createObjectURL(audioBlob);
+      }
+      
       const audio = new Audio(audioUrl);
 
       audio.onended = () => {
         setIsPlaying(false);
-        URL.revokeObjectURL(audioUrl); // 메모리 정리
+        // Blob URL의 경우에만 메모리 정리
+        if (!response.audioContent.startsWith('data:audio/')) {
+          URL.revokeObjectURL(audioUrl);
+        }
       };
 
       audio.onerror = () => {
         console.error("오디오 재생 실패");
         setIsPlaying(false);
-        URL.revokeObjectURL(audioUrl);
+        // Blob URL의 경우에만 메모리 정리
+        if (!response.audioContent.startsWith('data:audio/')) {
+          URL.revokeObjectURL(audioUrl);
+        }
       };
 
       await audio.play();
@@ -95,14 +111,28 @@ const DailySentence = () => {
     if (!userAnswer.trim() || !currentQuestion) return;
 
     try {
-      // 사용자 답변을 번역하여 문장 단위로 나누기
-      const translationResponse = await translateWritingMutation.mutateAsync({
-        text: userAnswer,
-        userId,
-        writingQuestionId: currentQuestion.id,
-      });
+      let translationResponse;
+      
+      if (languageMode === "korean") {
+        // 한국어 모드: 한국어 → 영어 번역
+        translationResponse = await translateWritingMutation.mutateAsync({
+          text: userAnswer,
+          userId,
+          writingQuestionId: currentQuestion.id,
+        });
+      } else {
+        // 영어 모드: 영어 → 한국어 번역
+        translationResponse = await translateEnglishToKoreanMutation.mutateAsync({
+          text: userAnswer,
+          userId,
+          writingQuestionId: currentQuestion.id,
+        });
+      }
+      
       setTranslationResult(translationResponse.data);
       setCurrentSentenceIndex(0);
+      // 완료된 문장 배열 초기화
+      setCompletedSentences(new Array(translationResponse.data.sentencePairs.length).fill(false));
       // 첫 번째 문장의 단어들로 초기화
       if (translationResponse.data.sentencePairs[0]) {
         setAvailableWords([
@@ -114,9 +144,16 @@ const DailySentence = () => {
     } catch (error) {
       console.error("처리 중 오류:", error);
     }
-  }, [userAnswer, currentQuestion, translateWritingMutation, userId]);
+  }, [userAnswer, currentQuestion, translateWritingMutation, translateEnglishToKoreanMutation, userId, languageMode]);
 
   const handleNextSentence = useCallback(() => {
+    // 현재 문장을 완료로 표시
+    setCompletedSentences(prev => {
+      const newCompleted = [...prev];
+      newCompleted[currentSentenceIndex] = true;
+      return newCompleted;
+    });
+
     if (
       translationResult &&
       currentSentenceIndex < translationResult.sentencePairs.length - 1
@@ -142,6 +179,7 @@ const DailySentence = () => {
     setCurrentSentenceIndex(0);
     setSelectedWords([]);
     setAvailableWords([]);
+    setCompletedSentences([]);
   }, []);
 
   const handleModeChange = useCallback((mode: LanguageMode) => {
@@ -152,6 +190,7 @@ const DailySentence = () => {
     setCurrentSentenceIndex(0);
     setSelectedWords([]);
     setAvailableWords([]);
+    setCompletedSentences([]);
   }, []);
 
   // 단어를 선택된 영역에 추가
@@ -206,11 +245,13 @@ const DailySentence = () => {
           setCurrentSentenceIndex(0);
           setSelectedWords([]);
           setAvailableWords([]);
+          setCompletedSentences([]);
         } else if (targetStep === "user-answer") {
           setTranslationResult(null);
           setCurrentSentenceIndex(0);
           setSelectedWords([]);
           setAvailableWords([]);
+          setCompletedSentences([]);
         } else if (targetStep === "sentence-construction") {
           setSelectedWords([]);
           setAvailableWords([]);
@@ -220,6 +261,8 @@ const DailySentence = () => {
               ...translationResult.sentencePairs[0].shuffledWords,
             ]);
             setCurrentSentenceIndex(0);
+            // 완료 상태를 다시 초기화
+            setCompletedSentences(new Array(translationResult.sentencePairs.length).fill(false));
           }
         }
       }
@@ -435,11 +478,41 @@ const DailySentence = () => {
                 <h2 className="text-2xl font-bold mb-2 text-gray-900">
                   자유롭게 답해보세요
                 </h2>
-                <p className="text-gray-600 mb-8 text-lg">
+                <p className="text-gray-600 mb-4 text-lg">
                   {languageMode === "korean"
                     ? currentQuestion?.koreanQuestion
                     : currentQuestion?.englishQuestion}
                 </p>
+
+                {/* 예시 답변 - 서버에서 온 데이터 사용 */}
+                {currentQuestion?.example && (
+                  <div className="bg-gray-50 rounded-2xl p-4 mb-6">
+                    <h3 className="text-sm font-semibold text-gray-700 mb-2">
+                      📝 예시 답변
+                    </h3>
+                    <div className="text-sm text-gray-600 leading-relaxed">
+                      {languageMode === "korean" ? (
+                        <div>
+                          <p className="mb-2">
+                            <strong>한국어:</strong> "{currentQuestion.example.korean}"
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            💡 팁: 자연스러운 한국어로 자유롭게 답변해보세요!
+                          </p>
+                        </div>
+                      ) : (
+                        <div>
+                          <p className="mb-2">
+                            <strong>영어:</strong> "{currentQuestion.example.english}"
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            💡 Tip: Answer naturally in English!
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 <textarea
                   value={userAnswer}
@@ -455,11 +528,13 @@ const DailySentence = () => {
                 <button
                   onClick={handleUserAnswerSubmit}
                   disabled={
-                    !userAnswer.trim() || translateWritingMutation.isPending
+                    !userAnswer.trim() || 
+                    translateWritingMutation.isPending || 
+                    translateEnglishToKoreanMutation.isPending
                   }
                   className="w-full bg-[#00DAAA] text-white py-4 rounded-2xl font-bold text-lg mt-6 disabled:opacity-50 shadow-lg hover:shadow-xl transition-shadow"
                 >
-                  {translateWritingMutation.isPending
+                  {(translateWritingMutation.isPending || translateEnglishToKoreanMutation.isPending)
                     ? "처리 중..."
                     : "다음 단계"}
                 </button>
@@ -481,11 +556,57 @@ const DailySentence = () => {
                   </button>
                 </div>
                 <h2 className="text-2xl font-bold mb-2 text-gray-900">
-                  문장을 올바른 순서로 배열해보세요
+                  {languageMode === "korean" 
+                    ? "영어 문장을 올바른 순서로 배열해보세요"
+                    : "한국어 문장을 올바른 순서로 배열해보세요"
+                  }
                 </h2>
-                <p className="text-gray-600 mb-6 text-lg">
-                  {translationResult.originalText}
-                </p>
+
+                {/* 문장별 진행 상황 */}
+                <div className="flex items-center justify-center space-x-2 mb-6">
+                  {translationResult.sentencePairs.map((_: any, index: number) => {
+                    const isCompleted = completedSentences[index];
+                    const isCurrent = currentSentenceIndex === index;
+                    
+                    return (
+                      <div key={index} className="flex items-center">
+                        <div
+                          className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium transition-all duration-200 ${
+                            isCurrent
+                              ? "bg-[#FF6B35] text-white"
+                              : isCompleted
+                              ? "bg-green-500 text-white"
+                              : "bg-gray-200 text-gray-500"
+                          }`}
+                        >
+                          {isCompleted ? "✓" : index + 1}
+                        </div>
+                        {index < translationResult.sentencePairs.length - 1 && (
+                          <div
+                            className={`w-6 h-0.5 ${
+                              isCompleted ? "bg-green-500" : "bg-gray-200"
+                            }`}
+                          />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* 현재 문장 정보 */}
+                <div className="text-center mb-4">
+                  <p className="text-sm text-gray-600">
+                    문장 {currentSentenceIndex + 1} / {translationResult.sentencePairs.length}
+                  </p>
+                  <div className="bg-blue-50 rounded-xl p-3 mt-2 border border-blue-200">
+                    <p className="text-sm text-gray-700 font-medium">
+                      {languageMode === "korean" 
+                        ? `한국어: "${translationResult.sentencePairs[currentSentenceIndex].koreanSentence || translationResult.originalText}"`
+                        : `영어: "${translationResult.sentencePairs[currentSentenceIndex].englishSentence || translationResult.originalText}"`
+                      }
+                    </p>
+                  </div>
+                </div>
 
                 {/* 현재 문장 */}
                 {translationResult.sentencePairs[currentSentenceIndex] && (

@@ -65,7 +65,8 @@ async function translateWriting(text, userId, writingQuestionId) {
       "**User's Input:**\n" +
       `Korean: "${text}"\n\n` +
       "Return a JSON object with:\n" +
-      "- 'translatedText': The translated English sentences as an array, where each sentence is a separate element.\n" +
+      "- 'koreanSentences': The original Korean text split into sentences as an array, where each sentence is a separate element.\n" +
+      "- 'translatedText': The translated English sentences as an array, where each sentence is a separate element (must match the number of Korean sentences).\n" +
       "- 'feedback': A JSON array of explanations in Korean about key phrases and grammar points, where each item is a separate explanation sentence.\n\n" +
       "Provide only the JSON output.";
 
@@ -76,7 +77,8 @@ async function translateWriting(text, userId, writingQuestionId) {
     console.log("translatedText 값:", translationData?.translatedText);
 
     // 문장별로 단어 랜덤 배열 적용
-    const sentencePairs = translationData.translatedText.map(sentence => ({
+    const sentencePairs = translationData.translatedText.map((sentence, index) => ({
+      koreanSentence: translationData.koreanSentences[index] || "",
       originalSentence: sentence,
       shuffledWords: shuffleArray(sentence.split(" ")), // 단어 단위 랜덤 배열 적용
     }));
@@ -96,7 +98,11 @@ async function translateWriting(text, userId, writingQuestionId) {
     return {
       originalText: text,
       sentencePairs: sentencePairs, 
-      feedback: translationData.feedback, 
+      feedback: translationData.feedback,
+      example: {
+        korean: example.example,
+        english: example.translation,
+      },
     };
   } catch (error) {
     console.error("Error in writing translation:", error.message);
@@ -114,4 +120,74 @@ function shuffleArray(array) {
   return shuffled;
 }
 
-module.exports = { correctWriting, translateWriting };
+// 영어 → 한국어 번역
+async function translateEnglishToKorean(text, userId, writingQuestionId) {
+  try {
+    const question = await WritingQuestion.findOne({ where: { id: writingQuestionId } });
+    const example = await WritingExample.findOne({ where: { writing_question_id: writingQuestionId } });
+
+    if (!question) {
+      throw new Error("해당 Writing 질문을 찾을 수 없습니다.");
+    }
+
+    if (!example) {
+      throw new Error("해당 질문에 대한 예시 문장이 없습니다.");
+    }
+
+    const prompt =
+      "You are an AI Korean tutor that helps users express ideas in Korean naturally.\n" +
+      "The user has written a response in English to a specific question. Your job is to provide a Korean translation " +
+      "that is both natural and grammatically correct. Additionally, provide an explanation of key phrases in Korean.\n\n" +
+      "**Question:**\n" +
+      `"${question.question_text}"\n\n` +
+      "**Example Response:**\n" +
+      `English: "${example.translation}"\n` + 
+      `Korean Translation: "${example.example}"\n\n` + 
+      "**User's Input:**\n" +
+      `English: "${text}"\n\n` +
+      "Return a JSON object with:\n" +
+      "- 'englishSentences': The original English text split into sentences as an array, where each sentence is a separate element.\n" +
+      "- 'translatedText': The translated Korean sentences as an array, where each sentence is a separate element (must match the number of English sentences).\n" +
+      "- 'feedback': A JSON array of explanations in Korean about key phrases and grammar points, where each item is a separate explanation sentence.\n\n" +
+      "Provide only the JSON output.";
+
+    const response = await callGPT(prompt, text, 600);
+    const translationData = JSON.parse(response);
+
+    console.log("영어→한국어 GPT 응답 데이터:", translationData);
+
+    // 문장별로 단어 랜덤 배열 적용
+    const sentencePairs = translationData.translatedText.map((sentence, index) => ({
+      englishSentence: translationData.englishSentences[index] || "",
+      originalSentence: sentence,
+      shuffledWords: shuffleArray(sentence.split(" ")), // 한국어 단어 단위 랜덤 배열 적용
+    }));
+
+    const processedText = translationData.translatedText.join(" "); // 번역된 문장을 하나의 문자열로 저장
+
+    // WritingRecord 테이블에 저장
+    const record = await WritingRecord.create({
+      user_id: userId,
+      writing_question_id: writingQuestionId,
+      original_text: text,
+      processed_text: processedText, 
+      feedback: JSON.stringify(translationData.feedback), 
+      type: "english_to_korean",
+    });
+
+    return {
+      originalText: text,
+      sentencePairs: sentencePairs, 
+      feedback: translationData.feedback,
+      example: {
+        korean: example.example,
+        english: example.translation,
+      },
+    };
+  } catch (error) {
+    console.error("Error in English to Korean translation:", error.message);
+    throw new Error("Failed to translate from English to Korean.");
+  }
+}
+
+module.exports = { correctWriting, translateWriting, translateEnglishToKorean };

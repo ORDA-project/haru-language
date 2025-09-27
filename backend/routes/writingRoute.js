@@ -1,6 +1,6 @@
 const express = require("express");
-const { correctWriting, translateWriting } = require("../services/writingService");
-const { WritingRecord, WritingQuestion } = require("../models");
+const { correctWriting, translateWriting, translateEnglishToKorean } = require("../services/writingService");
+const { WritingRecord, WritingQuestion, WritingExample } = require("../models");
 
 const router = express.Router();
 
@@ -142,6 +142,78 @@ router.post("/translate", async (req, res) => {
     console.error("Error translating writing:", error.message);
     res.status(500).json({
       message: "번역 중 오류가 발생했습니다.",
+      error: error.message,
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /writing/translate-english:
+ *   post:
+ *     summary: 영어에서 한국어로 번역
+ *     description: 영어 문장을 한국어로 번역하고 작문 기록에 저장합니다
+ *     tags: [Writing]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - text
+ *               - userId
+ *               - writingQuestionId
+ *             properties:
+ *               text:
+ *                 type: string
+ *                 description: 번역할 영어 문장
+ *                 example: "I went to school yesterday."
+ *               userId:
+ *                 type: integer
+ *                 description: 사용자 ID
+ *                 example: 1
+ *               writingQuestionId:
+ *                 type: integer
+ *                 description: 작문 질문 ID
+ *                 example: 1
+ *     responses:
+ *       200:
+ *         description: 번역 완료
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "영어→한국어 번역 완료"
+ *                 data:
+ *                   type: object
+ *                   description: 번역 결과 데이터
+ *       400:
+ *         description: 필수 파라미터 누락
+ *       500:
+ *         description: 번역 중 오류 발생
+ */
+router.post("/translate-english", async (req, res) => {
+  try {
+    const { text, userId, writingQuestionId } = req.body;
+
+    if (!text || !userId || !writingQuestionId) {
+      return res.status(400).json({ message: "text, userId, writingQuestionId는 필수입니다." });
+    }
+
+    const result = await translateEnglishToKorean(text, userId, writingQuestionId);
+
+    res.status(200).json({
+      message: "영어→한국어 번역 완료",
+      data: result,
+    });
+  } catch (error) {
+    console.error("Error translating English to Korean:", error.message);
+    res.status(500).json({
+      message: "영어→한국어 번역 중 오류가 발생했습니다.",
       error: error.message,
     });
   }
@@ -326,6 +398,7 @@ router.get("/question/:writingQuestionId", async (req, res) => {
     const { writingQuestionId } = req.params;
 
     const question = await WritingQuestion.findOne({ where: { id: writingQuestionId } });
+    const example = await WritingExample.findOne({ where: { writing_question_id: writingQuestionId } });
 
     if (!question) {
       return res.status(404).json({ message: "해당 ID에 대한 Writing 질문이 없습니다." });
@@ -337,6 +410,10 @@ router.get("/question/:writingQuestionId", async (req, res) => {
         id: question.id,
         englishQuestion: question.question_text,
         koreanQuestion: question.korean_text,
+        example: example ? {
+          korean: example.example,
+          english: example.translation,
+        } : null,
       },
     });
   } catch (error) {
@@ -388,6 +465,11 @@ router.get("/question/:writingQuestionId", async (req, res) => {
 router.get("/questions", async (req, res) => {
   try {
     const questions = await WritingQuestion.findAll({
+      include: [{
+        model: WritingExample,
+        as: 'examples',
+        required: false
+      }],
       order: [["createdAt", "ASC"]],
     });
 
@@ -401,6 +483,10 @@ router.get("/questions", async (req, res) => {
         id: q.id,
         englishQuestion: q.question_text,
         koreanQuestion: q.korean_text,
+        example: q.examples && q.examples.length > 0 ? {
+          korean: q.examples[0].example,
+          english: q.examples[0].translation,
+        } : null,
       })),
     });
   } catch (error) {

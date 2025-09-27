@@ -3,6 +3,10 @@ export interface WritingQuestion {
   id: number;
   englishQuestion: string;
   koreanQuestion: string;
+  example?: {
+    korean: string;
+    english: string;
+  };
 }
 
 export interface GetWritingQuestionsResponse {
@@ -44,6 +48,10 @@ export interface WritingTranslation {
   originalText: string;
   sentencePairs: SentencePair[];
   feedback: string[];
+  example?: {
+    korean: string;
+    english: string;
+  };
 }
 
 export interface TranslateWritingParams {
