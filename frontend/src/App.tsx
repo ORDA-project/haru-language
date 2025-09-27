@@ -1,4 +1,4 @@
-import { RouterProvider, createBrowserRouter } from "react-router-dom";
+import { RouterProvider, createHashRouter } from "react-router-dom";
 import { Provider } from "jotai";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Navbar from "./Components/Templates/Navbar";
@@ -20,7 +20,7 @@ import QuestionDetail from "./Components/Pages/QuestionDetail";
 import ErrorBoundary from "./Components/Elements/ErrorBoundary";
 import ErrorProvider from "./Components/Providers/ErrorProvider";
 
-const router = createBrowserRouter(
+const router = createHashRouter(
   [
     {
       path: "/home",
