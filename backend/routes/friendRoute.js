@@ -2,7 +2,7 @@
 const router = express.Router();
 const friendService = require("../services/friendService");
 const { User } = require("../models");
-const { getUserIdBySocialId } = require("../utils/userUtils");
+const { getUserIdBySocialId, getSocialIdFromSession } = require("../utils/userUtils");
 
 /**
  * @openapi

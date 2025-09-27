@@ -247,15 +247,13 @@ app.use((err, req, res, next) => {
 // 서버 시작
 (async () => {
   try {
-    // 개발환경에서만 DB 동기화
-    if (!PROD) {
-      await sequelize.sync({ force: false });
-      log.info("Database synchronized successfully");
-    }
-    
     // DB 연결 테스트
     await sequelize.authenticate();
     log.info("Database connection established successfully");
+    
+    // DB 동기화 (개발환경과 프로덕션 모두)
+    await sequelize.sync({ force: false });
+    log.info("Database synchronized successfully");
     
     app.listen(PORT, () => {
       if (PROD) {
