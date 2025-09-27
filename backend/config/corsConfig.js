@@ -1,6 +1,5 @@
 const allowedOrigins = [
-  "https://orda-project.github.io/haru-language/",
-  "https://orda-project.github.io",
+  "https://haru-language.vercel.app",
   process.env.CLIENT_URL,
   "http://localhost:3000",
   "https://haru-language-server.onrender.com"
