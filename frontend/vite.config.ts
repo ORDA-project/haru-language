@@ -24,7 +24,7 @@ export default defineConfig(async () => {
         },
       },
     },
-    base: process.env.NODE_ENV === "production" ? "/haru-language/" : "/",
+    base:  "/",
     resolve: {
       alias: {
         "@": path.resolve(__dirname, "src"),
