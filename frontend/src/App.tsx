@@ -1,6 +1,7 @@
-import { RouterProvider, createHashRouter } from "react-router-dom";
+import { RouterProvider, createBrowserRouter } from "react-router-dom";
 import { Provider } from "jotai";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import Navbar from "./Components/Templates/Navbar";
 import Home from "./Components/Pages/Home";
 import Question from "./Components/Pages/Question";
@@ -20,73 +21,68 @@ import QuestionDetail from "./Components/Pages/QuestionDetail";
 import ErrorBoundary from "./Components/Elements/ErrorBoundary";
 import ErrorProvider from "./Components/Providers/ErrorProvider";
 
-const router = createHashRouter(
-  [
-    {
-      path: "/home",
-      element: <Home />,
-    },
-    {
-      path: "/question",
-      element: <Question />,
-    },
-    {
-      path: "/example",
-      element: <Example />,
-    },
-    {
-      path: "/introduction",
-      element: <Introduction />,
-    },
-    {
-      path: "/",
-      element: <Startlogin />,
-    },
-    {
-      path: "/song-recommend",
-      element: <SongRecommend />,
-    },
-    {
-      path: "/quiz",
-      element: <Quiz />,
-    },
-    {
-      path: "/mypage",
-      element: <MyPage />,
-    },
-    {
-      path: "/mypage/edit",
-      element: <UserProfileEdit />,
-    },
-    {
-      path: "daily-sentence",
-      element: <DailySentence />,
-    },
-    {
-      path: "/announcements",
-      element: <Announcements />,
-    },
-    {
-      path: "/privacy-policy",
-      element: <PrivacyPolicy />,
-    },
-    {
-      path: "/terms-of-service",
-      element: <TermsOfService />,
-    },
-    {
-      path: "/version-info",
-      element: <VersionInfo />,
-    },
-    {
-      path: "/question-detail/:date",
-      element: <QuestionDetail />,
-    },
-  ],
+const router = createBrowserRouter([
   {
-    basename: import.meta.env.PROD ? "/haru-language" : "",
-  }
-);
+    path: "/home",
+    element: <Home />,
+  },
+  {
+    path: "/question",
+    element: <Question />,
+  },
+  {
+    path: "/example",
+    element: <Example />,
+  },
+  {
+    path: "/introduction",
+    element: <Introduction />,
+  },
+  {
+    path: "/",
+    element: <Startlogin />,
+  },
+  {
+    path: "/song-recommend",
+    element: <SongRecommend />,
+  },
+  {
+    path: "/quiz",
+    element: <Quiz />,
+  },
+  {
+    path: "/mypage",
+    element: <MyPage />,
+  },
+  {
+    path: "/mypage/edit",
+    element: <UserProfileEdit />,
+  },
+  {
+    path: "daily-sentence",
+    element: <DailySentence />,
+  },
+  {
+    path: "/announcements",
+    element: <Announcements />,
+  },
+  {
+    path: "/privacy-policy",
+    element: <PrivacyPolicy />,
+  },
+  {
+    path: "/terms-of-service",
+    element: <TermsOfService />,
+  },
+  {
+    path: "/version-info",
+    element: <VersionInfo />,
+  },
+  {
+    path: "/question-detail/:date",
+    element: <QuestionDetail />,
+  },
+]);
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -111,6 +107,7 @@ function App() {
           </ErrorProvider>
         </ErrorBoundary>
       </Provider>
+      <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
   );
 }

@@ -7,6 +7,11 @@ const openai = new OpenAI({
 
 async function callGPT(prompt, userInput, maxTokens = 600) {
   try {
+    console.log("GPT API 호출 시작");
+    console.log("프롬프트:", prompt);
+    console.log("사용자 입력:", userInput);
+    console.log("최대 토큰:", maxTokens);
+
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
@@ -16,10 +21,13 @@ async function callGPT(prompt, userInput, maxTokens = 600) {
       max_tokens: maxTokens,
     });
 
-    return response.choices[0].message.content.trim();
+    const result = response.choices[0].message.content.trim();
+    console.log("GPT API 응답 성공:", result);
+    return result;
   } catch (error) {
-    console.error("Error calling GPT:", error.message);
-    throw new Error("GPT API 호출 실패");
+    console.error("GPT API 호출 실패:", error);
+    console.error("에러 상세:", error.message);
+    throw new Error(`GPT API 호출 실패: ${error.message}`);
   }
 }
 

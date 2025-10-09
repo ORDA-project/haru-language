@@ -1,5 +1,7 @@
+import React from "react";
+
 export const Icons = {
-  camera: (props: React.SVGProps<SVGSVGElement>) => (
+  camera: React.memo((props: React.SVGProps<SVGSVGElement>) => (
     <svg
       xmlns="http://www.w3.org/2000/svg"
       width="40"
@@ -17,8 +19,8 @@ export const Icons = {
         strokeWidth="2.26667"
       />
     </svg>
-  ),
-  home: (props: React.SVGProps<SVGSVGElement>) => (
+  )),
+  home: React.memo((props: React.SVGProps<SVGSVGElement>) => (
     <svg
       xmlns="http://www.w3.org/2000/svg"
       width="51"
@@ -33,8 +35,8 @@ export const Icons = {
         fillOpacity={props.fillOpacity || "0.5"}
       />
     </svg>
-  ),
-  profile: (props: React.SVGProps<SVGSVGElement>) => (
+  )),
+  profile: React.memo((props: React.SVGProps<SVGSVGElement>) => (
     <svg
       xmlns="http://www.w3.org/2000/svg"
       width="40"
@@ -52,7 +54,7 @@ export const Icons = {
         strokeLinejoin="round"
       />
     </svg>
-  ),
+  )),
 
   audio: (props: React.SVGProps<SVGSVGElement>) => (
     <svg

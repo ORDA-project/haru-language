@@ -18,34 +18,41 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(cors(corsConfig));
 
-// MySQL 기반 세션 저장소 설정
-const sessionStore = new MySQLStore({
-  host: process.env.DB_HOST,
-  port: process.env.DB_PORT,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-  clearExpired: true,
-  checkExpirationInterval: 1000 * 60 * 60 * 24, // 24시간마다 만료된 세션 정리
-  expiration: 1000 * 60 * 60 * 24 * 7, // 7일 = 1000ms * 60초 * 60분 * 24시간 * 7일
-});
+// 세션 저장소 설정 (개발환경에서는 메모리 사용, 프로덕션에서는 MySQL 사용)
+let sessionStore;
+if (process.env.NODE_ENV === "production") {
+  sessionStore = new MySQLStore({
+    host: process.env.DB_HOST,
+    port: process.env.DB_PORT,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+    clearExpired: true,
+    checkExpirationInterval: 1000 * 60 * 60 * 24, // 24시간마다 만료된 세션 정리
+    expiration: 1000 * 60 * 60 * 24 * 7, // 7일 = 1000ms * 60초 * 60분 * 24시간 * 7일
+  });
+}
 
 // 세션 설정
-app.use(
-  session({
-    key: "user_sid",
-    secret: process.env.SESSION_SECRET,
-    resave: false,
-    saveUninitialized: false,
-    store: sessionStore,
-    cookie: {
-      maxAge: 1000 * 60 * 60 * 24 * 7, // 7일 = 1000ms * 60초 * 60분 * 24시간 * 7일
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-    },
-  })
-);
+const sessionConfig = {
+  key: "user_sid",
+  secret: process.env.SESSION_SECRET,
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    maxAge: 1000 * 60 * 60 * 24 * 7, // 7일 = 1000ms * 60초 * 60분 * 24시간 * 7일
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+  },
+};
+
+// 프로덕션 환경에서만 MySQL 세션 저장소 사용
+if (sessionStore) {
+  sessionConfig.store = sessionStore;
+}
+
+app.use(session(sessionConfig));
 
 // 로그인 상태 확인 (미인증 사용자는 프론트엔드로 리디렉트)
 app.use((req, res, next) => {
@@ -60,7 +67,8 @@ app.use((req, res, next) => {
 
   // 리퍼러에서 origin 정보를 가져와서 적절한 프론트엔드 URL로 리디렉트
   const referer = req.get("Referer") || req.headers.origin;
-  let redirectUrl = "https://orda-project.github.io/haru-language" || "http://localhost:3000";
+  let redirectUrl =
+    "https://haru-language.vercel.app" || "http://localhost:3000";
 
   if (referer) {
     try {
@@ -70,7 +78,7 @@ app.use((req, res, next) => {
       // 허용된 도메인인지 확인
       const allowedOrigins = [
         "http://localhost:3000",
-        "https://orda-project.github.io/haru-language",
+        "https://haru-language.vercel.app",
       ];
 
       if (allowedOrigins.some((allowed) => origin.startsWith(allowed))) {

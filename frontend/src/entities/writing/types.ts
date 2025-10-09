@@ -3,6 +3,14 @@ export interface WritingQuestion {
   id: number;
   englishQuestion: string;
   koreanQuestion: string;
+  secondQuestion?: {
+    english: string;
+    korean: string;
+  };
+  thirdQuestion?: {
+    english: string;
+    korean: string;
+  };
   example?: {
     korean: string;
     english: string;
@@ -41,6 +49,8 @@ export interface CorrectWritingResponse {
 // Writing Translation 타입 (API 문서에 맞춤)
 export interface SentencePair {
   originalSentence: string;
+  koreanSentence?: string;
+  englishSentence?: string;
   shuffledWords: string[];
 }
 

@@ -73,28 +73,38 @@ router.get("/callback", async (req, res) => {
         };
         req.session.songData = songData;
 
-        // 원래 로그인을 시도한 도메인으로 리디렉트
-        const loginOrigin = req.session.loginOrigin;
-        const redirectUrl = loginOrigin || process.env.FRONTEND_URL || "http://localhost:3000";
+        // 개발 환경에서는 항상 localhost로 리다이렉트
+        let redirectUrl;
+        if (process.env.NODE_ENV === 'development') {
+            redirectUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+        } else {
+            const loginOrigin = req.session.loginOrigin;
+            redirectUrl = loginOrigin || process.env.FRONTEND_URL || "http://localhost:3000";
+        }
         
         console.log('Kakao login success, redirecting to:', `${redirectUrl}?loginSuccess=true&userName=${encodeURIComponent(user.name)}`);
         
         // 세션에서 origin 정보 삭제
         delete req.session.loginOrigin;
         
-        res.redirect(`${redirectUrl}?loginSuccess=true&userName=${encodeURIComponent(user.name)}`);
+        res.redirect(`${redirectUrl}/home?loginSuccess=true&userName=${encodeURIComponent(user.name)}`);
 
     } catch (err) {
         console.error("카카오 로그인 실패:", err.message);
         
-        // 에러 시에도 원래 도메인으로 리다이렉트
-        const loginOrigin = req.session.loginOrigin;
-        const redirectUrl = loginOrigin || process.env.FRONTEND_URL || "http://localhost:3000";
+        // 개발 환경에서는 항상 localhost로 리다이렉트
+        let redirectUrl;
+        if (process.env.NODE_ENV === 'development') {
+            redirectUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+        } else {
+            const loginOrigin = req.session.loginOrigin;
+            redirectUrl = loginOrigin || process.env.FRONTEND_URL || "http://localhost:3000";
+        }
         
         // 세션에서 origin 정보 삭제
         delete req.session.loginOrigin;
         
-        res.redirect(`${redirectUrl}?loginError=true&errorMessage=${encodeURIComponent('카카오 로그인에 실패했습니다.')}`);
+        res.redirect(`${redirectUrl}/home?loginError=true&errorMessage=${encodeURIComponent('카카오 로그인에 실패했습니다.')}`);
     }
 });
 

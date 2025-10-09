@@ -17,8 +17,10 @@ const generateDummyWritingQuestions = (): WritingQuestion[] => {
       koreanQuestion:
         "당신이 가장 좋아하는 취미는 무엇이며, 그 이유는 무엇인가요?",
       example: {
-        korean: "나는 게임을 진짜 사랑한다고 생각해. 나는 보드게임을 좋아하지 않지만, 다른 게임들은 좋아해. 나는 독서도 좋아해.",
-        english: "I like playing games like board game. I don't like playing any game. I like reading books.",
+        korean:
+          "나는 게임을 진짜 사랑한다고 생각해. 나는 보드게임을 좋아하지 않지만, 다른 게임들은 좋아해. 나는 독서도 좋아해.",
+        english:
+          "I like playing games like board game. I don't like playing any game. I like reading books.",
       },
     },
     {
@@ -27,7 +29,8 @@ const generateDummyWritingQuestions = (): WritingQuestion[] => {
       koreanQuestion: "당신이 기억에 남는 여행을 묘사해 주세요.",
       example: {
         korean: "나는 작년 여름에 일본을 여행했다. 정말 멋진 경험이었다.",
-        english: "I traveled to Japan last summer. It was a wonderful experience.",
+        english:
+          "I traveled to Japan last summer. It was a wonderful experience.",
       },
     },
     {
@@ -47,8 +50,10 @@ const generateDummyWritingQuestions = (): WritingQuestion[] => {
       koreanQuestion:
         "어떤 초능력을 가질 수 있다면, 무엇을 선택하고 그 이유는 무엇인가요?",
       example: {
-        korean: "나는 시간을 멈출 수 있는 능력을 원한다. 더 많은 일을 할 수 있기 때문이다.",
-        english: "I want the ability to stop time. Because I can do more things.",
+        korean:
+          "나는 시간을 멈출 수 있는 능력을 원한다. 더 많은 일을 할 수 있기 때문이다.",
+        english:
+          "I want the ability to stop time. Because I can do more things.",
       },
     },
     {
@@ -58,7 +63,8 @@ const generateDummyWritingQuestions = (): WritingQuestion[] => {
       koreanQuestion:
         "당신의 롤 모델은 누구이며, 그들은 당신에게 어떤 영향을 미쳤나요?",
       example: {
-        korean: "나의 롤모델은 선생님이다. 그들은 나에게 인내심을 가르쳐주었다.",
+        korean:
+          "나의 롤모델은 선생님이다. 그들은 나에게 인내심을 가르쳐주었다.",
         english: "My role model is my teacher. They taught me patience.",
       },
     },
@@ -175,41 +181,64 @@ export const useCorrectWriting = () => {
 };
 
 // 더미 영어→한국어 번역 결과 생성
-const generateDummyEnglishToKoreanTranslation = (englishText: string): WritingTranslation => {
-  // 사용자 답변을 기반으로 문장 단위로 나누어서 단어 배열 연습 제공
-  let sentencePairs: any[] = [];
+const generateDummyEnglishToKoreanTranslation = (
+  englishText: string
+): WritingTranslation => {
+  // 사용자 입력을 문장 단위로 분할
+  const sentences = englishText
+    .split(/[.!?]\s*/)
+    .filter((s) => s.trim().length > 0);
 
-  if (englishText.includes("game") && englishText.includes("like")) {
-    sentencePairs = [
-      {
-        englishSentence: "I like playing games like Tetris.",
-        originalSentence: "나는 테트리스 같은 게임을 좋아한다.",
-        shuffledWords: ["나는", "테트리스", "같은", "게임을", "좋아한다."],
-      },
-      {
-        englishSentence: "Games help me relax after work.",
-        originalSentence: "게임은 일 후에 나를 편하게 해준다.",
-        shuffledWords: ["게임은", "일", "후에", "나를", "편하게", "해준다."],
-      },
-    ];
-  } else if (englishText.includes("book") && englishText.includes("read")) {
-    sentencePairs = [
-      {
-        englishSentence: "I enjoy reading books in my free time.",
-        originalSentence: "나는 여가 시간에 책 읽기를 즐긴다.",
-        shuffledWords: ["나는", "여가", "시간에", "책", "읽기를", "즐긴다."],
-      },
-    ];
-  } else {
-    // 기본 예시
-    sentencePairs = [
-      {
-        englishSentence: "This is a great opportunity for me.",
-        originalSentence: "이것은 나에게 좋은 기회이다.",
-        shuffledWords: ["이것은", "나에게", "좋은", "기회이다."],
-      },
-    ];
-  }
+  // 각 문장을 한국어로 번역 (간단한 더미 번역)
+  const sentencePairs = sentences.map((sentence, index) => {
+    const trimmedSentence = sentence.trim();
+
+    // 간단한 더미 번역 로직 (실제로는 GPT API를 사용해야 함)
+    let koreanTranslation = "";
+
+    if (trimmedSentence.includes("game")) {
+      if (
+        trimmedSentence.includes("casual") ||
+        trimmedSentence.includes("simple")
+      ) {
+        koreanTranslation = "나는 사소한 게임만 한다.";
+      } else if (trimmedSentence.includes("Animal Crossing")) {
+        koreanTranslation = "나는 동물의 숲을 제일 좋아한다.";
+      } else if (
+        trimmedSentence.includes("people") ||
+        trimmedSentence.includes("together")
+      ) {
+        koreanTranslation = "나는 사람이랑 같이 게임하는 것을 좋아하지 않는다.";
+      } else {
+        koreanTranslation = "나는 게임을 즐긴다.";
+      }
+    } else if (
+      trimmedSentence.includes("book") ||
+      trimmedSentence.includes("read")
+    ) {
+      koreanTranslation = "나는 책 읽기를 즐긴다.";
+    } else if (trimmedSentence.includes("travel")) {
+      koreanTranslation = "나는 여행을 사랑한다.";
+    } else if (
+      trimmedSentence.includes("food") ||
+      trimmedSentence.includes("eat")
+    ) {
+      koreanTranslation = "나는 다양한 음식을 시도하는 것을 좋아한다.";
+    } else {
+      // 기본 번역
+      koreanTranslation = `이것은 ${index + 1}번째 문장입니다.`;
+    }
+
+    // 한국어 문장을 단어로 분할하고 섞기
+    const words = koreanTranslation.split(" ");
+    const shuffledWords = [...words].sort(() => Math.random() - 0.5);
+
+    return {
+      englishSentence: trimmedSentence,
+      originalSentence: koreanTranslation, // 백엔드 API 구조: originalSentence가 번역된 문장
+      shuffledWords: shuffledWords,
+    };
+  });
 
   return {
     originalText: englishText,
@@ -219,84 +248,107 @@ const generateDummyEnglishToKoreanTranslation = (englishText: string): WritingTr
       "한국어 문장 구조를 올바르게 이해하고 있어요.",
     ],
     example: {
-      korean: "나는 게임을 진짜 사랑한다고 생각해. 나는 보드게임을 좋아하지 않지만, 다른 게임들은 좋아해. 나는 독서도 좋아해.",
-      english: "I like playing games like board game. I don't like playing any game. I like reading books.",
+      korean:
+        "나는 게임을 진짜 사랑한다고 생각해. 나는 보드게임을 좋아하지 않지만, 다른 게임들은 좋아해. 나는 독서도 좋아해.",
+      english:
+        "I like playing games like board game. I don't like playing any game. I like reading books.",
     },
   };
 };
 
-// 더미 번역 결과 생성 (API 문서 예시 기반)
+// 더미 번역 결과 생성 (사용자 입력 기반)
 const generateDummyTranslation = (koreanText: string): WritingTranslation => {
-  // 사용자 답변을 기반으로 문장 단위로 나누어서 단어 배열 연습 제공
-  let sentencePairs: any[] = [];
+  // 사용자 입력을 문장 단위로 분할
+  const sentences = koreanText
+    .split(/[.!?]\s*/)
+    .filter((s) => s.trim().length > 0);
 
-  if (koreanText.includes("아침") && koreanText.includes("저녁")) {
-    // API 문서 예시: "나는 아침에 커피를 마시고, 저녁에는 산책을 한다."
-    sentencePairs = [
-      {
-        koreanSentence: "나는 아침에 커피를 마신다.",
-        originalSentence: "I drink coffee in the morning.",
-        shuffledWords: ["coffee", "I", "morning.", "in", "drink", "the"],
-      },
-      {
-        koreanSentence: "저녁에는 산책을 한다.",
-        originalSentence: "I take a walk in the evening.",
-        shuffledWords: ["walk", "in", "the", "evening.", "I", "take", "a"],
-      },
-    ];
-  } else if (koreanText.includes("취미")) {
-    sentencePairs = [
-      {
-        koreanSentence: "나의 가장 좋아하는 취미는 독서이다.",
-        originalSentence: "My favorite hobby is reading books.",
-        shuffledWords: ["My", "favorite", "hobby", "is", "reading", "books."],
-      },
-      {
-        koreanSentence: "그것은 나를 편안하게 해주기 때문에 즐긴다.",
-        originalSentence: "I enjoy it because it helps me relax.",
-        shuffledWords: [
-          "I",
-          "enjoy",
-          "it",
-          "because",
-          "it",
-          "helps",
-          "me",
-          "relax.",
-        ],
-      },
-    ];
-  } else if (koreanText.includes("여행")) {
-    sentencePairs = [
-      {
-        koreanSentence: "나는 지난 여름에 일본에 갔다.",
-        originalSentence: "I went to Japan last summer.",
-        shuffledWords: ["I", "went", "to", "Japan", "last", "summer."],
-      },
-      {
-        koreanSentence: "그것은 놀라운 경험이었다.",
-        originalSentence: "It was an amazing experience.",
-        shuffledWords: ["It", "was", "an", "amazing", "experience."],
-      },
-    ];
-  } else {
-    // 기본 예시
-    sentencePairs = [
-      {
-        koreanSentence: "나는 이것이 좋은 기회라고 생각한다.",
-        originalSentence: "I think this is a great opportunity.",
-        shuffledWords: [
-          "I",
-          "think",
-          "this",
-          "is",
-          "a",
-          "great",
-          "opportunity.",
-        ],
-      },
-    ];
-  }
+  // 각 문장을 영어로 번역 (간단한 더미 번역)
+  const sentencePairs = sentences.map((sentence, index) => {
+    const trimmedSentence = sentence.trim();
+
+    // 간단한 더미 번역 로직 (실제로는 GPT API를 사용해야 함)
+    let englishTranslation = "";
+
+    if (trimmedSentence.includes("게임")) {
+      if (
+        trimmedSentence.includes("사소한") ||
+        trimmedSentence.includes("간단한")
+      ) {
+        englishTranslation = "I only play very casual games.";
+      } else if (trimmedSentence.includes("동물의 숲")) {
+        englishTranslation = "I like Animal Crossing the most.";
+      } else if (
+        trimmedSentence.includes("사람이랑") ||
+        trimmedSentence.includes("같이")
+      ) {
+        englishTranslation = "I don't like playing games with people.";
+      } else {
+        englishTranslation = "I enjoy playing games.";
+      }
+    } else if (
+      trimmedSentence.includes("독서") ||
+      trimmedSentence.includes("책")
+    ) {
+      englishTranslation = "I enjoy reading books.";
+    } else if (trimmedSentence.includes("여행")) {
+      englishTranslation = "I love traveling.";
+    } else if (
+      trimmedSentence.includes("음식") ||
+      trimmedSentence.includes("먹")
+    ) {
+      englishTranslation = "I like trying different foods.";
+    } else if (
+      trimmedSentence.includes("집에 누워서 넷플릭스를 보는게 취미입니다")
+    ) {
+      englishTranslation = "My hobby is lying at home and watching Netflix.";
+    } else if (
+      trimmedSentence.includes("넷플릭스") &&
+      trimmedSentence.includes("취미")
+    ) {
+      englishTranslation = "My hobby is watching Netflix.";
+    } else if (
+      trimmedSentence.includes("집에") &&
+      trimmedSentence.includes("누워")
+    ) {
+      englishTranslation = "I like lying at home.";
+    } else if (
+      trimmedSentence.includes(
+        "혼자 집에서 쉬는 것이야말로 진짜 휴식인거 같아요"
+      )
+    ) {
+      englishTranslation = "I think resting alone at home is real rest.";
+    } else if (
+      trimmedSentence.includes("혼자") &&
+      trimmedSentence.includes("집에서") &&
+      trimmedSentence.includes("쉬는")
+    ) {
+      englishTranslation = "I think resting alone at home is real rest.";
+    } else if (
+      trimmedSentence.includes("휴식") &&
+      trimmedSentence.includes("집")
+    ) {
+      englishTranslation = "I think resting at home is real rest.";
+    } else if (
+      trimmedSentence.includes("쉬는") &&
+      trimmedSentence.includes("휴식")
+    ) {
+      englishTranslation = "I think resting is real rest.";
+    } else {
+      // 기본 번역
+      englishTranslation = `This is sentence ${index + 1} in English.`;
+    }
+
+    // 영어 문장을 단어로 분할하고 섞기
+    const words = englishTranslation.split(" ");
+    const shuffledWords = [...words].sort(() => Math.random() - 0.5);
+
+    return {
+      koreanSentence: trimmedSentence,
+      originalSentence: englishTranslation, // 백엔드 API 구조: originalSentence가 번역된 문장
+      shuffledWords: shuffledWords,
+    };
+  });
 
   return {
     originalText: koreanText,
@@ -306,8 +358,10 @@ const generateDummyTranslation = (koreanText: string): WritingTranslation => {
       "문법적으로 올바른 문장입니다. 더 다양한 표현을 시도해보세요.",
     ],
     example: {
-      korean: "나는 게임을 진짜 사랑한다고 생각해. 나는 보드게임을 좋아하지 않지만, 다른 게임들은 좋아해. 나는 독서도 좋아해.",
-      english: "I like playing games like board game. I don't like playing any game. I like reading books.",
+      korean:
+        "나는 게임을 진짜 사랑한다고 생각해. 나는 보드게임을 좋아하지 않지만, 다른 게임들은 좋아해. 나는 독서도 좋아해.",
+      english:
+        "I like playing games like board game. I don't like playing any game. I like reading books.",
     },
   };
 };
@@ -318,16 +372,10 @@ export const useTranslateWriting = () => {
 
   return useMutation({
     mutationFn: async (params: TranslateWritingParams) => {
-      try {
-        return await writingApi.translateWriting(params);
-      } catch (error) {
-        // API 오류 시 더미 데이터 반환
-        console.log("API 오류 발생, 더미 데이터 사용");
-        return {
-          message: "더미 데이터로 표시됩니다",
-          data: generateDummyTranslation(params.text),
-        };
-      }
+      console.log("실제 API 호출 시도:", params);
+      const result = await writingApi.translateWriting(params);
+      console.log("API 호출 성공:", result);
+      return result;
     },
     onSuccess: (data, variables) => {
       // 관련 쿼리 무효화
@@ -351,16 +399,10 @@ export const useTranslateEnglishToKorean = () => {
 
   return useMutation({
     mutationFn: async (params: TranslateWritingParams) => {
-      try {
-        return await writingApi.translateEnglishToKorean(params);
-      } catch (error) {
-        // API 오류 시 더미 데이터 반환
-        console.log("영어→한국어 API 오류 발생, 더미 데이터 사용");
-        return {
-          message: "더미 데이터로 표시됩니다",
-          data: generateDummyEnglishToKoreanTranslation(params.text),
-        };
-      }
+      console.log("영어→한국어 API 호출 시도:", params);
+      const result = await writingApi.translateEnglishToKorean(params);
+      console.log("영어→한국어 API 호출 성공:", result);
+      return result;
     },
     onSuccess: (data, variables) => {
       // 관련 쿼리 무효화
