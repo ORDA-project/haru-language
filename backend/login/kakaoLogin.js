@@ -73,15 +73,13 @@ router.get("/callback", async (req, res) => {
         };
         req.session.songData = songData;
 
-        // 환경에 따라 적절한 리다이렉트 URL 설정
-        let redirectUrl = process.env.FRONTEND_URL || "http://localhost:3000";
-        
-        // 프로덕션 환경에서는 origin 정보 우선 사용
-        if (process.env.NODE_ENV !== 'development') {
+        // 개발 환경에서는 항상 localhost로 리다이렉트
+        let redirectUrl;
+        if (process.env.NODE_ENV === 'development') {
+            redirectUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+        } else {
             const loginOrigin = req.session.loginOrigin;
-            if (loginOrigin) {
-                redirectUrl = loginOrigin;
-            }
+            redirectUrl = loginOrigin || process.env.FRONTEND_URL || "http://localhost:3000";
         }
         
         console.log('Kakao login success, redirecting to:', `${redirectUrl}?loginSuccess=true&userName=${encodeURIComponent(user.name)}`);
@@ -94,15 +92,13 @@ router.get("/callback", async (req, res) => {
     } catch (err) {
         console.error("카카오 로그인 실패:", err.message);
         
-        // 환경에 따라 적절한 리다이렉트 URL 설정
-        let redirectUrl = process.env.FRONTEND_URL || "http://localhost:3000";
-        
-        // 프로덕션 환경에서는 origin 정보 우선 사용
-        if (process.env.NODE_ENV !== 'development') {
+        // 개발 환경에서는 항상 localhost로 리다이렉트
+        let redirectUrl;
+        if (process.env.NODE_ENV === 'development') {
+            redirectUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+        } else {
             const loginOrigin = req.session.loginOrigin;
-            if (loginOrigin) {
-                redirectUrl = loginOrigin;
-            }
+            redirectUrl = loginOrigin || process.env.FRONTEND_URL || "http://localhost:3000";
         }
         
         // 세션에서 origin 정보 삭제

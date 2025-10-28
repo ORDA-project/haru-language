@@ -63,8 +63,11 @@ const Login: React.FC = () => {
         });
 
         // URL에서 로그인 성공 파라미터 제거
-        const cleanUrl = window.location.origin + "/home";
-        window.history.replaceState({}, "", cleanUrl);
+        const newUrl = new URL(window.location.href);
+        newUrl.searchParams.delete("loginSuccess");
+        newUrl.searchParams.delete("userName");
+        newUrl.searchParams.delete("userId");
+        window.history.replaceState({}, "", newUrl.toString());
 
         // atomWithStorage가 sessionStorage에 저장할 시간을 주기 위해 setTimeout 사용
         setTimeout(() => {
@@ -77,7 +80,7 @@ const Login: React.FC = () => {
         // 상태가 설정된 후 홈 페이지로 리다이렉트
         setTimeout(() => {
           console.log("✅ Navigating to /home");
-          navigate("/home", { replace: true });
+          navigate("/home");
         }, 1000); // 토스트를 볼 수 있도록 딜레이 증가
       } catch (error) {
         console.error("❌ Error during login process:", error);
@@ -92,17 +95,15 @@ const Login: React.FC = () => {
       showError("로그인 실패", displayMessage);
 
       // URL에서 에러 파라미터 제거
-      const cleanUrl = window.location.origin + "/";
-      window.history.replaceState({}, "", cleanUrl);
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.delete("loginError");
+      newUrl.searchParams.delete("errorMessage");
+      window.history.replaceState({}, "", newUrl.toString());
     } else if (loginSuccess || loginError || userName) {
-      console.log("❌ Invalid login parameters detected");
+      console.log("❌ Login conditions not met");
       console.log("loginSuccess === 'true':", loginSuccess === "true");
       console.log("userName exists:", !!userName);
       console.log("loginError === 'true':", loginError === "true");
-
-      // 잘못된 파라미터가 있으면 URL을 정리
-      const cleanUrl = window.location.origin + "/";
-      window.history.replaceState({}, "", cleanUrl);
     }
   }, [
     searchParams,
@@ -110,6 +111,7 @@ const Login: React.FC = () => {
     navigate,
     showSuccess,
     showError,
+    showInfo,
     handleError,
   ]);
 

@@ -27,19 +27,13 @@ const StatusCheck = ({ userId }: StatusProps) => {
   };
 
   // 질문 데이터 가져오기
-  const {
-    data: questionsData,
-    isLoading: loading,
-    isError,
-    error,
-  } = useGetQuestionsByUserId(parseInt(userId || "1"));
+  const { data: questionsData, isLoading: loading } = useGetQuestionsByUserId(
+    parseInt(userId || "1")
+  );
 
   // 질문 데이터를 날짜별로 그룹화하여 ProgressRecord 형태로 변환
   const progressRecords: ProgressRecord[] = React.useMemo(() => {
-    // API 오류가 발생했거나 데이터가 없는 경우 빈 배열 반환
-    if (isError || !questionsData?.data || questionsData.data.length === 0) {
-      return [];
-    }
+    if (!questionsData?.data) return [];
 
     // 날짜별로 그룹화
     const groupedByDate = questionsData.data.reduce((acc, question) => {
@@ -65,7 +59,7 @@ const StatusCheck = ({ userId }: StatusProps) => {
         createdAt: firstQuestion.created_at,
       };
     });
-  }, [questionsData?.data, isError]);
+  }, [questionsData?.data]);
 
   const handleRecordClick = (record: ProgressRecord) => {
     // createdAt에서 날짜 추출하여 YYYY-MM-DD 형식으로 변환
@@ -88,14 +82,6 @@ const StatusCheck = ({ userId }: StatusProps) => {
           <div className="w-full flex justify-center items-center py-8">
             <div className="text-[16px] text-[#666]">
               학습 기록을 불러오는 중...
-            </div>
-          </div>
-        ) : isError ? (
-          <div className="w-full flex justify-center items-center py-8">
-            <div className="text-[16px] text-[#666] text-center">
-              서버 연결에 문제가 있습니다.
-              <br />
-              잠시 후 다시 시도해주세요.
             </div>
           </div>
         ) : progressRecords.length === 0 ? (

@@ -8,13 +8,29 @@ const router = express.Router();
 
 // 환경 변수 및 구글 인증 파일 로드
 const credentialsPath = process.env.GOOGLE_CREDENTIALS_PATH;
-let googleConfig;
+let client_id, client_secret, REDIRECT_URI;
 
 try {
-    const raw = fs.readFileSync(credentialsPath, "utf8");
-    googleConfig = JSON.parse(raw).web;
+    // 먼저 파일에서 읽기 시도
+    if (credentialsPath && fs.existsSync(credentialsPath)) {
+        const raw = fs.readFileSync(credentialsPath, "utf8");
+        const googleConfig = JSON.parse(raw).web;
+        client_id = googleConfig.client_id;
+        client_secret = googleConfig.client_secret;
+        REDIRECT_URI = googleConfig.redirect_uris[0];
+    }
+    // 파일이 없으면 환경변수 사용
+    else if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET && process.env.GOOGLE_REDIRECT_URI) {
+        client_id = process.env.GOOGLE_CLIENT_ID;
+        client_secret = process.env.GOOGLE_CLIENT_SECRET;
+        REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI;
+    }
+    // 둘 다 없으면 에러
+    else {
+        throw new Error("Google 인증 정보가 없습니다. GOOGLE_CREDENTIALS_PATH 파일 또는 GOOGLE_CLIENT_ID/SECRET/REDIRECT_URI 환경변수가 필요합니다.");
+    }
 } catch (err) {
-    console.error("Google 인증 JSON 로드 실패:", err.message);
+    console.error("Google 인증 설정 실패:", err.message);
     process.exit(1);
 }
 
@@ -22,8 +38,6 @@ try {
 const GOOGLE_AUTH_BASE_URL = "https://accounts.google.com/o/oauth2/auth";
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v2/userinfo";
-const { client_id, client_secret, redirect_uris } = googleConfig;
-const REDIRECT_URI = redirect_uris[0];
 
 // Google 로그인 URL로 리디렉트
 router.get("/", (req, res) => {
@@ -96,15 +110,13 @@ router.get("/callback", async (req, res) => {
 
         req.session.songData = await getRandomSong(req);
 
-        // 환경에 따라 적절한 리다이렉트 URL 설정
-        let redirectUrl = process.env.FRONTEND_URL || "http://localhost:3000";
-        
-        // 프로덕션 환경에서는 origin 정보 우선 사용
-        if (process.env.NODE_ENV !== 'development') {
+        // 개발 환경에서는 항상 localhost로 리다이렉트
+        let redirectUrl;
+        if (process.env.NODE_ENV === 'development') {
+            redirectUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+        } else {
             const loginOrigin = req.session.loginOrigin;
-            if (loginOrigin) {
-                redirectUrl = loginOrigin;
-            }
+            redirectUrl = loginOrigin || process.env.FRONTEND_URL || "http://localhost:3000";
         }
         
         console.log('Google login success, redirecting to:', `${redirectUrl}?loginSuccess=true&userName=${encodeURIComponent(user.name)}`);
@@ -117,15 +129,13 @@ router.get("/callback", async (req, res) => {
     } catch (err) {
         console.error("Google 인증 처리 오류:", err.message);
         
-        // 환경에 따라 적절한 리다이렉트 URL 설정
-        let redirectUrl = process.env.FRONTEND_URL || "http://localhost:3000";
-        
-        // 프로덕션 환경에서는 origin 정보 우선 사용
-        if (process.env.NODE_ENV !== 'development') {
+        // 개발 환경에서는 항상 localhost로 리다이렉트
+        let redirectUrl;
+        if (process.env.NODE_ENV === 'development') {
+            redirectUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+        } else {
             const loginOrigin = req.session.loginOrigin;
-            if (loginOrigin) {
-                redirectUrl = loginOrigin;
-            }
+            redirectUrl = loginOrigin || process.env.FRONTEND_URL || "http://localhost:3000";
         }
         
         // 세션에서 origin 정보 삭제

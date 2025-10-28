@@ -60,7 +60,10 @@ app.use((req, res, next) => {
     req.session.user ||
     req.path === "/" ||
     req.path.startsWith("/auth") ||
-    req.path.startsWith("/api-docs")
+    req.path.startsWith("/api-docs") ||
+    req.path.startsWith("/writing") ||
+    req.path.startsWith("/question") ||
+    req.path.startsWith("/api/tts")
   ) {
     return next();
   }
