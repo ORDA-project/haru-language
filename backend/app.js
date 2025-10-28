@@ -67,8 +67,7 @@ app.use((req, res, next) => {
 
   // 리퍼러에서 origin 정보를 가져와서 적절한 프론트엔드 URL로 리디렉트
   const referer = req.get("Referer") || req.headers.origin;
-  let redirectUrl =
-    "https://haru-language.vercel.app" || "http://localhost:3000";
+  let redirectUrl = process.env.FRONTEND_URL || "http://localhost:3000";
 
   if (referer) {
     try {

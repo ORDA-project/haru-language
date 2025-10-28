@@ -18,6 +18,7 @@ import PrivacyPolicy from "./Components/Pages/PrivacyPolicy";
 import TermsOfService from "./Components/Pages/TermsOfService";
 import VersionInfo from "./Components/Pages/VersionInfo";
 import QuestionDetail from "./Components/Pages/QuestionDetail";
+import AuthCallback from "./Components/Pages/AuthCallback";
 import ErrorBoundary from "./Components/Elements/ErrorBoundary";
 import ErrorProvider from "./Components/Providers/ErrorProvider";
 
@@ -81,6 +82,10 @@ const router = createBrowserRouter([
   {
     path: "/question-detail/:date",
     element: <QuestionDetail />,
+  },
+  {
+    path: "/auth/callback",
+    element: <AuthCallback />,
   },
 ]);
 
