@@ -2,6 +2,17 @@ import React from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { Icons } from "../Elements/Icons";
 
+// 아이콘들을 개별적으로 메모이제이션
+const MemoizedCamera = React.memo((props: React.SVGProps<SVGSVGElement>) => (
+  <Icons.camera {...props} />
+));
+const MemoizedHome = React.memo((props: React.SVGProps<SVGSVGElement>) => (
+  <Icons.home {...props} />
+));
+const MemoizedProfile = React.memo((props: React.SVGProps<SVGSVGElement>) => (
+  <Icons.profile {...props} />
+));
+
 interface NavBarProps {
   currentPage: string;
 }
@@ -21,7 +32,7 @@ const NavBar = ({ currentPage }: NavBarProps) => {
         }`}
       >
         <div className="m-[5px]">
-          <Icons.camera
+          <MemoizedCamera
             stroke={location.pathname === "/example" ? "white" : "black"}
             strokeOpacity={location.pathname === "/example" ? "1" : "0.5"}
           />
@@ -37,7 +48,7 @@ const NavBar = ({ currentPage }: NavBarProps) => {
         {location.pathname === "/home" ? (
           <div className="bg-[#00daaa] w-[72px] h-[72px] rounded-full flex flex-col justify-center items-center">
             <div className="flex justify-center items-center">
-              <Icons.home fill="white" fillOpacity="1" />
+              <MemoizedHome fill="white" fillOpacity="1" />
             </div>
             <span className="text-white text-[15px] font-medium text-center">
               홈
@@ -46,7 +57,7 @@ const NavBar = ({ currentPage }: NavBarProps) => {
         ) : (
           <div className="bg-[#00daaa] w-[72px] h-[72px] rounded-full flex flex-col justify-center items-center">
             <div className="flex justify-center items-center">
-              <Icons.home />
+              <MemoizedHome />
             </div>
             <span className="text-black text-opacity-50 text-[15px] font-medium text-center">
               홈
@@ -66,7 +77,7 @@ const NavBar = ({ currentPage }: NavBarProps) => {
         }`}
       >
         <div className="m-[5px]">
-          <Icons.profile
+          <MemoizedProfile
             stroke={
               location.pathname === "/mypage" ||
               location.pathname.startsWith("/mypage/edit")

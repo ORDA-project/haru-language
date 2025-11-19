@@ -1,32 +1,45 @@
-const allowedOrigins = [
-  "https://haru-language.vercel.app",
+const defaultOrigins = [
   process.env.CLIENT_URL,
+  process.env.FRONTEND_URL,
+  process.env.CDN_URL,
   "http://localhost:3000",
-  "https://haru-language-server.onrender.com"
+  "http://localhost:5173",
+  "https://haru-language.vercel.app",
+  "https://haru-language-server.onrender.com",
 ].filter(Boolean);
 
-const toOrigin = (v) => {
-  try { return new URL(v).origin; }
-  catch { return String(v).replace(/\/+$/, ""); }
+const normalizeOrigin = (value) => {
+  try {
+    return new URL(value).origin;
+  } catch {
+    return String(value).replace(/\/+$/, "");
+  }
 };
 
-const normalizedAllowed = Array.from(new Set(allowedOrigins.map(toOrigin)));
+const allowedOrigins = Array.from(new Set(defaultOrigins.map(normalizeOrigin)));
 
 module.exports = {
   origin(origin, callback) {
-    if (!origin) return callback(null, true);
+    if (!origin) {
+      return callback(null, true);
+    }
 
-    const clean = toOrigin(origin);
-    const ok = normalizedAllowed.includes(clean);
+    const cleanedOrigin = normalizeOrigin(origin);
+    const isAllowed = allowedOrigins.includes(cleanedOrigin);
 
-    if (ok) return callback(null, true);
+    if (isAllowed) {
+      return callback(null, true);
+    }
 
-    console.warn(`[CORS] blocked: ${origin}`);
+    console.warn(`[CORS] blocked origin: ${origin}`);
     return callback(new Error("Not allowed by CORS"));
   },
-
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+  exposedHeaders: ["Content-Disposition"],
   optionsSuccessStatus: 204,
   credentials: true,
+  maxAge: 86400,
 };
+
+module.exports.allowedOrigins = allowedOrigins;

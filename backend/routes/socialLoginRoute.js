@@ -1,5 +1,4 @@
 ﻿const express = require("express");
-const axios = require("axios");
 const router = express.Router();
 const googleRouter = require("../login/googleLogin");
 const kakaoRouter = require("../login/kakaoLogin");
@@ -32,7 +31,6 @@ router.use("/google", googleRouter);
  *         description: Redirects to Kakao login
  */
 router.use("/kakao", kakaoRouter);
-
 
 // 세션 상태 확인
 /**
@@ -67,7 +65,6 @@ router.get("/check", (req, res) => {
     user: user || null,
   });
 });
-
 
 // 로그아웃 라우터
 /**

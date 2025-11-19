@@ -1,10 +1,12 @@
+export interface Answer {
+  content: string;
+}
+
 export interface Question {
   id: number;
-  userId: number;
-  question: string;
-  answer: string;
-  createdAt: string;
-  updatedAt: string;
+  content: string;
+  created_at: string;
+  Answers: Answer[];
 }
 
 export interface CreateQuestionParams {

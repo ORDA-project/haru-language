@@ -10,7 +10,6 @@
 
 # production
 /build
-frontend/dist
 # misc
 .DS_Store
 .env.local

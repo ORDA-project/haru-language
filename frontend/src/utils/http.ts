@@ -62,8 +62,9 @@ export class Http {
 
     const requestInit: RequestInit = {
       method: method.toUpperCase(),
+      credentials: "include",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
         ...headers,
       },
     };

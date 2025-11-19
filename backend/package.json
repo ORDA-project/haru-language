@@ -1,4 +1,16 @@
 {
+  "name": "haru-language-backend",
+  "version": "1.0.0",
+  "main": "app.js",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "start": "node app.js",
+    "dev": "nodemon app.js",
+    "migrate": "sequelize-cli db:migrate",
+    "migrate:undo": "sequelize-cli db:migrate:undo:all"
+  },
   "dependencies": {
     "@google-cloud/text-to-speech": "^5.7.0",
     "@google-cloud/vision": "^4.3.2",
@@ -10,8 +22,11 @@
     "express": "^4.21.2",
     "express-basic-auth": "^1.2.1",
     "express-mysql-session": "^3.0.3",
+    "express-rate-limit": "^7.4.0",
     "express-session": "^1.18.1",
     "googleapis": "^144.0.0",
+    "helmet": "^7.1.0",
+    "hpp": "^0.2.3",
     "multer": "^1.4.5-lts.1",
     "mysql2": "^3.14.3",
     "openai": "^4.77.0",
@@ -19,12 +34,8 @@
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1"
   },
-  "scripts": {
-    "start": "node app.js",
-    "migrate": "sequelize-cli db:migrate",
-    "migrate:undo": "sequelize-cli db:migrate:undo:all"
-  },
   "devDependencies": {
+    "nodemon": "^3.1.0",
     "sequelize-cli": "^6.6.3"
   }
 }

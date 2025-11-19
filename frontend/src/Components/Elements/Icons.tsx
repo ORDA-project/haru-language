@@ -1,5 +1,7 @@
+import React from "react";
+
 export const Icons = {
-  camera: (props: React.SVGProps<SVGSVGElement>) => (
+  camera: React.memo((props: React.SVGProps<SVGSVGElement>) => (
     <svg
       xmlns="http://www.w3.org/2000/svg"
       width="40"
@@ -17,8 +19,8 @@ export const Icons = {
         strokeWidth="2.26667"
       />
     </svg>
-  ),
-  home: (props: React.SVGProps<SVGSVGElement>) => (
+  )),
+  home: React.memo((props: React.SVGProps<SVGSVGElement>) => (
     <svg
       xmlns="http://www.w3.org/2000/svg"
       width="51"
@@ -33,8 +35,8 @@ export const Icons = {
         fillOpacity={props.fillOpacity || "0.5"}
       />
     </svg>
-  ),
-  profile: (props: React.SVGProps<SVGSVGElement>) => (
+  )),
+  profile: React.memo((props: React.SVGProps<SVGSVGElement>) => (
     <svg
       xmlns="http://www.w3.org/2000/svg"
       width="40"
@@ -52,7 +54,7 @@ export const Icons = {
         strokeLinejoin="round"
       />
     </svg>
-  ),
+  )),
 
   audio: (props: React.SVGProps<SVGSVGElement>) => (
     <svg
@@ -364,6 +366,78 @@ export const Icons = {
       <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
       <circle cx="8.5" cy="8.5" r="1.5" />
       <polyline points="21,15 16,10 5,21" />
+    </svg>
+  ),
+  arrowLeft: (props: React.SVGProps<SVGSVGElement>) => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <path d="m12 19-7-7 7-7" />
+      <path d="M19 12H5" />
+    </svg>
+  ),
+  speaker: (props: React.SVGProps<SVGSVGElement>) => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+      <path d="m19.07 4.93-7.07 7.07" />
+      <path d="m12 12 7.07 7.07" />
+      <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+    </svg>
+  ),
+  download: (props: React.SVGProps<SVGSVGElement>) => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <polyline points="7,10 12,15 17,10" />
+      <line x1="12" x2="12" y1="15" y2="3" />
+    </svg>
+  ),
+  quiz: (props: React.SVGProps<SVGSVGElement>) => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <circle cx="12" cy="12" r="10" />
+      <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+      <path d="M12 17h.01" />
     </svg>
   ),
 };

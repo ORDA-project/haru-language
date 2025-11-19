@@ -2,237 +2,264 @@ require("dotenv").config();
 
 const express = require("express");
 const cors = require("cors");
-const corsConfig = require("./config/corsConfig");
+const helmet = require("helmet");
+const hpp = require("hpp");
+const rateLimit = require("express-rate-limit");
 const session = require("express-session");
 const cookieParser = require("cookie-parser");
 const MySQLStore = require("express-mysql-session")(session);
+const swaggerUi = require("swagger-ui-express");
+const basicAuth = require("express-basic-auth");
 const dns = require("dns");
+
+const corsConfig = require("./config/corsConfig");
+const { swaggerSpec } = require("./config/swagger");
+const routes = require("./routes");
+const { sequelize } = require("./models");
+
 dns.setDefaultResultOrder("ipv4first");
 
-const swaggerUi = require("swagger-ui-express");
-const swaggerJsdoc = require("swagger-jsdoc");
-const basicAuth = require("express-basic-auth");
-
 const PROD = process.env.NODE_ENV === "production";
-const PORT = process.env.PORT || 8000;
+const PORT = Number(process.env.PORT) || 8000;
 const SERVER_URL = process.env.SERVER_URL || `http://localhost:${PORT}`;
-const CLIENT_URL = (process.env.CLIENT_URL || "http://localhost:3000").replace(/\/$/, "");
 const LOG_LEVEL = process.env.LOG_LEVEL || (PROD ? "warn" : "debug");
 
 const LEVELS = ["debug", "info", "warn", "error"];
 const allow = (lvl) => LEVELS.indexOf(lvl) >= LEVELS.indexOf(LOG_LEVEL);
 const log = {
-  debug: (...a) => allow("debug") && console.debug(...a),
-  info: (...a) => allow("info") && console.info(...a),
-  warn: (...a) => allow("warn") && console.warn(...a),
-  error: (...a) => console.error(...a),
-};
-
-const { sequelize } = require("./models");
-
-// Railway/Render DATABASE_URL 파싱
-function parseDatabaseUrl(urlStr) {
-  try {
-    const u = new URL(urlStr);
-    return {
-      host: u.hostname,
-      port: Number(u.port || 3306),
-      user: decodeURIComponent(u.username),
-      password: decodeURIComponent(u.password),
-      database: u.pathname.replace(/^\//, ""),
-      ssl: { rejectUnauthorized: false },
-    };
-  } catch { 
-    return null; 
-  }
-}
-
-const urlCfg = process.env.DATABASE_URL ? parseDatabaseUrl(process.env.DATABASE_URL) : null;
-const sessionConn = urlCfg || {
-  host: process.env.DB_HOST,
-  port: Number(process.env.DB_PORT || 3306),
-  user: process.env.DB_USERNAME,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-  ssl: { rejectUnauthorized: false },
+  debug: (...args) => allow("debug") && console.debug(...args),
+  info: (...args) => allow("info") && console.info(...args),
+  warn: (...args) => allow("warn") && console.warn(...args),
+  error: (...args) => console.error(...args),
 };
 
 const app = express();
-
 app.set("trust proxy", 1);
 
-// 미들웨어 설정
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-app.use(cookieParser());
+const requestsPerWindow = Number(process.env.RATE_LIMIT_MAX || 120);
 
-app.use(cors(corsConfig));
-app.options("*", cors(corsConfig));
+const requestLimiter = rateLimit({
+  windowMs: Number(process.env.RATE_LIMIT_WINDOW_MS || 60_000),
+  limit: requestsPerWindow,
+  max: requestsPerWindow,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  handler: (_req, res) =>
+    res.status(429).json({
+      error: "Too many requests",
+      timestamp: new Date().toISOString(),
+    }),
+});
 
-// 세션 설정
-app.use(session({
-  key: "user_sid",
-  secret: process.env.SESSION_SECRET || "dev-secret-key-change-in-production",
+const REQUEST_LIMIT = process.env.REQUEST_LIMIT || "10mb";
+
+const parseDatabaseUrl = (urlStr) => {
+  try {
+    const url = new URL(urlStr);
+    return {
+      host: url.hostname,
+      port: Number(url.port || 3306),
+      user: decodeURIComponent(url.username),
+      password: decodeURIComponent(url.password),
+      database: url.pathname.replace(/^\//, ""),
+      ssl: { rejectUnauthorized: false },
+    };
+  } catch {
+    return null;
+  }
+};
+
+const resolveSessionConnection = () => {
+  if (process.env.DATABASE_URL) {
+    const parsed = parseDatabaseUrl(process.env.DATABASE_URL);
+    if (parsed) {
+      return parsed;
+    }
+  }
+
+  if (!process.env.DB_HOST || !process.env.DB_NAME) {
+    return null;
+  }
+
+  return {
+    host: process.env.DB_HOST,
+    port: Number(process.env.DB_PORT || 3306),
+    user: process.env.DB_USERNAME || process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+    ssl: PROD ? { rejectUnauthorized: false } : undefined,
+  };
+};
+
+const sessionConnection = resolveSessionConnection();
+let sessionStore;
+
+if (sessionConnection) {
+  sessionStore = new MySQLStore({
+    ...sessionConnection,
+    clearExpired: true,
+    checkExpirationInterval: 1000 * 60 * 60, // 1시간
+    expiration: 1000 * 60 * 60 * 24 * 7, // 7일
+  });
+} else {
+  log.warn("세션 저장소를 초기화하지 못했습니다. MemoryStore를 사용합니다.");
+}
+
+const sessionSecret = process.env.SESSION_SECRET || (!PROD && "dev-secret-key-change-in-production");
+
+if (!sessionSecret) {
+  throw new Error("SESSION_SECRET 환경 변수를 설정해야 합니다.");
+}
+
+const sessionConfig = {
+  name: "user_sid",
+  secret: sessionSecret,
   resave: false,
   saveUninitialized: false,
-  store: new MySQLStore({
-    ...sessionConn,
-    clearExpired: true,
-    checkExpirationInterval: 1000 * 60 * 60 * 24, // 24시간마다 정리
-    expiration: 1000 * 60 * 60 * 24 * 7, // 7일 후 만료
-  }),
   proxy: true,
   cookie: {
-    maxAge: 1000 * 60 * 60 * 24 * 7, // 7일
+    maxAge: 1000 * 60 * 60 * 24 * 7,
     httpOnly: true,
     secure: PROD,
     sameSite: PROD ? "none" : "lax",
   },
-}));
+};
 
-// 인증 미들웨어 개선
+if (sessionStore) {
+  sessionConfig.store = sessionStore;
+}
+
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    crossOriginEmbedderPolicy: false,
+  })
+);
+app.use(hpp());
+app.use(cors(corsConfig));
+app.options("*", cors(corsConfig));
+app.use(express.json({ limit: REQUEST_LIMIT }));
+app.use(express.urlencoded({ extended: true, limit: REQUEST_LIMIT }));
+app.use(cookieParser());
+app.use(session(sessionConfig));
+
+if (!PROD) {
+  app.use((req, _res, next) => {
+    log.debug(`[REQUEST] ${req.method} ${req.originalUrl}`);
+    next();
+  });
+}
+
+const limitedPaths = ["/auth", "/home", "/userDetails", "/friends", "/example", "/question", "/writing", "/api"];
+app.use(limitedPaths, requestLimiter);
+
+const bypassPaths = [
+  "/",
+  "/auth",
+  "/health",
+  "/healthz",
+  "/health/db",
+  "/swagger-test-login",
+  "/api-docs",
+  "/api/tts",
+];
+
 app.use((req, res, next) => {
-  if (!PROD) {
-    log.debug(`Request: ${req.method} ${req.path}`);
-  }
+  const shouldBypass = bypassPaths.some((path) => req.path === path || req.path.startsWith(path));
 
-  const bypassPaths = [
-    "/",
-    "/auth",
-    "/health",
-    "/healthz",
-    // 개발환경에서만 추가 경로
-    ...(PROD ? [] : ["/api-docs", "/swagger-test-login"])
-  ];
-
-  const shouldBypass = bypassPaths.some(path => req.path.startsWith(path));
-
-  if (shouldBypass || req.session.user) {
-    if (!PROD && req.session.user) {
+  if (shouldBypass || req.session?.user) {
+    if (!PROD && req.session?.user) {
       log.debug(`Authenticated user: ${req.session.user.name} (${req.session.user.social_id})`);
     }
     return next();
   }
 
-  log.warn(`Unauthorized access attempt: ${req.method} ${req.path}`);
-  return res.status(401).json({ 
-    error: "Unauthorized", 
-    message: "로그인이 필요합니다." 
+  log.warn(`Unauthorized access attempt: ${req.method} ${req.originalUrl}`);
+  return res.status(401).json({
+    error: "Unauthorized",
+    message: "로그인이 필요합니다.",
   });
 });
 
-// Swagger UI 설정
 if (process.env.SWAGGER_ENABLED !== "false") {
-  const options = {
-    definition: {
-      openapi: "3.0.0",
-      info: {
-        title: "Haru Language API",
-        version: "1.0.0",
-        description: "API documentation for Haru Language backend",
-      },
-      servers: [{ url: SERVER_URL }],
-      components: {
-        securitySchemes: {
-          cookieAuth: {
-            type: "apiKey",
-            in: "cookie",
-            name: "user_sid"
-          }
-        }
-      },
-      security: [{ cookieAuth: [] }]
-    },
-    apis: ["./routes/*.js"],
-  };
-
-  const swaggerSpec = swaggerJsdoc(options);
-
-  // 운영환경에서는 Basic Auth 보호
-  const maybeAuth = PROD
+  const swaggerAuthMiddleware = PROD
     ? basicAuth({
-        users: { 
-          [process.env.SWAGGER_USER || "admin"]: process.env.SWAGGER_PASS || "change-this-password" 
+        users: {
+          [process.env.SWAGGER_USER || "admin"]: process.env.SWAGGER_PASS || "change-this-password",
         },
         challenge: true,
-        realm: "Swagger Documentation"
+        realm: "Soksok Language Docs",
       })
-    : (req, res, next) => next();
+    : (_req, _res, next) => next();
 
   app.use(
     "/api-docs",
-    maybeAuth,
+    swaggerAuthMiddleware,
     swaggerUi.serve,
     swaggerUi.setup(swaggerSpec, {
       swaggerOptions: {
         withCredentials: true,
-        persistAuthorization: true
+        persistAuthorization: true,
       },
-      customSiteTitle: "Haru Language API Docs"
+      customSiteTitle: "Soksok Language API Docs",
     })
   );
 
   log.info(`Swagger UI available at: ${SERVER_URL}/api-docs`);
 }
 
-// 헬스체크 엔드포인트
 app.get("/healthz", (_req, res) => res.status(200).send("OK"));
 
 app.get("/health", (_req, res) => {
-  res.json({ 
-    ok: true, 
+  res.json({
+    ok: true,
     env: process.env.NODE_ENV || "development",
     timestamp: new Date().toISOString(),
-    uptime: process.uptime()
+    uptime: process.uptime(),
   });
 });
 
 app.get("/health/db", async (_req, res) => {
-  try { 
-    await sequelize.query("SELECT 1 as health_check"); 
-    res.json({ 
-      ok: true, 
+  try {
+    await sequelize.query("SELECT 1 as health_check");
+    res.json({
+      ok: true,
       database: "connected",
-      timestamp: new Date().toISOString()
-    }); 
-  } catch (e) { 
-    log.error("Database health check failed:", e.message);
-    res.status(500).json({ 
-      ok: false, 
-      database: "disconnected", 
-      error: e.message,
-      timestamp: new Date().toISOString()
-    }); 
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    log.error("Database health check failed:", error.message);
+    res.status(500).json({
+      ok: false,
+      database: "disconnected",
+      error: error.message,
+      timestamp: new Date().toISOString(),
+    });
   }
 });
 
-// 라우팅
-const routes = require("./routes");
 app.use("/", routes);
 
-// 루트 경로
 app.get("/", (_req, res) => {
   res.status(200).json({
     message: "백엔드 서버가 실행 중입니다.",
     version: "1.0.0",
     status: "running",
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 });
 
-// 404 핸들러
 app.use("*", (req, res) => {
   res.status(404).json({
     error: "Not Found",
     message: `경로를 찾을 수 없습니다: ${req.method} ${req.originalUrl}`,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 });
 
-// 전역 에러 핸들러
 app.use((err, req, res, next) => {
   log.error("Unhandled error:", err);
-  
+
   if (res.headersSent) {
     return next(err);
   }
@@ -240,55 +267,44 @@ app.use((err, req, res, next) => {
   res.status(err.status || 500).json({
     error: PROD ? "Internal Server Error" : err.message,
     ...(PROD ? {} : { stack: err.stack }),
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 });
 
-// 서버 시작
-(async () => {
+const startServer = async () => {
   try {
-    // DB 연결 테스트
     await sequelize.authenticate();
     log.info("Database connection established successfully");
-    
-    // DB 동기화 (개발환경과 프로덕션 모두)
+
     await sequelize.sync({ force: false });
     log.info("Database synchronized successfully");
-    
+
     app.listen(PORT, () => {
       if (PROD) {
-        console.log("ready"); // 배포 환경에서 간단한 로그
+        console.log("ready");
       } else {
         log.info(`서버가 실행 중입니다: ${SERVER_URL}`);
-        log.info(`Swagger 문서: ${SERVER_URL}/api-docs`);
         log.info(`헬스체크: ${SERVER_URL}/health`);
       }
     });
-  } catch (err) {
-    log.error("서버 시작 실패:", err);
+  } catch (error) {
+    log.error("서버 시작 실패:", error);
     process.exit(1);
   }
-})();
+};
 
-// Graceful shutdown
-process.on('SIGTERM', async () => {
-  log.info('SIGTERM received, shutting down gracefully');
+startServer();
+
+const gracefulShutdown = async (signal) => {
+  log.info(`${signal} received, shutting down gracefully`);
   try {
     await sequelize.close();
     process.exit(0);
-  } catch (err) {
-    log.error('Error during shutdown:', err);
+  } catch (error) {
+    log.error("Error during shutdown:", error);
     process.exit(1);
   }
-});
+};
 
-process.on('SIGINT', async () => {
-  log.info('SIGINT received, shutting down gracefully');
-  try {
-    await sequelize.close();
-    process.exit(0);
-  } catch (err) {
-    log.error('Error during shutdown:', err);
-    process.exit(1);
-  }
-});
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));

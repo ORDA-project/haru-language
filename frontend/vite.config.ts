@@ -1,47 +1,43 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import path from 'path'
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import path from "path";
 
 export default defineConfig(async () => {
-  const tailwindcss = await import('@tailwindcss/vite')
-  
+  const tailwindcss = await import("@tailwindcss/vite");
+
   return {
-    plugins: [
-      react(),
-      tailwindcss.default()
-    ],
+    plugins: [react(), tailwindcss.default()],
     server: {
       port: 3000,
       host: true,
       open: true,
-      historyApiFallback: true
     },
     build: {
-      outDir: 'dist',
+      outDir: "dist",
       sourcemap: false,
       rollupOptions: {
         output: {
           manualChunks: {
-            vendor: ['react', 'react-dom'],
-            router: ['react-router-dom']
-          }
-        }
-      }
+            vendor: ["react", "react-dom"],
+            router: ["react-router-dom"],
+          },
+        },
+      },
     },
-    base: process.env.NODE_ENV === 'production' ? '/haru-language/' : '/',
+    base:  "/",
     resolve: {
       alias: {
-        '@': path.resolve(__dirname, 'src'),
-        '@components': path.resolve(__dirname, 'src/Components'),
-        '@pages': path.resolve(__dirname, 'src/Components/Pages'),
-        '@images': path.resolve(__dirname, 'src/Images')
-      }
+        "@": path.resolve(__dirname, "src"),
+        "@components": path.resolve(__dirname, "src/Components"),
+        "@pages": path.resolve(__dirname, "src/Components/Pages"),
+        "@images": path.resolve(__dirname, "src/Images"),
+      },
     },
     define: {
-      global: 'globalThis'
+      global: "globalThis",
     },
     optimizeDeps: {
-      include: ['react', 'react-dom', 'react-router-dom']
-    }
-  }
-})
+      include: ["react", "react-dom", "react-router-dom"],
+    },
+  };
+});

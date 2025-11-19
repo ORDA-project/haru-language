@@ -1,5 +1,6 @@
 const express = require("express");
 const axios = require("axios");
+const fs = require("fs");
 const { User, UserActivity } = require("../models");
 const { getRandomSong } = require("../services/songService");
 
@@ -10,17 +11,72 @@ const GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v2/userinfo";
 
-// 환경변수
-const {
-  GOOGLE_CLIENT_ID,
-  GOOGLE_CLIENT_SECRET,
-  GOOGLE_REDIRECT_URI,
-  CLIENT_URL,
-} = process.env;
+const loadGoogleCredentials = () => {
+  const credentialsPath = process.env.GOOGLE_CREDENTIALS_PATH;
 
-// 로그인 시작(구글 동의화면으로 이동)
+  if (credentialsPath && fs.existsSync(credentialsPath)) {
+    const raw = fs.readFileSync(credentialsPath, "utf8");
+    const googleConfig = JSON.parse(raw).web;
+    return {
+      clientId: googleConfig.client_id,
+      clientSecret: googleConfig.client_secret,
+      redirectUri: googleConfig.redirect_uris?.[0],
+    };
+  }
+
+  if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET && process.env.GOOGLE_REDIRECT_URI) {
+    return {
+      clientId: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      redirectUri: process.env.GOOGLE_REDIRECT_URI,
+    };
+  }
+
+  throw new Error(
+    "Google 인증 정보가 없습니다. GOOGLE_CREDENTIALS_PATH 파일 또는 GOOGLE_CLIENT_ID/SECRET/REDIRECT_URI 환경변수가 필요합니다."
+  );
+};
+
+let GOOGLE_CLIENT_ID;
+let GOOGLE_CLIENT_SECRET;
+let GOOGLE_REDIRECT_URI;
+
+try {
+  const creds = loadGoogleCredentials();
+  GOOGLE_CLIENT_ID = creds.clientId;
+  GOOGLE_CLIENT_SECRET = creds.clientSecret;
+  GOOGLE_REDIRECT_URI = creds.redirectUri;
+} catch (error) {
+  console.error("Google 인증 설정 실패:", error.message);
+  process.exit(1);
+}
+
+const getRedirectBase = (req) => {
+  const fallback = process.env.CLIENT_URL || process.env.FRONTEND_URL || "http://localhost:3000";
+
+  if (process.env.NODE_ENV !== "production") {
+    return fallback;
+  }
+
+  if (req.session.loginOrigin) {
+    return req.session.loginOrigin;
+  }
+
+  return fallback;
+};
+
 router.get("/", (req, res) => {
-  const p = new URLSearchParams({
+  const referer = req.get("Referer") || req.headers.origin;
+  if (referer) {
+    try {
+      const refererUrl = new URL(referer);
+      req.session.loginOrigin = `${refererUrl.protocol}//${refererUrl.host}`;
+    } catch (error) {
+      console.warn("Invalid referer for Google login:", error.message);
+    }
+  }
+
+  const query = new URLSearchParams({
     response_type: "code",
     client_id: GOOGLE_CLIENT_ID,
     redirect_uri: GOOGLE_REDIRECT_URI,
@@ -28,51 +84,52 @@ router.get("/", (req, res) => {
     access_type: "offline",
     prompt: "consent",
   });
-  res.redirect(`${GOOGLE_AUTH_URL}?${p.toString()}`);
+
+  res.redirect(`${GOOGLE_AUTH_URL}?${query.toString()}`);
 });
 
-// 콜백
 router.get("/callback", async (req, res) => {
   const { code } = req.query;
-  if (!code) return res.status(400).send("Authorization code is missing.");
+  if (!code) {
+    return res.status(400).send("Authorization code is missing.");
+  }
 
   try {
-    // 토큰 교환 (폼 바디 전송)
-    const body = new URLSearchParams({
+    const tokenBody = new URLSearchParams({
       code,
       client_id: GOOGLE_CLIENT_ID,
       client_secret: GOOGLE_CLIENT_SECRET,
       redirect_uri: GOOGLE_REDIRECT_URI,
       grant_type: "authorization_code",
     });
-    const tokenRes = await axios.post(GOOGLE_TOKEN_URL, body.toString(), {
+
+    const tokenRes = await axios.post(GOOGLE_TOKEN_URL, tokenBody.toString(), {
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
     });
+
     const accessToken = tokenRes.data.access_token;
 
-    // 사용자 정보
     const userRes = await axios.get(GOOGLE_USERINFO_URL, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
+
     const { id, name, email } = userRes.data;
 
-    // 유저 upsert
     const [user, created] = await User.findOrCreate({
       where: { social_id: id, social_provider: "google" },
       defaults: { name, email },
     });
+
     if (!created) {
       user.name = name;
       user.email = email;
       await user.save();
     }
 
-    // 방문 기록
     const activity = await UserActivity.updateVisit(user.id);
     const { visit_count } = activity;
     const { mostVisitedDays } = await UserActivity.getMostVisitedDays(user.id);
 
-    // 세션
     req.session.user = {
       userId: user.id,
       social_id: user.social_id,
@@ -84,11 +141,17 @@ router.get("/callback", async (req, res) => {
     };
     req.session.songData = await getRandomSong(req);
 
-    // 환경변수 CLIENT_URL 로 리다이렉트
-    res.redirect(`${CLIENT_URL}/home`);
-  } catch (err) {
-    console.error("Google 인증 오류:", err.response?.data || err.message);
-    res.status(500).send("Google Authentication Failed");
+    const redirectBase = getRedirectBase(req);
+    delete req.session.loginOrigin;
+
+    res.redirect(`${redirectBase}/home?loginSuccess=true&userName=${encodeURIComponent(user.name)}`);
+  } catch (error) {
+    console.error("Google 인증 오류:", error.response?.data || error.message);
+    const redirectBase = getRedirectBase(req);
+    delete req.session.loginOrigin;
+    res.redirect(
+      `${redirectBase}/home?loginError=true&errorMessage=${encodeURIComponent("Google 로그인에 실패했습니다.")}`
+    );
   }
 });
 
