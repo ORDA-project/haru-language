@@ -38,7 +38,7 @@ export default function MyPage() {
 
   // API queries
   const { data: userInfo, isLoading: userInfoLoading } = useGetUserInfo();
-  const { data: friendsData, isLoading: friendsLoading } = useGetFriends();
+  const { data: friendsData, isLoading: friendsLoading } = useGetFriends(Boolean(user?.userId));
   const createInvitationMutation = useCreateInvitation();
   const deleteFriendMutation = useDeleteFriend();
 
@@ -69,18 +69,21 @@ export default function MyPage() {
 
     return friendsData.friends.map((friend) => ({
       id: friend.id,
-      userName: `친구 ${friend.friendId}`, // This should be the actual friend's name
-      stats: "학습0회, 작문0회", // This should come from friend's activity data
+      userName: friend.name,
+      stats: friend.stats || "학습 데이터 준비 중",
       buttonText: "콕 찌르기",
       buttonColor: "bg-[#00DAAA]",
-      status: friend.status,
+      status: "accepted" as const,
     }));
   }, [friendsData, friendsLoading]);
 
   // Check if friend limit is reached (5 friends max)
   const isFriendLimitReached = useMemo(() => {
-    return friendList.length >= 5;
-  }, [friendList.length]);
+    if (!friendsData) {
+      return false;
+    }
+    return friendsData.count >= friendsData.limit;
+  }, [friendsData]);
 
   // Memoized event handlers
   const handleLogout = useCallback(async () => {
@@ -115,14 +118,12 @@ export default function MyPage() {
 
   const handleCreateInvitation = useCallback(async () => {
     try {
-      if (!user?.id) {
-        showError("오류", "사용자 정보를 찾을 수 없습니다.");
+      if (!user) {
+        showError("오류", "로그인이 필요합니다.");
         return;
       }
 
-      const response = await createInvitationMutation.mutateAsync({
-        inviterId: Number(user.id || user.userId),
-      });
+      const response = await createInvitationMutation.mutateAsync();
 
       // 클립보드에 링크 복사
       if (response.inviteLink) {
@@ -140,7 +141,7 @@ export default function MyPage() {
         "친구 초대 링크 생성 중 오류가 발생했습니다."
       );
     }
-  }, [user?.id, createInvitationMutation, showSuccess, showError, handleError]);
+  }, [user, createInvitationMutation, showSuccess, showError, handleError]);
 
   const handleDeleteFriend = useCallback(
     async (friendId: number) => {

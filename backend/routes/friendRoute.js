@@ -3,61 +3,94 @@ const router = express.Router();
 const friendService = require("../services/friendService");
 const { getUserIdBySocialId } = require("../utils/userUtils");
 
-const toInternalId = async (socialId) => {
-  if (!socialId?.trim()) {
+const FRIEND_LIMIT = Number(process.env.FRIEND_LIMIT || 5);
+
+const sanitizeIdentifier = (value) => {
+  if (value === null || value === undefined) return null;
+  if (typeof value === "number" && Number.isInteger(value)) return value;
+  if (typeof value === "string" && /^\d+$/.test(value.trim())) {
+    return Number(value.trim());
+  }
+  return null;
+};
+
+const toInternalId = async (identifier) => {
+  if (identifier === null || identifier === undefined) {
     return null;
   }
-  return getUserIdBySocialId(socialId);
+
+  const directId = sanitizeIdentifier(identifier);
+  if (directId !== null) {
+    return directId;
+  }
+
+  if (typeof identifier === "string" && identifier.trim()) {
+    return getUserIdBySocialId(identifier.trim());
+  }
+
+  return null;
 };
+
+const getSessionUserId = async (req) => {
+  const sessionUser = req.session?.user;
+  if (!sessionUser) {
+    return null;
+  }
+
+  if (sessionUser.userId) {
+    return sessionUser.userId;
+  }
+
+  if (sessionUser.social_id) {
+    return getUserIdBySocialId(sessionUser.social_id);
+  }
+
+  return null;
+};
+
+const formatFriendList = (friends) =>
+  (friends || [])
+    .map((friend) => ({
+      id: friend.FriendDetails?.id ?? null,
+      socialId: friend.FriendDetails?.social_id ?? null,
+      name: friend.FriendDetails?.name ?? "친구",
+      goal: friend.FriendDetails?.goal ?? null,
+      gender: friend.FriendDetails?.gender ?? null,
+    }))
+    .filter((friend) => friend.id !== null);
 
 /**
  * @openapi
  * /friends/invite:
  *   post:
- *     summary: Create a friend invitation link
- *     description: social_id를 사용해 초대 링크를 생성합니다.
+ *     summary: 친구 초대 링크 생성
+ *     description: 세션에 있는 사용자 정보를 기반으로 초대 링크를 생성합니다.
  *     tags:
  *       - Friend
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               inviterId:
- *                 type: string
- *                 description: 초대자의 social_id
  *     responses:
- *       200:
+ *       201:
  *         description: 초대 링크 생성 성공
- *       400:
- *         description: 잘못된 요청
- *       404:
- *         description: 사용자를 찾을 수 없음
+ *       401:
+ *         description: 인증되지 않은 요청
+ *       409:
+ *         description: 친구 인원 한도를 초과함
  *       500:
  *         description: 서버 오류
  */
 router.post("/invite", async (req, res) => {
   try {
-    const { inviterId } = req.body;
+    const inviterId = await getSessionUserId(req);
     if (!inviterId) {
-      return res.status(400).json({ message: "inviterId가 필요합니다." });
+      return res.status(401).json({ message: "로그인이 필요합니다." });
     }
 
-    const actualInviterId = await toInternalId(inviterId);
-    if (!actualInviterId) {
-      return res.status(404).json({ message: "사용자를 찾을 수 없습니다." });
-    }
-
-    const inviteLink = await friendService.createInvitation({ inviterId: actualInviterId });
-    if (!inviteLink) {
-      return res.status(500).json({ message: "초대 링크 생성 중 오류가 발생했습니다." });
-    }
-
-    res.status(200).json({ inviteLink });
+    const inviteLink = await friendService.createInvitation({ inviterId });
+    return res.status(201).json({ inviteLink, limit: FRIEND_LIMIT });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    if (error.code === "FRIEND_LIMIT_REACHED") {
+      return res.status(409).json({ message: `친구는 최대 ${FRIEND_LIMIT}명까지 등록할 수 있습니다.` });
+    }
+    return res.status(500).json({ message: "초대 링크 생성 중 오류가 발생했습니다." });
   }
 });
 
@@ -77,12 +110,13 @@ router.post("/invite", async (req, res) => {
  *             properties:
  *               token:
  *                 type: string
+ *                 description: 초대 토큰
  *               response:
  *                 type: string
  *                 enum: [accept, decline]
  *               inviteeId:
  *                 type: string
- *                 description: social_id of invitee
+ *                 description: (선택) 세션이 없을 때 사용할 social_id
  *     responses:
  *       200:
  *         description: 응답 처리 성공
@@ -98,13 +132,16 @@ router.post("/invite", async (req, res) => {
 router.post("/respond", async (req, res) => {
   try {
     const { token, response, inviteeId } = req.body;
-    if (!token || !response || !inviteeId) {
-      return res.status(400).json({ message: "token, response, inviteeId가 필요합니다." });
+
+    if (!token || !response) {
+      return res.status(400).json({ message: "token과 response는 필수입니다." });
     }
 
-    const actualInviteeId = await toInternalId(inviteeId);
+    const sessionInviteeId = await getSessionUserId(req);
+    const actualInviteeId = sessionInviteeId || (await toInternalId(inviteeId));
+
     if (!actualInviteeId) {
-      return res.status(404).json({ message: "사용자를 찾을 수 없습니다." });
+      return res.status(401).json({ message: "로그인이 필요합니다." });
     }
 
     await friendService.respondToInvitation({
@@ -113,7 +150,7 @@ router.post("/respond", async (req, res) => {
       inviteeId: actualInviteeId,
     });
 
-    res.status(200).json({
+    return res.status(200).json({
       message: response === "accept" ? "친구 추가 완료" : "초대가 거절되었습니다.",
     });
   } catch (error) {
@@ -123,7 +160,40 @@ router.post("/respond", async (req, res) => {
     if (error.message?.includes("이미 친구")) {
       return res.status(409).json({ message: "이미 친구입니다." });
     }
-    res.status(500).json({ message: "서버 오류 발생" });
+    return res.status(500).json({ message: "서버 오류 발생" });
+  }
+});
+
+/**
+ * @openapi
+ * /friends:
+ *   get:
+ *     summary: 로그인한 사용자의 친구 목록 조회
+ *     tags:
+ *       - Friend
+ *     responses:
+ *       200:
+ *         description: 친구 목록 조회 성공
+ *       401:
+ *         description: 인증되지 않은 요청
+ */
+router.get("/", async (req, res) => {
+  try {
+    const userId = await getSessionUserId(req);
+    if (!userId) {
+      return res.status(401).json({ message: "로그인이 필요합니다." });
+    }
+
+    const friends = await friendService.getFriends(userId);
+    const formatted = formatFriendList(friends);
+
+    return res.status(200).json({
+      friends: formatted,
+      count: formatted.length,
+      limit: FRIEND_LIMIT,
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
   }
 });
 
@@ -153,27 +223,15 @@ router.post("/respond", async (req, res) => {
  */
 router.get("/list/:userId", async (req, res) => {
   try {
-    const { userId } = req.params;
-    if (!userId) {
-      return res.status(400).json({ message: "userId가 필요합니다." });
-    }
-
-    const actualUserId = await toInternalId(userId);
+    const actualUserId = await toInternalId(req.params.userId);
     if (!actualUserId) {
       return res.status(404).json({ message: "사용자를 찾을 수 없습니다." });
     }
 
     const friends = await friendService.getFriends(actualUserId);
-    const formatted = (friends || [])
-      .map((friend) => ({
-        id: friend.FriendDetails?.id ?? null,
-        name: friend.FriendDetails?.name ?? null,
-      }))
-      .filter((friend) => friend.id !== null);
-
-    res.status(200).json({ friends: formatted });
+    return res.status(200).json({ friends: formatFriendList(friends) });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    return res.status(500).json({ message: error.message });
   }
 });
 
@@ -181,7 +239,7 @@ router.get("/list/:userId", async (req, res) => {
  * @openapi
  * /friends/remove:
  *   delete:
- *     summary: Remove a friend
+ *     summary: 친구 삭제
  *     tags:
  *       - Friend
  *     requestBody:
@@ -191,42 +249,43 @@ router.get("/list/:userId", async (req, res) => {
  *           schema:
  *             type: object
  *             properties:
- *               userId:
- *                 type: string
  *               friendId:
+ *                 type: integer
+ *               friendSocialId:
  *                 type: string
  *     responses:
  *       200:
  *         description: 친구 삭제 성공
- *       400:
- *         description: 필수 항목 누락
- *       404:
- *         description: 사용자를 찾을 수 없음
+ *       401:
+ *         description: 인증되지 않은 요청
  *       500:
  *         description: 서버 오류
  */
 router.delete("/remove", async (req, res) => {
   try {
-    const { userId, friendId } = req.body;
-    if (!userId || !friendId) {
-      return res.status(400).json({ message: "userId와 friendId가 필요합니다." });
+    const userId = await getSessionUserId(req);
+    if (!userId) {
+      return res.status(401).json({ message: "로그인이 필요합니다." });
     }
 
-    const actualUserId = await toInternalId(userId);
-    const actualFriendId = await toInternalId(friendId);
+    const { friendId, friendSocialId } = req.body || {};
+    const actualFriendId = friendId || (await toInternalId(friendSocialId));
 
-    if (!actualUserId || !actualFriendId) {
-      return res.status(404).json({ message: "사용자를 찾을 수 없습니다." });
+    if (!actualFriendId) {
+      return res.status(400).json({ message: "friendId가 필요합니다." });
     }
 
     const result = await friendService.removeFriend({
-      userId: actualUserId,
+      userId,
       friendId: actualFriendId,
     });
 
-    res.status(200).json({ message: result.message });
+    return res.status(200).json({ message: result.message });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    if (error.message?.includes("NOT_FOUND")) {
+      return res.status(404).json({ message: "친구 관계가 존재하지 않습니다." });
+    }
+    return res.status(500).json({ message: error.message });
   }
 });
 
@@ -234,7 +293,7 @@ router.delete("/remove", async (req, res) => {
  * @openapi
  * /friends/notifications/send:
  *   post:
- *     summary: Send a notification (poke) to a friend
+ *     summary: 친구에게 알림 전송
  *     tags:
  *       - Friend
  *     requestBody:
@@ -244,83 +303,70 @@ router.delete("/remove", async (req, res) => {
  *           schema:
  *             type: object
  *             properties:
- *               senderId:
- *                 type: string
  *               receiverId:
+ *                 type: integer
+ *               receiverSocialId:
  *                 type: string
  *     responses:
  *       200:
  *         description: 알림 전송 성공
- *       400:
- *         description: 필수 항목 누락
- *       403:
- *         description: 친구가 아님
- *       404:
- *         description: 사용자를 찾을 수 없음
+ *       401:
+ *         description: 인증되지 않은 요청
  *       500:
  *         description: 서버 오류
  */
 router.post("/notifications/send", async (req, res) => {
   try {
-    const { senderId, receiverId } = req.body;
-    if (!senderId || !receiverId) {
-      return res.status(400).json({ message: "senderId와 receiverId가 필요합니다." });
+    const senderId = await getSessionUserId(req);
+    if (!senderId) {
+      return res.status(401).json({ message: "로그인이 필요합니다." });
     }
 
-    const actualSenderId = await toInternalId(senderId);
-    const actualReceiverId = await toInternalId(receiverId);
+    const { receiverId, receiverSocialId } = req.body || {};
+    const actualReceiverId = receiverId || (await toInternalId(receiverSocialId));
 
-    if (!actualSenderId || !actualReceiverId) {
-      return res.status(404).json({ message: "사용자를 찾을 수 없습니다." });
+    if (!actualReceiverId) {
+      return res.status(400).json({ message: "receiverId가 필요합니다." });
     }
 
     const result = await friendService.sendNotification({
-      senderId: actualSenderId,
+      senderId,
       receiverId: actualReceiverId,
     });
 
-    res.status(200).json({ message: result.message });
+    return res.status(200).json({ message: result.message });
   } catch (error) {
     if (error.message?.includes("친구가 아닙니다")) {
       return res.status(403).json({ message: error.message });
     }
-    res.status(500).json({ message: "푸시 전송 중 오류가 발생했습니다." });
+    return res.status(500).json({ message: "푸시 전송 중 오류가 발생했습니다." });
   }
 });
 
 /**
  * @openapi
- * /friends/notifications/unread/{userId}:
+ * /friends/notifications/unread:
  *   get:
- *     summary: Get unread notifications
+ *     summary: 읽지 않은 친구 알림 조회
  *     tags:
  *       - Friend
- *     parameters:
- *       - in: path
- *         name: userId
- *         required: true
- *         schema:
- *           type: string
- *         description: social_id
  *     responses:
  *       200:
  *         description: 읽지 않은 알림 조회 성공
- *       404:
- *         description: 사용자를 찾을 수 없음
+ *       401:
+ *         description: 인증되지 않은 요청
  *       500:
  *         description: 서버 오류
  */
-router.get("/notifications/unread/:userId", async (req, res) => {
+router.get("/notifications/unread", async (req, res) => {
   try {
-    const { userId } = req.params;
-    const actualUserId = await toInternalId(userId);
-
-    if (!actualUserId) {
-      return res.status(404).json({ message: "사용자를 찾을 수 없습니다." });
+    const userId = await getSessionUserId(req);
+    if (!userId) {
+      return res.status(401).json({ message: "로그인이 필요합니다." });
     }
 
-    const notifications = await friendService.getUnreadNotifications(actualUserId);
-    res.status(200).json({
+    const notifications = await friendService.getUnreadNotifications(userId);
+    return res.status(200).json({
       message: notifications?.length ? "푸시 조회 성공" : "읽지 않은 푸시가 없습니다.",
       notifications: (notifications || []).map((notification) => ({
         id: notification.id,
@@ -329,7 +375,7 @@ router.get("/notifications/unread/:userId", async (req, res) => {
       })),
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    return res.status(500).json({ message: error.message });
   }
 });
 
@@ -337,45 +383,28 @@ router.get("/notifications/unread/:userId", async (req, res) => {
  * @openapi
  * /friends/notifications/read:
  *   post:
- *     summary: Delete read notifications
+ *     summary: 읽은 알림 삭제
  *     tags:
  *       - Friend
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               userId:
- *                 type: string
- *                 description: social_id
  *     responses:
  *       200:
  *         description: 삭제 성공
- *       400:
- *         description: 잘못된 요청
- *       404:
- *         description: 사용자를 찾을 수 없음
+ *       401:
+ *         description: 인증되지 않은 요청
  *       500:
  *         description: 서버 오류
  */
 router.post("/notifications/read", async (req, res) => {
   try {
-    const { userId } = req.body;
+    const userId = await getSessionUserId(req);
     if (!userId) {
-      return res.status(400).json({ message: "userId가 필요합니다." });
+      return res.status(401).json({ message: "로그인이 필요합니다." });
     }
 
-    const actualUserId = await toInternalId(userId);
-    if (!actualUserId) {
-      return res.status(404).json({ message: "사용자를 찾을 수 없습니다." });
-    }
-
-    const result = await friendService.deleteReadNotifications(actualUserId);
-    res.status(200).json({ message: result.message });
+    const result = await friendService.deleteReadNotifications(userId);
+    return res.status(200).json({ message: result.message });
   } catch (error) {
-    res.status(500).json({ message: "서버 오류 발생" });
+    return res.status(500).json({ message: "서버 오류 발생" });
   }
 });
 

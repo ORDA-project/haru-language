@@ -2,10 +2,23 @@ const { Friend, Invitation, Notification, User } = require("../models");
 const { Op } = require("sequelize");
 const crypto = require("crypto");
 
+const FRIEND_LIMIT = Number(process.env.FRIEND_LIMIT || 5);
+
+const ensureFriendLimit = async (userId) => {
+  const friendCount = await Friend.count({ where: { user_id: userId } });
+  if (friendCount >= FRIEND_LIMIT) {
+    const error = new Error("FRIEND_LIMIT_REACHED");
+    error.code = "FRIEND_LIMIT_REACHED";
+    throw error;
+  }
+};
+
 const friendService = {
   // 친구 초대 생성
   createInvitation: async ({ inviterId }) => {
     if (!inviterId) throw new Error("BAD_REQUEST: inviterId는 필수입니다.");
+
+    await ensureFriendLimit(inviterId);
 
     const token = crypto.randomBytes(16).toString("hex");
     await Invitation.create({ inviter_id: inviterId, token });
@@ -53,12 +66,14 @@ const friendService = {
 
     const friends = await Friend.findAll({
       where: { user_id: userId },
-      include: [{
-        model: User,
-        as: "FriendDetails",
-        attributes: ["id", "name"],
-        required: true,
-      }],
+      include: [
+        {
+          model: User,
+          as: "FriendDetails",
+          attributes: ["id", "name", "social_id", "goal", "gender"],
+          required: true,
+        },
+      ],
     });
 
     return friends;
@@ -106,10 +121,12 @@ const friendService = {
 
     if (!isFriend) throw new Error("FORBIDDEN: 이 사용자는 친구가 아닙니다.");
 
+    const safeName = sender.name?.replace(/</g, "&lt;").replace(/>/g, "&gt;") || "친구";
+
     await Notification.create({
       user_id: receiverId,
       sender_id: senderId,
-      message: `${sender.name}님이 당신을 콕 찔렀습니다!`,
+      message: `${safeName}님이 당신을 콕 찔렀습니다!`,
       is_read: false,
     });
 
@@ -123,6 +140,14 @@ const friendService = {
     const notifications = await Notification.findAll({
       where: { user_id: userId, is_read: false },
       attributes: ["id", "message"],
+      include: [
+        {
+          model: User,
+          as: "NotificationSender",
+          attributes: ["name"],
+          required: false,
+        },
+      ],
     });
 
     await Notification.update({ is_read: true }, { where: { user_id: userId, is_read: false } });

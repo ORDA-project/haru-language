@@ -16,9 +16,7 @@ const FriendInviteModal = ({ isOpen, onClose }: FriendInviteModalProps) => {
   const handleCreateInvite = async () => {
     try {
       setIsLoading(true);
-      const result = await createInvitation.mutateAsync({
-        inviterId: 1, // TODO: 실제 사용자 ID로 변경
-      });
+      const result = await createInvitation.mutateAsync();
 
       setInviteLink(result.inviteLink);
       showSuccess(

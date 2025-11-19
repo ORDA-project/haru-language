@@ -69,7 +69,7 @@ export class Http {
       },
     };
 
-    if (json && (method === 'post' || method === 'patch' || method === 'put')) {
+    if (json && (method === 'post' || method === 'patch' || method === 'put' || method === 'delete')) {
       requestInit.body = JSON.stringify(json);
     }
 

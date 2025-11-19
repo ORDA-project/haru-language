@@ -74,7 +74,12 @@ const Home = () => {
         );
 
         // 사용자 정보를 전역 상태에 저장
-        setUserData({ name, userId });
+        setUserData({
+          name,
+          userId,
+          visitCount,
+          mostVisitedDays: mostVisitedDay,
+        });
         setVisitCount(visitCount || 0);
         setMostVisitedDay(mostVisitedDay || "");
         setRecommendation(recommendation || "추천 곡이 없습니다");

@@ -5,10 +5,11 @@ import { API_ENDPOINTS } from "../config/api";
 // 사용자 타입 정의
 interface User {
   name: string;
-  email?: string;
-  id?: string;
-  userId?: string;
-  token?: string;
+  email?: string | null;
+  userId?: number;
+  socialId?: string | null;
+  visitCount?: number;
+  mostVisitedDays?: string | null;
   isOnboarded?: boolean;
 }
 
@@ -25,17 +26,8 @@ export const isLoggedInAtom = atom((get) => {
 });
 
 // 사용자 정보를 설정하는 함수 (atomWithStorage가 자동으로 sessionStorage 처리)
-export const setUserAtom = atom(null, (get, set, user: User | null) => {
-  console.log("=== setUserAtom called ===");
-  console.log("Setting user:", user);
-
+export const setUserAtom = atom(null, (_get, set, user: User | null) => {
   set(userAtom, user);
-
-  // atomWithStorage가 자동으로 sessionStorage에 저장하지만 확인용 로그
-  setTimeout(() => {
-    console.log("After set - userAtom:", get(userAtom));
-    console.log("After set - sessionStorage:", sessionStorage.getItem("user"));
-  }, 0);
 });
 
 // 로그아웃 함수

@@ -51,7 +51,7 @@ const Login: React.FC = () => {
         // 로그인 성공 시 사용자 정보를 전역 상태에 저장
         setUserData({
           name: userName,
-          id: userId || undefined, // userId가 있으면 사용, 없으면 undefined
+          userId: userId ? Number(userId) : undefined, // userId가 있으면 사용
         });
 
         // 성공 토스트 표시
@@ -59,7 +59,7 @@ const Login: React.FC = () => {
 
         console.log("✅ setUserData called with:", {
           name: userName,
-          id: userId,
+          userId,
         });
 
         // URL에서 로그인 성공 파라미터 제거

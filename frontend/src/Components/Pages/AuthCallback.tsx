@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAtom } from "jotai";
 import { setUserAtom } from "../../store/authStore";
 import { useErrorHandler } from "../../hooks/useErrorHandler";
+import { API_ENDPOINTS } from "../../config/api";
 
 const AuthCallback: React.FC = () => {
   const navigate = useNavigate();
@@ -11,60 +12,58 @@ const AuthCallback: React.FC = () => {
   const { showSuccess, showError, handleError } = useErrorHandler();
 
   useEffect(() => {
-    console.log("🚨 AuthCallback component mounted");
-    console.log("🚨 Current URL:", window.location.href);
-    console.log("🚨 Current pathname:", window.location.pathname);
-    console.log("🚨 Current search:", window.location.search);
-
     const loginSuccess = searchParams.get("loginSuccess");
     const loginError = searchParams.get("loginError");
     const errorMessage = searchParams.get("errorMessage");
     const userName = searchParams.get("userName");
-    const userId = searchParams.get("userId");
 
-    console.log("=== AuthCallback useEffect ===");
-    console.log("All searchParams:", Object.fromEntries(searchParams));
-    console.log("loginSuccess:", loginSuccess, "type:", typeof loginSuccess);
-    console.log("loginError:", loginError, "type:", typeof loginError);
-    console.log("errorMessage:", errorMessage);
-    console.log("userName:", userName, "type:", typeof userName);
-    console.log("userId:", userId, "type:", typeof userId);
+    const hydrateUserFromSession = async () => {
+      const response = await fetch(`${API_ENDPOINTS.auth}/check`, {
+        method: "GET",
+        credentials: "include",
+      });
 
-    if (loginSuccess === "true" && userName) {
-      console.log("✅ Login success detected, setting user:", userName);
+      if (!response.ok) {
+        throw new Error("세션 정보를 확인할 수 없습니다.");
+      }
 
+      const data = await response.json();
+      if (!data?.isLoggedIn || !data?.user) {
+        throw new Error("로그인 정보가 존재하지 않습니다.");
+      }
+
+      setUserData({
+        name: data.user.name,
+        email: data.user.email,
+        userId: data.user.userId,
+        socialId: data.user.social_id,
+        visitCount: data.user.visitCount,
+        mostVisitedDays: data.user.mostVisitedDays,
+      });
+    };
+
+    const handleSuccess = async () => {
       try {
-        setUserData({
-          name: userName,
-          id: userId || undefined,
-        });
-
-        showSuccess("로그인 성공", `${userName}님 환영합니다!`);
-
-        console.log("✅ setUserData called with:", {
-          name: userName,
-          id: userId,
-        });
-
-        // 상태가 설정된 후 홈 페이지로 리다이렉트
-        setTimeout(() => {
-          console.log("✅ Navigating to /home");
-          navigate("/home", { replace: true });
-        }, 1000);
+        await hydrateUserFromSession();
+        showSuccess("로그인 성공", `${userName || "사용자"}님 환영합니다!`);
+        navigate("/home", { replace: true });
       } catch (error) {
-        console.error("❌ Error during login process:", error);
         handleError(error);
-        showError("로그인 중 오류가 발생했습니다", "다시 시도해주세요.");
+        showError(
+          "로그인 정보 동기화 실패",
+          "세션 정보를 불러오지 못했습니다. 다시 시도해주세요."
+        );
         navigate("/", { replace: true });
       }
+    };
+
+    if (loginSuccess === "true") {
+      handleSuccess();
     } else if (loginError === "true") {
-      console.log("❌ Login error detected");
-      const displayMessage =
-        errorMessage || "로그인에 실패했습니다. 다시 시도해주세요.";
+      const displayMessage = errorMessage || "로그인에 실패했습니다. 다시 시도해주세요.";
       showError("로그인 실패", displayMessage);
       navigate("/", { replace: true });
     } else {
-      console.log("❌ Invalid callback parameters");
       showError("로그인 오류", "잘못된 로그인 요청입니다.");
       navigate("/", { replace: true });
     }

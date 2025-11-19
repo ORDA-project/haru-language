@@ -5,7 +5,7 @@ import { useGetQuestionsByUserId } from "../../entities/questions/queries";
 import { useErrorHandler } from "../../hooks/useErrorHandler";
 
 interface StatusProps {
-  userId?: string;
+  userId?: number;
 }
 
 interface ProgressRecord {
@@ -28,7 +28,7 @@ const StatusCheck = ({ userId }: StatusProps) => {
 
   // 질문 데이터 가져오기
   const { data: questionsData, isLoading: loading } = useGetQuestionsByUserId(
-    parseInt(userId || "1")
+    userId ?? 1
   );
 
   // 질문 데이터를 날짜별로 그룹화하여 ProgressRecord 형태로 변환
@@ -67,7 +67,7 @@ const StatusCheck = ({ userId }: StatusProps) => {
     const dateString = date.toISOString().split("T")[0];
 
     // 상세 페이지로 이동 (userId를 쿼리 파라미터로 전달)
-    navigate(`/question-detail/${dateString}?userId=${userId}`);
+    navigate(`/question-detail/${dateString}?userId=${userId ?? ""}`);
   };
 
   return (
