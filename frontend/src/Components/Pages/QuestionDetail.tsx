@@ -1,36 +1,214 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useGetQuestionsByUserId } from "../../entities/questions/queries";
-import { Question } from "../../entities/questions/types";
+import { useGetExampleHistory } from "../../entities/examples/queries";
 import NavBar from "../Templates/Navbar";
+
+type ExampleDialogue = {
+  speaker: string;
+  english: string;
+  korean?: string;
+};
 
 const QuestionDetail = () => {
   const { date } = useParams<{ date: string }>();
   const navigate = useNavigate();
-  const [questions, setQuestions] = useState<Question[]>([]);
+  const [selectedDate, setSelectedDate] = useState<string>(date || "");
 
-  // 보안: JWT 기반 인증 사용 - URL에서 userId 제거
   // 해당 날짜의 질문들 가져오기 (현재 로그인한 사용자)
   const { data: questionsData, isLoading: questionsLoading } =
     useGetQuestionsByUserId();
+  const { data: exampleHistory, isLoading: examplesLoading } =
+    useGetExampleHistory();
 
   useEffect(() => {
-    if (questionsData?.data) {
-      // 해당 날짜의 질문들만 필터링
-      const dateQuestions = questionsData.data.filter(
-        (q) =>
-          new Date(q.created_at).toDateString() ===
-          new Date(date || "").toDateString()
-      );
-      setQuestions(dateQuestions);
+    if (date && date !== selectedDate) {
+      setSelectedDate(date);
     }
-  }, [questionsData, date]);
+  }, [date]);
+
+  const availableDates = useMemo(() => {
+    const dates = new Set<string>();
+
+    const extractDate = (value?: string | null) => {
+      if (!value) return;
+      const parsed = new Date(value);
+      if (Number.isNaN(parsed.getTime())) return;
+      dates.add(parsed.toISOString().split("T")[0]);
+    };
+
+    questionsData?.data?.forEach((question) => extractDate(question.created_at));
+    exampleHistory?.data?.forEach((example) =>
+      extractDate(example.created_at || example.createdAt)
+    );
+
+    return Array.from(dates).sort(
+      (a, b) => new Date(b).getTime() - new Date(a).getTime()
+    );
+  }, [questionsData?.data, exampleHistory?.data]);
+
+  useEffect(() => {
+    if (!selectedDate && availableDates.length > 0) {
+      const fallback = availableDates[0];
+      setSelectedDate(fallback);
+      navigate(`/question-detail/${fallback}`, { replace: true });
+    }
+  }, [availableDates, selectedDate, navigate]);
+
+  const targetDate = useMemo(() => {
+    if (!selectedDate) return "";
+    return new Date(selectedDate).toDateString();
+  }, [selectedDate]);
+
+  const questions = useMemo(() => {
+    if (!questionsData?.data || !targetDate) return [];
+    return questionsData.data.filter(
+      (q) => new Date(q.created_at).toDateString() === targetDate
+    );
+  }, [questionsData?.data, targetDate]);
+
+  const exampleRecords = useMemo(() => {
+    const parseGeneratedExample = (rawDescription?: string) => {
+      if (!rawDescription) {
+        return null;
+      }
+
+      const firstBrace = rawDescription.indexOf("{");
+      const lastBrace = rawDescription.lastIndexOf("}");
+      if (firstBrace === -1 || lastBrace === -1) {
+        return null;
+      }
+
+      const candidate = rawDescription.slice(firstBrace, lastBrace + 1);
+
+      try {
+        const parsed = JSON.parse(candidate);
+        if (parsed?.generatedExample) {
+          return parsed.generatedExample;
+        }
+        return parsed;
+      } catch {
+        return null;
+      }
+    };
+
+    if (!exampleHistory?.data || !targetDate) return [];
+    return exampleHistory.data
+      .filter((example) => {
+        const createdAt =
+          example.created_at || example.createdAt || new Date().toISOString();
+        return new Date(createdAt).toDateString() === targetDate;
+      })
+      .map((example) => {
+        const rawDescription = example.description;
+        let generated =
+          parseGeneratedExample(rawDescription) ||
+          (typeof (example as any).generatedExample === "string"
+            ? parseGeneratedExample((example as any).generatedExample)
+            : (example as any).generatedExample);
+
+        let description =
+          generated?.description ||
+          rawDescription ||
+          example.extracted_sentence ||
+          "이미지에서 예문을 생성했어요.";
+
+        if (!generated?.description && rawDescription) {
+          const match = rawDescription.match(
+            /"description"\s*:\s*"([^"]*)"/
+          );
+          if (match?.[1]) {
+            description = match[1].replace(/\\"/g, '"');
+          }
+        }
+
+        const dialoguesFromDb: ExampleDialogue[] =
+          example.ExampleItems?.flatMap((item) => item.Dialogues || []) || [];
+
+        const dialoguesFromGenerated: ExampleDialogue[] =
+          generated?.examples?.flatMap((item: any) => {
+            if (!item?.dialogue) return [];
+            const { A, B } = item.dialogue;
+            const normalized: ExampleDialogue[] = [];
+            if (A?.english) {
+              normalized.push({
+                speaker: "A",
+                english: A.english,
+                korean: A.korean,
+              });
+            }
+            if (B?.english) {
+              normalized.push({
+                speaker: "B",
+                english: B.english,
+                korean: B.korean,
+              });
+            }
+            return normalized;
+          }) || [];
+
+        const context =
+          example.ExampleItems?.[0]?.context ||
+          generated?.examples?.[0]?.context ||
+          generated?.extractedSentence;
+
+        const normalizedDialogues =
+          dialoguesFromDb.length > 0
+            ? dialoguesFromDb
+            : dialoguesFromGenerated.filter(
+                (dialogue) => dialogue.english?.trim()
+              );
+
+        return {
+          id: example.id,
+          description,
+          hasDialogues: normalizedDialogues.length > 0,
+          dialogues: normalizedDialogues,
+          context,
+        };
+      });
+  }, [exampleHistory?.data, targetDate]);
+
+  const isLoading = questionsLoading || examplesLoading;
+
+  const currentIndex = availableDates.findIndex(
+    (d) => d === selectedDate
+  );
+  const previousDate =
+    currentIndex >= 0 && currentIndex < availableDates.length - 1
+      ? availableDates[currentIndex + 1]
+      : null;
+  const nextDate = currentIndex > 0 ? availableDates[currentIndex - 1] : null;
+
+  const handleNavigateToDate = (newDate: string) => {
+    if (!newDate || newDate === selectedDate) return;
+    setSelectedDate(newDate);
+    navigate(`/question-detail/${newDate}`, { replace: true });
+  };
+
+  const handleDateInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    if (newValue) {
+      handleNavigateToDate(newValue);
+    }
+  };
+
+  const formatDisplayDate = (isoDate?: string) => {
+    if (!isoDate) return "날짜 선택";
+    const parsed = new Date(isoDate);
+    if (Number.isNaN(parsed.getTime())) return "날짜 선택";
+    return parsed.toLocaleDateString("ko-KR", {
+      month: "2-digit",
+      day: "2-digit",
+      weekday: "short",
+    });
+  };
 
   const handleBack = () => {
     navigate(-1);
   };
 
-  if (questionsLoading) {
+  if (isLoading) {
     return (
       <div className="w-full h-full flex items-center justify-center bg-[#F7F8FB]">
         <div className="text-[16px] text-[#666]">
@@ -43,39 +221,72 @@ const QuestionDetail = () => {
   return (
     <div className="w-full h-[calc(100vh-72px)] flex flex-col max-w-[440px] mx-auto bg-[#F7F8FB] shadow-[0_0_10px_0_rgba(0,0,0,0.1)]">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 bg-white border-b border-gray-200">
-        <button
-          onClick={handleBack}
-          className="w-8 h-8 flex items-center justify-center"
-        >
-          <svg
-            className="w-5 h-5 text-gray-600"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
+      <div className="p-4 bg-white border-b border-gray-200 space-y-3">
+        <div className="flex items-center justify-between">
+          <button
+            onClick={handleBack}
+            className="w-8 h-8 flex items-center justify-center"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M15 19l-7-7 7-7"
-            />
-          </svg>
-        </button>
-        <div className="text-center">
-          <h1 className="text-lg font-semibold text-gray-800">
-            {new Date(date || "").toLocaleDateString("ko-KR", {
-              month: "2-digit",
-              day: "2-digit",
-              weekday: "short",
-            })}
-          </h1>
+            <svg
+              className="w-5 h-5 text-gray-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 19l-7-7 7-7"
+              />
+            </svg>
+          </button>
+          <div className="text-center">
+            <h1 className="text-lg font-semibold text-gray-800">
+              {formatDisplayDate(selectedDate || date)}
+            </h1>
+            {availableDates.length > 0 && (
+              <p className="text-xs text-gray-500 mt-1">
+                총 {availableDates.length}일의 기록
+              </p>
+            )}
+          </div>
+          <div className="w-8" />
         </div>
-        <div className="w-8"></div>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => previousDate && handleNavigateToDate(previousDate)}
+            disabled={!previousDate}
+            className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+              previousDate
+                ? "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                : "bg-gray-100 text-gray-400 cursor-not-allowed"
+            }`}
+          >
+            이전
+          </button>
+          <input
+            type="date"
+            value={selectedDate || ""}
+            onChange={handleDateInputChange}
+            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#00DAAA]"
+          />
+          <button
+            onClick={() => nextDate && handleNavigateToDate(nextDate)}
+            disabled={!nextDate}
+            className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+              nextDate
+                ? "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                : "bg-gray-100 text-gray-400 cursor-not-allowed"
+            }`}
+          >
+            다음
+          </button>
+        </div>
       </div>
 
       {/* Chat Content */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-6">
         {questions.map((question, index) => (
           <div key={question.id} className="space-y-4">
             {/* User Question */}
@@ -191,7 +402,57 @@ const QuestionDetail = () => {
           </div>
         ))}
 
-        {questions.length === 0 && (
+        {exampleRecords.length > 0 && (
+          <div className="space-y-4">
+            <div className="text-sm font-semibold text-gray-600">예문 기록</div>
+            {exampleRecords.map((example) => (
+              <div
+                key={`example-${example.id}`}
+                className="space-y-3 bg-white rounded-2xl shadow-sm border border-gray-100 p-4"
+              >
+                {example.context && (
+                  <div className="inline-block px-3 py-1 rounded-full bg-[#00DAAA] text-white text-xs font-medium">
+                    {example.context}
+                  </div>
+                )}
+                {example.description &&
+                  example.description !== "이미지에서 예문을 생성했어요." && (
+                    <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">
+                      {example.description}
+                    </p>
+                  )}
+                {example.hasDialogues && (
+                  <div className="space-y-2">
+                    {example.dialogues.map(
+                      (dialogue: ExampleDialogue, idx: number) => (
+                        <div
+                          key={`${example.id}-dialogue-${idx}`}
+                          className="flex items-start space-x-2"
+                        >
+                          <span className="text-xs font-semibold text-gray-500 pt-0.5">
+                            {dialogue.speaker}
+                          </span>
+                          <div>
+                            <p className="text-sm text-gray-900">
+                              {dialogue.english}
+                            </p>
+                            {dialogue.korean && (
+                              <p className="text-xs text-gray-500">
+                                {dialogue.korean}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {questions.length === 0 && exampleRecords.length === 0 && (
           <div className="flex justify-center items-center py-8">
             <div className="text-center text-gray-500">
               <p className="text-sm">이 날짜에는 학습 기록이 없습니다.</p>

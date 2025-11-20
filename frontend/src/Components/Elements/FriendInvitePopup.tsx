@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 
 interface FriendInvitePopupProps {
   isVisible: boolean;
@@ -11,21 +11,69 @@ const FriendInvitePopup = React.memo(function FriendInvitePopup({
   onClose,
   inviteLink,
 }: FriendInvitePopupProps) {
-  useEffect(() => {
-    if (isVisible) {
-      const timer = setTimeout(() => {
-        onClose();
-      }, 1000); // 1초 후 자동으로 사라짐
+  const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "error">(
+    "idle"
+  );
 
-      return () => clearTimeout(timer);
+  useEffect(() => {
+    if (!isVisible) {
+      setCopyStatus("idle");
     }
-  }, [isVisible, onClose]);
+  }, [isVisible]);
+
+  useEffect(() => {
+    let timer: number | undefined;
+    if (copyStatus === "copied") {
+      timer = window.setTimeout(() => setCopyStatus("idle"), 2000);
+    }
+    return () => {
+      if (timer) {
+        clearTimeout(timer);
+      }
+    };
+  }, [copyStatus]);
+
+  const handleCopyLink = useCallback(async () => {
+    if (!inviteLink) return;
+    try {
+      await navigator.clipboard.writeText(inviteLink);
+      setCopyStatus("copied");
+    } catch (error) {
+      console.error("링크 복사 실패:", error);
+      setCopyStatus("error");
+    }
+  }, [inviteLink]);
 
   if (!isVisible) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white rounded-2xl p-8 mx-4 max-w-sm w-full shadow-2xl">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-2xl p-8 mx-4 max-w-sm w-full shadow-2xl relative"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100"
+          aria-label="닫기"
+        >
+          <svg
+            className="w-5 h-5 text-gray-500"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+        </button>
         <div className="text-center">
           {/* 친구 초대 이미지 */}
           <div className="w-32 h-32 mx-auto mb-6 bg-gradient-to-br from-[#00DAAA] to-[#00D999] rounded-2xl flex items-center justify-center">
@@ -70,13 +118,29 @@ const FriendInvitePopup = React.memo(function FriendInvitePopup({
 
           {/* 복사된 링크 미리보기 (선택사항) */}
           {inviteLink && (
-            <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-              <p className="text-xs text-gray-500 mb-1">복사된 링크:</p>
-              <p className="text-xs text-gray-700 break-all">
-                {inviteLink.length > 30
-                  ? `${inviteLink.substring(0, 30)}...`
-                  : inviteLink}
-              </p>
+            <div className="mt-4 p-3 bg-gray-50 rounded-lg text-left">
+              <p className="text-xs text-gray-500 mb-1">복사된 링크</p>
+              <div className="flex flex-col gap-2">
+                <p className="text-xs text-gray-700 break-all">{inviteLink}</p>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleCopyLink}
+                    className="px-3 py-1 text-xs font-medium text-white bg-[#00DAAA] hover:bg-[#00C495] rounded-full transition-colors"
+                  >
+                    다시 복사
+                  </button>
+                  {copyStatus === "copied" && (
+                    <span className="text-[11px] text-[#00B085]">
+                      링크가 복사되었습니다.
+                    </span>
+                  )}
+                  {copyStatus === "error" && (
+                    <span className="text-[11px] text-red-500">
+                      복사에 실패했습니다. 다시 시도해주세요.
+                    </span>
+                  )}
+                </div>
+              </div>
             </div>
           )}
         </div>

@@ -2,7 +2,6 @@ import React, { useState, useRef, ChangeEvent } from "react";
 import Cropper from "react-cropper";
 import "cropperjs/dist/cropper.css";
 import axios from "axios";
-import { API_ENDPOINTS } from "../../config/api";
 import { useErrorHandler } from "../../hooks/useErrorHandler";
 import StageUpload from "../Elements/StageUpload";
 import StageCrop from "../Elements/StageCrop";
@@ -133,8 +132,15 @@ const App = () => {
         }
       }, 5000); // 5초 후 알림
 
-      const response = await axios.post(API_ENDPOINTS.example, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
+      const token = localStorage.getItem("accessToken");
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
+      const response = await axios.post("/example", formData, {
+        baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:8000",
+        headers,
         withCredentials: true,
         timeout: 30000, // 30초 타임아웃
       });
@@ -163,6 +169,11 @@ const App = () => {
           showError(
             "요청 시간 초과",
             "이미지 처리 시간이 초과되었습니다. 다시 시도해주세요."
+          );
+        } else if (error.response?.status === 401) {
+          showError(
+            "로그인이 필요합니다",
+            "세션이 만료되었습니다. 다시 로그인해주세요."
           );
         } else if (error.response?.status === 413) {
           showError(

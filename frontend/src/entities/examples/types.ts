@@ -26,6 +26,7 @@ export interface Example {
   extracted_sentence?: string;
   description?: string;
   ExampleItems?: ExampleItem[];
+  created_at?: string;
 }
 
 export interface CreateExampleParams {

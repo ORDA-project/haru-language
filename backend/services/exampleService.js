@@ -4,14 +4,75 @@ const { Example, ExampleItem, Dialogue } = require("../models");
 async function generateExamples(inputSentence, userId) {
   // 원하는 출력 스키마를 강하게 고정
   const prompt =
-    "You are an AI assistant that returns ONLY JSON (no prose, no markdown). " +
-    'Output schema EXACTLY as: { "generatedExample": { "extractedSentence": string, "description": string, "examples": [ { "id": number, "context": string, "dialogue": { "A": { "english": string, "korean": string }, "B": { "english": string, "korean": string } } } ] } } ' +
-    "All fields must be present. Do not include comments or extra keys.";
+    "You are an AI assistant that must return valid JSON matching the provided schema. " +
+    "Return at least one example. Do not include explanations or markdown.";
+
+  const responseFormat = {
+    type: "json_schema",
+    json_schema: {
+      name: "generated_example_response",
+      schema: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          generatedExample: {
+            type: "object",
+            additionalProperties: false,
+            properties: {
+              extractedSentence: { type: "string" },
+              description: { type: "string" },
+              examples: {
+                type: "array",
+                minItems: 1,
+                items: {
+                  type: "object",
+                  additionalProperties: false,
+                  properties: {
+                    id: { type: "integer" },
+                    context: { type: "string" },
+                    dialogue: {
+                      type: "object",
+                      additionalProperties: false,
+                      properties: {
+                        A: {
+                          type: "object",
+                          additionalProperties: false,
+                          properties: {
+                            english: { type: "string" },
+                            korean: { type: "string" },
+                          },
+                          required: ["english", "korean"],
+                        },
+                        B: {
+                          type: "object",
+                          additionalProperties: false,
+                          properties: {
+                            english: { type: "string" },
+                            korean: { type: "string" },
+                          },
+                          required: ["english", "korean"],
+                        },
+                      },
+                      required: ["A", "B"],
+                    },
+                  },
+                  required: ["id", "context", "dialogue"],
+                },
+              },
+            },
+            required: ["extractedSentence", "description", "examples"],
+          },
+        },
+        required: ["generatedExample"],
+      },
+    },
+  };
 
   const result = (await callGPT(
     prompt,
     `Make examples from: "${inputSentence}"`,
-    700 // 필요하면 토큰 여유
+    700, // 필요하면 토큰 여유
+    { responseFormat }
   ))?.trim();
 
   let gptResponse;

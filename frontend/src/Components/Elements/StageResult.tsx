@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Example } from "../../types"; // Import Example type
 import { API_ENDPOINTS } from "../../config/api";
 
@@ -15,8 +15,22 @@ const StageResult = ({
   errorMessage,
   setStage,
 }: StageResultProps) => {
-  // currentIndex 상태 추가
   const [currentIndex, setCurrentIndex] = useState(0);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const stopCurrentAudio = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      audioRef.current = null;
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      stopCurrentAudio();
+    };
+  }, []);
 
   // 다음 카드로 이동하는 함수
   const handleNextCard = () => {
@@ -42,6 +56,9 @@ const StageResult = ({
     const dialogueA = examples[currentIndex].dialogue.A.english;
     const dialogueB = examples[currentIndex].dialogue.B.english;
 
+    // 이미 재생 중인 오디오가 있다면 중지
+    stopCurrentAudio();
+
     // 두 텍스트를 결합
     const textToRead = `${dialogueA}\n${dialogueB}\n${dialogueA}\n${dialogueB}\n${dialogueA}\n${dialogueB}`;
 
@@ -61,9 +78,23 @@ const StageResult = ({
 
       const { audioContent } = await response.json();
       const audio = new Audio(`data:audio/mp3;base64,${audioContent}`);
-      audio.play();
+
+      audioRef.current = audio;
+      audio.onended = () => {
+        if (audioRef.current === audio) {
+          audioRef.current = null;
+        }
+      };
+      audio.onerror = () => {
+        if (audioRef.current === audio) {
+          audioRef.current = null;
+        }
+      };
+
+      await audio.play();
     } catch (error) {
       console.error("TTS 오류:", error);
+      stopCurrentAudio();
     }
   };
 

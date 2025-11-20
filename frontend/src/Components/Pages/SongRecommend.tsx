@@ -1,9 +1,6 @@
-import { useState } from "react";
-import NavBar from "../Templates/Navbar";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useEffect } from "react";
-import axios from "axios";
-import { API_ENDPOINTS } from "../../config/api";
+import NavBar from "../Templates/Navbar";
 import { useErrorHandler } from "../../hooks/useErrorHandler";
 import { useAtom } from "jotai";
 import {
@@ -12,6 +9,7 @@ import {
   setCurrentSongAtom,
   setSongLoadingAtom,
 } from "../../store/dataStore";
+import { http, isHttpError } from "../../utils/http";
 
 interface RecommendProps {}
 
@@ -48,21 +46,18 @@ const SongRecommend = (props: RecommendProps) => {
           }
         }, 3000); // 3초 후 알림
 
-        const response = await axios({
-          method: "GET",
-          url: API_ENDPOINTS.songLyric,
-          withCredentials: true,
-          timeout: 15000, // 15초 타임아웃
-        });
+        const response = await http.get<{
+          songData?: { Title?: string; Artist?: string; Lyric?: string };
+        }>("/songLyric");
 
         clearTimeout(timeoutId);
-        console.log("Song recommendation response:", response.data);
+        console.log("Song recommendation response:", response);
 
-        if (!response.data || !response.data.songData) {
+        if (!response || !response.songData) {
           throw new Error("서버에서 올바르지 않은 응답을 받았습니다.");
         }
 
-        const { Title, Artist, Lyric } = response.data.songData;
+        const { Title, Artist, Lyric } = response.songData;
 
         if (!Title && !Artist && !Lyric) {
           throw new Error("추천할 곡 데이터가 비어있습니다.");
@@ -79,25 +74,23 @@ const SongRecommend = (props: RecommendProps) => {
           artist: Artist || "아티스트 없음",
           lyric: lyricData,
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error("Song recommendation error:", error);
 
-        if (axios.isAxiosError(error)) {
-          if (error.code === "ECONNABORTED") {
-            showError(
-              "연결 시간 초과",
-              "추천 곡을 불러오는 시간이 초과되었습니다."
-            );
-          } else if (error.response?.status === 404) {
-            showError("추천 곡 없음", "오늘 추천할 곡을 찾을 수 없습니다.");
-          } else if (error.response?.status === 500) {
-            showError("서버 오류", "서버에서 오류가 발생했습니다.");
-          } else if (!error.response) {
+        if (isHttpError(error)) {
+          if (error.status === 0) {
             showError("네트워크 오류", "서버에 연결할 수 없습니다.");
+          } else if (error.status === 401) {
+            showError("로그인이 필요합니다", "다시 로그인 후 시도해주세요.");
+          } else if (error.status === 404) {
+            showError("추천 곡 없음", "오늘 추천할 곡을 찾을 수 없습니다.");
+          } else if (error.status === 500) {
+            showError("서버 오류", "서버에서 오류가 발생했습니다.");
           } else {
             showError(
               "오류 발생",
-              "추천 곡을 불러오는 중 오류가 발생했습니다."
+              error.data?.message ||
+                "추천 곡을 불러오는 중 오류가 발생했습니다."
             );
           }
         } else {
@@ -135,30 +128,30 @@ const SongRecommend = (props: RecommendProps) => {
     try {
       console.log("YouTube video loading started...");
 
-      const response = await axios({
-        method: "GET",
-        url: API_ENDPOINTS.songYoutube,
-        withCredentials: true,
-        timeout: 10000, // 10초 타임아웃
-      });
+      const response = await http.get<{
+        result?: boolean;
+        embedUrl?: string;
+      }>("/songYoutube");
 
-      console.log("YouTube response:", response.data);
+      console.log("YouTube response:", response);
 
-      if (response.data && response.data.result && response.data.embedUrl) {
-        setYoutubeEmbedUrl(response.data.embedUrl);
-        console.log("YouTube embed URL set:", response.data.embedUrl);
+      if (response?.result && response.embedUrl) {
+        setYoutubeEmbedUrl(response.embedUrl);
+        console.log("YouTube embed URL set:", response.embedUrl);
       } else {
         console.warn("YouTube video not found or invalid response");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("YouTube loading error:", error);
 
-      if (axios.isAxiosError(error)) {
-        if (error.code === "ECONNABORTED") {
-          console.warn("YouTube loading timeout");
-        } else if (error.response?.status === 400) {
+      if (isHttpError(error)) {
+        if (error.status === 0) {
+          console.warn("YouTube loading timeout or network error");
+        } else if (error.status === 400) {
           console.warn("No song data available for YouTube search");
-        } else if (error.response?.status === 500) {
+        } else if (error.status === 401) {
+          showWarning("로그인이 필요합니다", "다시 로그인 후 시도해주세요.");
+        } else if (error.status === 500) {
           console.warn("YouTube API error");
         }
       }

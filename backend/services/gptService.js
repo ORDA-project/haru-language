@@ -5,8 +5,10 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-async function callGPT(prompt, userInput, maxTokens = 600) {
+async function callGPT(prompt, userInput, maxTokens = 600, options = {}) {
   try {
+    const { responseFormat } = options;
+
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
@@ -14,6 +16,7 @@ async function callGPT(prompt, userInput, maxTokens = 600) {
         { role: "user", content: userInput },
       ],
       max_tokens: maxTokens,
+      ...(responseFormat ? { response_format: responseFormat } : {}),
     });
 
     const result = response.choices[0].message.content.trim();

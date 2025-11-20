@@ -70,9 +70,12 @@ router.post("/", upload.single("image"), async (req, res) => {
 
     filePath = req.file.path;
 
-    const sessionUser = req.session.user;
-    if (!sessionUser?.userId) {
-      return res.status(400).json({ message: "로그인이 필요합니다." });
+    // JWT 인증 사용자 우선, 세션 사용자 백업
+    const authenticatedUser = req.user || req.session?.user;
+    const userId = authenticatedUser?.userId;
+
+    if (!userId) {
+      return res.status(401).json({ message: "로그인이 필요합니다." });
     }
 
     const extractedText = await detectText(filePath);
@@ -81,7 +84,7 @@ router.post("/", upload.single("image"), async (req, res) => {
       return res.status(400).json({ message: "이미지에서 텍스트를 추출할 수 없습니다." });
     }
 
-    const gptResponse = await generateExamples(extractedText, sessionUser.userId);
+    const gptResponse = await generateExamples(extractedText, userId);
 
     res.status(200).json({
       extractedText,
@@ -104,6 +107,56 @@ router.post("/", upload.single("image"), async (req, res) => {
     });
   } finally {
     await cleanupFile(filePath);
+  }
+});
+
+const requireAuthenticatedUser = (req, res) => {
+  const user = req.user;
+  if (!user?.userId) {
+    res.status(401).json({ message: "로그인이 필요합니다." });
+    return null;
+  }
+  return user;
+};
+
+const sendExamplesResponse = async (res, userId) => {
+  const examples = await getExamplesByUserId(userId);
+  const safeExamples = examples || [];
+
+  res.status(200).json({
+    message: safeExamples.length ? "예문 조회 성공" : "해당 사용자의 예문이 없습니다.",
+    data: safeExamples,
+    count: safeExamples.length,
+  });
+};
+
+// JWT 인증된 사용자 예문 조회 (신규)
+router.get("/", async (req, res) => {
+  try {
+    const user = requireAuthenticatedUser(req, res);
+    if (!user) return;
+    await sendExamplesResponse(res, user.userId);
+  } catch (error) {
+    console.error("예문 조회 API 오류:", error.message);
+    res.status(500).json({
+      message: "예문 조회 중 오류가 발생했습니다.",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+});
+
+// 별도 history 경로 제공 (프론트엔드 호환용)
+router.get("/history", async (req, res) => {
+  try {
+    const user = requireAuthenticatedUser(req, res);
+    if (!user) return;
+    await sendExamplesResponse(res, user.userId);
+  } catch (error) {
+    console.error("예문 조회 API 오류:", error.message);
+    res.status(500).json({
+      message: "예문 조회 중 오류가 발생했습니다.",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
   }
 });
 

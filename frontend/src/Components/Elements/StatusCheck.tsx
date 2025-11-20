@@ -2,6 +2,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useGetQuestionsByUserId } from "../../entities/questions/queries";
+import { useGetExampleHistory } from "../../entities/examples/queries";
 import { useErrorHandler } from "../../hooks/useErrorHandler";
 
 interface StatusProps {
@@ -28,37 +29,89 @@ const StatusCheck = ({ userId: _userId }: StatusProps) => {
   };
 
   // 보안: JWT 기반 인증 - userId 파라미터 무시
-  const { data: questionsData, isLoading: loading } = useGetQuestionsByUserId();
+  const { data: questionsData, isLoading: questionsLoading } =
+    useGetQuestionsByUserId();
+  const { data: examplesData, isLoading: examplesLoading } =
+    useGetExampleHistory();
 
-  // 질문 데이터를 날짜별로 그룹화하여 ProgressRecord 형태로 변환
   const progressRecords: ProgressRecord[] = React.useMemo(() => {
-    if (!questionsData?.data) return [];
+    const recordsMap = new Map<string, ProgressRecord>();
 
-    // 날짜별로 그룹화
-    const groupedByDate = questionsData.data.reduce((acc, question) => {
-      const dateKey = formatDate(question.created_at);
-      if (!acc[dateKey]) {
-        acc[dateKey] = [];
+    const appendRecord = (
+      dateKey: string,
+      content: string,
+      createdAt: string
+    ) => {
+      if (!dateKey || !content) return;
+      const isoCreatedAt = createdAt || new Date().toISOString();
+      const existing = recordsMap.get(dateKey);
+
+      if (existing) {
+        existing.content = `${existing.content}\n${content}`.trim();
+        if (
+          new Date(isoCreatedAt).getTime() >
+          new Date(existing.createdAt).getTime()
+        ) {
+          existing.createdAt = isoCreatedAt;
+        }
+      } else {
+        recordsMap.set(dateKey, {
+          id: `date-${dateKey}`,
+          date: dateKey,
+          content: content.trim(),
+          createdAt: isoCreatedAt,
+        });
       }
-      acc[dateKey].push(question);
-      return acc;
-    }, {} as Record<string, typeof questionsData.data>);
+    };
 
-    // 각 날짜별로 하나의 ProgressRecord 생성
-    return Object.entries(groupedByDate).map(([date, questions]) => {
-      // 해당 날짜의 첫 번째 질문을 대표로 사용
-      const firstQuestion = questions[0];
-      // 모든 질문의 내용을 합쳐서 표시 (최대 2줄)
-      const allContents = questions.map((q) => q.content).join(" ");
+    if (questionsData?.data?.length) {
+      const groupedByDate = questionsData.data.reduce((acc, question) => {
+        const dateKey = formatDate(question.created_at);
+        if (!acc[dateKey]) {
+          acc[dateKey] = [];
+        }
+        acc[dateKey].push(question);
+        return acc;
+      }, {} as Record<string, typeof questionsData.data>);
 
-      return {
-        id: `date-${date}`,
-        date: date,
-        content: allContents,
-        createdAt: firstQuestion.created_at,
-      };
-    });
-  }, [questionsData?.data]);
+      Object.entries(groupedByDate).forEach(([date, questions]) => {
+        const firstQuestion = questions[0];
+        const allContents = questions.map((q) => q.content).join(" ");
+        appendRecord(date, allContents, firstQuestion.created_at);
+      });
+    }
+
+    if (examplesData?.data?.length) {
+      examplesData.data.forEach((example) => {
+        const createdAt =
+          example.created_at ||
+          example.createdAt ||
+          new Date().toISOString();
+        const dateKey = formatDate(createdAt);
+        const dialogues =
+          example.ExampleItems?.flatMap(
+            (item) => item.Dialogues || []
+          ) || [];
+        const dialogueSummary = dialogues
+          .map((dialogue) => `${dialogue.speaker}: ${dialogue.english}`)
+          .join(" ");
+        const summary =
+          example.description ||
+          dialogueSummary ||
+          example.extracted_sentence ||
+          "이미지에서 예문을 생성했어요.";
+
+        appendRecord(dateKey, summary, createdAt);
+      });
+    }
+
+    return Array.from(recordsMap.values()).sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  }, [questionsData?.data, examplesData?.data]);
+
+  const loading = questionsLoading || examplesLoading;
 
   const handleRecordClick = (record: ProgressRecord) => {
     // createdAt에서 날짜 추출하여 YYYY-MM-DD 형식으로 변환

@@ -61,18 +61,8 @@ export class Http {
       }
     });
 
-    // JWT 토큰 가져오기
+    // JWT 토큰 가져오기 (없어도 쿠키 인증으로 진행 가능)
     const token = localStorage.getItem("accessToken");
-    
-    if (!token) {
-      // POST/PUT/PATCH/DELETE는 토큰 필수
-      if (method === 'post' || method === 'patch' || method === 'put' || method === 'delete') {
-        throw new HttpError(401, {
-          error: "Unauthorized",
-          message: "로그인이 필요합니다. 토큰이 없습니다.",
-        });
-      }
-    }
 
     // 헤더 구성
     const requestHeaders: Record<string, string> = {
