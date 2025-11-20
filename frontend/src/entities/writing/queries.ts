@@ -165,16 +165,12 @@ export const useCorrectWriting = () => {
       }
     },
     onSuccess: (data, variables) => {
-      // 관련 쿼리 무효화
+      // 관련 쿼리 무효화 (JWT에서 userId 가져오므로 queryKey에서 userId 제거)
       queryClient.invalidateQueries({
-        queryKey: ["writingRecords", variables.userId],
+        queryKey: ["writingRecords"],
       });
       queryClient.invalidateQueries({
-        queryKey: [
-          "writingRecords",
-          variables.userId,
-          variables.writingQuestionId,
-        ],
+        queryKey: ["writingRecords", variables.writingQuestionId],
       });
     },
   });
@@ -378,16 +374,12 @@ export const useTranslateWriting = () => {
       return result;
     },
     onSuccess: (data, variables) => {
-      // 관련 쿼리 무효화
+      // 관련 쿼리 무효화 (JWT에서 userId 가져오므로 queryKey에서 userId 제거)
       queryClient.invalidateQueries({
-        queryKey: ["writingRecords", variables.userId],
+        queryKey: ["writingRecords"],
       });
       queryClient.invalidateQueries({
-        queryKey: [
-          "writingRecords",
-          variables.userId,
-          variables.writingQuestionId,
-        ],
+        queryKey: ["writingRecords", variables.writingQuestionId],
       });
     },
   });
@@ -405,16 +397,12 @@ export const useTranslateEnglishToKorean = () => {
       return result;
     },
     onSuccess: (data, variables) => {
-      // 관련 쿼리 무효화
+      // 관련 쿼리 무효화 (JWT에서 userId 가져오므로 queryKey에서 userId 제거)
       queryClient.invalidateQueries({
-        queryKey: ["writingRecords", variables.userId],
+        queryKey: ["writingRecords"],
       });
       queryClient.invalidateQueries({
-        queryKey: [
-          "writingRecords",
-          variables.userId,
-          variables.writingQuestionId,
-        ],
+        queryKey: ["writingRecords", variables.writingQuestionId],
       });
     },
   });

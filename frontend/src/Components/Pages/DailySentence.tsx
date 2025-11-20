@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAtom } from "jotai";
+import { isLoggedInAtom } from "../../store/authStore";
 import { Icons } from "../Elements/Icons";
 
 // 아이콘들을 개별적으로 메모이제이션
@@ -37,6 +39,7 @@ type LanguageMode = "korean" | "english";
 
 const DailySentence = () => {
   const navigate = useNavigate();
+  const [isLoggedIn] = useAtom(isLoggedInAtom);
   const [currentStep, setCurrentStep] = useState<Step>("question");
   const [languageMode, setLanguageMode] = useState<LanguageMode>("korean");
   const [currentQuestion, setCurrentQuestion] =
@@ -49,8 +52,17 @@ const DailySentence = () => {
   const [availableWords, setAvailableWords] = useState<string[]>([]);
   const [completedSentences, setCompletedSentences] = useState<boolean[]>([]);
 
-  // TODO: Get actual user ID from auth context
-  const userId = 1;
+  // 보안: userId는 JWT 토큰에서 자동으로 가져옴 (전달 불필요)
+  
+  // 로그인 확인
+  useEffect(() => {
+    const token = localStorage.getItem("accessToken");
+    if (!isLoggedIn || !token) {
+      console.warn("[DailySentence] 로그인이 필요합니다. 로그인 페이지로 리다이렉트합니다.");
+      navigate("/", { replace: true });
+      return;
+    }
+  }, [isLoggedIn, navigate]);
 
   const { data: questionsData, isLoading: questionsLoading } =
     useWritingQuestions();
@@ -146,7 +158,6 @@ const DailySentence = () => {
         // 한국어 모드: 한국어 → 영어 번역
         translationResponse = await translateWritingMutation.mutateAsync({
           text: userAnswer,
-          userId,
           writingQuestionId: currentQuestion.id,
         });
       } else {
@@ -154,43 +165,10 @@ const DailySentence = () => {
         translationResponse =
           await translateEnglishToKoreanMutation.mutateAsync({
             text: userAnswer,
-            userId,
             writingQuestionId: currentQuestion.id,
           });
       }
 
-      console.log("=== 번역 API 응답 전체 ===");
-      console.log("번역 API 응답:", translationResponse);
-      console.log("번역 결과 데이터:", translationResponse.data);
-      console.log("sentencePairs:", translationResponse.data.sentencePairs);
-      console.log("originalText:", translationResponse.data.originalText);
-
-      if (
-        translationResponse.data.sentencePairs &&
-        translationResponse.data.sentencePairs[0]
-      ) {
-        console.log("첫 번째 문장:", translationResponse.data.sentencePairs[0]);
-        console.log(
-          "originalSentence:",
-          translationResponse.data.sentencePairs[0].originalSentence
-        );
-        console.log(
-          "shuffledWords:",
-          translationResponse.data.sentencePairs[0].shuffledWords
-        );
-      }
-
-      // 응답 데이터 구조 전체 출력
-      console.log("=== 응답 데이터 구조 분석 ===");
-      console.log("응답 키들:", Object.keys(translationResponse.data));
-      console.log(
-        "sentencePairs 타입:",
-        typeof translationResponse.data.sentencePairs
-      );
-      console.log(
-        "sentencePairs 길이:",
-        translationResponse.data.sentencePairs?.length
-      );
       setTranslationResult(translationResponse.data);
       setCurrentSentenceIndex(0);
       // 완료된 문장 배열 초기화
@@ -218,7 +196,6 @@ const DailySentence = () => {
     currentQuestion,
     translateWritingMutation,
     translateEnglishToKoreanMutation,
-    userId,
     languageMode,
   ]);
 
@@ -765,7 +742,7 @@ const DailySentence = () => {
                       <div className="mt-4 text-center">
                         {isCorrectAnswer() ? (
                           <p className="text-green-600 font-semibold">
-                            ✅ 정답입니다!
+                            정답입니다!
                           </p>
                         ) : (
                           <p className="text-gray-500">

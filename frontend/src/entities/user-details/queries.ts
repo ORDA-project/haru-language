@@ -13,6 +13,8 @@ import {
 export const useGetUserInfo = () => {
   return useGetQuery<UserDetails>("/userDetails/info", {
     queryKey: ["userDetails", "info"],
+    refetchOnMount: true, // 컴포넌트 마운트 시 항상 최신 데이터 가져오기
+    staleTime: 0, // 캐시 사용 안함 (항상 최신 데이터)
   });
 };
 

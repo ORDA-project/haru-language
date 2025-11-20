@@ -3,6 +3,8 @@ const axios = require("axios");
 const fs = require("fs");
 const { User, UserActivity } = require("../models");
 const { getRandomSong } = require("../services/songService");
+const { generateToken } = require("../utils/jwt");
+const { validateOAuthCode } = require("../middleware/validation");
 
 require("dotenv").config();
 const router = express.Router();
@@ -88,13 +90,23 @@ router.get("/", (req, res) => {
   res.redirect(`${GOOGLE_AUTH_URL}?${query.toString()}`);
 });
 
-router.get("/callback", async (req, res) => {
+router.get("/callback", validateOAuthCode, async (req, res) => {
   const { code } = req.query;
-  if (!code) {
-    return res.status(400).send("Authorization code is missing.");
-  }
+
+  const redirectBase = getRedirectBase(req);
+  
+  // 실무 패턴: AJAX 요청 여부를 여러 방법으로 확인
+  const isAjaxRequest = 
+    req.get("X-Requested-With") === "XMLHttpRequest" ||
+    req.get("Accept")?.includes("application/json") ||
+    req.query.format === "json";
 
   try {
+    // 보안: 환경 변수 검증
+    if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET || !GOOGLE_REDIRECT_URI) {
+      throw new Error("구글 로그인 설정이 완료되지 않았습니다.");
+    }
+
     const tokenBody = new URLSearchParams({
       code,
       client_id: GOOGLE_CLIENT_ID,
@@ -105,18 +117,36 @@ router.get("/callback", async (req, res) => {
 
     const tokenRes = await axios.post(GOOGLE_TOKEN_URL, tokenBody.toString(), {
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      timeout: 10000, // 10초 타임아웃
     });
 
-    const accessToken = tokenRes.data.access_token;
+    // 보안: 응답 검증
+    if (!tokenRes.data || !tokenRes.data.access_token) {
+      throw new Error("구글 토큰 응답이 올바르지 않습니다.");
+    }
+
+    const googleAccessToken = tokenRes.data.access_token;
 
     const userRes = await axios.get(GOOGLE_USERINFO_URL, {
-      headers: { Authorization: `Bearer ${accessToken}` },
+      headers: { Authorization: `Bearer ${googleAccessToken}` },
+      timeout: 10000, // 10초 타임아웃
     });
 
+    // 보안: 응답 검증
+    if (!userRes.data || !userRes.data.id) {
+      throw new Error("구글 사용자 정보 응답이 올바르지 않습니다.");
+    }
+
     const { id, name, email } = userRes.data;
+    
+    // 보안: 입력 검증
+    const googleId = String(id);
+    if (!googleId || googleId.length > 100) {
+      throw new Error("유효하지 않은 구글 사용자 ID입니다.");
+    }
 
     const [user, created] = await User.findOrCreate({
-      where: { social_id: id, social_provider: "google" },
+      where: { social_id: googleId, social_provider: "google" },
       defaults: { name, email },
     });
 
@@ -130,7 +160,8 @@ router.get("/callback", async (req, res) => {
     const { visit_count } = activity;
     const { mostVisitedDays } = await UserActivity.getMostVisitedDays(user.id);
 
-    req.session.user = {
+    // JWT 토큰 생성
+    const tokenPayload = {
       userId: user.id,
       social_id: user.social_id,
       social_provider: user.social_provider,
@@ -139,19 +170,78 @@ router.get("/callback", async (req, res) => {
       visitCount: visit_count,
       mostVisitedDays: (mostVisitedDays || []).join(", "),
     };
-    req.session.songData = await getRandomSong(req);
 
-    const redirectBase = getRedirectBase(req);
+    const accessToken = generateToken(tokenPayload);
+
     delete req.session.loginOrigin;
 
-    res.redirect(`${redirectBase}/home?loginSuccess=true&userName=${encodeURIComponent(user.name)}`);
+    // 보안: URL에 사용자 정보 노출 방지 - 세션에 저장하고 리다이렉트
+    req.session.loginSuccess = true;
+    req.session.tempUserName = user.name; // 임시로 세션에 저장 (리다이렉트 후 즉시 삭제)
+
+    // 실무 패턴: AJAX 요청이면 항상 JSON 반환 (JWT 토큰 포함)
+    if (isAjaxRequest) {
+      return res.json({
+        success: true,
+        token: accessToken,
+        redirectUrl: `${redirectBase}/home`, // 보안: URL에 사용자 정보 제거
+        user: {
+          userId: user.id,
+          name: user.name,
+          email: user.email,
+          socialId: user.social_id,
+          visitCount: visit_count,
+          mostVisitedDays: (mostVisitedDays || []).join(", "),
+        },
+      });
+    }
+
+    // 브라우저 직접 요청인 경우: 토큰을 쿠키에 저장하고 리다이렉트
+    res.cookie("accessToken", accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      maxAge: 1000 * 60 * 60 * 24 * 7, // 7일
+    });
+
+    // 보안: URL에 사용자 정보 제거
+    res.redirect(`${redirectBase}/home`);
   } catch (error) {
-    console.error("Google 인증 오류:", error.response?.data || error.message);
-    const redirectBase = getRedirectBase(req);
+    // 보안: 민감한 정보는 로그에만 기록하고 사용자에게는 일반적인 메시지 전달
+    const { logError } = require("../middleware/errorHandler");
+    logError(error, {
+      provider: "google",
+      status: error.response?.status,
+    });
+    
     delete req.session.loginOrigin;
-    res.redirect(
-      `${redirectBase}/home?loginError=true&errorMessage=${encodeURIComponent("Google 로그인에 실패했습니다.")}`
-    );
+
+    // 사용자에게는 일반적인 오류 메시지만 전달
+    let userFriendlyMessage = "Google 로그인에 실패했습니다. 다시 시도해주세요.";
+    
+    // 특정 오류에 대한 친화적인 메시지
+    const errorDetails = error.response?.data;
+    if (errorDetails?.error === "invalid_grant") {
+      userFriendlyMessage = "인증 코드가 만료되었거나 이미 사용되었습니다. 다시 로그인해주세요.";
+    } else if (errorDetails?.error === "invalid_client") {
+      userFriendlyMessage = "Google 로그인 설정에 문제가 있습니다. 관리자에게 문의해주세요.";
+    }
+
+    // 보안: URL에 오류 메시지 노출 방지 - 세션에 저장
+    req.session.loginError = true;
+    req.session.tempErrorMessage = userFriendlyMessage;
+
+    // 실무 패턴: 오류 발생 시에도 AJAX 요청이면 JSON 반환
+    if (isAjaxRequest) {
+      return res.status(400).json({
+        success: false,
+        redirectUrl: `${redirectBase}/home`, // 보안: URL에 오류 정보 제거
+        error: userFriendlyMessage,
+      });
+    }
+
+    // 보안: URL에 오류 정보 제거
+    res.redirect(`${redirectBase}/home`);
   }
 });
 

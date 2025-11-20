@@ -37,7 +37,7 @@ UserInterest.belongsTo(User, { foreignKey: "user_id" });
 User.hasMany(UserBook, { foreignKey: "user_id", onDelete: "CASCADE" });
 UserBook.belongsTo(User, { foreignKey: "user_id" });
 
-WritingQuestion.hasMany(WritingExample, { foreignKey: "writing_question_id", onDelete: "CASCADE" });
+WritingQuestion.hasMany(WritingExample, { foreignKey: "writing_question_id", as: "examples", onDelete: "CASCADE" });
 WritingExample.belongsTo(WritingQuestion, { foreignKey: "writing_question_id" });
 
 User.hasMany(Friend, { foreignKey: "user_id", as: "FriendsAsUser", onDelete: "CASCADE" });

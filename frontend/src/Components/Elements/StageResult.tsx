@@ -45,8 +45,6 @@ const StageResult = ({
     // 두 텍스트를 결합
     const textToRead = `${dialogueA}\n${dialogueB}\n${dialogueA}\n${dialogueB}\n${dialogueA}\n${dialogueB}`;
 
-    console.log(textToRead);
-
     try {
       const response = await fetch(API_ENDPOINTS.tts, {
         method: "POST",
@@ -64,17 +62,10 @@ const StageResult = ({
       const { audioContent } = await response.json();
       const audio = new Audio(`data:audio/mp3;base64,${audioContent}`);
       audio.play();
-      console.log(audioContent);
     } catch (error) {
       console.error("TTS 오류:", error);
     }
   };
-
-  // Debug: 콘솔에 데이터 확인
-  console.log("Description:", description);
-  console.log("Examples:", examples);
-  console.log("Examples length:", examples.length);
-  console.log("Current example:", examples[currentIndex]);
 
   if (examples.length === 0) {
     return (

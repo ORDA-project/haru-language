@@ -5,7 +5,7 @@ import { useGetQuestionsByUserId } from "../../entities/questions/queries";
 import { useErrorHandler } from "../../hooks/useErrorHandler";
 
 interface StatusProps {
-  userId?: number;
+  userId?: number; // 하위 호환성을 위해 유지하지만 사용하지 않음
 }
 
 interface ProgressRecord {
@@ -15,7 +15,8 @@ interface ProgressRecord {
   createdAt: string;
 }
 
-const StatusCheck = ({ userId }: StatusProps) => {
+const StatusCheck = ({ userId: _userId }: StatusProps) => {
+  // 보안: userId 파라미터는 사용하지 않음 (JWT로 자동 인증)
   const navigate = useNavigate();
   const { showError } = useErrorHandler();
 
@@ -26,10 +27,8 @@ const StatusCheck = ({ userId }: StatusProps) => {
     return `${month}/${day}`;
   };
 
-  // 질문 데이터 가져오기
-  const { data: questionsData, isLoading: loading } = useGetQuestionsByUserId(
-    userId ?? 1
-  );
+  // 보안: JWT 기반 인증 - userId 파라미터 무시
+  const { data: questionsData, isLoading: loading } = useGetQuestionsByUserId();
 
   // 질문 데이터를 날짜별로 그룹화하여 ProgressRecord 형태로 변환
   const progressRecords: ProgressRecord[] = React.useMemo(() => {
@@ -66,8 +65,8 @@ const StatusCheck = ({ userId }: StatusProps) => {
     const date = new Date(record.createdAt);
     const dateString = date.toISOString().split("T")[0];
 
-    // 상세 페이지로 이동 (userId를 쿼리 파라미터로 전달)
-    navigate(`/question-detail/${dateString}?userId=${userId ?? ""}`);
+    // 보안: URL에 userId 제거 (JWT로 자동 인증)
+    navigate(`/question-detail/${dateString}`);
   };
 
   return (

@@ -26,15 +26,34 @@ export const useQuery = <T>(
 ) => {
   const { handleError } = useErrorHandler();
 
+  // 보안: 404 에러는 재시도하지 않음 (무한 재시도 방지)
+  const shouldRetry = (failureCount: number, error: Error) => {
+    // 404는 재시도하지 않음
+    if (error instanceof Error && error.message.includes("404")) {
+      return false;
+    }
+    // retry 옵션이 false면 재시도 안함
+    if (options.retry === false) {
+      return false;
+    }
+    // retry 옵션이 숫자면 그만큼만 재시도
+    if (typeof options.retry === "number") {
+      return failureCount < options.retry;
+    }
+    // 기본값: 최대 1번만 재시도
+    return failureCount < 1;
+  };
+
   const query = useTanstackQuery<T, Error>({
     queryKey: options.queryKey,
     queryFn: fetchFn,
     enabled: options.enabled,
-    staleTime: options.staleTime,
-    gcTime: options.gcTime,
-    refetchOnWindowFocus: options.refetchOnWindowFocus,
-    refetchOnMount: options.refetchOnMount,
-    retry: options.retry,
+    staleTime: options.staleTime ?? 5 * 60 * 1000, // 기본 5분
+    gcTime: options.gcTime ?? 10 * 60 * 1000, // 기본 10분
+    refetchOnWindowFocus: options.refetchOnWindowFocus ?? false, // 기본값: false
+    refetchOnMount: options.refetchOnMount ?? true,
+    retry: shouldRetry,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // 지수 백오프
   });
 
   // onSuccess 처리

@@ -50,7 +50,6 @@ UserActivity.updateVisit = async function (user_id) {
 
     if (lastVisitDate.toDateString() === today.toDateString()) {
       const dayOfWeek = getDayOfWeek(today);
-      console.log(`${dayOfWeek} 재방문: visit_count 유지 (${lastActivity.visit_count})`);
       return lastActivity;
     }
 
@@ -59,13 +58,10 @@ UserActivity.updateVisit = async function (user_id) {
       visit_count: lastActivity.visit_count + 1,
     });
 
-    const dayOfWeek = getDayOfWeek(today);
-    console.log(`${dayOfWeek} 첫 방문: visit_count 증가 (${newVisit.visit_count})`);
     return newVisit;
   }
 
   const firstVisit = await UserActivity.create({ user_id, visit_count: 1 });
-  console.log("첫 로그인: visit_count = 1");
   return firstVisit;
 };
 
@@ -83,7 +79,6 @@ UserActivity.getMostVisitedDays = async function (user_id) {
     dayCounts[day] = (dayCounts[day] || 0) + 1;
   }
 
-  console.log("요일별 방문 횟수:", dayCounts);
 
   const max = Math.max(...Object.values(dayCounts));
   const mostVisitedDays = Object.entries(dayCounts)

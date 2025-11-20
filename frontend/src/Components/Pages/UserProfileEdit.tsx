@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAtom } from "jotai";
+import { useQueryClient } from "@tanstack/react-query";
 import { userAtom, setOnboardedAtom } from "../../store/authStore";
 import { useErrorHandler } from "../../hooks/useErrorHandler";
-import { API_ENDPOINTS } from "../../config/api";
+import { http } from "../../utils/http";
 import NavBar from "../Templates/Navbar";
 
 interface UserProfileEditProps {}
@@ -13,6 +14,7 @@ export default function UserProfileEdit({}: UserProfileEditProps) {
   const [user] = useAtom(userAtom);
   const [, setOnboarded] = useAtom(setOnboardedAtom);
   const { showSuccess, showError, handleError } = useErrorHandler();
+  const queryClient = useQueryClient();
 
   const [formData, setFormData] = useState({
     gender: "",
@@ -27,20 +29,19 @@ export default function UserProfileEdit({}: UserProfileEditProps) {
   useEffect(() => {
     const loadUserInfo = async () => {
       try {
-        const response = await fetch(`${API_ENDPOINTS.userDetails}/info`, {
-          method: "GET",
-          credentials: "include",
-        });
+        const userInfo = await http.get<{
+          gender?: string;
+          goal?: string;
+          interests?: string[];
+          books?: string[];
+        }>("/userDetails/info");
 
-        if (response.ok) {
-          const userInfo = await response.json();
-          setFormData({
-            gender: userInfo.gender || "",
-            goal: userInfo.goal || "",
-            interests: userInfo.interests || [],
-            books: userInfo.books || [],
-          });
-        }
+        setFormData({
+          gender: userInfo.gender || "",
+          goal: userInfo.goal || "",
+          interests: userInfo.interests || [],
+          books: userInfo.books || [],
+        });
       } catch (error) {
         console.error("Failed to load user info:", error);
         // 에러가 발생해도 계속 진행 (새로운 사용자일 수 있음)
@@ -68,7 +69,7 @@ export default function UserProfileEdit({}: UserProfileEditProps) {
   const interestOptions = [
     { label: "회화", value: "conversation" },
     { label: "독해", value: "reading" },
-    { label: "문법부석", value: "grammar" },
+    { label: "문법분석", value: "grammar" },
     { label: "비즈니스", value: "business" },
     { label: "어휘", value: "vocabulary" },
   ];
@@ -110,46 +111,34 @@ export default function UserProfileEdit({}: UserProfileEditProps) {
   const handleSubmit = async () => {
     try {
       // 먼저 사용자 정보가 있는지 확인
-      const checkResponse = await fetch(`${API_ENDPOINTS.userDetails}/info`, {
-        method: "GET",
-        credentials: "include",
-      });
-
-      let response;
-      if (checkResponse.ok) {
-        // 기존 사용자 정보가 있으면 PUT으로 수정
-        response = await fetch(API_ENDPOINTS.userDetails, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-          body: JSON.stringify(formData),
-        });
-      } else {
-        // 기존 사용자 정보가 없으면 POST로 생성
-        response = await fetch(API_ENDPOINTS.userDetails, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-          body: JSON.stringify(formData),
-        });
+      let isExistingUser = false;
+      try {
+        await http.get("/userDetails/info");
+        isExistingUser = true;
+      } catch (error) {
+        // 사용자 정보가 없으면 새로 생성
+        isExistingUser = false;
       }
 
-      if (response.ok) {
-        // 온보딩 완료 상태로 설정
-        setOnboarded();
-
-        showSuccess("저장 완료", "유저 정보가 저장되었습니다.");
-        setTimeout(() => {
-          navigate("/mypage");
-        }, 1500);
+      // 기존 사용자 정보가 있으면 PUT으로 수정, 없으면 POST로 생성
+      if (isExistingUser) {
+        await http.put("/userDetails", { json: formData });
       } else {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || "프로필 저장에 실패했습니다.");
+        await http.post("/userDetails", { json: formData });
       }
+
+      // 온보딩 완료 상태로 설정
+      setOnboarded();
+
+      // 회원정보 쿼리 캐시 무효화 (MyPage에서 최신 데이터 가져오기)
+      queryClient.invalidateQueries({ queryKey: ["userDetails", "info"] });
+
+      showSuccess("저장 완료", "유저 정보가 저장되었습니다.");
+      
+      // 저장 후 MyPage로 이동
+      setTimeout(() => {
+        navigate("/mypage");
+      }, 1500);
     } catch (error) {
       console.error("Profile save error:", error);
       handleError(error);

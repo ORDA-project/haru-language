@@ -19,7 +19,6 @@ export default function AccountProfile({ userData }: AccountProfileProps) {
   const [user] = useAtom(userAtom);
 
   const handleEditClick = () => {
-    console.log("Edit button clicked, user:", user);
     navigate("/mypage/edit");
   };
   return (

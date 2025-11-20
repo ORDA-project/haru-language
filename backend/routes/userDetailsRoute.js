@@ -28,7 +28,13 @@ const filterEnumValues = (values, allowedSet) => {
   return [...new Set(filtered)];
 };
 
-const loadUserFromSession = async (req) => {
+const loadUserFromRequest = async (req) => {
+  // JWT 기반 인증 사용 (req.user는 authenticateToken 미들웨어에서 설정됨)
+  if (req.user && req.user.social_id) {
+    return User.findOne({ where: { social_id: req.user.social_id } });
+  }
+
+  // Fallback: 세션 기반 (하위 호환성)
   const socialId = getSocialIdFromSession(req);
   if (!socialId) {
     return null;
@@ -59,7 +65,7 @@ const serializeUser = (user) => ({
 
 const handleUpsertUserDetails = async (req, res) => {
   try {
-    const user = await loadUserFromSession(req);
+    const user = await loadUserFromRequest(req);
 
     if (!user) {
       return res.status(401).json({ error: "Unauthorized" });
@@ -135,7 +141,7 @@ const handleUpsertUserDetails = async (req, res) => {
  */
 router.get("/info", async (req, res) => {
   try {
-    const user = await loadUserFromSession(req);
+    const user = await loadUserFromRequest(req);
 
     if (!user) {
       return res.status(401).json({ error: "Unauthorized" });

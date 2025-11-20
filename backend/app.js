@@ -153,6 +153,8 @@ if (!PROD) {
 const limitedPaths = ["/auth", "/home", "/userDetails", "/friends", "/example", "/question", "/writing", "/api"];
 app.use(limitedPaths, requestLimiter);
 
+const { authenticateToken } = require("./utils/jwt");
+
 const bypassPaths = [
   "/",
   "/auth",
@@ -164,21 +166,32 @@ const bypassPaths = [
   "/api/tts",
 ];
 
+// JWT 인증 미들웨어 적용
 app.use((req, res, next) => {
-  const shouldBypass = bypassPaths.some((path) => req.path === path || req.path.startsWith(path));
-
-  if (shouldBypass || req.session?.user) {
-    if (!PROD && req.session?.user) {
-      log.debug(`Authenticated user: ${req.session.user.name} (${req.session.user.social_id})`);
+  // 경로 매칭: 정확히 일치하거나, 경로가 prefix로 시작하고 다음 문자가 '/'이거나 끝인 경우
+  const shouldBypass = bypassPaths.some((path) => {
+    if (req.path === path) {
+      return true;
     }
+    // 루트 경로('/')는 정확히 일치하는 경우만 bypass
+    if (path === "/") {
+      return false;
+    }
+    // 다른 경로는 prefix로 시작하는 경우 bypass
+    return req.path.startsWith(path + "/") || req.path.startsWith(path + "?");
+  });
+
+  // GET /writing/questions는 인증 없이 접근 가능 (공개 API)
+  if (req.method === "GET" && req.path === "/writing/questions") {
     return next();
   }
 
-  log.warn(`Unauthorized access attempt: ${req.method} ${req.originalUrl}`);
-  return res.status(401).json({
-    error: "Unauthorized",
-    message: "로그인이 필요합니다.",
-  });
+  if (shouldBypass) {
+    return next();
+  }
+
+  // JWT 인증 미들웨어 사용
+  authenticateToken(req, res, next);
 });
 
 if (process.env.SWAGGER_ENABLED !== "false") {
@@ -257,18 +270,29 @@ app.use("*", (req, res) => {
   });
 });
 
+const { logError, getUserFriendlyMessage, getStatusCode } = require("./middleware/errorHandler");
+
 app.use((err, req, res, next) => {
-  log.error("Unhandled error:", err);
+  // 보안: 안전한 에러 로깅
+  logError(err, {
+    path: req.path,
+    method: req.method,
+    userId: req.user?.userId,
+  });
 
   if (res.headersSent) {
     return next(err);
   }
 
-  res.status(err.status || 500).json({
-    error: PROD ? "Internal Server Error" : err.message,
-    ...(PROD ? {} : { stack: err.stack }),
+  // 보안: 프로덕션에서는 상세한 에러 정보를 노출하지 않음
+  const statusCode = getStatusCode(err);
+  const errorResponse = {
+    error: getUserFriendlyMessage(err, "An error occurred"),
     timestamp: new Date().toISOString(),
-  });
+    ...(PROD ? {} : { stack: err.stack }),
+  };
+
+  res.status(statusCode).json(errorResponse);
 });
 
 const startServer = async () => {

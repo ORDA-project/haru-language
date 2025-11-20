@@ -105,26 +105,50 @@ const generateDummyQuestions = (): Question[] => {
   );
 };
 
-export const useGetQuestionsByUserId = (userId: number) => {
-  const query = useGetQuery<GetQuestionsResponse>(`/question/${userId}`, {
-    queryKey: ["questions", userId],
-    enabled: !!userId,
-    onError: () => {
-      // API 오류 시 더미 데이터 반환을 위한 처리
-      console.log("API 오류 발생, 더미 데이터 사용");
-    },
+export const useGetQuestionsByUserId = (userId?: number) => {
+  // 보안: JWT 기반 인증 사용 - userId 파라미터는 사용하지 않음
+  // userId가 전달되어도 무시하고 JWT 토큰으로 인증
+  const endpoint = "/question";
+  
+  const query = useGetQuery<GetQuestionsResponse>(endpoint, {
+    queryKey: ["questions", "current"], // userId 제거
+    retry: false, // 404 에러는 재시도하지 않음
+    refetchOnWindowFocus: false, // 포커스 시 재요청 방지
+    staleTime: 5 * 60 * 1000, // 5분간 캐시 유지
+    showErrorToast: false, // 인증 오류는 정상적인 상황일 수 있으므로 토스트 표시 안함
   });
 
-  // API 응답이 비어있거나 오류가 발생한 경우 더미 데이터 반환
-  if (
-    query.isError ||
-    (query.data && (!query.data.data || query.data.data.length === 0))
-  ) {
+  // 인증 오류(401)인 경우: 더미 데이터 대신 빈 배열 반환
+  if (query.isError) {
+    const error = query.error as any;
+    // 401 인증 오류인 경우 빈 데이터 반환 (더미 데이터 사용 안함)
+    if (error?.status === 401 || error?.code === "UNAUTHORIZED") {
+      return {
+        ...query,
+        data: {
+          message: "로그인이 필요합니다.",
+          data: [],
+        },
+      };
+    }
+    
+    // 기타 오류인 경우에도 더미 데이터 사용 안함 (빈 배열 반환)
     return {
       ...query,
       data: {
-        message: "더미 데이터로 표시됩니다",
-        data: generateDummyQuestions(),
+        message: "데이터를 불러올 수 없습니다.",
+        data: [],
+      },
+    };
+  }
+
+  // 정상 응답이지만 데이터가 비어있는 경우
+  if (query.data && (!query.data.data || query.data.data.length === 0)) {
+    return {
+      ...query,
+      data: {
+        message: query.data.message || "학습 기록이 없습니다.",
+        data: [],
       },
     };
   }

@@ -33,6 +33,8 @@ export const setUserAtom = atom(null, (_get, set, user: User | null) => {
 // 로그아웃 함수
 export const logoutAtom = atom(null, (get, set) => {
   set(userAtom, null);
+  // JWT 토큰 제거
+  localStorage.removeItem("accessToken");
 });
 
 // 온보딩 완료 상태 확인

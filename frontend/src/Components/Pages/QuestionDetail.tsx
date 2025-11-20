@@ -9,13 +9,10 @@ const QuestionDetail = () => {
   const navigate = useNavigate();
   const [questions, setQuestions] = useState<Question[]>([]);
 
-  // URL에서 userId 추출 (예: /question-detail/2025-01-05?userId=1)
-  const urlParams = new URLSearchParams(window.location.search);
-  const userId = parseInt(urlParams.get("userId") || "1");
-
-  // 해당 날짜의 질문들 가져오기
+  // 보안: JWT 기반 인증 사용 - URL에서 userId 제거
+  // 해당 날짜의 질문들 가져오기 (현재 로그인한 사용자)
   const { data: questionsData, isLoading: questionsLoading } =
-    useGetQuestionsByUserId(userId);
+    useGetQuestionsByUserId();
 
   useEffect(() => {
     if (questionsData?.data) {

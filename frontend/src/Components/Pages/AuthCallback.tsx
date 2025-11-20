@@ -1,30 +1,54 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAtom } from "jotai";
 import { setUserAtom } from "../../store/authStore";
 import { useErrorHandler } from "../../hooks/useErrorHandler";
 import { API_ENDPOINTS } from "../../config/api";
+import { authApi } from "../../entities/authentication/api";
 
 const AuthCallback: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [, setUserData] = useAtom(setUserAtom);
   const { showSuccess, showError, handleError } = useErrorHandler();
+  const isProcessingRef = useRef(false); // 중복 요청 방지
 
   useEffect(() => {
+    // 이미 처리 중이면 무시
+    if (isProcessingRef.current) {
+      return;
+    }
+
+    const code = searchParams.get("code");
+    
+    // 보안: URL에서 사용자 정보 제거 (세션에서 가져오도록 변경)
+    // 기존 파라미터는 하위 호환성을 위해 유지하되, 우선순위는 낮춤
     const loginSuccess = searchParams.get("loginSuccess");
     const loginError = searchParams.get("loginError");
     const errorMessage = searchParams.get("errorMessage");
     const userName = searchParams.get("userName");
+    
+    // 보안: URL에서 민감한 정보 제거
+    if (loginSuccess || loginError || userName || errorMessage) {
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.delete("loginSuccess");
+      newUrl.searchParams.delete("loginError");
+      newUrl.searchParams.delete("errorMessage");
+      newUrl.searchParams.delete("userName");
+      window.history.replaceState({}, "", newUrl.toString());
+    }
 
-    const hydrateUserFromSession = async () => {
+    const hydrateUserFromToken = async () => {
       const response = await fetch(`${API_ENDPOINTS.auth}/check`, {
         method: "GET",
         credentials: "include",
+        headers: {
+          "Authorization": `Bearer ${localStorage.getItem("accessToken") || ""}`,
+        },
       });
 
       if (!response.ok) {
-        throw new Error("세션 정보를 확인할 수 없습니다.");
+        throw new Error("토큰 정보를 확인할 수 없습니다.");
       }
 
       const data = await response.json();
@@ -44,19 +68,86 @@ const AuthCallback: React.FC = () => {
 
     const handleSuccess = async () => {
       try {
-        await hydrateUserFromSession();
+        await hydrateUserFromToken();
         showSuccess("로그인 성공", `${userName || "사용자"}님 환영합니다!`);
         navigate("/home", { replace: true });
       } catch (error) {
         handleError(error);
         showError(
           "로그인 정보 동기화 실패",
-          "세션 정보를 불러오지 못했습니다. 다시 시도해주세요."
+          "토큰 정보를 불러오지 못했습니다. 다시 시도해주세요."
         );
         navigate("/", { replace: true });
       }
     };
 
+    const handleOAuthCallback = async () => {
+      if (!code) {
+        showError("로그인 오류", "인증 코드가 없습니다.");
+        navigate("/", { replace: true });
+        return;
+      }
+
+      // 중복 요청 방지
+      if (isProcessingRef.current) {
+        return;
+      }
+
+      isProcessingRef.current = true;
+
+      try {
+        // 보안: 코드를 사용하기 전에 URL에서 제거 (중복 사용 방지)
+        const newUrl = new URL(window.location.href);
+        newUrl.searchParams.delete("code");
+        window.history.replaceState({}, "", newUrl.toString());
+
+        // 현재 경로에서 구글인지 카카오인지 확인
+        const isGoogle = window.location.pathname.includes("/google");
+        const response = isGoogle
+          ? await authApi.loginWithGoogle(code)
+          : await authApi.loginWithKakao(code);
+
+        // JWT 토큰 저장
+        if (response.token) {
+          localStorage.setItem("accessToken", response.token);
+        }
+
+        // 사용자 정보 설정
+        if (response.user) {
+          setUserData({
+            name: response.user.name,
+            email: response.user.email || null,
+            userId: response.user.userId,
+            socialId: response.user.socialId,
+            visitCount: response.user.visitCount,
+            mostVisitedDays: response.user.mostVisitedDays || null,
+          });
+        }
+
+        if (response.redirectUrl) {
+          // 백엔드에서 리다이렉트 URL을 반환한 경우
+          window.location.href = response.redirectUrl;
+        } else {
+          showSuccess("로그인 성공", "로그인에 성공했습니다!");
+          navigate("/home", { replace: true });
+        }
+      } catch (error) {
+        handleError(error);
+        const errorMessage = (error as any)?.data?.error || (error as any)?.message || "로그인 처리 중 오류가 발생했습니다.";
+        showError("로그인 실패", errorMessage);
+        navigate("/", { replace: true });
+      } finally {
+        isProcessingRef.current = false;
+      }
+    };
+
+    // OAuth 콜백 코드가 있는 경우 (프론트엔드로 직접 콜백된 경우)
+    if (code) {
+      handleOAuthCallback();
+      return;
+    }
+
+    // 백엔드에서 리다이렉트된 경우 (loginSuccess/loginError 파라미터 사용)
     if (loginSuccess === "true") {
       handleSuccess();
     } else if (loginError === "true") {

@@ -1,13 +1,18 @@
 export interface UserDetails {
   id: number;
-  userId: number;
+  social_id?: string;
+  social_provider?: string;
   name?: string;
   email?: string;
+  gender?: string; // "male" | "female" | "private"
+  goal?: string; // "hobby" | "exam" | "business" | "travel"
+  interests?: string[]; // ["conversation", "reading", "grammar", "business", "vocabulary"]
+  books?: string[]; // ["none", "travel_conversation", "daily_conversation", "english_novel", "textbook"]
   profileImage?: string;
   level?: string;
   points?: number;
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface CreateUserDetailsParams {

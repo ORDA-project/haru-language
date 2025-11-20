@@ -4,6 +4,7 @@ import Cropper from "react-cropper";
 import "cropperjs/dist/cropper.css";
 import { API_ENDPOINTS } from "../../config/api";
 import { useErrorHandler } from "../../hooks/useErrorHandler";
+import { http } from "../../utils/http";
 import ImageUploadModal from "./ImageUploadModal";
 import { Icons } from "./Icons";
 
@@ -62,28 +63,25 @@ const StageChat = ({ onBack }: StageChatProps) => {
     setIsLoading(true);
 
     try {
-      const response = await axios.post(
-        API_ENDPOINTS.question,
-        { question: userMessage.content },
-        {
-          withCredentials: true,
-          timeout: 30000,
-        }
-      );
+      const response = await http.post<{
+        answer: string | { answer: string };
+      }>("/question", {
+        json: { question: userMessage.content },
+      });
 
       // AI 응답 포맷팅
       let formattedContent = "";
-      if (typeof response.data.answer === "string") {
-        formattedContent = response.data.answer;
+      if (typeof response.answer === "string") {
+        formattedContent = response.answer;
       } else if (
-        response.data.answer &&
-        typeof response.data.answer === "object"
+        response.answer &&
+        typeof response.answer === "object"
       ) {
         // 객체인 경우 answer 필드만 추출
         formattedContent =
-          response.data.answer.answer || JSON.stringify(response.data.answer);
+          response.answer.answer || JSON.stringify(response.answer);
       } else {
-        formattedContent = JSON.stringify(response.data.answer);
+        formattedContent = JSON.stringify(response.answer);
       }
 
       // 개행 문자 처리 및 마크다운 스타일 적용
@@ -222,14 +220,15 @@ const StageChat = ({ onBack }: StageChatProps) => {
       formData.append("image", blob, "cropped-image.png");
 
       // AI에게 이미지 분석 요청 (예문 생성 API 사용)
-      const response = await axios.post(API_ENDPOINTS.example, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-        withCredentials: true,
-        timeout: 30000,
+      // http 유틸리티 사용 - JWT 토큰 자동 포함
+      const response = await http.post<{
+        generatedExample: any;
+      }>("/example", {
+        formData: formData,
       });
 
-      if (response.data && response.data.generatedExample) {
-        const { generatedExample } = response.data;
+      if (response && response.generatedExample) {
+        const { generatedExample } = response;
         const actualExample =
           generatedExample.generatedExample || generatedExample;
 

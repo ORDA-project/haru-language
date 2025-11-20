@@ -37,8 +37,8 @@ export interface WritingCorrection {
 
 export interface CorrectWritingParams {
   text: string;
-  userId: number;
-  writingQuestionId: number;
+  writingQuestionId?: number;
+  // userId는 JWT 토큰에서 자동으로 가져옴 (전달 불필요)
 }
 
 export interface CorrectWritingResponse {
@@ -66,8 +66,8 @@ export interface WritingTranslation {
 
 export interface TranslateWritingParams {
   text: string;
-  userId: number;
   writingQuestionId: number;
+  // userId는 JWT 토큰에서 자동으로 가져옴 (전달 불필요)
 }
 
 export interface TranslateWritingResponse {

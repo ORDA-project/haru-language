@@ -10,15 +10,39 @@ export const authApi = {
     return http.get('/auth/logout');
   },
 
-  loginWithGoogle: (code: string): Promise<{ redirectUrl: string }> => {
+  loginWithGoogle: (code: string): Promise<{ 
+    success: boolean;
+    token?: string;
+    redirectUrl?: string;
+    user?: {
+      userId: number;
+      name: string;
+      email?: string;
+      socialId: string;
+      visitCount: number;
+      mostVisitedDays: string;
+    };
+  }> => {
     return http.get('/auth/google/callback', {
-      searchParams: { code }
+      searchParams: { code, format: 'json' }
     });
   },
 
-  loginWithKakao: (code: string): Promise<{ redirectUrl: string }> => {
+  loginWithKakao: (code: string): Promise<{ 
+    success: boolean;
+    token?: string;
+    redirectUrl?: string;
+    user?: {
+      userId: number;
+      name: string;
+      email?: string;
+      socialId: string;
+      visitCount: number;
+      mostVisitedDays: string;
+    };
+  }> => {
     return http.get('/auth/kakao/callback', {
-      searchParams: { code }
+      searchParams: { code, format: 'json' }
     });
   },
 };

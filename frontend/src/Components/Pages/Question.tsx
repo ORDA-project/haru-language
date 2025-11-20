@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { API_ENDPOINTS } from "../../config/api";
+import { API_ENDPOINTS, API_BASE_URL } from "../../config/api";
 import { useErrorHandler } from "../../hooks/useErrorHandler";
+import { http } from "../../utils/http";
 import NavBar from "../Templates/Navbar";
 import Mike from "../../Images/mike.png";
 import Send from "../../Images/sendicon.png";
@@ -26,17 +26,23 @@ const ChatBot = () => {
     const fetchUserData = async () => {
       setLoading(true);
       try {
-        // Home 페이지와 동일한 API 요청
-        const response = await axios.get(API_ENDPOINTS.home, {
-          withCredentials: true, // 쿠키 포함
-          timeout: 10000, // 10초 타임아웃
-        });
+        // Home 페이지와 동일한 API 요청 (http 유틸리티 사용)
+        const response = await http.get<{
+          result: boolean;
+          userData: {
+            userId: number;
+            name: string;
+            visitCount: number;
+            mostVisitedDay: string;
+            recommendation: string;
+          };
+        }>("/home");
 
-        console.log("Response data:", response.data);
+        console.log("Response data:", response);
 
-        if (response.data && response.data.userData) {
+        if (response && response.userData) {
           // 사용자 이름 가져오기
-          const fetchedUserName = response.data.userData?.name || "사용자";
+          const fetchedUserName = response.userData?.name || "사용자";
           setUserName(fetchedUserName);
 
           // 초기 메시지 설정
@@ -52,15 +58,13 @@ const ChatBot = () => {
       } catch (error: any) {
         console.error("사용자 데이터를 불러오는 데 실패했습니다:", error);
 
-        if (axios.isAxiosError(error)) {
-          if (error.code === "ECONNABORTED") {
-            showError("연결 시간 초과", "서버 연결이 지연되고 있습니다.");
-          } else if (error.response?.status === 401) {
-            // 인증 실패는 정상적인 상황이므로 에러 토스트 표시하지 않음
-            console.log("인증되지 않은 사용자 - 기본 메시지 표시");
-          } else if (!error.response) {
-            showError("네트워크 오류", "서버에 연결할 수 없습니다.");
-          }
+        if (error?.status === 0) {
+          showError("네트워크 오류", "서버에 연결할 수 없습니다.");
+        } else if (error?.status === 401) {
+          // 인증 실패는 정상적인 상황이므로 에러 토스트 표시하지 않음
+          console.log("인증되지 않은 사용자 - 기본 메시지 표시");
+        } else if (error?.status === 500) {
+          showError("서버 오류", "서버에서 오류가 발생했습니다.");
         }
 
         setMessages([
@@ -97,22 +101,22 @@ const ChatBot = () => {
         }
       }, 3000); // 3초 후 알림
 
-      const response = await axios({
-        method: "POST",
-        url: API_ENDPOINTS.question,
-        data: { question: currentInput },
-        headers: { "Content-Type": "application/json" },
-        withCredentials: true,
-        timeout: 30000, // 30초 타임아웃
+      // http 유틸리티 사용 (JWT 토큰 자동 포함)
+      const response = await http.post<{
+        answer: string | { answer: string };
+      }>("/question", {
+        json: { question: currentInput },
       });
 
       clearTimeout(timeoutId);
 
-      if (!response.data || !response.data.answer) {
+      if (!response || !response.answer) {
         throw new Error("서버에서 올바르지 않은 응답을 받았습니다.");
       }
 
-      const botResponse = response.data.answer.answer || response.data.answer;
+      const botResponse = typeof response.answer === 'string' 
+        ? response.answer 
+        : response.answer.answer;
       console.log(botResponse);
 
       if (!botResponse || typeof botResponse !== "string") {

@@ -1,5 +1,5 @@
 import NavBar from "../Templates/Navbar";
-import { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import { useAtom } from "jotai";
 import { userAtom, logoutAtom } from "../../store/authStore";
 import { useNavigate } from "react-router-dom";
@@ -17,6 +17,7 @@ import {
   useCreateInvitation,
   useDeleteFriend,
 } from "../../entities/friends/queries";
+import { http } from "../../utils/http";
 import FriendInvitePopup from "../Elements/FriendInvitePopup";
 
 interface UserDataProps {
@@ -35,31 +36,72 @@ export default function MyPage() {
   const [isEditingFriends, setIsEditingFriends] = useState(false);
   const [showInvitePopup, setShowInvitePopup] = useState(false);
   const [copiedInviteLink, setCopiedInviteLink] = useState<string>("");
+  const [totalVisitCount, setTotalVisitCount] = useState<number>(0);
 
-  // API queries
-  const { data: userInfo, isLoading: userInfoLoading } = useGetUserInfo();
+  // API queries - 회원정보 조회 (저장 후 갱신을 위해 refetchOnMount: true)
+  const { data: userInfo, isLoading: userInfoLoading, refetch: refetchUserInfo } = useGetUserInfo();
   const { data: friendsData, isLoading: friendsLoading } = useGetFriends(Boolean(user?.userId));
   const createInvitationMutation = useCreateInvitation();
   const deleteFriendMutation = useDeleteFriend();
+
+  // 방문 횟수 가져오기 (프로필용)
+  useEffect(() => {
+    if (user?.userId) {
+      http.get<{ userData?: { visitCount?: number } }>("/home")
+        .then((res) => {
+          if (res?.userData?.visitCount) {
+            setTotalVisitCount(res.userData.visitCount);
+          }
+        })
+        .catch((err) => {
+          console.error("방문 횟수 가져오기 실패:", err);
+        });
+    }
+  }, [user?.userId]);
+
+  // 성별 한글 변환 함수
+  const getGenderLabel = (gender?: string): string => {
+    const genderMap: Record<string, string> = {
+      female: "여성",
+      male: "남성",
+      private: "비공개",
+    };
+    return genderMap[gender || ""] || "미설정";
+  };
+
+  // 관심사 한글 변환 함수 (첫 번째 관심사만 표시)
+  const getInterestLabel = (interests?: string[]): string => {
+    if (!interests || interests.length === 0) return "미설정";
+    
+    const interestMap: Record<string, string> = {
+      conversation: "회화",
+      reading: "독해",
+      grammar: "문법분석",
+      business: "비즈니스",
+      vocabulary: "어휘",
+    };
+    
+    return interestMap[interests[0]] || interests[0] || "미설정";
+  };
 
   // Memoized user data derived from API
   const userData = useMemo((): UserDataProps => {
     if (userInfoLoading || !userInfo) {
       return {
-        userName: user?.name || "김진희",
-        visitCount: 17,
-        gender: "여성",
-        interest: "회화",
+        userName: user?.name || "사용자",
+        visitCount: totalVisitCount || 0,
+        gender: "미설정",
+        interest: "미설정",
       };
     }
 
     return {
-      userName: userInfo.name || user?.name || "김진희",
-      visitCount: 17, // This should come from user activity data
-      gender: "여성", // This should come from user details
-      interest: "회화", // This should come from user interests
+      userName: userInfo.name || user?.name || "사용자",
+      visitCount: totalVisitCount || 0, // 전체 누적 방문 횟수
+      gender: getGenderLabel(userInfo.gender), // 실제 API 데이터 사용
+      interest: getInterestLabel(userInfo.interests), // 실제 API 데이터 사용
     };
-  }, [userInfo, userInfoLoading, user?.name]);
+  }, [userInfo, userInfoLoading, user?.name, totalVisitCount]);
 
   // Memoized friends list derived from API
   const friendList = useMemo(() => {

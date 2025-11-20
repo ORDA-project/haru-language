@@ -14,96 +14,31 @@ const Login: React.FC = () => {
   const [, setUserData] = useAtom(setUserAtom);
   const { showSuccess, showError, showInfo, handleError } = useErrorHandler();
 
-  // 컴포넌트가 마운트될 때마다 현재 URL 확인
-  console.log("🚨 Login component mounted");
-  console.log("🚨 Current URL:", window.location.href);
-  console.log("🚨 Current pathname:", window.location.pathname);
-  console.log("🚨 Current search:", window.location.search);
 
   // URL 파라미터에서 로그인 성공 정보 확인
   useEffect(() => {
-    console.log("🚨🚨🚨 Startlogin useEffect ALWAYS RUNS 🚨🚨🚨");
+    // 보안: URL에서 민감한 정보 제거
+    const url = new URL(window.location.href);
+    let hasChanges = false;
 
-    const loginSuccess = searchParams.get("loginSuccess");
-    const loginError = searchParams.get("loginError");
-    const errorMessage = searchParams.get("errorMessage");
-    const userName = searchParams.get("userName");
-    const userId = searchParams.get("userId");
+    if (url.searchParams.has("loginSuccess") || 
+        url.searchParams.has("loginError") || 
+        url.searchParams.has("userName") || 
+        url.searchParams.has("errorMessage") ||
+        url.searchParams.has("userId")) {
+      url.searchParams.delete("loginSuccess");
+      url.searchParams.delete("loginError");
+      url.searchParams.delete("userName");
+      url.searchParams.delete("errorMessage");
+      url.searchParams.delete("userId");
+      hasChanges = true;
+    }
 
-    console.log("=== Startlogin useEffect ===");
-    console.log("All searchParams:", Object.fromEntries(searchParams));
-    console.log(
-      "loginSuccess value:",
-      loginSuccess,
-      "type:",
-      typeof loginSuccess
-    );
-    console.log("loginError value:", loginError, "type:", typeof loginError);
-    console.log("errorMessage value:", errorMessage);
-    console.log("userName value:", userName, "type:", typeof userName);
-    console.log("userId value:", userId, "type:", typeof userId);
-    console.log("Raw URL search string:", window.location.search);
-
-    if (loginSuccess === "true" && userName) {
-      console.log("✅ Login success detected, setting user:", userName);
-
-      try {
-        // 로그인 성공 시 사용자 정보를 전역 상태에 저장
-        setUserData({
-          name: userName,
-          userId: userId ? Number(userId) : undefined, // userId가 있으면 사용
-        });
-
-        // 성공 토스트 표시
-        showSuccess("로그인 성공", `${userName}님 환영합니다!`);
-
-        console.log("✅ setUserData called with:", {
-          name: userName,
-          userId,
-        });
-
-        // URL에서 로그인 성공 파라미터 제거
-        const newUrl = new URL(window.location.href);
-        newUrl.searchParams.delete("loginSuccess");
-        newUrl.searchParams.delete("userName");
-        newUrl.searchParams.delete("userId");
-        window.history.replaceState({}, "", newUrl.toString());
-
-        // atomWithStorage가 sessionStorage에 저장할 시간을 주기 위해 setTimeout 사용
-        setTimeout(() => {
-          console.log(
-            "SessionStorage after setUserData:",
-            sessionStorage.getItem("user")
-          );
-        }, 50);
-
-        // 상태가 설정된 후 홈 페이지로 리다이렉트
-        setTimeout(() => {
-          console.log("✅ Navigating to /home");
-          navigate("/home");
-        }, 1000); // 토스트를 볼 수 있도록 딜레이 증가
-      } catch (error) {
-        console.error("❌ Error during login process:", error);
-        handleError(error);
-        showError("로그인 중 오류가 발생했습니다", "다시 시도해주세요.");
-      }
-    } else if (loginError === "true") {
-      // 로그인 실패 처리
-      console.log("❌ Login error detected");
-      const displayMessage =
-        errorMessage || "로그인에 실패했습니다. 다시 시도해주세요.";
-      showError("로그인 실패", displayMessage);
-
-      // URL에서 에러 파라미터 제거
-      const newUrl = new URL(window.location.href);
-      newUrl.searchParams.delete("loginError");
-      newUrl.searchParams.delete("errorMessage");
-      window.history.replaceState({}, "", newUrl.toString());
-    } else if (loginSuccess || loginError || userName) {
-      console.log("❌ Login conditions not met");
-      console.log("loginSuccess === 'true':", loginSuccess === "true");
-      console.log("userName exists:", !!userName);
-      console.log("loginError === 'true':", loginError === "true");
+    if (hasChanges) {
+      window.history.replaceState({}, "", url.toString());
+      // 보안: URL에서 민감한 정보 제거 후 종료
+      // 로그인 정보는 AuthCallback이나 Home에서 처리
+      return;
     }
   }, [
     searchParams,
@@ -117,10 +52,6 @@ const Login: React.FC = () => {
 
   const handleGoogleLogin = () => {
     try {
-      console.log(
-        "🚨 Google login clicked - redirecting to:",
-        `${API_ENDPOINTS.auth}/google`
-      );
 
       // 로그인 시도 토스트 표시
       showInfo("로그인 진행 중", "Google 로그인 페이지로 이동합니다...");
@@ -136,10 +67,6 @@ const Login: React.FC = () => {
 
   const handleKakaoLogin = () => {
     try {
-      console.log(
-        "🚨 Kakao login clicked - redirecting to:",
-        `${API_ENDPOINTS.auth}/kakao`
-      );
 
       // 로그인 시도 토스트 표시
       showInfo("로그인 진행 중", "Kakao 로그인 페이지로 이동합니다...");

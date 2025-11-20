@@ -104,18 +104,12 @@ const App = () => {
     setErrorMessage("");
 
     try {
-      console.log("🔍 Starting example generation...");
-      console.log("🔍 Image data type:", typeof imageData);
-      console.log("🔍 Image data preview:", imageData.substring(0, 50) + "...");
-      console.log("🔍 API Endpoint:", API_ENDPOINTS.example);
-
       // 이미지 데이터 유효성 검사
       if (!imageData || !imageData.startsWith("data:image/")) {
         throw new Error("올바른 이미지 데이터가 아닙니다.");
       }
 
       const blob = dataURItoBlob(imageData);
-      console.log("🔍 Blob created:", blob.type, blob.size, "bytes");
 
       if (blob.size === 0) {
         throw new Error("이미지 데이터가 비어있습니다.");
@@ -128,8 +122,6 @@ const App = () => {
 
       const formData = new FormData();
       formData.append("image", blob, "cropped-image.png");
-
-      console.log("🔍 FormData prepared, sending request...");
 
       // 타임아웃 경고 메시지
       const timeoutId = setTimeout(() => {
@@ -148,39 +140,24 @@ const App = () => {
       });
 
       clearTimeout(timeoutId);
-      console.log("✅ Response received:", response.data);
 
       if (!response.data || !response.data.generatedExample) {
         throw new Error("서버에서 올바르지 않은 응답을 받았습니다.");
       }
 
-      console.log(
-        "✅ Full response data:",
-        JSON.stringify(response.data, null, 2)
-      );
-
       const { generatedExample, audioContent } = response.data;
-      console.log("✅ Generated example:", generatedExample);
 
       // Check if generatedExample has nested generatedExample structure
       const actualExample =
         generatedExample.generatedExample || generatedExample;
-      console.log("✅ Actual example data:", actualExample);
 
       setDescription(actualExample.description || "");
       setExamples(actualExample.examples || []);
 
-      console.log("✅ Setting description:", actualExample.description);
-      console.log("✅ Setting examples:", actualExample.examples);
-
       showSuccess("분석 완료", "이미지에서 학습 예시를 생성했습니다!");
       setStage(4); // Show result
     } catch (error) {
-      console.error("❌ Error generating examples:", error);
-
       if (axios.isAxiosError(error)) {
-        console.error("❌ Response status:", error.response?.status);
-        console.error("❌ Response data:", error.response?.data);
 
         if (error.code === "ECONNABORTED") {
           showError(
