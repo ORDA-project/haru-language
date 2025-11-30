@@ -72,6 +72,9 @@ router.get("/", async (req, res) => {
       });
     }
 
+    // 방문 기록 업데이트 (새로운 날짜면 자동으로 visit_count 증가)
+    const updatedActivity = await UserActivity.updateVisit(user.userId);
+    
     // 최신 방문 통계 가져오기
     // visit_count 필드를 명시적으로 선택하여 최신 누적 방문 횟수 가져오기
     const activity = await UserActivity.findOne({ 
@@ -81,7 +84,7 @@ router.get("/", async (req, res) => {
     });
     
     // 방문 횟수: 전체 누적 방문 횟수 (최신 레코드의 visit_count가 전체 누적 값)
-    const visitCount = activity?.visit_count ?? 0;
+    const visitCount = activity?.visit_count ?? updatedActivity?.visit_count ?? 0;
     
     
     const mostVisitedDays = await UserActivity.getMostVisitedDays(user.userId);

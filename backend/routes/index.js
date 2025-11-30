@@ -12,6 +12,5 @@ router.use("/api", require("./ttsRoute"));                  // TTS 기능
 router.use("/example", require("./exampleRoute"));          // 예제 API
 router.use("/question", require("./questionRoute"));        // 질문 기능
 router.use("/writing", require("./writingRoute"));          // 작문 기능
-router.use("/swagger-test-login", require("./swaggerTestRoute")); // (개발) swagger 위한 테스트 로그인
 
 module.exports = router;
