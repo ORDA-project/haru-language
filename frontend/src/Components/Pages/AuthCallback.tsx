@@ -143,17 +143,17 @@ const AuthCallback: React.FC = () => {
           });
         }
 
+        // redirectUrl이 있으면 해당 URL로 이동, 없으면 /home으로 이동
+        // redirectUrl은 백엔드에서 프론트엔드 URL을 포함하여 반환함
+        if (redirectToPendingInvite()) {
+          showSuccess("로그인 성공", "로그인에 성공했습니다!");
+          return;
+        }
+        
         if (response.redirectUrl) {
-          if (redirectToPendingInvite()) {
-            return;
-          }
-          // 백엔드에서 리다이렉트 URL을 반환한 경우
+          // 백엔드에서 리다이렉트 URL을 반환한 경우 (프론트엔드 URL 포함)
           window.location.href = response.redirectUrl;
         } else {
-          if (redirectToPendingInvite()) {
-            showSuccess("로그인 성공", "로그인에 성공했습니다!");
-            return;
-          }
           showSuccess("로그인 성공", "로그인에 성공했습니다!");
           navigate("/home", { replace: true });
         }

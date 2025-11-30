@@ -58,7 +58,8 @@ router.get("/", (req, res) => {
 router.get("/callback", validateOAuthCode, async (req, res) => {
   const { code } = req.query;
 
-  const redirectBase = getRedirectBase(req);
+  // OAuth 콜백에서는 Referer가 Kakao이므로, 환경 변수에서 프론트엔드 URL 가져오기
+  const redirectBase = process.env.CLIENT_URL || getRedirectBase(req);
   
   // AJAX 요청 여부를 여러 방법으로 확인
   const isAjaxRequest = 
