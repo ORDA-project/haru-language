@@ -129,8 +129,43 @@ if (sessionStore) {
   sessionConfig.store = sessionStore;
 }
 
-// favicon.ico 요청은 CORS 체크 전에 처리 (origin 헤더가 없을 수 있음)
+// origin 헤더가 없을 수 있는 요청들을 CORS 체크 전에 처리
 app.get("/favicon.ico", (_req, res) => res.status(204).end());
+app.get("/healthz", (_req, res) => res.status(200).send("OK"));
+app.get("/health", (_req, res) => {
+  res.json({
+    ok: true,
+    env: process.env.NODE_ENV || "development",
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+  });
+});
+app.get("/health/db", async (_req, res) => {
+  try {
+    await sequelize.query("SELECT 1 as health_check");
+    res.json({
+      ok: true,
+      database: "connected",
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    log.error("Database health check failed:", error.message);
+    res.status(500).json({
+      ok: false,
+      database: "disconnected",
+      error: error.message,
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+app.get("/", (_req, res) => {
+  res.status(200).json({
+    message: "백엔드 서버가 실행 중입니다.",
+    version: "1.0.0",
+    status: "running",
+    timestamp: new Date().toISOString(),
+  });
+});
 
 app.use(
   helmet({
@@ -224,46 +259,7 @@ if (process.env.SWAGGER_ENABLED !== "false") {
   log.info(`Swagger UI available at: ${SERVER_URL}/api-docs`);
 }
 
-app.get("/healthz", (_req, res) => res.status(200).send("OK"));
-
-app.get("/health", (_req, res) => {
-  res.json({
-    ok: true,
-    env: process.env.NODE_ENV || "development",
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-  });
-});
-
-app.get("/health/db", async (_req, res) => {
-  try {
-    await sequelize.query("SELECT 1 as health_check");
-    res.json({
-      ok: true,
-      database: "connected",
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error) {
-    log.error("Database health check failed:", error.message);
-    res.status(500).json({
-      ok: false,
-      database: "disconnected",
-      error: error.message,
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
 app.use("/", routes);
-
-app.get("/", (_req, res) => {
-  res.status(200).json({
-    message: "백엔드 서버가 실행 중입니다.",
-    version: "1.0.0",
-    status: "running",
-    timestamp: new Date().toISOString(),
-  });
-});
 
 app.use("*", (req, res) => {
   res.status(404).json({
