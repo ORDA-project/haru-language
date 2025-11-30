@@ -1,6 +1,7 @@
 import { useGetQuery, useMutation } from "../../hooks/useQuery";
 import { AuthCheckResponse } from "./types";
 import { API_ENDPOINTS } from "../../config/api";
+import { useAtom } from "jotai";
 import { setUserAtom } from "../../store/authStore";
 
 export const useCheckAuth = () => {
@@ -11,6 +12,8 @@ export const useCheckAuth = () => {
 };
 
 export const useLogout = () => {
+  const [, setUser] = useAtom(setUserAtom);
+  
   return useMutation<string, void>(
     () =>
       fetch(`${API_ENDPOINTS.auth}/logout`, {
@@ -25,7 +28,7 @@ export const useLogout = () => {
     {
       onSuccess: () => {
         // Clear user data and JWT token
-        setUserAtom(null);
+        setUser(null);
         localStorage.removeItem("accessToken");
         window.location.href = "/";
       },

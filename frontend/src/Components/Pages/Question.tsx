@@ -138,7 +138,7 @@ const ChatBot = () => {
 
       let errorMessage = "죄송합니다. 답변을 생성하는 중 오류가 발생했습니다.";
 
-      if (axios.isAxiosError(error)) {
+      if (error && typeof error === 'object' && 'isAxiosError' in error) {
         if (error.code === "ECONNABORTED") {
           errorMessage = "응답 시간이 초과되었습니다. 다시 시도해주세요.";
           showError(

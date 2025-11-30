@@ -51,6 +51,6 @@ export const useDeleteFriend = () => {
 
 export const useSendFriendNotification = () => {
   return usePostMutation<SendNotificationResponse, { receiverId: number }>("/friends/notifications/send", {
-    showSuccessMessage: false,
+    showSuccessMessage: undefined,
   });
 };

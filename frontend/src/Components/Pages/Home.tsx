@@ -112,7 +112,7 @@ const Home = () => {
           visitCount,
           mostVisitedDays: mostVisitedDay,
           socialProvider:
-            data.userData.socialProvider || user?.socialProvider || null,
+            (data.userData as any)?.socialProvider || user?.socialProvider || null,
         });
         setVisitCount(visitCount || 0);
         setMostVisitedDay(mostVisitedDay || "");

@@ -86,16 +86,18 @@ const SongRecommend = (props: RecommendProps) => {
           } else if (error.status === 500) {
             showError("서버 오류", "서버에서 오류가 발생했습니다.");
           } else {
+            const errorData = error.data as { message?: string } | undefined;
             showError(
               "오류 발생",
-              error.data?.message ||
+              errorData?.message ||
                 "추천 곡을 불러오는 중 오류가 발생했습니다."
             );
           }
         } else {
+          const errorMessage = error instanceof Error ? error.message : "알 수 없는 오류가 발생했습니다.";
           showError(
             "예상치 못한 오류",
-            error.message || "알 수 없는 오류가 발생했습니다."
+            errorMessage
           );
         }
 
