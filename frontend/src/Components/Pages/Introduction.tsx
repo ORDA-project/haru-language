@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import rightarrow from "../../Images/rightarrow.png";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAtom } from "jotai";
 import { userAtom, isLoggedInAtom, checkUserOnboardingAtom } from "../../store/authStore";
 import Image1 from "/intro1.png";
@@ -29,7 +29,7 @@ const pages: Page[] = [
     description:
       "버튼을 누르고 교재를 찍어보세요. 사진내용을 드래그하면 그것을 바탕으로 예문이 생성돼요.",
     color: "#00DAAA",
-    imageUrl: Image2,
+    imageUrl: Image4,
   },
   {
     title: "질문채팅",
@@ -42,12 +42,12 @@ const pages: Page[] = [
     description:
       "나의 예문생성 기록을 다시 보고, 들을 수 있어요. 그에 대해서 쌓인 기록을 바탕으로 테스트도 할 수 있어요.",
     color: "#00DAAA",
-    imageUrl: Image4,
+    imageUrl: Image2,
   },
   {
     title: "하루 언어",
     description:
-      "일주일의 하루씩, 언어를 공부하는 시간을 가져세요.\n하루 언어가 교재내용을 바탕으로 다양한 예문과 정확한 발음을 알려드릴게요!",
+      "일주일의 하루씩, 언어를 공부하는 시간을 가져보세요. 하루 언어가 교재 내용을 바탕으로 다양한 예문과 정확한 발음을 알려드릴게요!",
     color: "#00DAAA",
     imageUrl: Image5,
     buttonText: "하루 언어 시작하기",
@@ -60,18 +60,24 @@ const Introduction: React.FC = () => {
   const [isLoggedIn] = useAtom(isLoggedInAtom);
   const [, checkOnboarding] = useAtom(checkUserOnboardingAtom);
   const navigate = useNavigate();
+  const location = useLocation();
+  const fromHelp = (location.state as { fromHelp?: boolean })?.fromHelp || false;
 
   const handleNext = (): void => {
     if (currentPage < pages.length - 1) {
       setCurrentPage((prev) => prev + 1);
     } else {
-      console.log("마지막 페이지: 하루 언어 시작하기 버튼 클릭");
       handleStartApp();
     }
   };
 
   const handleStartApp = async (): Promise<void> => {
-    console.log("하루 언어 시작하기 버튼 클릭");
+    
+    // 도움말에서 온 경우 마이페이지로 돌아가기
+    if (fromHelp) {
+      navigate("/mypage");
+      return;
+    }
     
     // 로그인되지 않은 경우 홈으로 이동
     if (!isLoggedIn || !user) {
@@ -101,12 +107,10 @@ const Introduction: React.FC = () => {
     if (currentPage > 0) {
       setCurrentPage((prev) => prev - 1);
     } else {
-      console.log("첫 번째 페이지입니다.");
     }
   };
 
   const handleClose = (): void => {
-    console.log("닫기 버튼 클릭");
     navigate("/");
   };
 
@@ -135,50 +139,66 @@ const Introduction: React.FC = () => {
         </div>
 
         {/* 페이지 콘텐츠 */}
-        <div className="flex flex-col items-center gap-4 w-full mb-[4.5rem]">
+        <div className="flex flex-col items-start gap-4 w-full mb-[4.5rem] px-4" style={{ wordBreak: 'keep-all', overflowWrap: 'break-word' }}>
           {currentPage === pages.length - 1 ? (
             // 5번째 페이지: 이미지 → 제목 → 설명 순서
             <>
               <div
-                className="w-full max-w-[400px] h-[500px] flex items-center justify-center text-base text-white font-bold rounded-xl"
-                style={{ backgroundColor: pages[currentPage].color }}
+                className="w-full max-w-[420px] flex items-center justify-center text-base font-bold mb-4 mx-auto overflow-hidden"
+                style={{ backgroundColor: 'transparent' }}
               >
                 <img
                   src={pages[currentPage].imageUrl}
                   alt="페이지 이미지"
-                  className="w-full h-full rounded-xl"
+                  className="w-full object-contain"
+                  style={{ maxHeight: '420px', height: 'auto', backgroundColor: 'transparent' }}
                 />
               </div>
-              <h1 className="text-2xl font-bold leading-[160%] text-center mx-auto text-black whitespace-pre-wrap w-full max-w-[440px]">
-                {pages[currentPage].title}
-              </h1>
-              <p className="leading-[160%] text-black w-full font-medium text-left">
-                {pages[currentPage].description}
-              </p>
+              <div className="w-full max-w-[380px] flex flex-col gap-3 mx-auto">
+                <h1 className="text-[22px] font-bold leading-[170%] text-left text-black whitespace-pre-wrap">
+                  {pages[currentPage].title}
+                </h1>
+                <p 
+                  className="leading-[170%] text-base text-black font-medium text-left"
+                  style={{ wordBreak: 'keep-all', overflowWrap: 'break-word', whiteSpace: 'normal' }}
+                >
+                  {pages[currentPage].description}
+                </p>
+              </div>
             </>
           ) : (
             // 1-4번째 페이지: 기존 순서 (제목 → 설명 → 이미지)
             <>
-              <h1 className="text-xl font-bold leading-[170%] text-left mx-auto text-black whitespace-pre-wrap w-full max-w-[400px]">
-                {pages[currentPage].title}
-              </h1>
-              <p
-                className={`leading-[170%] text-black w-full ${
-                  currentPage === 0
-                    ? "text-2xl font-bold text-center"
-                    : "text-xl font-medium text-left"
-                }`}
-              >
-                {pages[currentPage].description}
-              </p>
+              <div className={`w-full max-w-[380px] flex flex-col gap-3 ${currentPage === 0 ? "mt-8" : ""}`}>
+                <h1
+                  className={`leading-[170%] text-black whitespace-pre-wrap ${
+                    currentPage === 0
+                      ? "text-2xl font-bold text-left"
+                      : "text-[22px] font-bold text-left"
+                  }`}
+                >
+                  {pages[currentPage].title}
+                </h1>
+                {pages[currentPage].description && (
+                  <p 
+                    className="leading-[170%] text-base text-black font-medium text-left"
+                    style={{ wordBreak: 'keep-all', overflowWrap: 'break-word', whiteSpace: 'normal' }}
+                  >
+                    {pages[currentPage].description}
+                  </p>
+                )}
+              </div>
               <div
-                className="w-full max-w-[400px] h-[400px] flex items-center justify-center text-base text-white font-bold rounded-xl"
-                style={{ backgroundColor: pages[currentPage].color }}
+                className={`w-full max-w-[500px] flex items-center justify-center text-base font-bold overflow-hidden ${
+                  currentPage === 0 ? "" : "shadow-lg"
+                }`}
+                style={{ borderRadius: '32px', backgroundColor: 'transparent' }}
               >
                 <img
                   src={pages[currentPage].imageUrl}
                   alt="페이지 이미지"
-                  className="w-full h-full rounded-xl"
+                  className="w-full object-contain"
+                  style={{ borderRadius: '32px', maxHeight: '600px', height: 'auto', backgroundColor: 'transparent' }}
                 />
               </div>
             </>

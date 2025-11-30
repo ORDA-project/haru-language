@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
 import { Icons } from "../../Elements/Icons";
 
 interface HomeInfoProps {
@@ -8,37 +7,21 @@ interface HomeInfoProps {
   visitCount?: number;
   mostVisitedDay?: string;
   recommendation?: string;
+  dailySentence?: { english: string; korean: string } | null;
   isLoggedIn?: boolean;
 }
-
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
 const HomeInfo = ({
   userName,
   visitCount,
   mostVisitedDay,
   recommendation,
+  dailySentence,
   isLoggedIn,
 }: HomeInfoProps) => {
   const navigate = useNavigate();
 
   const [isPopupVisible, setIsPopupVisible] = useState(false);
-
-  // Writing 질문 조회 (오늘의 한줄 영어용)
-  const { data: questionsData } = useQuery({
-    queryKey: ["writingQuestions"],
-    queryFn: async () => {
-      const response = await fetch(`${API_BASE_URL}/writing/questions`);
-      if (!response.ok) throw new Error("Failed to fetch writing questions");
-      return response.json();
-    },
-  });
-
-  const todayQuestion = questionsData?.data?.[0] || {
-    englishQuestion: "Have you ever played a game?",
-    koreanQuestion: "게임을 해 본 적이 있어?",
-  };
 
   // const openPopup = () => setIsPopupVisible(true);
   // const closePopup = () => setIsPopupVisible(false);
@@ -96,8 +79,14 @@ const HomeInfo = ({
           <span>오늘의 한줄 영어</span>
         </div>
         <div className="text-[22px] font-bold leading-[150%] w-full overflow-hidden text-ellipsis my-[20px] max-h-[90px] flex flex-col">
-          <div>{todayQuestion.englishQuestion}</div>
-          <div>{todayQuestion.koreanQuestion}</div>
+          {dailySentence ? (
+            <>
+              <div>{dailySentence.english}</div>
+              <div>{dailySentence.korean}</div>
+            </>
+          ) : (
+            <div className="text-gray-400">오늘의 질문을 불러오는 중...</div>
+          )}
         </div>
 
         <div className="w-full flex flex-col items-end">
@@ -107,20 +96,29 @@ const HomeInfo = ({
         </div>
       </div>
       <div
-        className="h-[120px] flex px-5 py-2 justify-between items-center rounded-[20px] bg-white shadow-[0px_3px_7px_2px_rgba(0,0,0,0.05)] cursor-pointer"
+        className="min-h-[120px] flex px-5 py-4 justify-between items-center rounded-[20px] bg-white shadow-[0px_3px_7px_2px_rgba(0,0,0,0.05)] cursor-pointer"
         onClick={() => {
           navigate("/song-recommend");
         }}
       >
-        <div className="w-full">
-          <div className="text-[16px] font-bold leading-[150%]">
+        <div className="w-full flex-1 min-w-0 pr-4">
+          <div className="text-[16px] font-bold leading-[150%] mb-2">
             <span>오늘의 추천 팝송</span>
           </div>
-          <div className="text-xl font-bold max-w-4/5 text-ellipsis">
-            <span>{recommendation}</span>
+          <div className="text-xl font-bold leading-[150%]">
+            <span 
+              className="block"
+              style={{ 
+                wordBreak: 'keep-all', 
+                overflowWrap: 'break-word', 
+                whiteSpace: 'normal' 
+              }}
+            >
+              {recommendation}
+            </span>
           </div>
         </div>
-        <div className="h-[120px]">
+        <div className="h-[120px] flex-shrink-0">
           <div className="relative top-[10px] left-[-60px]">
             <Icons.playButton />
           </div>
