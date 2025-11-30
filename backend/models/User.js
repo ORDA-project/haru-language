@@ -35,9 +35,7 @@ const User = sequelize.define("User", {
 }, {
     tableName: "users",
     timestamps: true,
-    underscored: false,
-    createdAt: 'createdAt',
-    updatedAt: 'updatedAt',
+    underscored: true, // DB 컬럼명이 created_at, updated_at이므로 true로 변경 (자동 매핑: createdAt → created_at)
 });
 
 module.exports = User;

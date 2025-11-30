@@ -18,7 +18,7 @@ const Song = sequelize.define('Song', {
 }, {
   tableName: 'songs', 
   timestamps: true, 
-  underscored: false,
+  underscored: true, // DB 컬럼명이 created_at, updated_at이므로 true로 변경
 });
 
 module.exports = Song;
