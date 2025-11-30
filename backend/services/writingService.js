@@ -344,8 +344,8 @@ async function getWritingRecords(userId, writingQuestionId = null) {
 
     const records = await WritingRecord.findAll({
       where,
-      attributes: ["id", "user_id", "writing_question_id", "original_text", "processed_text", "feedback", "type", "createdAt"],
-      order: [["createdAt", "DESC"]],
+      attributes: ["id", "user_id", "writing_question_id", "original_text", "processed_text", "feedback", "type", "created_at"],
+      order: [["created_at", "DESC"]],
     });
 
     // feedback을 JSON 문자열에서 배열로 변환

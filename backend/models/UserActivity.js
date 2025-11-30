@@ -41,11 +41,11 @@ UserActivity.updateVisit = async function (user_id) {
 
   const lastActivity = await UserActivity.findOne({
     where: { user_id },
-    order: [["createdAt", "DESC"]],
+    order: [["created_at", "DESC"]],
   });
 
   if (lastActivity) {
-    const lastVisitDate = new Date(lastActivity.createdAt);
+    const lastVisitDate = new Date(lastActivity.createdAt); // 객체 속성 접근은 자동 매핑됨
     lastVisitDate.setHours(0, 0, 0, 0);
 
     if (lastVisitDate.toDateString() === today.toDateString()) {
@@ -69,12 +69,14 @@ UserActivity.updateVisit = async function (user_id) {
 UserActivity.getMostVisitedDays = async function (user_id) {
   const activities = await UserActivity.findAll({
     where: { user_id },
-    attributes: ["createdAt"],
+    attributes: ["created_at"],
   });
 
   const dayCounts = {};
 
-  for (const { createdAt } of activities) {
+  for (const activity of activities) {
+    // underscored: true이므로 created_at 컬럼을 createdAt 속성으로 자동 매핑
+    const createdAt = activity.createdAt || activity.created_at;
     const day = getDayOfWeek(new Date(createdAt));
     dayCounts[day] = (dayCounts[day] || 0) + 1;
   }
@@ -92,10 +94,12 @@ UserActivity.getMostVisitedDays = async function (user_id) {
 UserActivity.getDayCount = async function (user_id, targetDay) {
   const activities = await UserActivity.findAll({
     where: { user_id },
-    attributes: ["createdAt"],
+    attributes: ["created_at"],
   });
 
-  return activities.reduce((count, { createdAt }) => {
+  return activities.reduce((count, activity) => {
+    // underscored: true이므로 created_at 컬럼을 createdAt 속성으로 자동 매핑
+    const createdAt = activity.createdAt || activity.created_at;
     const day = getDayOfWeek(new Date(createdAt));
     return day === targetDay ? count + 1 : count;
   }, 0);

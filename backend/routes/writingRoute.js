@@ -166,7 +166,7 @@ router.get("/questions", async (_req, res) => {
   try {
     const questions = await WritingQuestion.findAll({
       include: [{ model: WritingExample, as: "examples", required: false }],
-      order: [["createdAt", "ASC"]],
+      order: [["created_at", "ASC"]],
     });
 
     return res.status(200).json({

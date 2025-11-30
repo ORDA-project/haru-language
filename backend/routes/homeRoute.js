@@ -76,8 +76,8 @@ router.get("/", async (req, res) => {
     // visit_count 필드를 명시적으로 선택하여 최신 누적 방문 횟수 가져오기
     const activity = await UserActivity.findOne({ 
       where: { user_id: user.userId },
-      attributes: ['visit_count', 'createdAt'],
-      order: [["createdAt", "DESC"]],
+      attributes: ['visit_count', 'created_at'],
+      order: [["created_at", "DESC"]],
     });
     
     // 방문 횟수: 전체 누적 방문 횟수 (최신 레코드의 visit_count가 전체 누적 값)
