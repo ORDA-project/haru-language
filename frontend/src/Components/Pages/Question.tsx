@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+import { useAtom } from "jotai";
+import { isLargeTextModeAtom } from "../../store/dataStore";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { API_ENDPOINTS, API_BASE_URL } from "../../config/api";
@@ -21,6 +23,16 @@ const ChatBot = () => {
   const [isPlayingTTS, setIsPlayingTTS] = useState(false);
   const { showError, showWarning, showInfo } = useErrorHandler();
   const ttsMutation = useGenerateTTS();
+  const [isLargeTextMode] = useAtom(isLargeTextModeAtom);
+  
+  // 큰글씨 모드에 따른 텍스트 크기
+  const baseFontSize = isLargeTextMode ? 20 : 16;
+  const largeFontSize = isLargeTextMode ? 24 : 20;
+  const smallFontSize = isLargeTextMode ? 18 : 14;
+  
+  const baseTextStyle: React.CSSProperties = { fontSize: `${baseFontSize}px`, wordBreak: 'keep-all', overflowWrap: 'break-word' as const };
+  const largeTextStyle: React.CSSProperties = { fontSize: `${largeFontSize}px`, wordBreak: 'keep-all', overflowWrap: 'break-word' as const };
+  const smallTextStyle: React.CSSProperties = { fontSize: `${smallFontSize}px`, wordBreak: 'keep-all', overflowWrap: 'break-word' as const };
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -38,7 +50,6 @@ const ChatBot = () => {
           };
         }>("/home");
 
-        console.log("Response data:", response);
 
         if (response && response.userData) {
           // 사용자 이름 가져오기
@@ -62,7 +73,6 @@ const ChatBot = () => {
           showError("네트워크 오류", "서버에 연결할 수 없습니다.");
         } else if (error?.status === 401) {
           // 인증 실패는 정상적인 상황이므로 에러 토스트 표시하지 않음
-          console.log("인증되지 않은 사용자 - 기본 메시지 표시");
         } else if (error?.status === 500) {
           showError("서버 오류", "서버에서 오류가 발생했습니다.");
         }
@@ -117,7 +127,6 @@ const ChatBot = () => {
       const botResponse = typeof response.answer === 'string' 
         ? response.answer 
         : response.answer.answer;
-      console.log(botResponse);
 
       if (!botResponse || typeof botResponse !== "string") {
         throw new Error("AI 응답이 올바르지 않습니다.");
@@ -246,23 +255,26 @@ const ChatBot = () => {
     <div className="w-full h-full flex flex-col items-center max-w-[440px] mx-auto shadow-[0_0_10px_0_rgba(0,0,0,0.1)] bg-[#F7F8FB]">
       <div className="h-[calc(100vh-72px)] w-full max-w-[440px] box-border mx-auto flex flex-col justify-end bg-gray-100">
         <div className="flex items-center justify-center mb-5 pt-2">
-          <label className="text-base font-bold mr-2">폰트 크기</label>
+          <label className="font-bold mr-2" style={baseTextStyle}>폰트 크기</label>
           <div className="flex gap-2">
             <button
               onClick={() => handleFontSizeChange(14)}
-              className="px-3 py-2 text-sm border border-gray-300 rounded bg-white shadow-sm hover:bg-gray-50 active:bg-gray-200 active:shadow-inner cursor-pointer"
+              className="px-3 py-2 border border-gray-300 rounded bg-white shadow-sm hover:bg-gray-50 active:bg-gray-200 active:shadow-inner cursor-pointer"
+              style={smallTextStyle}
             >
               작게
             </button>
             <button
               onClick={() => handleFontSizeChange(18)}
-              className="px-3 py-2 text-sm border border-gray-300 rounded bg-white shadow-sm hover:bg-gray-50 active:bg-gray-200 active:shadow-inner cursor-pointer"
+              className="px-3 py-2 border border-gray-300 rounded bg-white shadow-sm hover:bg-gray-50 active:bg-gray-200 active:shadow-inner cursor-pointer"
+              style={smallTextStyle}
             >
               중간
             </button>
             <button
               onClick={() => handleFontSizeChange(22)}
-              className="px-3 py-2 text-sm border border-gray-300 rounded bg-white shadow-sm hover:bg-gray-50 active:bg-gray-200 active:shadow-inner cursor-pointer"
+              className="px-3 py-2 border border-gray-300 rounded bg-white shadow-sm hover:bg-gray-50 active:bg-gray-200 active:shadow-inner cursor-pointer"
+              style={smallTextStyle}
             >
               크게
             </button>
@@ -281,7 +293,7 @@ const ChatBot = () => {
                   ? "after:content-[''] after:absolute after:top-2 after:-right-2 after:border-l-[10px] after:border-l-teal-400 after:border-t-[10px] after:border-t-transparent after:border-b-[10px] after:border-b-transparent"
                   : "after:content-[''] after:absolute after:top-2 after:-left-2 after:border-r-[10px] after:border-r-white after:border-t-[10px] after:border-t-transparent after:border-b-[10px] after:border-b-transparent"
               }`}
-              style={{ fontSize: `${fontSize}px` }}
+              style={{ fontSize: `${isLargeTextMode ? Math.max(fontSize, baseFontSize) : fontSize}px`, wordBreak: 'keep-all', overflowWrap: 'break-word' as const }}
             >
               {msg.type === "bot" ? (
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>
@@ -311,7 +323,8 @@ const ChatBot = () => {
             onChange={(e) => setUserInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="내용을 입력하세요."
-            className="flex-1 p-2 border border-gray-300 rounded-full mx-4 text-base"
+            className="flex-1 p-2 border border-gray-300 rounded-full mx-4"
+            style={baseTextStyle}
           />
           <button
             onClick={handleSend}
