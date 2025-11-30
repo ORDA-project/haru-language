@@ -5,7 +5,8 @@ const defaultOrigins = [
   "http://localhost:3000",
   "http://localhost:5173",
   "https://haru-language.vercel.app",
-  "https://haru-language-server.onrender.com",
+  "https://haru-language-production.up.railway.app",
+
 ].filter(Boolean);
 
 const normalizeOrigin = (value) => {

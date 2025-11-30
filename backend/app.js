@@ -129,6 +129,9 @@ if (sessionStore) {
   sessionConfig.store = sessionStore;
 }
 
+// favicon.ico 요청은 CORS 체크 전에 처리 (origin 헤더가 없을 수 있음)
+app.get("/favicon.ico", (_req, res) => res.status(204).end());
+
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" },
