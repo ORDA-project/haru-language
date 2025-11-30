@@ -13,4 +13,8 @@ export const userDetailsApi = {
   updateUserInfo: (params: UpdateUserDetailsParams): Promise<UserDetailsResponse> => {
     return http.put('/userDetails', { json: params });
   },
+
+  deleteAccount: (): Promise<{ message: string }> => {
+    return http.delete('/userDetails/delete');
+  },
 };

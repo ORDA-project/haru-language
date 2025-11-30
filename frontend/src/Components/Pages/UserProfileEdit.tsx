@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAtom } from "jotai";
 import { useQueryClient } from "@tanstack/react-query";
 import { userAtom, setOnboardedAtom } from "../../store/authStore";
+import { isLargeTextModeAtom } from "../../store/dataStore";
 import { useErrorHandler } from "../../hooks/useErrorHandler";
 import { http } from "../../utils/http";
 import NavBar from "../Templates/Navbar";
@@ -13,6 +14,7 @@ export default function UserProfileEdit({}: UserProfileEditProps) {
   const navigate = useNavigate();
   const [user] = useAtom(userAtom);
   const [, setOnboarded] = useAtom(setOnboardedAtom);
+  const [isLargeTextMode] = useAtom(isLargeTextModeAtom);
   const { showSuccess, showError, handleError } = useErrorHandler();
   const queryClient = useQueryClient();
 
@@ -178,81 +180,102 @@ export default function UserProfileEdit({}: UserProfileEditProps) {
       },
     ];
 
-    return (
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-6 shadow-[0_0_10px_0_rgba(0,0,0,0.1)]">
-        {questions.map((question) => (
-          <div key={question.id} className="space-y-4">
-            {/* 시스템 메시지 */}
-            <div className="flex justify-start">
-              <div className="max-w-[80%] px-4 py-3 rounded-2xl bg-gray-100 text-gray-800">
-                <p className="text-sm leading-relaxed">
-                  {question.systemMessage}
-                </p>
-              </div>
-            </div>
+    const textSizeClass = isLargeTextMode ? "text-xl" : "text-base";
+    const messagePadding = isLargeTextMode ? "px-5 py-4" : "px-4 py-3";
+    const buttonPadding = isLargeTextMode ? "px-5 py-3" : "px-4 py-2.5";
+    const spacing = isLargeTextMode ? "space-y-4" : "space-y-3";
+    const gapSize = isLargeTextMode ? "gap-3" : "gap-2.5";
 
-            {/* 사용자 응답 - 첫 번째 질문에서만 표시 */}
-            {question.userResponse && (
-              <div className="flex justify-end">
-                <div className="max-w-[80%] px-4 py-3 rounded-2xl bg-white text-gray-800 shadow-sm border border-gray-100">
-                  <p className="text-sm leading-relaxed">
-                    {question.userResponse}
+    return (
+      <div className={`flex-1 overflow-y-auto ${isLargeTextMode ? "py-5 pb-24" : "py-4 pb-20"} bg-gray-50`}>
+        <div className={`px-4 space-y-6 ${isAllQuestionsAnswered() ? "pb-0" : "pb-6"}`}>
+          {questions.map((question) => (
+            <div key={question.id} className={`${spacing} mb-6`}>
+              {/* 시스템 메시지 */}
+              <div className="flex justify-start mb-3">
+                <div className={`max-w-[75%] ${messagePadding} rounded-2xl bg-gray-100 text-gray-800`}>
+                  <p 
+                    className={`${textSizeClass} leading-relaxed`}
+                    style={{ wordBreak: 'keep-all', overflowWrap: 'break-word' }}
+                  >
+                    {question.systemMessage}
                   </p>
                 </div>
               </div>
-            )}
 
-            {/* 선택지들 */}
-            <div className="flex justify-end">
-              <div className="flex flex-wrap gap-2 max-w-[80%]">
-                {question.options.map((option) => {
-                  const isSelected =
-                    question.field === "interests" || question.field === "books"
-                      ? (
-                          formData[
-                            question.field as keyof typeof formData
-                          ] as string[]
-                        ).includes(option.value)
-                      : formData[question.field as keyof typeof formData] ===
-                        option.value;
-
-                  return (
-                    <button
-                      key={option.value}
-                      onClick={() =>
-                        handleSelect(question.field, option.value, option.label)
-                      }
-                      className={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-200 ${
-                        isSelected
-                          ? "bg-[#00DAAA] text-white"
-                          : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
-                      }`}
+              {/* 사용자 응답 - 첫 번째 질문에서만 표시 */}
+              {question.userResponse && (
+                <div className="flex justify-end mb-3">
+                  <div className={`max-w-[75%] ${messagePadding} rounded-2xl bg-white text-gray-800 shadow-sm border border-gray-100`}>
+                    <p 
+                      className={`${textSizeClass} leading-relaxed`}
+                      style={{ wordBreak: 'keep-all', overflowWrap: 'break-word' }}
                     >
-                      {option.label}
-                    </button>
-                  );
-                })}
+                    {question.userResponse}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* 선택지들 */}
+              <div className="flex justify-end w-full mt-4">
+                <div className={`flex flex-wrap ${gapSize} max-w-[85%] justify-end`}>
+                  {question.options.map((option) => {
+                    const isSelected =
+                      question.field === "interests" || question.field === "books"
+                        ? (
+                            formData[
+                              question.field as keyof typeof formData
+                            ] as string[]
+                          ).includes(option.value)
+                        : formData[question.field as keyof typeof formData] ===
+                          option.value;
+
+                    return (
+                      <button
+                        key={option.value}
+                        onClick={() =>
+                          handleSelect(question.field, option.value, option.label)
+                        }
+                        className={`${buttonPadding} rounded-full ${textSizeClass} font-medium transition-all duration-200 whitespace-nowrap ${
+                          isSelected
+                            ? "bg-[#00DAAA] text-white"
+                            : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))}
 
-        {/* 완료 메시지 */}
+          {/* 완료 메시지 */}
+          {isAllQuestionsAnswered() && (
+            <div className={`${spacing} mb-6`}>
+              <div className="flex justify-start mb-3">
+                <div className={`max-w-[75%] ${messagePadding} rounded-2xl bg-gray-100 text-gray-800`}>
+                  <p 
+                    className={`${textSizeClass} leading-relaxed`}
+                    style={{ wordBreak: 'keep-all', overflowWrap: 'break-word' }}
+                  >
+                    말씀해주신 걸 바탕으로 예문생성을 도와드릴게요!
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* 저장하기 버튼 */}
         {isAllQuestionsAnswered() && (
-          <div className="space-y-2">
-            <div className="flex justify-start">
-              <div className="max-w-[80%] px-4 py-2 rounded-2xl bg-gray-100 text-gray-800">
-                <p className="text-sm leading-relaxed">
-                  말씀해주신 걸 바탕으로 예문생성을 도와드릴게요!
-                </p>
-              </div>
-            </div>
-
-            {/* 저장하기 버튼 */}
+          <div className={`bg-gray-50 ${isLargeTextMode ? "pt-6 pb-4" : "pt-4 pb-4"} px-4`}>
             <div className="flex justify-center">
               <button
                 onClick={handleSubmit}
-                className="px-8 py-3 bg-[#00DAAA] text-white rounded-full hover:bg-[#00C495] transition-colors font-medium shadow-sm"
+                className={`${isLargeTextMode ? "px-10 py-4 text-xl" : "px-8 py-3 text-base"} bg-[#00DAAA] text-white rounded-full hover:bg-[#00C495] transition-colors font-medium shadow-sm`}
               >
                 저장하기
               </button>
@@ -276,7 +299,7 @@ export default function UserProfileEdit({}: UserProfileEditProps) {
     return (
       <div className="w-full h-screen flex flex-col max-w-[440px] mx-auto bg-gray-50">
         {/* 헤더 영역 */}
-        <div className="flex items-center justify-between p-4 bg-white border-b border-gray-200">
+        <div className="flex items-center justify-between p-4 bg-gray-50 border-b border-gray-200">
           <button
             onClick={() => navigate("/mypage")}
             className="w-8 h-8 flex items-center justify-center"
@@ -296,7 +319,7 @@ export default function UserProfileEdit({}: UserProfileEditProps) {
             </svg>
           </button>
           <div className="text-center">
-            <h1 className="text-lg font-semibold text-gray-800">프로필 설정</h1>
+            <h1 className={`${isLargeTextMode ? "text-2xl" : "text-xl"} font-semibold text-gray-800`}>프로필 설정</h1>
           </div>
           <div className="w-8"></div>
         </div>
@@ -305,7 +328,7 @@ export default function UserProfileEdit({}: UserProfileEditProps) {
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#00DAAA] mx-auto mb-4"></div>
-            <p className="text-gray-600">프로필 정보를 불러오는 중...</p>
+            <p className={`${isLargeTextMode ? "text-xl" : "text-base"} text-gray-600`}>프로필 정보를 불러오는 중...</p>
           </div>
         </div>
 
@@ -318,7 +341,7 @@ export default function UserProfileEdit({}: UserProfileEditProps) {
   return (
     <div className="w-full h-screen flex flex-col max-w-[440px] mx-auto bg-gray-50 shadow-[0_0_10px_0_rgba(0,0,0,0.1)]">
       {/* 헤더 영역 */}
-      <div className="flex items-center justify-between p-4 bg-white border-b border-gray-200">
+      <div className="flex items-center justify-between p-4 bg-gray-50 border-b border-gray-200">
         <button
           onClick={() => navigate("/mypage")}
           className="w-8 h-8 flex items-center justify-center"
@@ -338,7 +361,7 @@ export default function UserProfileEdit({}: UserProfileEditProps) {
           </svg>
         </button>
         <div className="text-center">
-          <h1 className="text-lg font-semibold text-gray-800">프로필 설정</h1>
+          <h1 className={`${isLargeTextMode ? "text-xl" : "text-lg"} font-semibold text-gray-800`}>프로필 설정</h1>
         </div>
         <div className="w-8"></div>
       </div>

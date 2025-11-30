@@ -30,10 +30,10 @@ const ProfileCard = React.memo(function ProfileCard({
               </div>
             </div>
             <div>
-              <h2 className="text-black font-bold text-xl mb-2">
+              <h2 className="text-white font-bold text-xl mb-2">
                 {userData.userName}
               </h2>
-              <p className="text-black text-sm opacity-90">
+              <p className="text-white text-base opacity-90">
                 {userData.visitCount}번째 방문했어요!
               </p>
             </div>
