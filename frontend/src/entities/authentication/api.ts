@@ -19,6 +19,7 @@ export const authApi = {
       name: string;
       email?: string;
       socialId: string;
+      socialProvider?: string;
       visitCount: number;
       mostVisitedDays: string;
     };
@@ -37,6 +38,7 @@ export const authApi = {
       name: string;
       email?: string;
       socialId: string;
+      socialProvider?: string;
       visitCount: number;
       mostVisitedDays: string;
     };

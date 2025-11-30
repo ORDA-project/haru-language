@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAtom } from "jotai";
 import { setUserAtom } from "../../store/authStore";
@@ -12,6 +12,18 @@ const AuthCallback: React.FC = () => {
   const [, setUserData] = useAtom(setUserAtom);
   const { showSuccess, showError, handleError } = useErrorHandler();
   const isProcessingRef = useRef(false); // 중복 요청 방지
+
+  const redirectToPendingInvite = useCallback(() => {
+    if (typeof window === "undefined") {
+      return false;
+    }
+    const pendingToken = sessionStorage.getItem("pendingFriendInvitationToken");
+    if (pendingToken) {
+      navigate(`/invite?token=${pendingToken}`, { replace: true });
+      return true;
+    }
+    return false;
+  }, [navigate]);
 
   useEffect(() => {
     // 이미 처리 중이면 무시
@@ -61,6 +73,7 @@ const AuthCallback: React.FC = () => {
         email: data.user.email,
         userId: data.user.userId,
         socialId: data.user.social_id,
+        socialProvider: data.user.social_provider || data.user.socialProvider || null,
         visitCount: data.user.visitCount,
         mostVisitedDays: data.user.mostVisitedDays,
       });
@@ -70,6 +83,9 @@ const AuthCallback: React.FC = () => {
       try {
         await hydrateUserFromToken();
         showSuccess("로그인 성공", `${userName || "사용자"}님 환영합니다!`);
+        if (redirectToPendingInvite()) {
+          return;
+        }
         navigate("/home", { replace: true });
       } catch (error) {
         handleError(error);
@@ -119,15 +135,25 @@ const AuthCallback: React.FC = () => {
             email: response.user.email || null,
             userId: response.user.userId,
             socialId: response.user.socialId,
+            socialProvider:
+              response.user.socialProvider ||
+              (isGoogle ? "google" : "kakao"),
             visitCount: response.user.visitCount,
             mostVisitedDays: response.user.mostVisitedDays || null,
           });
         }
 
         if (response.redirectUrl) {
+          if (redirectToPendingInvite()) {
+            return;
+          }
           // 백엔드에서 리다이렉트 URL을 반환한 경우
           window.location.href = response.redirectUrl;
         } else {
+          if (redirectToPendingInvite()) {
+            showSuccess("로그인 성공", "로그인에 성공했습니다!");
+            return;
+          }
           showSuccess("로그인 성공", "로그인에 성공했습니다!");
           navigate("/home", { replace: true });
         }
@@ -158,7 +184,7 @@ const AuthCallback: React.FC = () => {
       showError("로그인 오류", "잘못된 로그인 요청입니다.");
       navigate("/", { replace: true });
     }
-  }, [searchParams, setUserData, navigate, showSuccess, showError, handleError]);
+  }, [searchParams, setUserData, navigate, showSuccess, showError, handleError, redirectToPendingInvite]);
 
   return (
     <div className="w-full h-screen flex items-center justify-center max-w-[440px] mx-auto shadow-[0_0_10px_0_rgba(0,0,0,0.1)] bg-[#ecfffb]">

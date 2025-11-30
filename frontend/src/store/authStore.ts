@@ -8,6 +8,7 @@ interface User {
   email?: string | null;
   userId?: number;
   socialId?: string | null;
+  socialProvider?: string | null;
   visitCount?: number;
   mostVisitedDays?: string | null;
   isOnboarded?: boolean;

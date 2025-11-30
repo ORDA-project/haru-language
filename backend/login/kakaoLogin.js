@@ -60,7 +60,7 @@ router.get("/callback", validateOAuthCode, async (req, res) => {
 
   const redirectBase = getRedirectBase(req);
   
-  // 실무 패턴: AJAX 요청 여부를 여러 방법으로 확인
+  // AJAX 요청 여부를 여러 방법으로 확인
   const isAjaxRequest = 
     req.get("X-Requested-With") === "XMLHttpRequest" ||
     req.get("Accept")?.includes("application/json") ||
@@ -150,7 +150,7 @@ router.get("/callback", validateOAuthCode, async (req, res) => {
     req.session.loginSuccess = true;
     req.session.tempUserName = user.name; // 임시로 세션에 저장 (리다이렉트 후 즉시 삭제)
 
-    // 실무 패턴: AJAX 요청이면 항상 JSON 반환 (JWT 토큰 포함)
+    // AJAX 요청이면 항상 JSON 반환 (JWT 토큰 포함)
     if (isAjaxRequest) {
       return res.json({
         success: true,
@@ -161,6 +161,7 @@ router.get("/callback", validateOAuthCode, async (req, res) => {
           name: user.name,
           email: user.email,
           socialId: user.social_id,
+          socialProvider: user.social_provider,
           visitCount: activity.visit_count,
           mostVisitedDays: (mostVisited?.mostVisitedDays || []).join(", "),
         },
@@ -206,7 +207,7 @@ router.get("/callback", validateOAuthCode, async (req, res) => {
     req.session.loginError = true;
     req.session.tempErrorMessage = userFriendlyMessage;
 
-    // 실무 패턴: 오류 발생 시에도 AJAX 요청이면 JSON 반환
+    // 오류 발생 시에도 AJAX 요청이면 JSON 반환
     if (isAjaxRequest) {
       return res.status(400).json({
         success: false,
