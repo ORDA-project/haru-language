@@ -15,6 +15,7 @@ export default defineConfig(async () => {
     build: {
       outDir: "dist",
       sourcemap: false,
+      chunkSizeWarningLimit: 1000, // 1000KB (1MB)로 경고 임계값 상향 조정
       rollupOptions: {
         output: {
           manualChunks: {
