@@ -95,17 +95,14 @@ const HomeInfo = ({
         <div className="font-bold leading-[150%] bg-[#00E8B6]" style={baseTextStyle}>
           <span>오늘의 한줄 영어</span>
         </div>
-        <div className="font-bold leading-[150%] w-full overflow-hidden text-ellipsis my-[20px] max-h-[90px] flex flex-col" style={headerTextStyle}>
+        <div className="font-bold leading-[150%] w-full my-[20px] flex flex-col" style={headerTextStyle}>
           {dailySentence ? (
             <>
-              <div>{dailySentence.english}</div>
-              <div>{dailySentence.korean}</div>
+              <div className="break-words">{dailySentence.english}</div>
+              <div className="break-words">{dailySentence.korean}</div>
             </>
           ) : (
-            <>
-              <div>Have you ever played a game?</div>
-              <div>게임을 해 본 적이 있어?</div>
-            </>
+            <div className="text-gray-400">오늘의 질문을 불러오는 중...</div>
           )}
         </div>
 
