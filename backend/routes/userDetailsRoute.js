@@ -170,4 +170,47 @@ router.get("/info", async (req, res) => {
 router.post("/", handleUpsertUserDetails);
 router.put("/", handleUpsertUserDetails);
 
+/**
+ * @openapi
+ * /userDetails/delete:
+ *   delete:
+ *     summary: 회원 탈퇴
+ *     tags:
+ *       - User
+ *     responses:
+ *       200:
+ *         description: 회원 탈퇴 성공
+ *       401:
+ *         description: 인증되지 않은 요청
+ *       500:
+ *         description: 서버 오류
+ */
+router.delete("/delete", async (req, res) => {
+  try {
+    const user = await loadUserFromRequest(req);
+
+    if (!user) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    // 사용자와 관련된 모든 데이터는 CASCADE로 자동 삭제됨
+    // User 모델의 관계 설정에 따라 자동으로 삭제됨
+    await user.destroy();
+
+    // 세션 삭제
+    req.session.destroy((err) => {
+      if (err) {
+        console.error("Session destroy error:", err);
+      }
+    });
+
+    return res.json({
+      message: "회원 탈퇴가 완료되었습니다.",
+    });
+  } catch (error) {
+    console.error("Error deleting user account:", error);
+    return res.status(500).json({ message: "서버 오류가 발생했습니다." });
+  }
+});
+
 module.exports = router;
