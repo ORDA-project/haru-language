@@ -1,7 +1,7 @@
+import React from "react";
 import { RouterProvider, createBrowserRouter } from "react-router-dom";
 import { Provider } from "jotai";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import Navbar from "./Components/Templates/Navbar";
 import Home from "./Components/Pages/Home";
 import Question from "./Components/Pages/Question";
@@ -21,6 +21,10 @@ import QuestionDetail from "./Components/Pages/QuestionDetail";
 import AuthCallback from "./Components/Pages/AuthCallback";
 import ErrorBoundary from "./Components/Elements/ErrorBoundary";
 import ErrorProvider from "./Components/Providers/ErrorProvider";
+import FriendNotificationListener from "./Components/Elements/FriendNotificationListener";
+import FriendInvite from "./Components/Pages/FriendInvite";
+import Season from "./Components/Pages/Season";
+import DeleteAccount from "./Components/Pages/DeleteAccount";
 
 const router = createBrowserRouter([
   {
@@ -91,6 +95,18 @@ const router = createBrowserRouter([
     path: "/auth/kakao/callback",
     element: <AuthCallback />,
   },
+  {
+    path: "/invite",
+    element: <FriendInvite />,
+  },
+  {
+    path: "/season",
+    element: <Season />,
+  },
+  {
+    path: "/delete-account",
+    element: <DeleteAccount />,
+  },
 ]);
 
 const queryClient = new QueryClient({
@@ -106,17 +122,31 @@ const queryClient = new QueryClient({
   },
 });
 
+// ReactQueryDevtools는 개발 환경에서만 로드
+const ReactQueryDevtools = import.meta.env.DEV
+  ? React.lazy(() =>
+      import("@tanstack/react-query-devtools").then((mod) => ({
+        default: mod.ReactQueryDevtools,
+      }))
+    )
+  : null;
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <Provider>
         <ErrorBoundary>
           <ErrorProvider>
+            <FriendNotificationListener />
             <RouterProvider router={router} />
           </ErrorProvider>
         </ErrorBoundary>
       </Provider>
-      <ReactQueryDevtools initialIsOpen={false} />
+      {import.meta.env.DEV && ReactQueryDevtools && (
+        <React.Suspense fallback={null}>
+          <ReactQueryDevtools initialIsOpen={false} />
+        </React.Suspense>
+      )}
     </QueryClientProvider>
   );
 }

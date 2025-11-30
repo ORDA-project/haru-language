@@ -15,7 +15,9 @@ const ErrorProvider: React.FC<ErrorProviderProps> = ({ children }) => {
   useEffect(() => {
     // Global error handler for unhandled promise rejections
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
-      console.error('Unhandled promise rejection:', event.reason);
+      if (import.meta.env.DEV) {
+        console.error('Unhandled promise rejection:', event.reason);
+      }
       
       const error = handleApiError(event.reason);
       setGlobalError(error);
@@ -25,7 +27,9 @@ const ErrorProvider: React.FC<ErrorProviderProps> = ({ children }) => {
 
     // Global error handler for JavaScript errors
     const handleError = (event: ErrorEvent) => {
-      console.error('Global error:', event.error);
+      if (import.meta.env.DEV) {
+        console.error('Global error:', event.error);
+      }
       
       const error = new CustomError(
         event.message || '예상치 못한 오류가 발생했습니다.',
@@ -35,7 +39,7 @@ const ErrorProvider: React.FC<ErrorProviderProps> = ({ children }) => {
           filename: event.filename,
           lineno: event.lineno,
           colno: event.colno,
-          stack: event.error?.stack
+          ...(import.meta.env.DEV && { stack: event.error?.stack })
         }
       );
       
