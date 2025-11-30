@@ -199,9 +199,12 @@ router.get("/callback", validateOAuthCode, async (req, res) => {
     }
 
     // 브라우저 직접 요청인 경우: 토큰을 쿠키에 저장하고 리다이렉트
+    // 주의: 프론트엔드는 AJAX로 로그인하고 localStorage를 사용하므로 쿠키는 백업용
+    // sameSite: "none"은 secure: true와 HTTPS가 필요 (프로덕션)
+    // 시크릿 모드에서도 작동하도록 설정
     res.cookie("accessToken", accessToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: process.env.NODE_ENV === "production", // 프로덕션에서만 secure: true (HTTPS 필요)
       sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
       maxAge: 1000 * 60 * 60 * 24 * 7, // 7일
     });

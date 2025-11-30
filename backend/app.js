@@ -111,16 +111,23 @@ if (!sessionSecret) {
   throw new Error("SESSION_SECRET 환경 변수를 설정해야 합니다.");
 }
 
+// 세션 쿠키 설정
+// Railway (백엔드)와 Vercel (프론트엔드)는 모두 HTTPS 제공
+// 주의: 프론트엔드는 localStorage를 사용하므로 쿠키는 백업용
+// sameSite: "none"은 secure: true와 HTTPS가 필요 (Railway/Vercel 모두 HTTPS 제공)
+// 시크릿 모드에서도 작동하도록 설정
 const sessionConfig = {
   name: "user_sid",
   secret: sessionSecret,
   resave: false,
   saveUninitialized: false,
-  proxy: true,
+  proxy: true, // Railway/Vercel 프록시를 통한 요청 처리
   cookie: {
     maxAge: 1000 * 60 * 60 * 24 * 7,
     httpOnly: true,
-    secure: PROD,
+    secure: PROD, // Railway/Vercel은 HTTPS 제공하므로 secure: true
+    // Railway와 Vercel이 다른 도메인이므로 sameSite: "none" 필요 (cross-site 쿠키)
+    // 시크릿 모드에서도 작동하도록 설정 (프론트엔드가 localStorage 사용하므로 문제 없음)
     sameSite: PROD ? "none" : "lax",
   },
 };
