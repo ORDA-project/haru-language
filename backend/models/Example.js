@@ -13,12 +13,6 @@ const Example = sequelize.define('Example', {
   extracted_sentence: { type: DataTypes.TEXT, allowNull: false },
   description: { type: DataTypes.TEXT, allowNull: true },
   created_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
-  createdAt: {
-    type: DataTypes.DATE,
-    allowNull: false,
-    defaultValue: DataTypes.NOW,
-    field: 'created_at',
-  },
 }, {
   timestamps: false,
   tableName: 'examples',

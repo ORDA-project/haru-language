@@ -1,4 +1,4 @@
-const { Question, Answer, Example, ExampleItem, Dialogue, Quote } = require('../models');
+const { Question, Answer, Example, ExampleItem, Dialogue } = require('../models');
 
 
 async function getQuestionsAndAnswersByUserId(userId) {
@@ -58,26 +58,7 @@ async function getExamplesByUserId(userId) {
     }
   }
 
-  async function getQuotesByUserId(userId) {
-    try {
-      const quote = await Quote.findOne({
-        where: { user_id: userId },
-        order: [['created_at', 'DESC']],
-      });
-  
-      if (!quote) {
-        throw new Error('해당 유저의 명언 기록이 없습니다.');
-      }
-  
-      return quote;
-    } catch (error) {
-      console.error("Error fetching quotes:", error.message);
-      throw new Error("Failed to fetch quotes for the user.");
-    }
-  }
-
 module.exports = {
   getQuestionsAndAnswersByUserId,
   getExamplesByUserId,
-  getQuotesByUserId,
 };
