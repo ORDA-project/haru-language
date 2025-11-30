@@ -1,4 +1,6 @@
 import React from "react";
+import { useAtom } from "jotai";
+import { isLargeTextModeAtom } from "../../store/dataStore";
 import Cropper from "react-cropper";
 import "cropperjs/dist/cropper.css";
 
@@ -14,7 +16,19 @@ const StageCrop = ({
   cropperRef,
   handleCrop,
   handleBackToUpload,
-}: StageCropProps) => (
+}: StageCropProps) => {
+  const [isLargeTextMode] = useAtom(isLargeTextModeAtom);
+  
+  // 큰글씨 모드에 따른 텍스트 크기
+  const baseFontSize = isLargeTextMode ? 20 : 16;
+  const largeFontSize = isLargeTextMode ? 24 : 20;
+  const headerFontSize = isLargeTextMode ? 22 : 18;
+  
+  const baseTextStyle: React.CSSProperties = { fontSize: `${baseFontSize}px`, wordBreak: 'keep-all', overflowWrap: 'break-word' as const };
+  const largeTextStyle: React.CSSProperties = { fontSize: `${largeFontSize}px`, wordBreak: 'keep-all', overflowWrap: 'break-word' as const };
+  const headerTextStyle: React.CSSProperties = { fontSize: `${headerFontSize}px` };
+  
+  return (
   <div className="w-full h-full flex flex-col bg-[#F7F8FB]">
     {/* Header */}
     <div className="flex items-center justify-between p-4 bg-white border-b border-gray-200">
@@ -37,7 +51,7 @@ const StageCrop = ({
         </svg>
       </button>
       <div className="text-center">
-        <h1 className="text-lg font-semibold text-gray-800">이미지 자르기</h1>
+        <h1 className="font-semibold text-gray-800" style={headerTextStyle}>이미지 자르기</h1>
       </div>
       <div className="w-8"></div>
     </div>
@@ -45,7 +59,7 @@ const StageCrop = ({
     {/* Content */}
     <div className="flex-1 flex flex-col p-4">
       <div className="mb-4">
-        <p className="text-lg font-medium text-gray-800 text-center">
+        <p className="font-medium text-gray-800 text-center" style={largeTextStyle}>
           어떤 문장을 기반으로 예문을 생성하고 싶으신가요?
         </p>
       </div>
@@ -74,18 +88,21 @@ const StageCrop = ({
         <button
           onClick={handleCrop}
           className="w-full py-4 bg-[#00DAAA] hover:bg-[#00C495] active:bg-[#00B085] text-white font-semibold rounded-full transition-colors shadow-lg"
+          style={baseTextStyle}
         >
           선택 영역 예문 생성
         </button>
         <button
           onClick={handleBackToUpload}
           className="w-full py-3 bg-white hover:bg-gray-50 active:bg-gray-100 text-gray-700 font-medium rounded-full border border-gray-300 transition-colors"
+          style={baseTextStyle}
         >
           다른 사진 선택하기
         </button>
       </div>
     </div>
   </div>
-);
+  );
+};
 
 export default StageCrop;

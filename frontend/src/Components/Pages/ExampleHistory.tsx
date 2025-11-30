@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
+import { useAtom } from "jotai";
 import { Example, Dialogue } from "../../entities/examples/types";
 import { exampleApi } from "../../entities/examples/api";
 import { useErrorHandler } from "../../hooks/useErrorHandler";
+import { userAtom } from "../../store/authStore";
 import StageResult from "../Elements/StageResult";
 
 interface ExampleHistoryProps {
@@ -18,19 +20,24 @@ const ExampleHistory = ({ onBack }: ExampleHistoryProps) => {
   const [loading, setLoading] = useState(true);
   const [selectedExample, setSelectedExample] = useState<Example | null>(null);
   const { showError } = useErrorHandler();
+  const [user] = useAtom(userAtom);
 
   useEffect(() => {
-    loadExampleHistory();
-  }, []);
+    if (user?.userId) {
+      loadExampleHistory();
+    }
+  }, [user?.userId]);
 
   const loadExampleHistory = async () => {
+    if (!user?.userId) {
+      showError("오류", "로그인이 필요합니다.");
+      return;
+    }
+
     try {
       setLoading(true);
 
-      // TODO: Get actual user ID from auth context
-      const userId = 1; // Placeholder
-
-      const response = await exampleApi.getExamplesByUserId(userId);
+      const response = await exampleApi.getExamplesByUserId(user.userId);
 
       if (response.data && Array.isArray(response.data)) {
         // Group examples by date

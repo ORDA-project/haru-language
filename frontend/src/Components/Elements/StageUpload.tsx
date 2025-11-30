@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import { useAtom } from "jotai";
+import { isLargeTextModeAtom } from "../../store/dataStore";
 import ImageUploadModal from "./ImageUploadModal";
 
 interface StageUploadProps {
@@ -8,6 +10,18 @@ interface StageUploadProps {
 
 const StageUpload = ({ handleFileUpload, handleAIChat }: StageUploadProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isLargeTextMode] = useAtom(isLargeTextModeAtom);
+  
+  // 큰글씨 모드에 따른 텍스트 크기
+  const baseFontSize = isLargeTextMode ? 20 : 16;
+  const largeFontSize = isLargeTextMode ? 24 : 20;
+  const smallFontSize = isLargeTextMode ? 18 : 14;
+  const headerFontSize = isLargeTextMode ? 22 : 18;
+  
+  const baseTextStyle: React.CSSProperties = { fontSize: `${baseFontSize}px`, wordBreak: 'keep-all', overflowWrap: 'break-word' as const };
+  const largeTextStyle: React.CSSProperties = { fontSize: `${largeFontSize}px`, wordBreak: 'keep-all', overflowWrap: 'break-word' as const };
+  const smallTextStyle: React.CSSProperties = { fontSize: `${smallFontSize}px`, wordBreak: 'keep-all', overflowWrap: 'break-word' as const };
+  const headerTextStyle: React.CSSProperties = { fontSize: `${headerFontSize}px` };
 
   const handleImageSelect = (file: File) => {
     handleFileUpload(file);
@@ -19,7 +33,7 @@ const StageUpload = ({ handleFileUpload, handleAIChat }: StageUploadProps) => {
       <div className="flex items-center justify-between p-4 bg-white border-b border-gray-200">
         <div className="w-8"></div>
         <div className="text-center">
-          <h1 className="text-lg font-semibold text-gray-800">예문 생성</h1>
+          <h1 className="font-semibold text-gray-800" style={headerTextStyle}>예문 생성</h1>
         </div>
         <div className="w-8"></div>
       </div>
@@ -83,10 +97,10 @@ const StageUpload = ({ handleFileUpload, handleAIChat }: StageUploadProps) => {
                 />
               </svg>
             </div>
-            <p className="text-lg font-medium text-gray-800 mb-2">
+            <p className="font-medium text-gray-800 mb-2" style={largeTextStyle}>
               교재의 사진을 올려주세요
             </p>
-            <p className="text-sm text-gray-500 text-center">
+            <p className="text-gray-500 text-center" style={smallTextStyle}>
               이미지를 업로드하면 AI가 학습 예문을 생성해드립니다
             </p>
           </button>
@@ -94,7 +108,7 @@ const StageUpload = ({ handleFileUpload, handleAIChat }: StageUploadProps) => {
           {/* 구분선 */}
           <div className="flex items-center">
             <div className="flex-1 h-px bg-gray-300"></div>
-            <span className="px-4 text-sm text-gray-500">또는</span>
+            <span className="px-4 text-gray-500" style={smallTextStyle}>또는</span>
             <div className="flex-1 h-px bg-gray-300"></div>
           </div>
 
@@ -120,10 +134,10 @@ const StageUpload = ({ handleFileUpload, handleAIChat }: StageUploadProps) => {
                 />
               </svg>
             </div>
-            <p className="text-lg font-medium text-gray-800 mb-2">
+            <p className="font-medium text-gray-800 mb-2" style={largeTextStyle}>
               AI 대화로 공부하기
             </p>
-            <p className="text-sm text-gray-500 text-center">
+            <p className="text-gray-500 text-center" style={smallTextStyle}>
               AI와 대화하며 영어를 학습해보세요
             </p>
           </button>

@@ -27,9 +27,13 @@ const cleanupFile = async (filePath) => {
 
   try {
     await fs.unlink(filePath);
-    console.log(`Successfully deleted temp file: ${filePath}`);
+    if (process.env.NODE_ENV !== "production") {
+      console.log(`Successfully deleted temp file: ${filePath}`);
+    }
   } catch (error) {
-    console.error(`Failed to delete temp file: ${filePath}`, error);
+    if (process.env.NODE_ENV !== "production") {
+      console.error(`Failed to delete temp file: ${filePath}`, error.message);
+    }
   }
 };
 
@@ -86,24 +90,33 @@ router.post("/", upload.single("image"), async (req, res) => {
 
     const gptResponse = await generateExamples(extractedText, userId);
 
+    // 응답 검증 (generateExamples에서 이미 검증했지만 이중 체크)
+    if (!gptResponse?.generatedExample?.examples || gptResponse.generatedExample.examples.length === 0) {
+      return res.status(500).json({
+        message: "예문 생성에 실패했습니다. 다시 시도해주세요.",
+      });
+    }
+
     res.status(200).json({
       extractedText,
       generatedExample: gptResponse,
     });
   } catch (error) {
-    console.error("Error generating examples:", error);
+    if (process.env.NODE_ENV !== "production") {
+      console.error("Error generating examples:", error.message);
+    }
 
     let errorMessage = "예문 생성 중 오류가 발생했습니다.";
 
     if (error.message?.includes("OCR")) {
       errorMessage = "이미지 텍스트 인식에 실패했습니다.";
-    } else if (error.message?.includes("GPT") || error.message?.includes("API")) {
+    } else if (error.message?.includes("GPT") || error.message?.includes("API") || error.message?.includes("GPT 응답")) {
       errorMessage = "예문 생성 서비스에 일시적인 문제가 있습니다.";
     }
 
     res.status(500).json({
       message: errorMessage,
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+      ...(process.env.NODE_ENV === "development" && { error: error.message }),
     });
   } finally {
     await cleanupFile(filePath);
