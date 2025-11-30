@@ -1,5 +1,6 @@
 const { WritingRecord, WritingExample, WritingQuestion } = require("../models");
 const callGPT = require("./gptService");
+const { Op } = require("sequelize");
 
 const FALLBACK_TRANSLATIONS = {
   "집에 누워서 넷플릭스를 보는게 취미입니다":
@@ -31,6 +32,20 @@ function getFallbackKoreanTranslation(englishText) {
 }
 
 async function correctWriting(text, userId, writingQuestionId = null) {
+  // 입력 검증
+  if (!text || typeof text !== "string" || text.trim().length === 0) {
+    throw new Error("BAD_REQUEST: text는 필수이며 비어있을 수 없습니다.");
+  }
+  if (text.length > 5000) {
+    throw new Error("BAD_REQUEST: text는 최대 5000자까지 입력 가능합니다.");
+  }
+  if (!userId) {
+    throw new Error("BAD_REQUEST: userId는 필수입니다.");
+  }
+  if (writingQuestionId !== null && (!Number.isInteger(writingQuestionId) || writingQuestionId <= 0)) {
+    throw new Error("BAD_REQUEST: writingQuestionId는 양의 정수여야 합니다.");
+  }
+
   try {
     const prompt =
       "You are an AI English tutor that provides grammar correction and writing feedback. " +
@@ -69,25 +84,43 @@ async function correctWriting(text, userId, writingQuestionId = null) {
     await WritingRecord.create({
       user_id: userId,
       writing_question_id: writingQuestionId,
-      original_text: text,
+      original_text: text.trim(),
       processed_text: correctionData.correctedText,
       feedback: JSON.stringify(correctionData.feedback),
       type: "correction",
     });
 
     return {
-      originalText: text,
+      originalText: text.trim(),
       processedText: correctionData.correctedText,
       hasErrors: correctionData.hasErrors,
       feedback: correctionData.feedback,
     };
   } catch (error) {
+    // 이미 표준화된 에러는 그대로 전달
+    if (error.message?.includes("BAD_REQUEST") || error.message?.includes("NOT_FOUND")) {
+      throw error;
+    }
     console.error("문장 첨삭 오류:", error.message);
     throw new Error("문장 첨삭에 실패했습니다.");
   }
 }
 
 async function translateWriting(text, userId, writingQuestionId) {
+  // 입력 검증
+  if (!text || typeof text !== "string" || text.trim().length === 0) {
+    throw new Error("BAD_REQUEST: text는 필수이며 비어있을 수 없습니다.");
+  }
+  if (text.length > 5000) {
+    throw new Error("BAD_REQUEST: text는 최대 5000자까지 입력 가능합니다.");
+  }
+  if (!userId) {
+    throw new Error("BAD_REQUEST: userId는 필수입니다.");
+  }
+  if (!writingQuestionId || !Number.isInteger(writingQuestionId) || writingQuestionId <= 0) {
+    throw new Error("BAD_REQUEST: writingQuestionId는 양의 정수여야 합니다.");
+  }
+
   try {
     const question = await WritingQuestion.findOne({ where: { id: writingQuestionId } });
     const example = await WritingExample.findOne({
@@ -95,10 +128,10 @@ async function translateWriting(text, userId, writingQuestionId) {
     });
 
     if (!question) {
-      throw new Error("해당 Writing 질문을 찾을 수 없습니다.");
+      throw new Error("NOT_FOUND: 해당 Writing 질문을 찾을 수 없습니다.");
     }
     if (!example) {
-      throw new Error("해당 질문에 대한 예시 문장이 없습니다.");
+      throw new Error("NOT_FOUND: 해당 질문에 대한 예시 문장이 없습니다.");
     }
 
     const prompt =
@@ -153,14 +186,14 @@ async function translateWriting(text, userId, writingQuestionId) {
     await WritingRecord.create({
       user_id: userId,
       writing_question_id: writingQuestionId,
-      original_text: text,
+      original_text: text.trim(),
       processed_text: processedText,
       feedback: JSON.stringify(translationData.feedback),
       type: "translation",
     });
 
     return {
-      originalText: text,
+      originalText: text.trim(),
       sentencePairs,
       feedback: translationData.feedback,
       example: {
@@ -169,6 +202,10 @@ async function translateWriting(text, userId, writingQuestionId) {
       },
     };
   } catch (error) {
+    // 이미 표준화된 에러는 그대로 전달
+    if (error.message?.includes("BAD_REQUEST") || error.message?.includes("NOT_FOUND")) {
+      throw error;
+    }
     console.error("번역 처리 오류:", error.message);
     throw new Error("번역에 실패했습니다.");
   }
@@ -184,6 +221,20 @@ function shuffleArray(array) {
 }
 
 async function translateEnglishToKorean(text, userId, writingQuestionId) {
+  // 입력 검증
+  if (!text || typeof text !== "string" || text.trim().length === 0) {
+    throw new Error("BAD_REQUEST: text는 필수이며 비어있을 수 없습니다.");
+  }
+  if (text.length > 5000) {
+    throw new Error("BAD_REQUEST: text는 최대 5000자까지 입력 가능합니다.");
+  }
+  if (!userId) {
+    throw new Error("BAD_REQUEST: userId는 필수입니다.");
+  }
+  if (!writingQuestionId || !Number.isInteger(writingQuestionId) || writingQuestionId <= 0) {
+    throw new Error("BAD_REQUEST: writingQuestionId는 양의 정수여야 합니다.");
+  }
+
   try {
     const question = await WritingQuestion.findOne({ where: { id: writingQuestionId } });
     const example = await WritingExample.findOne({
@@ -191,10 +242,10 @@ async function translateEnglishToKorean(text, userId, writingQuestionId) {
     });
 
     if (!question) {
-      throw new Error("해당 Writing 질문을 찾을 수 없습니다.");
+      throw new Error("NOT_FOUND: 해당 Writing 질문을 찾을 수 없습니다.");
     }
     if (!example) {
-      throw new Error("해당 질문에 대한 예시 문장이 없습니다.");
+      throw new Error("NOT_FOUND: 해당 질문에 대한 예시 문장이 없습니다.");
     }
 
     const prompt =
@@ -251,14 +302,14 @@ async function translateEnglishToKorean(text, userId, writingQuestionId) {
     await WritingRecord.create({
       user_id: userId,
       writing_question_id: writingQuestionId,
-      original_text: text,
+      original_text: text.trim(),
       processed_text: processedText,
       feedback: JSON.stringify(translationData.feedback),
       type: "english_to_korean",
     });
 
     return {
-      originalText: text,
+      originalText: text.trim(),
       sentencePairs,
       feedback: translationData.feedback,
       example: {
@@ -267,10 +318,54 @@ async function translateEnglishToKorean(text, userId, writingQuestionId) {
       },
     };
   } catch (error) {
+    // 이미 표준화된 에러는 그대로 전달
+    if (error.message?.includes("BAD_REQUEST") || error.message?.includes("NOT_FOUND")) {
+      throw error;
+    }
     console.error("영어→한국어 번역 오류:", error.message);
     throw new Error("영어 문장을 한국어로 번역하지 못했습니다.");
   }
 }
 
-module.exports = { correctWriting, translateWriting, translateEnglishToKorean };
+// 기록 조회 함수들
+async function getWritingRecords(userId, writingQuestionId = null) {
+  if (!userId) {
+    throw new Error("BAD_REQUEST: userId는 필수입니다.");
+  }
+
+  try {
+    const where = { user_id: userId };
+    if (writingQuestionId !== null) {
+      if (!Number.isInteger(writingQuestionId) || writingQuestionId <= 0) {
+        throw new Error("BAD_REQUEST: writingQuestionId는 양의 정수여야 합니다.");
+      }
+      where.writing_question_id = writingQuestionId;
+    }
+
+    const records = await WritingRecord.findAll({
+      where,
+      attributes: ["id", "user_id", "writing_question_id", "original_text", "processed_text", "feedback", "type", "createdAt"],
+      order: [["createdAt", "DESC"]],
+    });
+
+    // feedback을 JSON 문자열에서 배열로 변환
+    return records.map((record) => ({
+      ...record.toJSON(),
+      feedback: record.feedback ? JSON.parse(record.feedback) : [],
+    }));
+  } catch (error) {
+    if (error.message?.includes("BAD_REQUEST")) {
+      throw error;
+    }
+    console.error("기록 조회 오류:", error.message);
+    throw new Error("기록 조회에 실패했습니다.");
+  }
+}
+
+module.exports = { 
+  correctWriting, 
+  translateWriting, 
+  translateEnglishToKorean,
+  getWritingRecords,
+};
 

@@ -157,7 +157,6 @@ export const useCorrectWriting = () => {
         return await writingApi.correctWriting(params);
       } catch (error) {
         // API 오류 시 더미 데이터 반환
-        console.log("API 오류 발생, 더미 데이터 사용");
         return {
           message: "더미 데이터로 표시됩니다",
           data: generateDummyCorrection(params.text),
@@ -368,9 +367,7 @@ export const useTranslateWriting = () => {
 
   return useMutation({
     mutationFn: async (params: TranslateWritingParams) => {
-      console.log("실제 API 호출 시도:", params);
       const result = await writingApi.translateWriting(params);
-      console.log("API 호출 성공:", result);
       return result;
     },
     onSuccess: (data, variables) => {
@@ -391,9 +388,7 @@ export const useTranslateEnglishToKorean = () => {
 
   return useMutation({
     mutationFn: async (params: TranslateWritingParams) => {
-      console.log("영어→한국어 API 호출 시도:", params);
       const result = await writingApi.translateEnglishToKorean(params);
-      console.log("영어→한국어 API 호출 성공:", result);
       return result;
     },
     onSuccess: (data, variables) => {
