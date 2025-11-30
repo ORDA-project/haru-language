@@ -1,4 +1,6 @@
 .env
+.env.development
+config
 node_modules
 
 

@@ -1,37 +1,158 @@
-import React from "react";
-import { Stage, Label, Text } from "../../Styles/Example";
+import React, { useState } from "react";
+import { useAtom } from "jotai";
+import { isLargeTextModeAtom } from "../../store/dataStore";
+import ImageUploadModal from "./ImageUploadModal";
 
 interface StageUploadProps {
-  handleFileUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  handleFileUpload: (file: File) => void;
+  handleAIChat: () => void;
 }
 
-const StageUpload = ({ handleFileUpload }: StageUploadProps) => (
-  <Stage>
-    <Label htmlFor="upload">
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="92"
-        height="80"
-        viewBox="0 0 92 80"
-        fill="none"
-      >
-        <path
-          fill-rule="evenodd"
-          clip-rule="evenodd"
-          d="M11.4355 11.4286C8.40264 11.4286 5.49397 12.6326 3.34939 14.7759C1.20481 16.9192 0 19.8261 0 22.8571V68.5714C0 71.6025 1.20481 74.5094 3.34939 76.6526C5.49397 78.7959 8.40264 80 11.4355 80H80.0487C83.0816 80 85.9903 78.7959 88.1349 76.6526C90.2794 74.5094 91.4842 71.6025 91.4842 68.5714V22.8571C91.4842 19.8261 90.2794 16.9192 88.1349 14.7759C85.9903 12.6326 83.0816 11.4286 80.0487 11.4286H70.9803C69.464 11.4282 68.0099 10.826 66.9379 9.75428L60.5283 3.34857C58.3842 1.20515 55.476 0.000647285 52.4433 0H39.0409C36.0083 0.000647285 33.1001 1.20515 30.956 3.34857L24.5464 9.75428C23.4743 10.826 22.0202 11.4282 20.5039 11.4286H11.4355ZM45.7421 62.8571C47.9947 62.8571 50.2253 62.4137 52.3064 61.5522C54.3875 60.6907 56.2785 59.428 57.8713 57.8361C59.4642 56.2443 60.7277 54.3544 61.5897 52.2746C62.4517 50.1947 62.8954 47.9655 62.8954 45.7143C62.8954 43.4631 62.4517 41.2339 61.5897 39.154C60.7277 37.0741 59.4642 35.1843 57.8713 33.5925C56.2785 32.0006 54.3875 30.7379 52.3064 29.8764C50.2253 29.0148 47.9947 28.5714 45.7421 28.5714C41.1928 28.5714 36.8298 30.3775 33.6129 33.5925C30.396 36.8074 28.5888 41.1677 28.5888 45.7143C28.5888 50.2609 30.396 54.6212 33.6129 57.8361C36.8298 61.051 41.1928 62.8571 45.7421 62.8571Z"
-          fill="#595959"
-        />
-      </svg>
-      <Text>교재의 사진을 올려주세요</Text>
-    </Label>
-    <input
-      id="upload"
-      type="file"
-      accept="image/*"
-      style={{ display: "none" }}
-      onChange={handleFileUpload}
-    />
-  </Stage>
-);
+const StageUpload = ({ handleFileUpload, handleAIChat }: StageUploadProps) => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isLargeTextMode] = useAtom(isLargeTextModeAtom);
+  
+  // 큰글씨 모드에 따른 텍스트 크기
+  const baseFontSize = isLargeTextMode ? 20 : 16;
+  const largeFontSize = isLargeTextMode ? 24 : 20;
+  const smallFontSize = isLargeTextMode ? 18 : 14;
+  const headerFontSize = isLargeTextMode ? 22 : 18;
+  
+  const baseTextStyle: React.CSSProperties = { fontSize: `${baseFontSize}px`, wordBreak: 'keep-all', overflowWrap: 'break-word' as const };
+  const largeTextStyle: React.CSSProperties = { fontSize: `${largeFontSize}px`, wordBreak: 'keep-all', overflowWrap: 'break-word' as const };
+  const smallTextStyle: React.CSSProperties = { fontSize: `${smallFontSize}px`, wordBreak: 'keep-all', overflowWrap: 'break-word' as const };
+  const headerTextStyle: React.CSSProperties = { fontSize: `${headerFontSize}px` };
+
+  const handleImageSelect = (file: File) => {
+    handleFileUpload(file);
+  };
+
+  return (
+    <div className="w-full h-full flex flex-col bg-[#F7F8FB]">
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 bg-white border-b border-gray-200">
+        <div className="w-8"></div>
+        <div className="text-center">
+          <h1 className="font-semibold text-gray-800" style={headerTextStyle}>예문 생성</h1>
+        </div>
+        <div className="w-8"></div>
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 flex flex-col items-center justify-center p-6">
+        <div className="w-full max-w-sm space-y-4">
+          {/* 이미지 업로드 옵션 */}
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="w-full flex flex-col items-center bg-white py-12 px-6 border-2 border-dashed border-[#00DAAA] rounded-2xl cursor-pointer hover:bg-gray-50 transition-colors shadow-sm"
+          >
+            <div className="w-16 h-16 bg-[#00DAAA] rounded-full flex items-center justify-center mb-4">
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                className="text-white"
+              >
+                <path
+                  d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <polyline
+                  points="14,2 14,8 20,8"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <line
+                  x1="16"
+                  y1="13"
+                  x2="8"
+                  y2="13"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <line
+                  x1="16"
+                  y1="17"
+                  x2="8"
+                  y2="17"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <polyline
+                  points="10,9 9,9 8,9"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </div>
+            <p className="font-medium text-gray-800 mb-2" style={largeTextStyle}>
+              교재의 사진을 올려주세요
+            </p>
+            <p className="text-gray-500 text-center" style={smallTextStyle}>
+              이미지를 업로드하면 AI가 학습 예문을 생성해드립니다
+            </p>
+          </button>
+
+          {/* 구분선 */}
+          <div className="flex items-center">
+            <div className="flex-1 h-px bg-gray-300"></div>
+            <span className="px-4 text-gray-500" style={smallTextStyle}>또는</span>
+            <div className="flex-1 h-px bg-gray-300"></div>
+          </div>
+
+          {/* AI 대화 옵션 */}
+          <button
+            onClick={handleAIChat}
+            className="w-full flex flex-col items-center bg-white py-12 px-6 border-2 border-solid border-[#00DAAA] rounded-2xl cursor-pointer hover:bg-gray-50 transition-colors shadow-sm"
+          >
+            <div className="w-16 h-16 bg-[#00DAAA] rounded-full flex items-center justify-center mb-4">
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                className="text-white"
+              >
+                <path
+                  d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </div>
+            <p className="font-medium text-gray-800 mb-2" style={largeTextStyle}>
+              AI 대화로 공부하기
+            </p>
+            <p className="text-gray-500 text-center" style={smallTextStyle}>
+              AI와 대화하며 영어를 학습해보세요
+            </p>
+          </button>
+        </div>
+      </div>
+
+      {/* Image Upload Modal */}
+      <ImageUploadModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onImageSelect={handleImageSelect}
+        title="교재 사진 선택"
+      />
+    </div>
+  );
+};
 
 export default StageUpload;

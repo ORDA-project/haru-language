@@ -1,5 +1,4 @@
 ﻿const express = require("express");
-const axios = require("axios");
 const router = express.Router();
 const googleRouter = require("../login/googleLogin");
 const kakaoRouter = require("../login/kakaoLogin");
@@ -33,15 +32,16 @@ router.use("/google", googleRouter);
  */
 router.use("/kakao", kakaoRouter);
 
-
-// 세션 상태 확인
+// JWT 토큰 상태 확인
 /**
  * @openapi
  * /auth/check:
  *   get:
- *     summary: Check login session status
+ *     summary: Check JWT token status
  *     tags:
  *       - Auth
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: Returns login state and user info
@@ -57,51 +57,49 @@ router.use("/kakao", kakaoRouter);
  *                   type: object
  *                   nullable: true
  *                   example:
- *                     id: "123"
+ *                     userId: 123
  *                     name: "홍길동"
  */
-router.get("/check", (req, res) => {
-  const user = req.session.user;
+const { authenticateToken, optionalAuthenticate } = require("../utils/jwt");
+
+router.get("/check", optionalAuthenticate, (req, res) => {
+  const user = req.user;
   res.json({
     isLoggedIn: !!user,
     user: user || null,
   });
 });
 
-
 // 로그아웃 라우터
 /**
  * @openapi
  * /auth/logout:
  *   get:
- *     summary: Logout user and destroy session
+ *     summary: Logout user and clear token
  *     tags:
  *       - Auth
  *     responses:
  *       200:
  *         description: Logout successful
- *       500:
- *         description: Failed to log out
  */
-router.get("/logout", async (req, res) => {
+router.get("/logout", (req, res) => {
   try {
-    // 세션 제거 및 쿠키 삭제
-    req.session.destroy((err) => {
-      if (err) {
-        console.error("세션 삭제 실패:", err);
-        return res.status(500).send("로그아웃 실패");
-      }
+    // JWT 토큰 쿠키 삭제
+    res.clearCookie("accessToken");
+    res.setHeader("Cache-Control", "no-store");
+    res.setHeader("Pragma", "no-cache");
 
-      res.clearCookie("user_sid");
-      res.setHeader("Cache-Control", "no-store");
-      res.setHeader("Pragma", "no-cache");
-
-      console.log("로그아웃 성공");
-      res.status(200).send("Logout successful");
+    console.log("로그아웃 성공");
+    res.status(200).json({
+      success: true,
+      message: "Logout successful",
     });
   } catch (error) {
     console.error("로그아웃 처리 실패:", error.message || error);
-    res.status(500).send("Failed to log out.");
+    res.status(500).json({
+      success: false,
+      message: "Failed to log out.",
+    });
   }
 });
 

@@ -1,316 +1,216 @@
 ﻿const express = require("express");
 const router = express.Router();
+
 const { User, UserInterest, UserBook } = require("../models");
-const { getUserIdBySocialId, getSocialIdFromSession } = require("../utils/userUtils");
+const { getSocialIdFromSession } = require("../utils/userUtils");
+
+const GENDERS = new Set(["male", "female", "private"]);
+const GOALS = new Set(["hobby", "exam", "business", "travel"]);
+const INTERESTS = new Set(["conversation", "reading", "grammar", "business", "vocabulary"]);
+const BOOKS = new Set(["none", "travel_conversation", "daily_conversation", "english_novel", "textbook"]);
+
+const sanitizeString = (value) => {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+  const trimmed = value.trim();
+  return trimmed.length ? trimmed : undefined;
+};
+
+const filterEnumValues = (values, allowedSet) => {
+  if (!Array.isArray(values)) {
+    return undefined;
+  }
+  const filtered = values
+    .map((value) => (typeof value === "string" ? value.trim() : ""))
+    .filter((value) => value.length && allowedSet.has(value));
+
+  return [...new Set(filtered)];
+};
+
+const loadUserFromRequest = async (req) => {
+  // JWT 기반 인증 사용 (req.user는 authenticateToken 미들웨어에서 설정됨)
+  if (req.user && req.user.social_id) {
+    return User.findOne({ where: { social_id: req.user.social_id } });
+  }
+
+  // Fallback: 세션 기반 (하위 호환성)
+  const socialId = getSocialIdFromSession(req);
+  if (!socialId) {
+    return null;
+  }
+
+  return User.findOne({ where: { social_id: socialId } });
+};
+
+const withRelations = (user) =>
+  user.reload({
+    include: [
+      { model: UserInterest, attributes: ["interest"] },
+      { model: UserBook, attributes: ["book"] },
+    ],
+  });
+
+const serializeUser = (user) => ({
+  id: user.id,
+  social_id: user.social_id,
+  social_provider: user.social_provider,
+  name: user.name,
+  email: user.email,
+  gender: user.gender,
+  goal: user.goal,
+  interests: user.UserInterests?.map((interest) => interest.interest) || [],
+  books: user.UserBooks?.map((book) => book.book) || [],
+});
+
+const handleUpsertUserDetails = async (req, res) => {
+  try {
+    const user = await loadUserFromRequest(req);
+
+    if (!user) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const name = sanitizeString(req.body?.name);
+    const email = sanitizeString(req.body?.email);
+    const gender = GENDERS.has(req.body?.gender) ? req.body.gender : undefined;
+    const goal = GOALS.has(req.body?.goal) ? req.body.goal : undefined;
+    const interests = filterEnumValues(req.body?.interests, INTERESTS);
+    const books = filterEnumValues(req.body?.books, BOOKS);
+
+    const updatePayload = {};
+    if (name !== undefined) updatePayload.name = name;
+    if (email !== undefined) updatePayload.email = email;
+    if (gender !== undefined) updatePayload.gender = gender;
+    if (goal !== undefined) updatePayload.goal = goal;
+
+    if (Object.keys(updatePayload).length) {
+      await user.update(updatePayload);
+    }
+
+    if (interests !== undefined) {
+      await UserInterest.destroy({ where: { user_id: user.id } });
+      if (interests.length) {
+        await UserInterest.bulkCreate(
+          interests.map((interest) => ({
+            user_id: user.id,
+            interest,
+          }))
+        );
+      }
+    }
+
+    if (books !== undefined) {
+      await UserBook.destroy({ where: { user_id: user.id } });
+      if (books.length) {
+        await UserBook.bulkCreate(
+          books.map((book) => ({
+            user_id: user.id,
+            book,
+          }))
+        );
+      }
+    }
+
+    const refreshed = await withRelations(user);
+
+    return res.json({
+      message: "User details saved successfully",
+      data: serializeUser(refreshed),
+    });
+  } catch (error) {
+    console.error("Error updating user details:", error);
+    return res.status(500).json({ message: "서버 오류가 발생했습니다." });
+  }
+};
 
 /**
  * @openapi
  * /userDetails/info:
  *   get:
- *     summary: Get logged-in user's details (uses social_id from session)
+ *     summary: 사용자 상세 정보 조회
  *     tags:
  *       - User
  *     responses:
  *       200:
- *         description: User details retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 id:
- *                   type: integer
- *                   example: 1
- *                 social_id:
- *                   type: string
- *                   example: "test123"
- *                 social_provider:
- *                   type: string
- *                   example: "swagger"
- *                 name:
- *                   type: string
- *                   example: "홍길동"
- *                 email:
- *                   type: string
- *                   example: "hong@test.com"
- *                 gender:
- *                   type: string
- *                   enum: [male, female, private]
- *                   example: "private"
- *                 goal:
- *                   type: string
- *                   enum: [hobby, exam, business, travel]
- *                   example: "hobby"
- *                 interests:
- *                   type: array
- *                   items:
- *                     type: string
- *                   example: ["conversation", "reading"]
- *                 books:
- *                   type: array
- *                   items:
- *                     type: string
- *                   example: ["daily_conversation"]
+ *         description: 사용자 상세 정보 조회 성공
  *       401:
- *         description: Unauthorized (not logged in)
+ *         description: 인증되지 않은 요청
  *       404:
- *         description: User not found
- *       500:
- *         description: Server error
+ *         description: 사용자를 찾을 수 없음
  */
 router.get("/info", async (req, res) => {
-    try {
-      const socialId = getSocialIdFromSession(req);
-      if (!socialId) {
-        return res.status(401).json({ error: "Unauthorized" });
-      }
-  
-      const user = await User.findOne({
-        where: { social_id: socialId },
-        include: [
-          { model: UserInterest, attributes: ['interest'] },
-          { model: UserBook, attributes: ['book'] }
-        ]
-      });
-      
-      if (!user) {
-        return res.status(404).json({ error: "User not found" });
-      }
-  
-      res.json({
-        id: user.id,
-        social_id: user.social_id,
-        social_provider: user.social_provider,
-        name: user.name,
-        email: user.email,
-        gender: user.gender,
-        goal: user.goal,
-        interests: user.UserInterests?.map(ui => ui.interest) || [],
-        books: user.UserBooks?.map(ub => ub.book) || []
-      });
-    } catch (error) {
-      res.status(500).json({ message: error.message });
+  try {
+    const user = await loadUserFromRequest(req);
+
+    if (!user) {
+      return res.status(401).json({ error: "Unauthorized" });
     }
-  });
+
+    const detailedUser = await withRelations(user);
+    return res.json(serializeUser(detailedUser));
+  } catch (error) {
+    console.error("Error fetching user details:", error);
+    return res.status(500).json({ message: "서버 오류가 발생했습니다." });
+  }
+});
 
 /**
  * @openapi
  * /userDetails:
  *   post:
- *     summary: Create/Update user details with interests and books
+ *     summary: 사용자 상세 정보 생성
  *     tags:
  *       - User
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               name:
- *                 type: string
- *                 example: "홍길동"
- *               email:
- *                 type: string
- *                 example: "hong@test.com"
- *               gender:
- *                 type: string
- *                 enum: [male, female, private]
- *                 example: "private"
- *               goal:
- *                 type: string
- *                 enum: [hobby, exam, business, travel]
- *                 example: "hobby"
- *               interests:
- *                 type: array
- *                 items:
- *                   type: string
- *                   enum: [conversation, reading, grammar, business, vocabulary]
- *                 example: ["conversation", "reading"]
- *               books:
- *                 type: array
- *                 items:
- *                   type: string
- *                   enum: [none, travel_conversation, daily_conversation, english_novel, textbook]
- *                 example: ["daily_conversation"]
- *     responses:
- *       200:
- *         description: User details created successfully
- *       401:
- *         description: Unauthorized (not logged in)
- *       404:
- *         description: User not found
- *       500:
- *         description: Server error
+ *   put:
+ *     summary: 사용자 상세 정보 수정
+ *     tags:
+ *       - User
  */
-router.post("/", async (req, res) => {
-    try {
-      const socialId = getSocialIdFromSession(req);
-      if (!socialId) {
-        return res.status(401).json({ error: "Unauthorized" });
-      }
-  
-      const user = await User.findOne({
-        where: { social_id: socialId }
-      });
-      if (!user) {
-        return res.status(404).json({ error: "User not found" });
-      }
-
-      const { interests, books, ...userFields } = req.body;
-
-      // User 기본 정보 업데이트
-      await user.update(userFields);
-
-      // UserInterest 처리
-      if (interests && Array.isArray(interests)) {
-        // 기존 관심사 삭제
-        await UserInterest.destroy({ where: { user_id: user.id } });
-        
-        // 새로운 관심사 추가
-        if (interests.length > 0) {
-          const interestRecords = interests.map(interest => ({
-            user_id: user.id,
-            interest: interest
-          }));
-          await UserInterest.bulkCreate(interestRecords);
-        }
-      }
-
-      // UserBook 처리
-      if (books && Array.isArray(books)) {
-        // 기존 책 삭제
-        await UserBook.destroy({ where: { user_id: user.id } });
-        
-        // 새로운 책 추가
-        if (books.length > 0) {
-          const bookRecords = books.map(book => ({
-            user_id: user.id,
-            book: book
-          }));
-          await UserBook.bulkCreate(bookRecords);
-        }
-      }
-  
-      res.json({
-        message: "User details created successfully",
-        data: {
-          ...user.toJSON(),
-          interests: interests || [],
-          books: books || []
-        }
-      });
-    } catch (error) {
-      console.error("Error updating user details:", error);
-      res.status(500).json({ message: error.message });
-    }
-  });
+router.post("/", handleUpsertUserDetails);
+router.put("/", handleUpsertUserDetails);
 
 /**
  * @openapi
- * /userDetails:
- *   put:
- *     summary: Update user details (same as POST)
+ * /userDetails/delete:
+ *   delete:
+ *     summary: 회원 탈퇴
  *     tags:
  *       - User
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               name:
- *                 type: string
- *                 example: "홍길동"
- *               email:
- *                 type: string
- *                 example: "hong@test.com"
- *               gender:
- *                 type: string
- *                 enum: [male, female, private]
- *                 example: "private"
- *               goal:
- *                 type: string
- *                 enum: [hobby, exam, business, travel]
- *                 example: "hobby"
- *               interests:
- *                 type: array
- *                 items:
- *                   type: string
- *                 example: ["conversation", "reading"]
- *               books:
- *                 type: array
- *                 items:
- *                   type: string
- *                 example: ["daily_conversation"]
  *     responses:
  *       200:
- *         description: User details updated successfully
+ *         description: 회원 탈퇴 성공
  *       401:
- *         description: Unauthorized (not logged in)
- *       404:
- *         description: User not found
+ *         description: 인증되지 않은 요청
  *       500:
- *         description: Server error
+ *         description: 서버 오류
  */
-router.put("/", async (req, res) => {
-    try {
-      const socialId = getSocialIdFromSession(req);
-      if (!socialId) {
-        return res.status(401).json({ error: "Unauthorized" });
-      }
-  
-      const user = await User.findOne({
-        where: { social_id: socialId }
-      });
-      if (!user) {
-        return res.status(404).json({ error: "User not found" });
-      }
+router.delete("/delete", async (req, res) => {
+  try {
+    const user = await loadUserFromRequest(req);
 
-      const { interests, books, ...userFields } = req.body;
-
-      // User 기본 정보 업데이트
-      await user.update(userFields);
-
-      // UserInterest 처리
-      if (interests && Array.isArray(interests)) {
-        await UserInterest.destroy({ where: { user_id: user.id } });
-        
-        if (interests.length > 0) {
-          const interestRecords = interests.map(interest => ({
-            user_id: user.id,
-            interest: interest
-          }));
-          await UserInterest.bulkCreate(interestRecords);
-        }
-      }
-
-      // UserBook 처리
-      if (books && Array.isArray(books)) {
-        await UserBook.destroy({ where: { user_id: user.id } });
-        
-        if (books.length > 0) {
-          const bookRecords = books.map(book => ({
-            user_id: user.id,
-            book: book
-          }));
-          await UserBook.bulkCreate(bookRecords);
-        }
-      }
-  
-      res.json({
-        message: "User details updated successfully",
-        data: {
-          ...user.toJSON(),
-          interests: interests || [],
-          books: books || []
-        }
-      });
-    } catch (error) {
-      console.error("Error updating user details:", error);
-      res.status(500).json({ message: error.message });
+    if (!user) {
+      return res.status(401).json({ error: "Unauthorized" });
     }
-  });
+
+    // 사용자와 관련된 모든 데이터는 CASCADE로 자동 삭제됨
+    // User 모델의 관계 설정에 따라 자동으로 삭제됨
+    await user.destroy();
+
+    // 세션 삭제
+    req.session.destroy((err) => {
+      if (err) {
+        console.error("Session destroy error:", err);
+      }
+    });
+
+    return res.json({
+      message: "회원 탈퇴가 완료되었습니다.",
+    });
+  } catch (error) {
+    console.error("Error deleting user account:", error);
+    return res.status(500).json({ message: "서버 오류가 발생했습니다." });
+  }
+});
 
 module.exports = router;

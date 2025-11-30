@@ -47,7 +47,7 @@ async function getExamplesByUserId(userId) {
             ],
           },
         ],
-        attributes: ['id', 'extracted_sentence', 'description'], // 필요한 필드만 선택
+        attributes: ['id', 'extracted_sentence', 'description', 'created_at'], // 필요한 필드만 선택
         order: [['created_at', 'DESC']], // 최신 순으로 정렬
       });
   

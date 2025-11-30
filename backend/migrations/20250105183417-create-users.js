@@ -27,12 +27,20 @@ module.exports = {
         allowNull: true, // 이메일은 선택적으로 입력
         unique: true, // 이메일 고유값 설정
       },
-      createdAt: {
+      gender: {
+        type: Sequelize.ENUM('male', 'female', 'private'),
+        allowNull: true,
+      },
+      goal: {
+        type: Sequelize.ENUM('hobby', 'exam', 'business', 'travel'),
+        allowNull: true,
+      },
+      created_at: {
         allowNull: false,
         type: Sequelize.DATE,
         defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
       },
-      updatedAt: {
+      updated_at: {
         allowNull: false,
         type: Sequelize.DATE,
         defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),

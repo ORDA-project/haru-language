@@ -20,7 +20,7 @@ const WritingRecord = sequelize.define("WritingRecord", {
   original_text: { type: DataTypes.TEXT, allowNull: false },
   processed_text: { type: DataTypes.TEXT, allowNull: false },
   feedback: { type: DataTypes.TEXT, allowNull: true },
-  type: { type: DataTypes.ENUM("correction", "translation"), allowNull: false },
+  type: { type: DataTypes.ENUM("correction", "translation", "english_to_korean"), allowNull: false },
 }, {
   tableName: "writing_records",
   timestamps: true,

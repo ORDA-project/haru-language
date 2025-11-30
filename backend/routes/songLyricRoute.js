@@ -5,12 +5,13 @@ const router = express.Router();
  * @openapi
  * /song/lyric:
  *   get:
- *     summary: Get song lyric information from session
+ *     summary: 추천된 노래의 가사 조회
+ *     description: 세션에 저장된 추천 노래의 가사를 반환합니다.
  *     tags:
  *       - Song
  *     responses:
  *       200:
- *         description: Song lyric and metadata
+ *         description: 가사 조회 성공
  *         content:
  *           application/json:
  *             schema:
@@ -18,7 +19,6 @@ const router = express.Router();
  *               properties:
  *                 result:
  *                   type: boolean
- *                   example: true
  *                 songData:
  *                   type: object
  *                   properties:
@@ -32,9 +32,9 @@ const router = express.Router();
  *                       type: string
  *                       example: "오늘은 좋은 날\n너무나도 좋은 날"
  *       404:
- *         description: No recommended song or no lyric found
+ *         description: 추천된 노래가 없거나 가사 정보가 없음
  *       500:
- *         description: Failed to fetch lyric
+ *         description: 가사 조회 실패
  */
 router.get("/", async (req, res) => {
   try {

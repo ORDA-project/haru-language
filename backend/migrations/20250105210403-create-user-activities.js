@@ -23,12 +23,12 @@ module.exports = {
                 type: Sequelize.INTEGER,
                 defaultValue: 1, // 처음 방문 시 방문 횟수는 1로 설정
             },
-            createdAt: {
+            created_at: {
                 allowNull: false,
                 type: Sequelize.DATE,
                 defaultValue: Sequelize.literal("CURRENT_TIMESTAMP"),
             },
-            updatedAt: {
+            updated_at: {
                 allowNull: false,
                 type: Sequelize.DATE,
                 defaultValue: Sequelize.literal("CURRENT_TIMESTAMP"),

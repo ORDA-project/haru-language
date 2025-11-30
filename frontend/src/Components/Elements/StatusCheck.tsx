@@ -1,190 +1,234 @@
-import styled from "styled-components";
+import React from "react";
 import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useAtom } from "jotai";
+import { isLargeTextModeAtom } from "../../store/dataStore";
+import { useGetQuestionsByUserId } from "../../entities/questions/queries";
+import { useGetExampleHistory } from "../../entities/examples/queries";
+import { useErrorHandler } from "../../hooks/useErrorHandler";
 
-interface StatusProps {}
+interface StatusProps {
+  userId?: number; // 하위 호환성을 위해 유지하지만 사용하지 않음
+}
 
-const StatusCheck = (props: StatusProps) => {
+interface ProgressRecord {
+  id: string;
+  date: string;
+  content: string;
+  createdAt: string;
+}
 
-    const navigate = useNavigate();
+const StatusCheck = ({ userId: _userId }: StatusProps) => {
+  // 보안: userId 파라미터는 사용하지 않음 (JWT로 자동 인증)
+  const navigate = useNavigate();
+  const { showError } = useErrorHandler();
+  const [isLargeTextMode] = useAtom(isLargeTextModeAtom);
+  
+  // 큰글씨 모드에 따른 텍스트 크기
+  const baseFontSize = isLargeTextMode ? 20 : 16;
+  const largeFontSize = isLargeTextMode ? 24 : 19;
+  const smallFontSize = isLargeTextMode ? 18 : 14;
+  const headerFontSize = isLargeTextMode ? 22 : 19; // 큰글씨 모드일 때 2px 작게 (24 -> 22)
+  
+  const baseTextStyle: React.CSSProperties = { fontSize: `${baseFontSize}px`, wordBreak: 'keep-all', overflowWrap: 'break-word' as const };
+  const largeTextStyle: React.CSSProperties = { fontSize: `${largeFontSize}px`, wordBreak: 'keep-all', overflowWrap: 'break-word' as const };
+  const smallTextStyle: React.CSSProperties = { fontSize: `${smallFontSize}px`, wordBreak: 'keep-all', overflowWrap: 'break-word' as const };
+  const headerTextStyle: React.CSSProperties = { fontSize: `${headerFontSize}px`, wordBreak: 'keep-all', overflowWrap: 'break-word' as const };
 
-  const progressRecords = [
-    {
-      date: "09/30",
-      content: (
-        <>
-          What do you do?
-          <br />
-          ‘너는 무슨 일을 하니?’
-          <br />
-          🔥<strong>주요 단어:</strong> incredible (굉장한)
-        </>
-      ),
-    },
-    {
-      date: "09/24",
-      content: (
-        <>
-          How do you feel today?
-          <br />
-          ‘오늘 기분 어때?’
-          <br />
-          🔥<strong>주요 표현:</strong> I feel incredible. (정말 기분이 좋다)
-        </>
-      ),
-    },
-    {
-      date: "09/18",
-      content: (
-        <>
-          I have been working for a year.
-          <br />
-          ‘나는 일을 시작한 지 벌써 1년이 되었어.’
-          <br />
-          🔥<strong>주요 표현:</strong> for a year (1년 동안), 벌써 (already)
-        </>
-      ),
-    },
-    {
-      date: "09/17",
-      content: (
-        <>
-          08/29~09/10 진도 점검: 복습
-          <br />
-          🔥<strong>주요 단어:</strong> progress (진전), review (복습)
-        </>
-      ),
-    },
-    {
-      date: "09/10",
-      content: (
-        <>
-          My hobby is drinking tea.
-          <br />
-          ‘내 취미는 차 마시기야.’
-          <br />
-          🔥<strong>주요 단어:</strong> hobby (취미), drinking (마시는 것)
-        </>
-      ),
-    },
-    {
-      date: "09/05",
-      content: (
-        <>
-          Do you like sweets?
-          <br />
-          ‘너 단 거 좋아해?’
-          <br />
-          🔥<strong>주요 표현:</strong> I like bitter chocolate. (나는 쓴
-          초콜릿을 좋아해.)
-        </>
-      ),
-    },
-    {
-      date: "08/29",
-      content: (
-        <>
-          What's popular these days?
-          <br />
-          ‘요즘 유행하는 건 뭐야?’
-          <br />
-          🔥<strong>주요 단어:</strong> popular (인기 있는), these days (요즘)
-        </>
-      ),
-    },
-  ];
+  const formatDate = (dateString: string): string | null => {
+    if (!dateString) return null;
+    try {
+      const date = new Date(dateString);
+      if (Number.isNaN(date.getTime())) {
+        console.warn("Invalid date string:", dateString);
+        return null;
+      }
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${month}/${day}`;
+    } catch (error) {
+      console.warn("Error formatting date:", dateString, error);
+      return null;
+    }
+  };
+
+  // 보안: JWT 기반 인증 - userId 파라미터 무시
+  const { data: questionsData, isLoading: questionsLoading } =
+    useGetQuestionsByUserId();
+  const { data: examplesData, isLoading: examplesLoading } =
+    useGetExampleHistory();
+
+  const progressRecords: ProgressRecord[] = React.useMemo(() => {
+    const recordsMap = new Map<string, ProgressRecord>();
+
+    const appendRecord = (
+      dateKey: string | null,
+      content: string,
+      createdAt: string
+    ) => {
+      if (!dateKey || !content) {
+        console.warn("Missing dateKey or content:", { dateKey, content });
+        return;
+      }
+      
+      // createdAt을 ISO 문자열로 변환 (실제 생성 날짜 사용)
+      let isoCreatedAt: string;
+      try {
+        const parsedDate = new Date(createdAt);
+        if (Number.isNaN(parsedDate.getTime())) {
+          console.warn("Invalid createdAt date, using current date:", createdAt);
+          isoCreatedAt = new Date().toISOString();
+        } else {
+          // 실제 생성 날짜 사용
+          isoCreatedAt = parsedDate.toISOString();
+        }
+      } catch (error) {
+        console.warn("Failed to parse createdAt, using current date:", createdAt, error);
+        isoCreatedAt = new Date().toISOString();
+      }
+
+      const existing = recordsMap.get(dateKey);
+
+      if (existing) {
+        existing.content = `${existing.content}\n${content}`.trim();
+        // 같은 날짜의 레코드가 여러 개면 가장 오래된 createdAt 사용 (실제 생성 날짜)
+        if (
+          new Date(isoCreatedAt).getTime() <
+          new Date(existing.createdAt).getTime()
+        ) {
+          existing.createdAt = isoCreatedAt;
+        }
+      } else {
+        recordsMap.set(dateKey, {
+          id: `date-${dateKey}`,
+          date: dateKey,
+          content: content.trim(),
+          createdAt: isoCreatedAt, // 실제 생성 날짜 저장
+        });
+      }
+    };
+
+    if (questionsData?.data?.length) {
+      questionsData.data.forEach((question) => {
+        // created_at이 없으면 건너뛰기 (데이터 문제)
+        if (!question.created_at) {
+          console.warn("Question missing created_at, skipping:", question.id);
+          return;
+        }
+        
+        // 실제 생성 날짜로 포맷팅
+        const dateKey = formatDate(question.created_at);
+        if (!dateKey) {
+          console.warn("Failed to format date for question:", question.created_at, question.id);
+          return;
+        }
+        
+        appendRecord(dateKey, question.content || "", question.created_at);
+      });
+    }
+
+    if (examplesData?.data?.length) {
+      examplesData.data.forEach((example) => {
+        // created_at 또는 createdAt 사용
+        const createdAt = example.created_at || example.createdAt;
+        if (!createdAt) {
+          console.warn("Example missing createdAt, skipping:", example.id);
+          return;
+        }
+        
+        // 실제 생성 날짜로 포맷팅
+        const dateKey = formatDate(createdAt);
+        if (!dateKey) {
+          console.warn("Failed to format date for example:", createdAt, example.id);
+          return;
+        }
+        
+        const dialogues =
+          example.ExampleItems?.flatMap(
+            (item) => item.Dialogues || []
+          ) || [];
+        const dialogueSummary = dialogues
+          .map((dialogue) => `${dialogue.speaker}: ${dialogue.english}`)
+          .join(" ");
+        const summary =
+          example.description ||
+          dialogueSummary ||
+          example.extracted_sentence ||
+          "이미지에서 예문을 생성했어요.";
+
+        appendRecord(dateKey, summary, createdAt);
+      });
+    }
+
+    return Array.from(recordsMap.values()).sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  }, [questionsData?.data, examplesData?.data]);
+
+  const loading = questionsLoading || examplesLoading;
+
+  const handleRecordClick = (record: ProgressRecord) => {
+    // createdAt에서 날짜 추출하여 YYYY-MM-DD 형식으로 변환
+    const date = new Date(record.createdAt);
+    const dateString = date.toISOString().split("T")[0];
+
+    // 보안: URL에 userId 제거 (JWT로 자동 인증)
+    navigate(`/question-detail/${dateString}`);
+  };
 
   return (
-    <StatusContainer>
-      {/* <Button onClick={() => {navigate("/quiz");}}>진도 점검 하러 가기</Button> */}
-      <StatusRecord>
-        <RecordTitle>지난 시간에는 이런 걸 배웠어요📝</RecordTitle>
-        {progressRecords.map((record, index) => (
-          <RecordItem key={index}>
-            <Date>{record.date}</Date>
-            <Content>{record.content}</Content>
-          </RecordItem>
-        ))}
-      </StatusRecord>
-    </StatusContainer>
+    <div className="flex flex-col justify-center items-center w-full">
+      {/* <button className="rounded-[20px] border-0 bg-[#fcc21b] shadow-[0px_3px_7px_2px_rgba(0,0,0,0.05)] w-[95%] p-[21px_17px] text-[19px] font-bold leading-[150%] m-[25px]" onClick={() => {navigate("/quiz");}}>진도 점검 하러 가기</button> */}
+      <div className="rounded-[10px] bg-[#d2deed] w-[90%] flex flex-col items-start p-[15px] shadow-[0px_3px_7px_rgba(0,0,0,0.1)] m-[10px]">
+        <div className="font-bold mb-[10px] text-center w-full" style={headerTextStyle}>
+          지난 시간에는 이런 걸 배웠어요<span style={{ display: 'inline-block', verticalAlign: 'middle', lineHeight: '1' }}>📝</span>
+        </div>
+
+        {loading ? (
+          <div className="w-full flex justify-center items-center py-8">
+            <div className="text-[#666]" style={baseTextStyle}>
+              학습 기록을 불러오는 중...
+            </div>
+          </div>
+        ) : progressRecords.length === 0 ? (
+          <div className="w-full flex justify-center items-center py-8">
+            <div className="text-[#666] text-center" style={baseTextStyle}>
+              아직 학습 기록이 없습니다.
+              <br />
+              예문 생성을 통해 첫 번째 학습을 시작해보세요!
+            </div>
+          </div>
+        ) : (
+          progressRecords.map((record, index) => (
+            <div
+              key={record.id || index}
+              onClick={() => handleRecordClick(record)}
+              className="min-h-[70px] flex items-start p-[12px_15px] bg-white rounded-[8px] shadow-[0_1px_3px_rgba(0,0,0,0.1)] mb-[12px] w-[91%] h-[100px] overflow-hidden cursor-pointer hover:shadow-[0_2px_6px_rgba(0,0,0,0.15)] transition-shadow"
+            >
+              <div className="font-bold text-[#666] w-[60px] mr-[10px] flex-shrink-0" style={baseTextStyle}>
+                {record.date}
+              </div>
+              <div className="text-[#333] flex-1 overflow-hidden" style={baseTextStyle}>
+                <div
+                  style={{
+                    display: "-webkit-box",
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: "vertical",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "pre-line",
+                  }}
+                >
+                  {record.content}
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
   );
 };
 
 export default StatusCheck;
-
-// 스타일 컴포넌트
-const StatusContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  width: 100%;
-`;
-
-const Button = styled.button`
-  border-radius: 20px;
-  border: 0;
-  background: #fcc21b;
-  box-shadow: 0px 3px 7px 2px rgba(0, 0, 0, 0.05);
-  width: 95%;
-  padding: 21px 17px;
-  font-size: 19px;
-  font-weight: 700;
-  line-height: 150%;
-  margin: 25px;
-`;
-
-const StatusRecord = styled.div`
-  border-radius: 10px;
-  background: #d2deed;
-  width: 90%;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  padding: 15px;
-  box-shadow: 0px 3px 7px rgba(0, 0, 0, 0.1);
-  margin: 10px;
-`;
-
-const RecordTitle = styled.div`
-  font-size: 19px;
-  font-weight: bold;
-  margin-bottom: 10px;
-  text-align: center;
-  width: 100%;
-`;
-
-const RecordItem = styled.div`
-  min-height: 70px;
-  display: flex;
-  align-items: flex-start;
-  padding: 12px 15px;
-  background-color: #ffffff;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  margin-bottom: 12px;
-  width: 91%;
-  height: 100px; /* 박스 크기 고정 */
-  overflow: hidden; /* 넘치는 내용 숨기기 */
-`;
-
-const Date = styled.div`
-  font-size: 18px;
-  font-weight: bold;
-  color: #666;
-  width: 60px;
-  margin-right: 10px;
-`;
-
-const Content = styled.div`
-  font-size: 18px;
-  color: #333;
-  display: -webkit-box;
-  -webkit-line-clamp: 4; /* 최대 3줄까지만 표시 */
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  text-overflow: ellipsis; /* 넘치는 내용 ... 처리 */
-
-  strong {
-    font-weight: bold;
-  }
-`;
