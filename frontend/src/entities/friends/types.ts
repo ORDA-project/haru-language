@@ -4,7 +4,10 @@ export interface FriendSummary {
   name: string;
   goal?: string | null;
   gender?: string | null;
-  stats?: string | null;
+  stats?: string | null | {
+    learningCount?: number;
+    writingCount?: number;
+  };
 }
 
 export interface CreateInvitationResponse {
@@ -26,4 +29,8 @@ export interface GetFriendsResponse {
   friends: FriendSummary[];
   count: number;
   limit: number;
+}
+
+export interface SendNotificationResponse {
+  message: string;
 }

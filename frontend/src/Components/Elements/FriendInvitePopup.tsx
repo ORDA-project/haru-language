@@ -76,11 +76,11 @@ const FriendInvitePopup = React.memo(function FriendInvitePopup({
         </button>
         <div className="text-center">
           {/* 친구 초대 이미지 */}
-          <div className="w-32 h-32 mx-auto mb-6 bg-gradient-to-br from-[#00DAAA] to-[#00D999] rounded-2xl flex items-center justify-center">
+          <div className="mx-auto mb-6 flex items-center justify-center">
             <img
               src="/invite.png"
               alt="친구 초대"
-              className="w-24 h-24 object-contain"
+              className="w-64 h-64 object-contain"
               onError={(e) => {
                 // 이미지 로드 실패시 기본 아이콘 표시
                 const target = e.target as HTMLImageElement;
@@ -89,7 +89,7 @@ const FriendInvitePopup = React.memo(function FriendInvitePopup({
                 target.nextElementSibling?.classList.add("flex");
               }}
             />
-            <div className="hidden w-24 h-24 items-center justify-center">
+            <div className="hidden w-64 h-64 items-center justify-center">
               <svg
                 className="w-16 h-16 text-white"
                 fill="none"
