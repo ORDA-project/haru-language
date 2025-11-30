@@ -95,7 +95,7 @@ const HomeInfo = ({
         <div className="font-bold leading-[150%] bg-[#00E8B6]" style={baseTextStyle}>
           <span>오늘의 한줄 영어</span>
         </div>
-        <div className="font-bold leading-[150%] w-full my-[20px] flex flex-col" style={headerTextStyle}>
+        <div className="font-bold leading-[150%] w-full my-[12px] flex flex-col" style={headerTextStyle}>
           {dailySentence ? (
             <>
               <div className="break-words">{dailySentence.english}</div>
@@ -106,8 +106,8 @@ const HomeInfo = ({
           )}
         </div>
 
-        <div className="w-full flex flex-col items-end">
-          <div className="rounded-[70px] bg-gradient-to-r from-transparent to-[#00DAAA] w-1/2 h-[50px] flex justify-end items-center">
+        <div className="w-full flex flex-col items-end -mt-2">
+          <div className="rounded-[70px] bg-gradient-to-r from-transparent to-[#00DAAA] w-1/2 h-[50px] flex justify-end items-center -mr-2">
             <Icons.arrowRight className="-translate-x-[15px]" />
           </div>
         </div>
@@ -122,13 +122,17 @@ const HomeInfo = ({
           <div className="font-bold leading-[150%] mb-2" style={baseTextStyle}>
             <span>오늘의 추천 팝송</span>
           </div>
-          <div className="font-bold leading-[150%]" style={largeTextStyle}>
+          <div 
+            className="font-bold leading-[150%] max-w-[calc(100%-50px)]" 
+            style={largeTextStyle}
+          >
             <span 
               className="block"
               style={{ 
-                wordBreak: 'keep-all', 
+                wordBreak: 'break-word', 
                 overflowWrap: 'break-word', 
-                whiteSpace: 'normal' 
+                whiteSpace: 'normal',
+                lineHeight: '1.5'
               }}
             >
               {recommendation}

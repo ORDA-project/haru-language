@@ -199,7 +199,6 @@ const bypassPaths = [
   "/health",
   "/healthz",
   "/health/db",
-  "/swagger-test-login",
   "/api-docs",
   "/api/tts",
 ];

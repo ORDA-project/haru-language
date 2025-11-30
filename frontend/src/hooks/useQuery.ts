@@ -14,6 +14,7 @@ interface UseQueryOptions<T> {
   gcTime?: number;
   refetchOnWindowFocus?: boolean;
   refetchOnMount?: boolean;
+  refetchInterval?: number | false;
   retry?: number | boolean;
   showErrorToast?: boolean;
   onSuccess?: (data: T) => void;
@@ -52,6 +53,7 @@ export const useQuery = <T>(
     gcTime: options.gcTime ?? 10 * 60 * 1000, // 기본 10분
     refetchOnWindowFocus: options.refetchOnWindowFocus ?? false, // 기본값: false
     refetchOnMount: options.refetchOnMount ?? true,
+    refetchInterval: options.refetchInterval,
     retry: shouldRetry,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // 지수 백오프
   });

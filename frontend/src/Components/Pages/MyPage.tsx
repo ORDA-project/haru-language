@@ -115,13 +115,13 @@ export default function MyPage() {
     }
 
     return friendsData.friends.map((friend) => {
-      // stats가 객체인 경우 (학습/작문 횟수)
-      let statsText = "학습 데이터 준비 중";
+      // stats가 객체인 경우 (방문 횟수, 학습 횟수)
+      let statsText = "기록이 없어요ㅠ.ㅠ";
       if (friend.stats && typeof friend.stats === "object") {
+        const visitCount = friend.stats.visitCount || 0;
         const learningCount = friend.stats.learningCount || 0;
-        const writingCount = friend.stats.writingCount || 0;
-        if (learningCount > 0 || writingCount > 0) {
-          statsText = `학습 ${learningCount}회, 작문 ${writingCount}회`;
+        if (visitCount > 0 || learningCount > 0) {
+          statsText = `방문 ${visitCount}회, 학습 ${learningCount}회`;
         }
       } else if (typeof friend.stats === "string" && friend.stats) {
         statsText = friend.stats;

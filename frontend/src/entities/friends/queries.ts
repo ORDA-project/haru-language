@@ -11,6 +11,8 @@ export const useGetFriends = (enabled = true) => {
   return useGetQuery<GetFriendsResponse>("/friends", {
     queryKey: ["friends"],
     enabled,
+    refetchOnWindowFocus: true, // 창 포커스 시 자동 refetch
+    refetchInterval: 30000, // 30초마다 자동 refetch
   });
 };
 

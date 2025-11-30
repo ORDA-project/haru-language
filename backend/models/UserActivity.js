@@ -36,7 +36,10 @@ const getDayOfWeek = (date) =>
 
 // 방문 기록 업데이트
 UserActivity.updateVisit = async function (user_id) {
-  const today = new Date();
+  // 한국 시간(Asia/Seoul) 기준으로 오늘 날짜 계산
+  const now = new Date();
+  const koreaTime = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Seoul" }));
+  const today = new Date(koreaTime.getFullYear(), koreaTime.getMonth(), koreaTime.getDate());
   today.setHours(0, 0, 0, 0);
 
   const lastActivity = await UserActivity.findOne({
@@ -58,14 +61,18 @@ UserActivity.updateVisit = async function (user_id) {
       return newVisit;
     }
     
-    const lastVisitDate = new Date(createdAt);
+    // 마지막 방문 날짜를 한국 시간 기준으로 계산
+    const lastVisitDateObj = new Date(createdAt);
+    const lastVisitKoreaTime = new Date(lastVisitDateObj.toLocaleString("en-US", { timeZone: "Asia/Seoul" }));
+    const lastVisitDate = new Date(lastVisitKoreaTime.getFullYear(), lastVisitKoreaTime.getMonth(), lastVisitKoreaTime.getDate());
     lastVisitDate.setHours(0, 0, 0, 0);
 
-    if (lastVisitDate.toDateString() === today.toDateString()) {
-      const dayOfWeek = getDayOfWeek(today);
+    // 같은 날이면 업데이트하지 않음
+    if (lastVisitDate.getTime() === today.getTime()) {
       return lastActivity;
     }
 
+    // 다른 날이면 새 방문 기록 생성 (visit_count 증가)
     const newVisit = await UserActivity.create({
       user_id,
       visit_count: lastActivity.visit_count + 1,
@@ -74,6 +81,7 @@ UserActivity.updateVisit = async function (user_id) {
     return newVisit;
   }
 
+  // 첫 방문
   const firstVisit = await UserActivity.create({ user_id, visit_count: 1 });
   return firstVisit;
 };

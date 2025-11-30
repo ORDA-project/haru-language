@@ -24,7 +24,20 @@ async function callGPT(prompt, userInput, maxTokens = 600, options = {}) {
       ...(responseFormat ? { response_format: responseFormat } : {}),
     });
 
-    const result = response.choices[0].message.content.trim();
+    if (!response.choices || response.choices.length === 0) {
+      throw new Error("GPT API가 빈 응답을 반환했습니다.");
+    }
+
+    const messageContent = response.choices[0]?.message?.content;
+    if (!messageContent) {
+      throw new Error("GPT API 응답에 메시지 내용이 없습니다.");
+    }
+
+    const result = messageContent.trim();
+    if (!result) {
+      throw new Error("GPT API가 빈 메시지를 반환했습니다.");
+    }
+
     return result;
   } catch (error) {
     const isProduction = process.env.NODE_ENV === "production";

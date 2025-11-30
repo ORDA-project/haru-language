@@ -39,6 +39,7 @@ async function getExamplesByUserId(userId) {
         include: [
           {
             model: ExampleItem,
+            attributes: ['id', 'context'], // context 포함
             include: [
               {
                 model: Dialogue,

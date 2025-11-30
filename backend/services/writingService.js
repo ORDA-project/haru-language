@@ -1,6 +1,6 @@
 const { WritingRecord, WritingExample, WritingQuestion } = require("../models");
 const callGPT = require("./gptService");
-const { Op } = require("sequelize");
+const { validateText, validateUserId, validateWritingQuestionId } = require("../utils/validation");
 
 const FALLBACK_TRANSLATIONS = {
   "집에 누워서 넷플릭스를 보는게 취미입니다":
@@ -31,24 +31,45 @@ function getFallbackKoreanTranslation(englishText) {
   );
 }
 
+// 공통 에러 처리
+const handleServiceError = (error, defaultMessage) => {
+  if (error.message?.includes("BAD_REQUEST") || error.message?.includes("NOT_FOUND")) {
+    throw error;
+  }
+  console.error(defaultMessage, error.message);
+  throw new Error(defaultMessage);
+};
+
+// 공통 DB 저장
+const saveWritingRecord = async (userId, writingQuestionId, originalText, processedText, feedback, type) => {
+  await WritingRecord.create({
+    user_id: userId,
+    writing_question_id: writingQuestionId,
+    original_text: originalText,
+    processed_text: processedText,
+    feedback: JSON.stringify(feedback),
+    type,
+  });
+};
+
+// GPT 응답 파싱 (안전한 fallback 포함)
+const parseGPTResponse = (response, fallbackData) => {
+  try {
+    const data = JSON.parse(response);
+    return data;
+  } catch (parseError) {
+    console.warn("GPT 응답 파싱 실패:", parseError.message);
+    return fallbackData;
+  }
+};
+
 async function correctWriting(text, userId, writingQuestionId = null) {
-  // 입력 검증
-  if (!text || typeof text !== "string" || text.trim().length === 0) {
-    throw new Error("BAD_REQUEST: text는 필수이며 비어있을 수 없습니다.");
-  }
-  if (text.length > 5000) {
-    throw new Error("BAD_REQUEST: text는 최대 5000자까지 입력 가능합니다.");
-  }
-  if (!userId) {
-    throw new Error("BAD_REQUEST: userId는 필수입니다.");
-  }
-  if (writingQuestionId !== null && (!Number.isInteger(writingQuestionId) || writingQuestionId <= 0)) {
-    throw new Error("BAD_REQUEST: writingQuestionId는 양의 정수여야 합니다.");
-  }
+  const trimmedText = validateText(text);
+  validateUserId(userId);
+  validateWritingQuestionId(writingQuestionId, false);
 
   try {
-    const prompt =
-      "You are an AI English tutor that provides grammar correction and writing feedback. " +
+    const prompt = "You are an AI English tutor that provides grammar correction and writing feedback. " +
       "When given a text, return a JSON object with the following:\n\n" +
       "- 'correctedText': The grammatically corrected version of the input text.\n" +
       "- 'hasErrors': Whether the original text contains grammatical errors (true or false).\n" +
@@ -56,158 +77,86 @@ async function correctWriting(text, userId, writingQuestionId = null) {
       "If there are no errors, return 'hasErrors': false and an empty 'feedback' array.\n" +
       "Provide only the JSON output.";
 
-    const response = await callGPT(
-      prompt,
-      `Please correct and provide feedback for: "${text}"`,
-      500
-    );
+    const response = await callGPT(prompt, `Please correct and provide feedback for: "${trimmedText}"`, 500);
+    const fallbackData = { correctedText: trimmedText, hasErrors: false, feedback: ["첨삭 처리 중 오류가 발생했습니다."] };
+    const correctionData = parseGPTResponse(response, fallbackData);
 
-    let correctionData;
-    try {
-      correctionData = JSON.parse(response);
-      if (
-        !correctionData.correctedText ||
-        typeof correctionData.hasErrors !== "boolean" ||
-        !Array.isArray(correctionData.feedback)
-      ) {
-        throw new Error("GPT 응답 형식이 올바르지 않습니다");
-      }
-    } catch (parseError) {
-      console.warn("GPT 응답 파싱 실패:", parseError.message);
-      correctionData = {
-        correctedText: text,
-        hasErrors: false,
-        feedback: ["첨삭 처리 중 오류가 발생했습니다."],
-      };
+    if (!correctionData.correctedText || typeof correctionData.hasErrors !== "boolean" || !Array.isArray(correctionData.feedback)) {
+      throw new Error("GPT 응답 형식이 올바르지 않습니다");
     }
 
-    await WritingRecord.create({
-      user_id: userId,
-      writing_question_id: writingQuestionId,
-      original_text: text.trim(),
-      processed_text: correctionData.correctedText,
-      feedback: JSON.stringify(correctionData.feedback),
-      type: "correction",
-    });
+    await saveWritingRecord(userId, writingQuestionId, trimmedText, correctionData.correctedText, correctionData.feedback, "correction");
 
     return {
-      originalText: text.trim(),
+      originalText: trimmedText,
       processedText: correctionData.correctedText,
       hasErrors: correctionData.hasErrors,
       feedback: correctionData.feedback,
     };
   } catch (error) {
-    // 이미 표준화된 에러는 그대로 전달
-    if (error.message?.includes("BAD_REQUEST") || error.message?.includes("NOT_FOUND")) {
-      throw error;
-    }
-    console.error("문장 첨삭 오류:", error.message);
-    throw new Error("문장 첨삭에 실패했습니다.");
+    handleServiceError(error, "문장 첨삭에 실패했습니다.");
   }
 }
 
+// 질문과 예시 조회 (공통)
+const getQuestionAndExample = async (writingQuestionId) => {
+  const [question, example] = await Promise.all([
+    WritingQuestion.findOne({ where: { id: writingQuestionId } }),
+    WritingExample.findOne({ where: { writing_question_id: writingQuestionId } }),
+  ]);
+  if (!question) throw new Error("NOT_FOUND: 해당 Writing 질문을 찾을 수 없습니다.");
+  if (!example) throw new Error("NOT_FOUND: 해당 질문에 대한 예시 문장이 없습니다.");
+  return { question, example };
+};
+
 async function translateWriting(text, userId, writingQuestionId) {
-  // 입력 검증
-  if (!text || typeof text !== "string" || text.trim().length === 0) {
-    throw new Error("BAD_REQUEST: text는 필수이며 비어있을 수 없습니다.");
-  }
-  if (text.length > 5000) {
-    throw new Error("BAD_REQUEST: text는 최대 5000자까지 입력 가능합니다.");
-  }
-  if (!userId) {
-    throw new Error("BAD_REQUEST: userId는 필수입니다.");
-  }
-  if (!writingQuestionId || !Number.isInteger(writingQuestionId) || writingQuestionId <= 0) {
-    throw new Error("BAD_REQUEST: writingQuestionId는 양의 정수여야 합니다.");
-  }
+  const trimmedText = validateText(text);
+  validateUserId(userId);
+  validateWritingQuestionId(writingQuestionId, true);
 
   try {
-    const question = await WritingQuestion.findOne({ where: { id: writingQuestionId } });
-    const example = await WritingExample.findOne({
-      where: { writing_question_id: writingQuestionId },
-    });
+    const { question, example } = await getQuestionAndExample(writingQuestionId);
 
-    if (!question) {
-      throw new Error("NOT_FOUND: 해당 Writing 질문을 찾을 수 없습니다.");
-    }
-    if (!example) {
-      throw new Error("NOT_FOUND: 해당 질문에 대한 예시 문장이 없습니다.");
-    }
-
-    const prompt =
-      "You are an AI English tutor that helps users express ideas in English naturally.\n" +
+    const prompt = "You are an AI English tutor that helps users express ideas in English naturally.\n" +
       "The user has written a response to a specific question. Your job is to provide an English translation " +
       "that is both natural and grammatically correct. Additionally, provide an explanation of key phrases in Korean.\n\n" +
-      "**Question:**\n" +
-      `"${question.question_text}"\n\n` +
-      "**Example Response:**\n" +
-      `Korean: "${example.example}"\n` +
-      `English Translation: "${example.translation}"\n\n` +
-      "**User's Input:**\n" +
-      `Korean: "${text}"\n\n` +
+      "**Question:**\n" + `"${question.question_text}"\n\n` +
+      "**Example Response:**\n" + `Korean: "${example.example}"\n` + `English Translation: "${example.translation}"\n\n` +
+      "**User's Input:**\n" + `Korean: "${trimmedText}"\n\n` +
       "Return a JSON object with:\n" +
       "- 'koreanSentences': The original Korean text split into sentences as an array, where each sentence is a separate element.\n" +
       "- 'translatedText': The translated English sentences as an array, where each sentence is a separate element (must match the number of Korean sentences).\n" +
       "- 'feedback': A JSON array of explanations in Korean about key phrases and grammar points, where each item is a separate explanation sentence.\n\n" +
       "Provide only the JSON output.";
 
-    let translationData;
-    try {
-      const response = await callGPT(prompt, text, 600);
-      translationData = JSON.parse(response);
-      if (
-        !translationData.translatedText ||
-        !Array.isArray(translationData.translatedText) ||
-        !Array.isArray(translationData.feedback)
-      ) {
-        throw new Error("GPT 응답 형식이 올바르지 않습니다");
-      }
-    } catch (gptError) {
-      console.error("GPT API 호출 실패, 폴백 로직 사용:", gptError.message);
-      translationData = {
-        koreanSentences: [text],
-        translatedText: [getFallbackTranslation(text)],
-        feedback: [
-          "GPT API가 일시적으로 사용할 수 없어 기본 번역을 제공합니다.",
-        ],
-      };
+    const response = await callGPT(prompt, trimmedText, 600);
+    const fallbackData = {
+      koreanSentences: [trimmedText],
+      translatedText: [getFallbackTranslation(trimmedText)],
+      feedback: ["GPT API가 일시적으로 사용할 수 없어 기본 번역을 제공합니다."],
+    };
+    const translationData = parseGPTResponse(response, fallbackData);
+
+    if (!translationData.translatedText || !Array.isArray(translationData.translatedText) || !Array.isArray(translationData.feedback)) {
+      throw new Error("GPT 응답 형식이 올바르지 않습니다");
     }
 
-    const sentencePairs = translationData.translatedText.map(
-      (sentence, index) => ({
-        koreanSentence: translationData.koreanSentences?.[index] || "",
-        originalSentence: sentence,
-        shuffledWords: shuffleArray(sentence.split(" ")),
-      })
-    );
+    const sentencePairs = translationData.translatedText.map((sentence, index) => ({
+      koreanSentence: translationData.koreanSentences?.[index] || "",
+      originalSentence: sentence,
+      shuffledWords: shuffleArray(sentence.split(" ")),
+    }));
 
-    const processedText = translationData.translatedText.join(" ");
-
-    await WritingRecord.create({
-      user_id: userId,
-      writing_question_id: writingQuestionId,
-      original_text: text.trim(),
-      processed_text: processedText,
-      feedback: JSON.stringify(translationData.feedback),
-      type: "translation",
-    });
+    await saveWritingRecord(userId, writingQuestionId, trimmedText, translationData.translatedText.join(" "), translationData.feedback, "translation");
 
     return {
-      originalText: text.trim(),
+      originalText: trimmedText,
       sentencePairs,
       feedback: translationData.feedback,
-      example: {
-        korean: example.example,
-        english: example.translation,
-      },
+      example: { korean: example.example, english: example.translation },
     };
   } catch (error) {
-    // 이미 표준화된 에러는 그대로 전달
-    if (error.message?.includes("BAD_REQUEST") || error.message?.includes("NOT_FOUND")) {
-      throw error;
-    }
-    console.error("번역 처리 오류:", error.message);
-    throw new Error("번역에 실패했습니다.");
+    handleServiceError(error, "번역에 실패했습니다.");
   }
 }
 
@@ -221,126 +170,75 @@ function shuffleArray(array) {
 }
 
 async function translateEnglishToKorean(text, userId, writingQuestionId) {
-  // 입력 검증
-  if (!text || typeof text !== "string" || text.trim().length === 0) {
-    throw new Error("BAD_REQUEST: text는 필수이며 비어있을 수 없습니다.");
-  }
-  if (text.length > 5000) {
-    throw new Error("BAD_REQUEST: text는 최대 5000자까지 입력 가능합니다.");
-  }
-  if (!userId) {
-    throw new Error("BAD_REQUEST: userId는 필수입니다.");
-  }
-  if (!writingQuestionId || !Number.isInteger(writingQuestionId) || writingQuestionId <= 0) {
-    throw new Error("BAD_REQUEST: writingQuestionId는 양의 정수여야 합니다.");
-  }
+  const trimmedText = validateText(text);
+  validateUserId(userId);
+  validateWritingQuestionId(writingQuestionId, true);
 
   try {
-    const question = await WritingQuestion.findOne({ where: { id: writingQuestionId } });
-    const example = await WritingExample.findOne({
-      where: { writing_question_id: writingQuestionId },
-    });
+    const { question, example } = await getQuestionAndExample(writingQuestionId);
 
-    if (!question) {
-      throw new Error("NOT_FOUND: 해당 Writing 질문을 찾을 수 없습니다.");
-    }
-    if (!example) {
-      throw new Error("NOT_FOUND: 해당 질문에 대한 예시 문장이 없습니다.");
-    }
-
-    const prompt =
-      "You are an AI Korean tutor that helps users express ideas in Korean naturally.\n" +
+    const prompt = "You are an AI Korean tutor that helps users express ideas in Korean naturally.\n" +
       "The user has written a response in English to a specific question. Your job is to provide a Korean translation " +
       "that is both natural and grammatically correct. Additionally, provide an explanation of key phrases in Korean.\n\n" +
-      "**Question:**\n" +
-      `"${question.question_text}"\n\n` +
-      "**Example Response:**\n" +
-      `English: "${example.translation}"\n` +
-      `Korean Translation: "${example.example}"\n\n` +
-      "**User's Input:**\n" +
-      `English: "${text}"\n\n` +
+      "**Question:**\n" + `"${question.question_text}"\n\n` +
+      "**Example Response:**\n" + `English: "${example.translation}"\n` + `Korean Translation: "${example.example}"\n\n` +
+      "**User's Input:**\n" + `English: "${trimmedText}"\n\n` +
       "Return a JSON object with:\n" +
       "- 'englishSentences': The original English text split into sentences as an array, where each sentence is a separate element.\n" +
       "- 'translatedText': The translated Korean sentences as an array, where each sentence is a separate element (must match the number of English sentences).\n" +
       "- 'feedback': A JSON array of explanations in Korean about key phrases and grammar points, where each item is a separate explanation sentence.\n\n" +
       "Provide only the JSON output.";
 
-    let translationData;
-    try {
-      const response = await callGPT(prompt, text, 600);
-      translationData = JSON.parse(response);
-      if (
-        !translationData.translatedText ||
-        !Array.isArray(translationData.translatedText)
-      ) {
-        throw new Error("GPT가 올바른 번역 데이터를 반환하지 않았습니다.");
-      }
-    } catch (gptError) {
-      console.error(
-        "영어→한국어 GPT API 호출 실패, 폴백 로직 사용:",
-        gptError.message
-      );
-      translationData = {
-        englishSentences: [text],
-        translatedText: [getFallbackKoreanTranslation(text)],
-        feedback: [
-          "GPT API가 일시적으로 사용할 수 없어 기본 번역을 제공합니다.",
-        ],
-      };
+    const response = await callGPT(prompt, trimmedText, 600);
+    const fallbackData = {
+      englishSentences: [trimmedText],
+      translatedText: [getFallbackKoreanTranslation(trimmedText)],
+      feedback: ["GPT API가 일시적으로 사용할 수 없어 기본 번역을 제공합니다."],
+    };
+    const translationData = parseGPTResponse(response, fallbackData);
+
+    if (!translationData.translatedText || !Array.isArray(translationData.translatedText)) {
+      throw new Error("GPT가 올바른 번역 데이터를 반환하지 않았습니다.");
     }
 
-    const sentencePairs = translationData.translatedText.map(
-      (sentence, index) => ({
-        englishSentence: translationData.englishSentences?.[index] || "",
-        originalSentence: sentence,
-        shuffledWords: shuffleArray(sentence.split(" ")),
-      })
-    );
+    const sentencePairs = translationData.translatedText.map((sentence, index) => ({
+      englishSentence: translationData.englishSentences?.[index] || "",
+      originalSentence: sentence,
+      shuffledWords: shuffleArray(sentence.split(" ")),
+    }));
 
-    const processedText = translationData.translatedText.join(" ");
-
-    await WritingRecord.create({
-      user_id: userId,
-      writing_question_id: writingQuestionId,
-      original_text: text.trim(),
-      processed_text: processedText,
-      feedback: JSON.stringify(translationData.feedback),
-      type: "english_to_korean",
-    });
+    await saveWritingRecord(userId, writingQuestionId, trimmedText, translationData.translatedText.join(" "), translationData.feedback, "english_to_korean");
 
     return {
-      originalText: text.trim(),
+      originalText: trimmedText,
       sentencePairs,
       feedback: translationData.feedback,
-      example: {
-        korean: example.example,
-        english: example.translation,
-      },
+      example: { korean: example.example, english: example.translation },
     };
   } catch (error) {
-    // 이미 표준화된 에러는 그대로 전달
-    if (error.message?.includes("BAD_REQUEST") || error.message?.includes("NOT_FOUND")) {
-      throw error;
-    }
-    console.error("영어→한국어 번역 오류:", error.message);
-    throw new Error("영어 문장을 한국어로 번역하지 못했습니다.");
+    handleServiceError(error, "영어 문장을 한국어로 번역하지 못했습니다.");
   }
 }
 
-// 기록 조회 함수들
-async function getWritingRecords(userId, writingQuestionId = null) {
-  if (!userId) {
-    throw new Error("BAD_REQUEST: userId는 필수입니다.");
+// feedback 파싱 (안전)
+const parseFeedback = (feedback, recordId) => {
+  if (!feedback) return [];
+  try {
+    const parsed = JSON.parse(feedback);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (parseError) {
+    console.warn(`기록 ID ${recordId}의 feedback 파싱 실패:`, parseError.message);
+    return [];
   }
+};
+
+async function getWritingRecords(userId, writingQuestionId = null) {
+  validateUserId(userId);
+  if (writingQuestionId !== null) validateWritingQuestionId(writingQuestionId, true);
 
   try {
     const where = { user_id: userId };
-    if (writingQuestionId !== null) {
-      if (!Number.isInteger(writingQuestionId) || writingQuestionId <= 0) {
-        throw new Error("BAD_REQUEST: writingQuestionId는 양의 정수여야 합니다.");
-      }
-      where.writing_question_id = writingQuestionId;
-    }
+    if (writingQuestionId !== null) where.writing_question_id = writingQuestionId;
 
     const records = await WritingRecord.findAll({
       where,
@@ -348,17 +246,12 @@ async function getWritingRecords(userId, writingQuestionId = null) {
       order: [["created_at", "DESC"]],
     });
 
-    // feedback을 JSON 문자열에서 배열로 변환
     return records.map((record) => ({
       ...record.toJSON(),
-      feedback: record.feedback ? JSON.parse(record.feedback) : [],
+      feedback: parseFeedback(record.feedback, record.id),
     }));
   } catch (error) {
-    if (error.message?.includes("BAD_REQUEST")) {
-      throw error;
-    }
-    console.error("기록 조회 오류:", error.message);
-    throw new Error("기록 조회에 실패했습니다.");
+    handleServiceError(error, "기록 조회에 실패했습니다.");
   }
 }
 

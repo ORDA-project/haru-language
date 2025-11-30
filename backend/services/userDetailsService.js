@@ -15,8 +15,8 @@ const userService = {
     return {
       gender: user.gender,
       goal: user.goal,
-      interests: user.UserInterests.map((i) => i.interest),
-      books: user.UserBooks.map((b) => b.book),
+      interests: (user.UserInterests || []).map((i) => i.interest),
+      books: (user.UserBooks || []).map((b) => b.book),
     };
   },
 
@@ -31,20 +31,13 @@ const userService = {
     // 사용자 기본 정보 생성
     const newUser = await User.create({ social_id, social_provider, gender, goal });
 
-    // 관심사 저장
-    if (interests && Array.isArray(interests)) {
-      await UserInterest.bulkCreate(
-        interests.map((interest) => ({ user_id: newUser.id, interest })),
-        { ignoreDuplicates: true }
-      );
+    // 관심사 및 책 정보 저장
+    const bulkCreateOptions = { ignoreDuplicates: true };
+    if (interests?.length) {
+      await UserInterest.bulkCreate(interests.map((interest) => ({ user_id: newUser.id, interest })), bulkCreateOptions);
     }
-
-    // 책 정보 저장
-    if (books && Array.isArray(books)) {
-      await UserBook.bulkCreate(
-        books.map((book) => ({ user_id: newUser.id, book })),
-        { ignoreDuplicates: true }
-      );
+    if (books?.length) {
+      await UserBook.bulkCreate(books.map((book) => ({ user_id: newUser.id, book })), bulkCreateOptions);
     }
 
     // 방문 기록 첫 생성
@@ -64,22 +57,15 @@ const userService = {
     // 성별/목표 수정
     await User.update({ gender, goal }, { where: { social_id, social_provider } });
 
-    // 관심사 수정
-    if (interests && Array.isArray(interests)) {
+    // 관심사 및 책 정보 수정
+    const bulkCreateOptions = { ignoreDuplicates: true };
+    if (interests?.length) {
       await UserInterest.destroy({ where: { user_id: existingUser.id } });
-      await UserInterest.bulkCreate(
-        interests.map((interest) => ({ user_id: existingUser.id, interest })),
-        { ignoreDuplicates: true }
-      );
+      await UserInterest.bulkCreate(interests.map((interest) => ({ user_id: existingUser.id, interest })), bulkCreateOptions);
     }
-
-    // 책 정보 수정
-    if (books && Array.isArray(books)) {
+    if (books?.length) {
       await UserBook.destroy({ where: { user_id: existingUser.id } });
-      await UserBook.bulkCreate(
-        books.map((book) => ({ user_id: existingUser.id, book })),
-        { ignoreDuplicates: true }
-      );
+      await UserBook.bulkCreate(books.map((book) => ({ user_id: existingUser.id, book })), bulkCreateOptions);
     }
 
     return { message: "사용자 정보가 성공적으로 수정되었습니다!" };

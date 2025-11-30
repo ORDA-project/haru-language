@@ -143,20 +143,31 @@ const AuthCallback: React.FC = () => {
           });
         }
 
-        // redirectUrl이 있으면 해당 URL로 이동, 없으면 /home으로 이동
-        // redirectUrl은 백엔드에서 프론트엔드 URL을 포함하여 반환함
+        // redirectUrl이 있으면 해당 경로로 이동, 없으면 /home으로 이동
+        // redirectUrl은 백엔드에서 프론트엔드 URL을 포함하여 반환할 수 있으므로 경로만 추출
         if (redirectToPendingInvite()) {
           showSuccess("로그인 성공", "로그인에 성공했습니다!");
           return;
         }
         
+        showSuccess("로그인 성공", "로그인에 성공했습니다!");
+        
+        // redirectUrl이 있으면 경로만 추출하여 사용, 없으면 /home으로 이동
+        let targetPath = "/home";
         if (response.redirectUrl) {
-          // 백엔드에서 리다이렉트 URL을 반환한 경우 (프론트엔드 URL 포함)
-          window.location.href = response.redirectUrl;
-        } else {
-          showSuccess("로그인 성공", "로그인에 성공했습니다!");
-          navigate("/home", { replace: true });
+          try {
+            // 전체 URL이면 경로만 추출, 이미 경로면 그대로 사용
+            const url = new URL(response.redirectUrl, window.location.origin);
+            targetPath = url.pathname + url.search;
+          } catch {
+            // URL 파싱 실패 시 경로로 간주
+            targetPath = response.redirectUrl.startsWith("/") 
+              ? response.redirectUrl 
+              : `/${response.redirectUrl}`;
+          }
         }
+        
+        navigate(targetPath, { replace: true });
       } catch (error) {
         handleError(error);
         const errorMessage = (error as any)?.data?.error || (error as any)?.message || "로그인 처리 중 오류가 발생했습니다.";

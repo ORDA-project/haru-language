@@ -51,14 +51,15 @@ async function getAnswer(question, userId) {
       }
     }
 
-    const response = await callGPT(personalizedPrompt, question, 500);
-    const answerContent = response.trim();
-
-    // 질문 저장
+    // 질문 먼저 저장 (GPT 응답 전에 저장하여 학습 횟수에 반영)
     const savedQuestion = await Question.create({
       user_id: userId,
       content: question,
     });
+
+    // GPT 응답 받기
+    const response = await callGPT(personalizedPrompt, question, 500);
+    const answerContent = response.trim();
 
     // 답변 저장
     const savedAnswer = await Answer.create({
@@ -72,6 +73,8 @@ async function getAnswer(question, userId) {
     };
   } catch (error) {
     console.error("Error answering question:", error.message);
+    // Question은 이미 저장되었을 수 있으므로, GPT 응답 실패 시에도 Question은 유지
+    // 하지만 사용자에게는 에러를 알려야 함
     throw new Error("Failed to get an answer from GPT.");
   }
 }

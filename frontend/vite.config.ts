@@ -11,6 +11,12 @@ export default defineConfig(async () => {
       port: 3000,
       host: true,
       open: true,
+      hmr: {
+        overlay: true,
+      },
+      watch: {
+        usePolling: false,
+      },
     },
     build: {
       outDir: "dist",

@@ -1,9 +1,30 @@
 const callGPT = require("./gptService");
-const { Example, ExampleItem, Dialogue } = require("../models");
+const { Example, ExampleItem, Dialogue, User, UserInterest } = require("../models");
 
 async function generateExamples(inputSentence, userId) {
+  // 사용자 정보 가져오기 (목표, 관심사)
+  let user = null;
+  if (userId) {
+    try {
+      user = await User.findOne({
+        where: { id: userId },
+        include: [
+          {
+            model: UserInterest,
+            attributes: ["interest"],
+          },
+        ],
+      });
+    } catch (userError) {
+      if (process.env.NODE_ENV !== "production") {
+        console.error("사용자 정보 조회 중 오류:", userError.message);
+      }
+      // 사용자 정보 조회 실패해도 예문 생성은 계속 진행
+    }
+  }
+
   // 원하는 출력 스키마를 강하게 고정
-  const prompt =
+  let prompt =
     "You are an AI assistant that creates English learning examples from sentences. " +
     "You MUST return a JSON object with a 'generatedExample' object containing: " +
     "1. 'extractedSentence': the input sentence, " +
@@ -15,8 +36,43 @@ async function generateExamples(inputSentence, userId) {
     "- 'dialogue': an object with 'A' and 'B' properties. " +
     "Each dialogue speaker (A and B) must be an object with 'english' and 'korean' string properties. " +
     "Example dialogue format: { 'A': { 'english': 'Hello', 'korean': '안녕' }, 'B': { 'english': 'Hi', 'korean': '안녕' } } " +
-    "You must create exactly 3 different examples with different contexts and dialogues. " +
-    "Return ONLY valid JSON matching the schema. Do not include explanations or markdown.";
+    "You must create exactly 3 different examples with different contexts and dialogues. ";
+
+  // 사용자 맞춤 프롬프트 추가
+  if (user) {
+    const interests = user.UserInterests?.map((i) => i.interest) || [];
+    const goal = user.goal;
+    
+    if (interests.length > 0 || goal) {
+      prompt += "\n\nStudent's learning context:";
+      
+      if (goal) {
+        const goalMap = {
+          hobby: "hobby/leisure learning",
+          exam: "exam preparation",
+          business: "business English",
+          travel: "travel English"
+        };
+        prompt += `\n- Learning goal: ${goalMap[goal] || goal}`;
+      }
+      
+      if (interests.length > 0) {
+        const interestMap = {
+          conversation: "conversation",
+          reading: "reading comprehension",
+          grammar: "grammar analysis",
+          business: "business English",
+          vocabulary: "vocabulary"
+        };
+        const interestText = interests.map(i => interestMap[i] || i).join(", ");
+        prompt += `\n- Interests: ${interestText}`;
+      }
+      
+      prompt += "\n\nPlease tailor the example contexts and dialogues to match the student's learning goals and interests. Create situations that are relevant to their interests when possible.";
+    }
+  }
+
+  prompt += "\nReturn ONLY valid JSON matching the schema. Do not include explanations or markdown.";
 
   const responseFormat = {
     type: "json_schema",
@@ -134,33 +190,37 @@ async function generateExamples(inputSentence, userId) {
       });
 
       // 2. ExampleItem과 Dialogue 저장
-      if (examples && examples.length > 0) {
+      if (examples && Array.isArray(examples) && examples.length > 0) {
         for (const exampleData of examples) {
+          if (!exampleData || !exampleData.context) {
+            continue; // 유효하지 않은 데이터는 건너뛰기
+          }
+
           // ExampleItem 저장
           const exampleItem = await ExampleItem.create({
             example_id: example.id,
-            context: exampleData.context
+            context: exampleData.context || ""
           });
 
           // Dialogue 저장
-          if (exampleData.dialogue) {
+          if (exampleData.dialogue && typeof exampleData.dialogue === "object") {
             const { A, B } = exampleData.dialogue;
             
-            if (A) {
+            if (A && typeof A === "object" && A.english && A.korean) {
               await Dialogue.create({
                 example_item_id: exampleItem.id,
                 speaker: 'A',
-                english: A.english,
-                korean: A.korean
+                english: String(A.english || ""),
+                korean: String(A.korean || "")
               });
             }
 
-            if (B) {
+            if (B && typeof B === "object" && B.english && B.korean) {
               await Dialogue.create({
                 example_item_id: exampleItem.id,
                 speaker: 'B',
-                english: B.english,
-                korean: B.korean
+                english: String(B.english || ""),
+                korean: String(B.korean || "")
               });
             }
           }
