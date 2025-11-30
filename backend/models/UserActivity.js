@@ -45,7 +45,20 @@ UserActivity.updateVisit = async function (user_id) {
   });
 
   if (lastActivity) {
-    const lastVisitDate = new Date(lastActivity.createdAt); // 객체 속성 접근은 자동 매핑됨
+    // underscored: true이므로 created_at 컬럼을 createdAt 속성으로 자동 매핑
+    const createdAt = lastActivity.createdAt || lastActivity.created_at;
+    
+    // createdAt이 유효한지 확인
+    if (!createdAt || isNaN(new Date(createdAt).getTime())) {
+      // 유효하지 않은 날짜면 새 방문 기록 생성
+      const newVisit = await UserActivity.create({
+        user_id,
+        visit_count: 1,
+      });
+      return newVisit;
+    }
+    
+    const lastVisitDate = new Date(createdAt);
     lastVisitDate.setHours(0, 0, 0, 0);
 
     if (lastVisitDate.toDateString() === today.toDateString()) {
@@ -77,6 +90,12 @@ UserActivity.getMostVisitedDays = async function (user_id) {
   for (const activity of activities) {
     // underscored: true이므로 created_at 컬럼을 createdAt 속성으로 자동 매핑
     const createdAt = activity.createdAt || activity.created_at;
+    
+    // 유효한 날짜인지 확인
+    if (!createdAt || isNaN(new Date(createdAt).getTime())) {
+      continue; // 유효하지 않은 날짜는 건너뛰기
+    }
+    
     const day = getDayOfWeek(new Date(createdAt));
     dayCounts[day] = (dayCounts[day] || 0) + 1;
   }
@@ -100,6 +119,12 @@ UserActivity.getDayCount = async function (user_id, targetDay) {
   return activities.reduce((count, activity) => {
     // underscored: true이므로 created_at 컬럼을 createdAt 속성으로 자동 매핑
     const createdAt = activity.createdAt || activity.created_at;
+    
+    // 유효한 날짜인지 확인
+    if (!createdAt || isNaN(new Date(createdAt).getTime())) {
+      return count; // 유효하지 않은 날짜는 건너뛰기
+    }
+    
     const day = getDayOfWeek(new Date(createdAt));
     return day === targetDay ? count + 1 : count;
   }, 0);

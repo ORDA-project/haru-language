@@ -172,7 +172,7 @@ const friendService = {
 
     const notifications = await Notification.findAll({
       where: { user_id: userId, is_read: false },
-      attributes: ["id", "message", "created_at"], // Notification 모델은 field: 'created_at'으로 매핑되어 있지만 일관성을 위해 직접 사용
+      attributes: ["id", "message", "createdAt"], // Notification 모델의 createdAt 필드 사용 (field: 'created_at'으로 매핑됨)
       include: [
         {
           model: User,
@@ -181,7 +181,7 @@ const friendService = {
           required: false,
         },
       ],
-      order: [["created_at", "DESC"]], // 최신 알림부터
+      order: [["createdAt", "DESC"]], // 최신 알림부터
     });
 
     return notifications;

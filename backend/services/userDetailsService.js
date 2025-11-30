@@ -29,12 +29,12 @@ const userService = {
     if (existingUser) throw new Error("이미 사용자 정보가 존재합니다.");
 
     // 사용자 기본 정보 생성
-    await User.create({ social_id, social_provider, gender, goal });
+    const newUser = await User.create({ social_id, social_provider, gender, goal });
 
     // 관심사 저장
     if (interests && Array.isArray(interests)) {
       await UserInterest.bulkCreate(
-        interests.map((interest) => ({ user_id: social_id, interest })),
+        interests.map((interest) => ({ user_id: newUser.id, interest })),
         { ignoreDuplicates: true }
       );
     }
@@ -42,13 +42,13 @@ const userService = {
     // 책 정보 저장
     if (books && Array.isArray(books)) {
       await UserBook.bulkCreate(
-        books.map((book) => ({ user_id: social_id, book })),
+        books.map((book) => ({ user_id: newUser.id, book })),
         { ignoreDuplicates: true }
       );
     }
 
     // 방문 기록 첫 생성
-    await UserActivity.updateVisit(social_id);
+    await UserActivity.updateVisit(newUser.id);
 
     return { message: "사용자 정보가 성공적으로 저장되었습니다!" };
   },
@@ -66,18 +66,18 @@ const userService = {
 
     // 관심사 수정
     if (interests && Array.isArray(interests)) {
-      await UserInterest.destroy({ where: { user_id: social_id } });
+      await UserInterest.destroy({ where: { user_id: existingUser.id } });
       await UserInterest.bulkCreate(
-        interests.map((interest) => ({ user_id: social_id, interest })),
+        interests.map((interest) => ({ user_id: existingUser.id, interest })),
         { ignoreDuplicates: true }
       );
     }
 
     // 책 정보 수정
     if (books && Array.isArray(books)) {
-      await UserBook.destroy({ where: { user_id: social_id } });
+      await UserBook.destroy({ where: { user_id: existingUser.id } });
       await UserBook.bulkCreate(
-        books.map((book) => ({ user_id: social_id, book })),
+        books.map((book) => ({ user_id: existingUser.id, book })),
         { ignoreDuplicates: true }
       );
     }
