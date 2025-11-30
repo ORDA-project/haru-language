@@ -168,6 +168,12 @@ export const getRecentSongAtom = atom((get) => {
 // 접근성 관련 atoms
 export const isLargeTextModeAtom = atomWithStorage<boolean>(
   "isLargeTextMode",
-  false,
+  true, // 기본값을 true로 변경
+  createJSONStorage(() => localStorage)
+);
+
+export const isAudioAlwaysPlayAtom = atomWithStorage<boolean>(
+  "isAudioAlwaysPlay",
+  true, // 기본값을 true로 변경
   createJSONStorage(() => localStorage)
 );
