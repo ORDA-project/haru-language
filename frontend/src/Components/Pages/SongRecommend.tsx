@@ -51,7 +51,6 @@ const SongRecommend = (props: RecommendProps) => {
         }>("/songLyric");
 
         clearTimeout(timeoutId);
-        console.log("Song recommendation response:", response);
 
         if (!response || !response.songData) {
           throw new Error("서버에서 올바르지 않은 응답을 받았습니다.");
@@ -126,18 +125,15 @@ const SongRecommend = (props: RecommendProps) => {
     setIsYoutubeLoading(true);
 
     try {
-      console.log("YouTube video loading started...");
 
       const response = await http.get<{
         result?: boolean;
         embedUrl?: string;
       }>("/songYoutube");
 
-      console.log("YouTube response:", response);
 
       if (response?.result && response.embedUrl) {
         setYoutubeEmbedUrl(response.embedUrl);
-        console.log("YouTube embed URL set:", response.embedUrl);
       } else {
         console.warn("YouTube video not found or invalid response");
       }

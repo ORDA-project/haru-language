@@ -1,6 +1,8 @@
 import LogoImg from "../../Images/LogoImg.png";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { useAtom } from "jotai";
+import { isLargeTextModeAtom } from "../../store/dataStore";
 import { useErrorHandler } from "../../hooks/useErrorHandler";
 import { apiClient } from "../../utils/errorHandler";
 
@@ -9,6 +11,12 @@ interface HomeHeaderProps {}
 const HomeHeader = (props: HomeHeaderProps) => {
   const navigate = useNavigate();
   const { showSuccess, showError, showInfo, handleError } = useErrorHandler();
+  const [isLargeTextMode] = useAtom(isLargeTextModeAtom);
+  
+  // 큰글씨 모드에 따른 텍스트 크기
+  const baseFontSize = isLargeTextMode ? 20 : 16;
+  
+  const baseTextStyle: React.CSSProperties = { fontSize: `${baseFontSize}px` };
 
   const LogOut = async () => {
     try {
@@ -19,7 +27,6 @@ const HomeHeader = (props: HomeHeaderProps) => {
       const res = await apiClient.get("/auth/logout");
 
       // 요청 성공 시
-      console.log("Logged out successfully:", res);
       showSuccess('로그아웃 완료', '안전하게 로그아웃되었습니다.');
       
       // 약간의 딜레이 후 로그인 페이지로 이동
@@ -40,8 +47,8 @@ const HomeHeader = (props: HomeHeaderProps) => {
         {/* <LogoSvg /> */}
         <img src={LogoImg} alt="" className="w-[30px] h-[30px] m-[5px]" />
         <p className="flex-col flex justify-center items-center">
-          <span className="text-[16px] leading-5 text-[#004435] ">하루</span>
-          <span className="text-[16px] leading-5 text-[#004435] ">언어</span>
+          <span className="leading-5 text-[#004435]" style={baseTextStyle}>하루</span>
+          <span className="leading-5 text-[#004435]" style={baseTextStyle}>언어</span>
         </p>
       </div>
     </div>

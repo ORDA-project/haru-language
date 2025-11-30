@@ -1,5 +1,5 @@
 const express = require("express");
-const { User, UserActivity } = require("../models");
+const { User, UserActivity, WritingQuestion } = require("../models");
 const { getRandomSong } = require("../services/songService");
 const { logError } = require("../middleware/errorHandler");
 
@@ -90,16 +90,47 @@ router.get("/", async (req, res) => {
     // 추천 노래 가져오기
     const songData = await getRandomSong(req);
 
+    // 오늘의 한줄 영어 - 날짜 기반 해시로 질문 선택 (같은 날에는 같은 질문)
+    const allQuestions = await WritingQuestion.findAll({
+      order: [["id", "ASC"]],
+    });
+    
+    let dailyQuestion = null;
+    if (allQuestions.length > 0) {
+      // 오늘 날짜를 문자열로 변환 (YYYY-MM-DD)
+      const today = new Date();
+      const dateString = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+      
+      // 날짜 문자열을 해시하여 질문 인덱스 결정
+      let hash = 0;
+      for (let i = 0; i < dateString.length; i++) {
+        const char = dateString.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash; // Convert to 32bit integer
+      }
+      
+      // 해시 값을 양수로 변환하고 질문 개수로 나눈 나머지
+      const questionIndex = Math.abs(hash) % allQuestions.length;
+      dailyQuestion = allQuestions[questionIndex];
+    }
+
     return res.status(200).json({
       result: true,
       userData: {
         userId: dbUser.id,
         name: dbUser.name,
+        socialProvider: dbUser.social_provider,
         visitCount, // 전체 누적 방문 횟수
         mostVisitedDay,
         recommendation: songData
           ? `${songData.Title} by ${songData.Artist}`
           : "추천된 노래가 없습니다.",
+        dailySentence: dailyQuestion
+          ? {
+              english: dailyQuestion.question_text,
+              korean: dailyQuestion.korean_text,
+            }
+          : null,
       },
       // 보안: 로그인 성공/실패 정보는 응답 body에만 포함 (URL에 노출 안함)
       loginSuccess,
