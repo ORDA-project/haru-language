@@ -5,8 +5,8 @@ export interface FriendSummary {
   goal?: string | null;
   gender?: string | null;
   stats?: string | null | {
+    visitCount?: number;
     learningCount?: number;
-    writingCount?: number;
   };
 }
 

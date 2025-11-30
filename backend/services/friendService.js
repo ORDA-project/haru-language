@@ -1,6 +1,7 @@
-const { Friend, Invitation, Notification, User, Question, WritingRecord } = require("../models");
+const { Friend, Invitation, Notification, User, UserActivity, Example } = require("../models");
 const { Op } = require("sequelize");
 const crypto = require("crypto");
+const { escapeHtml } = require("../utils/security");
 
 const FRIEND_LIMIT = Number(process.env.FRIEND_LIMIT || 5);
 
@@ -29,15 +30,25 @@ const friendService = {
 
   // 초대 응답 처리 (수락/거절)
   respondToInvitation: async ({ token, response, inviteeId }) => {
-    const invitation = await Invitation.findOne({ where: { token } });
-    if (!invitation) throw new Error("NOT_FOUND: 유효하지 않은 초대입니다.");
+    if (!token || typeof token !== "string") {
+      throw new Error("BAD_REQUEST: token은 필수입니다.");
+    }
+    if (!inviteeId) {
+      throw new Error("BAD_REQUEST: inviteeId는 필수입니다.");
+    }
+    if (response !== "accept" && response !== "decline") {
+      throw new Error("BAD_REQUEST: response는 'accept' 또는 'decline'이어야 합니다.");
+    }
 
-    // status 체크 제거 - 여러 명이 사용할 수 있도록
-    // if (invitation.status !== "pending") {
-    //   throw new Error("BAD_REQUEST: 이미 응답된 초대입니다.");
-    // }
+    const invitation = await Invitation.findOne({ where: { token } });
+    if (!invitation) {
+      throw new Error("NOT_FOUND: 유효하지 않은 초대입니다.");
+    }
 
     if (response === "accept") {
+      // 친구 제한 확인 (초대를 받는 사람 기준)
+      await ensureFriendLimit(inviteeId);
+
       // 이미 친구인지 확인
       const existingFriend = await Friend.findOne({
         where: {
@@ -52,11 +63,29 @@ const friendService = {
         throw new Error("BAD_REQUEST: 이미 친구입니다.");
       }
 
-      // 친구 관계 생성
-      await Friend.bulkCreate([
+      // 친구 관계 생성 (양방향)
+      const friendPairs = [
         { user_id: invitation.inviter_id, friend_id: inviteeId },
         { user_id: inviteeId, friend_id: invitation.inviter_id },
-      ]);
+      ];
+      const friendWhere = {
+        [Op.or]: [
+          { user_id: invitation.inviter_id, friend_id: inviteeId },
+          { user_id: inviteeId, friend_id: invitation.inviter_id },
+        ],
+      };
+
+      try {
+        await Friend.bulkCreate(friendPairs, { validate: true });
+        const verifyFriends = await Friend.findAll({ where: friendWhere });
+        if (!verifyFriends || verifyFriends.length !== 2) {
+          await Friend.destroy({ where: friendWhere });
+          throw new Error("친구 관계 생성에 실패했습니다. 다시 시도해주세요.");
+        }
+      } catch (createError) {
+        await Friend.destroy({ where: friendWhere });
+        throw createError;
+      }
     }
   },
 
@@ -76,26 +105,29 @@ const friendService = {
       ],
     });
 
-    // 각 친구의 학습 횟수와 작문 횟수 계산
+    // 각 친구의 방문 횟수와 작문 횟수 계산
     const friendsWithStats = await Promise.all(
       friends.map(async (friend) => {
         const friendId = friend.FriendDetails?.id;
         if (!friendId) return friend;
 
-        // 학습 횟수 (Question 테이블의 레코드 수)
-        const learningCount = await Question.count({
+        // 방문 횟수 (UserActivity 테이블의 최신 visit_count 사용)
+        const latestActivity = await UserActivity.findOne({
           where: { user_id: friendId },
+          order: [["created_at", "DESC"]],
         });
+        // UserActivity.updateVisit에서 사용하는 방식과 동일하게 접근
+        const visitCount = latestActivity?.visit_count ?? 0;
 
-        // 작문 횟수 (WritingRecord 테이블의 레코드 수)
-        const writingCount = await WritingRecord.count({
+        // 학습 횟수 (Example 테이블의 레코드 수 - 교재 예문 생성 횟수)
+        const learningCount = await Example.count({
           where: { user_id: friendId },
         });
 
         // 통계 정보를 friend 객체에 추가
         friend.FriendDetails.stats = {
+          visitCount,
           learningCount,
-          writingCount,
         };
 
         return friend;
@@ -147,19 +179,10 @@ const friendService = {
 
     if (!isFriend) throw new Error("FORBIDDEN: 이 사용자는 친구가 아닙니다.");
 
-    // XSS 방지: HTML 특수문자 이스케이프
-    const safeName = (sender.name || "친구")
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#x27;")
-      .replace(/\//g, "&#x2F;");
-
     await Notification.create({
       user_id: receiverId,
       sender_id: senderId,
-      message: `${safeName}님이 당신을 콕 찔렀습니다!`,
+      message: `${escapeHtml(sender.name || "친구")}님이 당신을 콕 찔렀습니다!`,
       is_read: false,
     });
 
