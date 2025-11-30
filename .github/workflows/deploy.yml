@@ -42,7 +42,7 @@ jobs:
         npm run build
       env:
         NODE_ENV: production
-        VITE_API_BASE_URL: https://haru-language-server.onrender.com
+        VITE_API_BASE_URL: https://haru-language-production.up.railway.app
     
     - name: Setup Pages
       uses: actions/configure-pages@v4
