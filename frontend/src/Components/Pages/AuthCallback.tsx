@@ -46,33 +46,58 @@ const AuthCallback: React.FC = () => {
       window.history.replaceState({}, "", newUrl.toString());
     }
 
-    const hydrateUserFromToken = async () => {
-      const response = await fetch(`${API_ENDPOINTS.auth}/check`, {
-        method: "GET",
-        credentials: "include",
-        headers: {
-          "Authorization": `Bearer ${localStorage.getItem("accessToken") || ""}`,
-        },
-      });
+    const hydrateUserFromToken = async (retryCount = 0) => {
+      const maxRetries = 3;
+      const retryDelay = 500;
 
-      if (!response.ok) {
-        throw new Error("토큰 정보를 확인할 수 없습니다.");
+      try {
+        const response = await fetch(`${API_ENDPOINTS.auth}/check`, {
+          method: "GET",
+          credentials: "include",
+        });
+
+        if (!response.ok) {
+          if (retryCount < maxRetries) {
+            await new Promise(resolve => setTimeout(resolve, retryDelay));
+            return hydrateUserFromToken(retryCount + 1);
+          }
+          throw new Error("토큰 정보를 확인할 수 없습니다.");
+        }
+
+        const data = await response.json();
+        
+        if (!data?.isLoggedIn || !data?.user) {
+          if (retryCount < maxRetries && data?.token === null) {
+            await new Promise(resolve => setTimeout(resolve, retryDelay));
+            return hydrateUserFromToken(retryCount + 1);
+          }
+          throw new Error("로그인 정보가 존재하지 않습니다.");
+        }
+
+        if (data.token) {
+          try {
+            localStorage.setItem("accessToken", data.token);
+          } catch (error) {
+            // localStorage 저장 실패는 치명적이지 않음 (쿠키 인증 사용)
+          }
+        }
+
+        setUserData({
+          name: data.user.name,
+          email: data.user.email,
+          userId: data.user.userId,
+          socialId: data.user.social_id,
+          socialProvider: data.user.social_provider || data.user.socialProvider || null,
+          visitCount: data.user.visitCount || 0,
+          mostVisitedDays: data.user.mostVisitedDays || null,
+        });
+      } catch (error) {
+        if (retryCount < maxRetries) {
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+          return hydrateUserFromToken(retryCount + 1);
+        }
+        throw error;
       }
-
-      const data = await response.json();
-      if (!data?.isLoggedIn || !data?.user) {
-        throw new Error("로그인 정보가 존재하지 않습니다.");
-      }
-
-      setUserData({
-        name: data.user.name,
-        email: data.user.email,
-        userId: data.user.userId,
-        socialId: data.user.social_id,
-        socialProvider: data.user.social_provider || data.user.socialProvider || null,
-        visitCount: data.user.visitCount,
-        mostVisitedDays: data.user.mostVisitedDays,
-      });
     };
 
     const handleSuccess = async () => {

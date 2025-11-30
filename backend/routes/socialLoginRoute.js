@@ -60,14 +60,68 @@ router.use("/kakao", kakaoRouter);
  *                     userId: 123
  *                     name: "홍길동"
  */
-const { authenticateToken, optionalAuthenticate } = require("../utils/jwt");
+const { authenticateToken, optionalAuthenticate, extractToken } = require("../utils/jwt");
+const { User, UserActivity } = require("../models");
 
-router.get("/check", optionalAuthenticate, (req, res) => {
+router.get("/check", optionalAuthenticate, async (req, res) => {
   const user = req.user;
-  res.json({
-    isLoggedIn: !!user,
-    user: user || null,
-  });
+  const token = extractToken(req);
+  
+  if (!user || !user.userId) {
+    return res.json({
+      isLoggedIn: false,
+      user: null,
+      token: token || null,
+    });
+  }
+
+  try {
+    const dbUser = await User.findByPk(user.userId);
+    if (!dbUser) {
+      return res.json({
+        isLoggedIn: false,
+        user: null,
+        token: token || null,
+      });
+    }
+
+    const activity = await UserActivity.findOne({
+      where: { user_id: user.userId },
+      order: [["created_at", "DESC"]],
+    });
+    const mostVisitedData = await UserActivity.getMostVisitedDays(user.userId);
+
+    res.json({
+      isLoggedIn: true,
+      user: {
+        userId: dbUser.id,
+        name: dbUser.name,
+        email: dbUser.email,
+        social_id: dbUser.social_id,
+        social_provider: dbUser.social_provider,
+        visitCount: activity?.visit_count || 0,
+        mostVisitedDays: (mostVisitedData?.mostVisitedDays || []).join(", ") || null,
+      },
+      token: token || null,
+    });
+  } catch (error) {
+    const { logError } = require("../middleware/errorHandler");
+    logError(error, { endpoint: "/auth/check" });
+    
+    res.json({
+      isLoggedIn: !!user,
+      user: user ? {
+        userId: user.userId,
+        name: user.name || null,
+        email: user.email || null,
+        social_id: user.social_id,
+        social_provider: user.social_provider,
+        visitCount: 0,
+        mostVisitedDays: null,
+      } : null,
+      token: token || null,
+    });
+  }
 });
 
 // 로그아웃 라우터
