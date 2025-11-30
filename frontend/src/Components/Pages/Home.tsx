@@ -57,8 +57,8 @@ const Home = () => {
   }, []);
 
   // 백엔드에서 파라미터 없이 /home으로 리다이렉트하므로 항상 API 호출해서 인증 확인
+  // user atom이 변경되면 (로그인 후) 다시 API 호출
   useEffect(() => {
-
     // 로그인 상태와 관계없이 항상 /home API 호출해서 서버에서 인증 확인
     setLoading(true);
 
@@ -150,7 +150,7 @@ const Home = () => {
       .finally(() => {
         setLoading(false);
       });
-  }, [setUserData, showSuccess, showError]);
+  }, [setUserData, showSuccess, showError, user?.userId]); // user.userId 변경 시 다시 호출 (로그인 후)
 
 
   return (

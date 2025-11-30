@@ -120,18 +120,9 @@ const AuthCallback: React.FC = () => {
         // 현재 경로에서 구글인지 카카오인지 확인
         const isGoogle = window.location.pathname.includes("/google");
         
-        console.log("[AuthCallback] 로그인 시도:", { isGoogle, code: code?.substring(0, 10) + "..." });
-        
         const response = isGoogle
           ? await authApi.loginWithGoogle(code)
           : await authApi.loginWithKakao(code);
-
-        // 프로덕션에서도 디버깅을 위해 로그 출력
-        console.log("[AuthCallback] 로그인 응답:", { 
-          success: response.success, 
-          hasToken: !!response.token, 
-          hasUser: !!response.user 
-        });
 
         // 응답 검증
         if (!response.success) {
@@ -145,7 +136,6 @@ const AuthCallback: React.FC = () => {
         if (response.token) {
           try {
             localStorage.setItem("accessToken", response.token);
-            console.log("[AuthCallback] 토큰 저장 성공");
           } catch (storageError) {
             console.error("[AuthCallback] localStorage 저장 실패:", storageError);
             // 시크릿 모드에서 localStorage가 제한될 수 있으므로 안내
@@ -154,7 +144,6 @@ const AuthCallback: React.FC = () => {
             return;
           }
         } else {
-          console.warn("[AuthCallback] 응답에 토큰이 없습니다");
           showError("로그인 오류", "토큰을 받지 못했습니다. 다시 시도해주세요.");
           navigate("/", { replace: true });
           return;
@@ -174,15 +163,10 @@ const AuthCallback: React.FC = () => {
               visitCount: response.user.visitCount,
               mostVisitedDays: response.user.mostVisitedDays || null,
             });
-            console.log("[AuthCallback] 사용자 정보 설정 완료");
           } catch (userError) {
             console.error("[AuthCallback] 사용자 정보 설정 실패:", userError);
             // sessionStorage 저장 실패는 치명적이지 않을 수 있으므로, 토큰이 있으면 계속 진행
-            console.warn("[AuthCallback] 사용자 정보 저장 실패했지만 토큰이 있으므로 계속 진행");
           }
-        } else {
-          console.warn("[AuthCallback] 응답에 사용자 정보가 없습니다");
-          // 사용자 정보가 없어도 토큰이 있으면 계속 진행 (나중에 /auth/check로 가져올 수 있음)
         }
 
         // user atom이 업데이트될 시간을 주기 위해 다음 틱에서 리다이렉트
@@ -216,11 +200,6 @@ const AuthCallback: React.FC = () => {
         navigate(targetPath, { replace: true });
       } catch (error) {
         console.error("[AuthCallback] 로그인 에러:", error);
-        console.error("[AuthCallback] 에러 상세:", {
-          message: (error as any)?.message,
-          status: (error as any)?.status,
-          data: (error as any)?.data,
-        });
         handleError(error);
         const errorMessage = (error as any)?.data?.error || (error as any)?.message || "로그인 처리 중 오류가 발생했습니다.";
         showError("로그인 실패", errorMessage);
