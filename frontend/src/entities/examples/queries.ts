@@ -33,6 +33,6 @@ export const useGetExampleHistory = () => {
 export const useCreateExample = () => {
   return usePostMutation<any, CreateExampleParams>("/example", {
     showSuccessMessage: "Example Created Successfully",
-    invalidateQueries: [["examples"], ["examples", "current"]],
+    invalidateQueries: [["examples"], ["examples", "current"], ["friends"]],
   });
 };
