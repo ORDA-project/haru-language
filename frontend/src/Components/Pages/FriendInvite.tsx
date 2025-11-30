@@ -94,7 +94,10 @@ const FriendInvite: React.FC = () => {
       return;
     }
 
-    if (!user) {
+    // 토큰이 localStorage에 있으면 로그인된 것으로 간주 (user atom보다 우선)
+    const hasToken = typeof window !== "undefined" && !!localStorage.getItem("accessToken");
+    
+    if (!user && !hasToken) {
       setStatus("login");
       setMessage("친구 연결을 완료하려면 먼저 로그인해주세요.");
       processedTokenRef.current = null;
@@ -105,6 +108,8 @@ const FriendInvite: React.FC = () => {
       return;
     }
 
+    // user atom이 설정되었거나 토큰이 있으면 API 호출
+    // (로그인 직후 user atom이 아직 업데이트되지 않았을 수 있으므로 토큰도 확인)
     processedTokenRef.current = effectiveToken;
     acceptInvitation(effectiveToken);
   }, [effectiveToken, user, acceptInvitation]);
