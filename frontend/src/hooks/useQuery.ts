@@ -121,7 +121,7 @@ interface UseMutationOptions<TData, TVariables> {
     error: Error | null,
     variables: TVariables
   ) => void;
-  showErrorToast?: boolean;
+  showErrorToast?: boolean | ((error: Error) => boolean);
   showSuccessMessage?: string;
   invalidateQueries?: (string | number | boolean | null | undefined)[][];
 }
@@ -164,7 +164,12 @@ export const useMutation = <TData = unknown, TVariables = unknown>(
   // onError 처리
   useEffect(() => {
     if (mutation.isError && mutation.error && mutation.variables) {
-      if (options?.showErrorToast !== false) {
+      // showErrorToast가 함수인 경우 함수 결과를 사용, 아니면 boolean 값 사용
+      const shouldShowError = typeof options?.showErrorToast === 'function' 
+        ? options.showErrorToast(mutation.error)
+        : options?.showErrorToast !== false;
+      
+      if (shouldShowError) {
         handleError(mutation.error, true);
       }
       options?.onError?.(mutation.error, mutation.variables);

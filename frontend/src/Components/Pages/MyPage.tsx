@@ -10,12 +10,14 @@ import {
   AccountProfile,
   UserSettings,
   PageHeader,
+  FriendListEdit,
 } from "../Elements/MyPage";
 import { useGetUserInfo } from "../../entities/user-details/queries";
 import {
   useGetFriends,
   useCreateInvitation,
   useDeleteFriend,
+  useSendFriendNotification,
 } from "../../entities/friends/queries";
 import { http } from "../../utils/http";
 import FriendInvitePopup from "../Elements/FriendInvitePopup";
@@ -34,15 +36,18 @@ export default function MyPage() {
   const { showSuccess, showError, handleError } = useErrorHandler();
   const [showAccountInfo, setShowAccountInfo] = useState(false);
   const [isEditingFriends, setIsEditingFriends] = useState(false);
+  const [showFriendEdit, setShowFriendEdit] = useState(false);
   const [showInvitePopup, setShowInvitePopup] = useState(false);
   const [copiedInviteLink, setCopiedInviteLink] = useState<string>("");
   const [totalVisitCount, setTotalVisitCount] = useState<number>(0);
+  const [pokedFriends, setPokedFriends] = useState<Record<number, boolean>>({});
 
   // API queries - 회원정보 조회 (저장 후 갱신을 위해 refetchOnMount: true)
   const { data: userInfo, isLoading: userInfoLoading, refetch: refetchUserInfo } = useGetUserInfo();
   const { data: friendsData, isLoading: friendsLoading } = useGetFriends(Boolean(user?.userId));
   const createInvitationMutation = useCreateInvitation();
   const deleteFriendMutation = useDeleteFriend();
+  const sendNotificationMutation = useSendFriendNotification();
 
   // 방문 횟수 가져오기 (프로필용)
   useEffect(() => {
@@ -109,14 +114,28 @@ export default function MyPage() {
       return [];
     }
 
-    return friendsData.friends.map((friend) => ({
-      id: friend.id,
-      userName: friend.name,
-      stats: friend.stats || "학습 데이터 준비 중",
-      buttonText: "콕 찌르기",
-      buttonColor: "bg-[#00DAAA]",
-      status: "accepted" as const,
-    }));
+    return friendsData.friends.map((friend) => {
+      // stats가 객체인 경우 (학습/작문 횟수)
+      let statsText = "학습 데이터 준비 중";
+      if (friend.stats && typeof friend.stats === "object") {
+        const learningCount = friend.stats.learningCount || 0;
+        const writingCount = friend.stats.writingCount || 0;
+        if (learningCount > 0 || writingCount > 0) {
+          statsText = `학습 ${learningCount}회, 작문 ${writingCount}회`;
+        }
+      } else if (typeof friend.stats === "string" && friend.stats) {
+        statsText = friend.stats;
+      }
+
+      return {
+        id: friend.id,
+        userName: friend.name,
+        stats: statsText,
+        buttonText: "콕 찌르기",
+        buttonColor: "bg-[#00DAAA]",
+        status: "accepted" as const,
+      };
+    });
   }, [friendsData, friendsLoading]);
 
   // Check if friend limit is reached (5 friends max)
@@ -199,6 +218,50 @@ export default function MyPage() {
     [deleteFriendMutation, showSuccess, showError, handleError]
   );
 
+  const handleDeleteSelectedFriends = useCallback(
+    async (friendIds: number[]) => {
+      try {
+        for (const friendId of friendIds) {
+          await deleteFriendMutation.mutateAsync({ friendId });
+        }
+        showSuccess("친구 삭제", `${friendIds.length}명의 친구가 삭제되었습니다.`);
+        setShowFriendEdit(false);
+      } catch (error) {
+        console.error("Delete friends error:", error);
+        handleError(error);
+        showError("친구 삭제 실패", "친구 삭제 중 오류가 발생했습니다.");
+      }
+    },
+    [deleteFriendMutation, showSuccess, showError, handleError]
+  );
+
+  const handleEditFriendsClick = useCallback(() => {
+    setShowFriendEdit(true);
+  }, []);
+
+  const handleFriendEditBack = useCallback(() => {
+    setShowFriendEdit(false);
+  }, []);
+
+  const handlePokeFriend = useCallback(
+    async (friendId: number, friendName?: string) => {
+      try {
+        if (!friendId) {
+          showError("오류", "유효한 친구 정보를 찾을 수 없어요.");
+          return;
+        }
+        await sendNotificationMutation.mutateAsync({ receiverId: friendId });
+        setPokedFriends((prev) => ({ ...prev, [friendId]: true }));
+        showSuccess("콕 찌르기 완료", `${friendName || "친구"}님에게 콕 찔렀습니다!`);
+      } catch (error) {
+        console.error("Send friend notification error:", error);
+        handleError(error);
+        showError("콕 찌르기 실패", "친구에게 알림을 보내지 못했어요.");
+      }
+    },
+    [sendNotificationMutation, showSuccess, showError, handleError]
+  );
+
   const handleEditFriends = useCallback(() => {
     setIsEditingFriends(!isEditingFriends);
   }, [isEditingFriends]);
@@ -211,7 +274,15 @@ export default function MyPage() {
   return (
     <div className="w-full h-full flex flex-col items-center max-w-[440px] mx-auto shadow-[0_0_10px_0_rgba(0,0,0,0.1)] bg-[#F5F6FA]">
       <div className="h-[calc(100vh-72px)] p-0 px-5 w-full max-w-[440px] box-border mx-auto overflow-y-scroll">
-        {!showAccountInfo ? (
+        {showFriendEdit ? (
+          // 친구 목록 편집 화면
+          <FriendListEdit
+            friendList={friendList}
+            onBack={handleFriendEditBack}
+            onDeleteSelected={handleDeleteSelectedFriends}
+            isLoading={friendsLoading}
+          />
+        ) : !showAccountInfo ? (
           // 첫 번째 화면 (프로필 + 친구 목록)
           <>
             <PageHeader title="프로필" />
@@ -222,6 +293,8 @@ export default function MyPage() {
               onEditClick={handleEditFriends}
               onCreateInvitation={handleCreateInvitation}
               onDeleteFriend={handleDeleteFriend}
+              onPokeFriend={handlePokeFriend}
+              pokedFriendIds={pokedFriends}
               isLoading={friendsLoading}
               isFriendLimitReached={isFriendLimitReached}
             />
@@ -235,7 +308,7 @@ export default function MyPage() {
               onBackClick={handleBackClick}
             />
             <AccountProfile userData={userData} />
-            <UserSettings onLogout={handleLogout} />
+            <UserSettings onLogout={handleLogout} onEditFriends={handleEditFriendsClick} />
           </>
         )}
       </div>

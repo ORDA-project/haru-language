@@ -81,7 +81,21 @@ const DailySentence = () => {
       memoizedQuestionsData.length > 0 &&
       !currentQuestion
     ) {
-      setCurrentQuestion(memoizedQuestionsData[0]);
+      // 날짜 기반 해시로 질문 선택 (같은 날에는 같은 질문)
+      const today = new Date();
+      const dateString = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+      
+      // 날짜 문자열을 해시하여 질문 인덱스 결정
+      let hash = 0;
+      for (let i = 0; i < dateString.length; i++) {
+        const char = dateString.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash; // Convert to 32bit integer
+      }
+      
+      // 해시 값을 양수로 변환하고 질문 개수로 나눈 나머지
+      const questionIndex = Math.abs(hash) % memoizedQuestionsData.length;
+      setCurrentQuestion(memoizedQuestionsData[questionIndex]);
     }
   }, [memoizedQuestionsData, currentQuestion]);
 

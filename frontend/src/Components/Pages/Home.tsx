@@ -18,6 +18,7 @@ interface User {
   userId?: string;
   token?: string;
   isOnboarded?: boolean;
+  socialProvider?: string | null;
 }
 
 const Home = () => {
@@ -27,6 +28,7 @@ const Home = () => {
   const [visitCount, setVisitCount] = useState<number>(0);
   const [mostVisitedDay, setMostVisitedDay] = useState<string>("");
   const [recommendation, setRecommendation] = useState<string>("");
+  const [dailySentence, setDailySentence] = useState<{ english: string; korean: string } | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const { showError, showWarning, showSuccess } = useErrorHandler();
 
@@ -76,6 +78,7 @@ const Home = () => {
         visitCount: number;
         mostVisitedDay: string;
         recommendation: string;
+        dailySentence?: { english: string; korean: string } | null;
       };
       loginSuccess?: boolean;
       loginError?: boolean;
@@ -89,7 +92,7 @@ const Home = () => {
           throw new Error("서버에서 올바르지 않은 응답을 받았습니다.");
         }
 
-        const { name, visitCount, mostVisitedDay, recommendation, userId } =
+        const { name, visitCount, mostVisitedDay, recommendation, userId, dailySentence } =
           data.userData;
         
         // 보안: 로그인 성공/실패 메시지 처리 (URL이 아닌 응답에서 가져옴)
@@ -103,14 +106,18 @@ const Home = () => {
 
         // 사용자 정보를 전역 상태에 저장
         setUserData({
+          ...(user || {}),
           name,
           userId,
           visitCount,
           mostVisitedDays: mostVisitedDay,
+          socialProvider:
+            data.userData.socialProvider || user?.socialProvider || null,
         });
         setVisitCount(visitCount || 0);
         setMostVisitedDay(mostVisitedDay || "");
         setRecommendation(recommendation || "추천 곡이 없습니다");
+        setDailySentence(dailySentence || null);
       })
       .catch((err: any) => {
         clearTimeout(timeoutId);
@@ -156,6 +163,7 @@ const Home = () => {
             visitCount={visitCount}
             mostVisitedDay={mostVisitedDay}
             recommendation={recommendation}
+            dailySentence={dailySentence}
             isLoggedIn={isLoggedIn}
           />
           {/* 보안: userId 전달하지 않음 (JWT로 자동 인증) */}

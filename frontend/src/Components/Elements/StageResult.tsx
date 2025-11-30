@@ -1,10 +1,15 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Example } from "../../types"; // Import Example type
+import { useAtom } from "jotai";
+import { Example } from "../../types";
 import { API_ENDPOINTS } from "../../config/api";
+import { isLargeTextModeAtom } from "../../store/dataStore";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface StageResultProps {
   description: string;
   examples: Example[];
+  extractedText?: string;
+  uploadedImage?: string | null;
   errorMessage: string;
   setStage: React.Dispatch<React.SetStateAction<number>>;
 }
@@ -12,11 +17,40 @@ interface StageResultProps {
 const StageResult = ({
   description,
   examples,
+  extractedText,
+  uploadedImage,
   errorMessage,
   setStage,
 }: StageResultProps) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [isLargeTextMode] = useAtom(isLargeTextModeAtom);
+  
+  // 큰글씨 모드에 따른 텍스트 크기 (px 단위로 명시적 설정)
+  const baseFontSize = isLargeTextMode ? 20 : 16;
+  const smallFontSize = isLargeTextMode ? 18 : 14;
+  const xSmallFontSize = isLargeTextMode ? 16 : 12;
+  const headerFontSize = isLargeTextMode ? 24 : 20;
+  
+  // 스타일 객체 생성
+  const baseTextStyle: React.CSSProperties = { 
+    fontSize: `${baseFontSize}px`, 
+    wordBreak: 'keep-all', 
+    overflowWrap: 'break-word' as const 
+  };
+  const smallTextStyle: React.CSSProperties = { 
+    fontSize: `${smallFontSize}px`, 
+    wordBreak: 'keep-all', 
+    overflowWrap: 'break-word' as const 
+  };
+  const xSmallTextStyle: React.CSSProperties = { 
+    fontSize: `${xSmallFontSize}px`, 
+    wordBreak: 'keep-all', 
+    overflowWrap: 'break-word' as const 
+  };
+  const headerTextStyle: React.CSSProperties = { 
+    fontSize: `${headerFontSize}px` 
+  };
 
   const stopCurrentAudio = () => {
     if (audioRef.current) {
@@ -32,35 +66,29 @@ const StageResult = ({
     };
   }, []);
 
-  // 다음 카드로 이동하는 함수
   const handleNextCard = () => {
     if (currentIndex < examples.length - 1) {
       setCurrentIndex(currentIndex + 1);
     }
   };
 
-  // 이전 카드로 이동하는 함수
   const handlePreviousCard = () => {
     if (currentIndex > 0) {
       setCurrentIndex(currentIndex - 1);
     }
   };
 
-  // 점을 클릭하여 특정 카드로 이동
   const handleDotClick = (index: number) => {
     setCurrentIndex(index);
   };
 
-  // tts 함수
   const handleTTS = async () => {
     const dialogueA = examples[currentIndex].dialogue.A.english;
     const dialogueB = examples[currentIndex].dialogue.B.english;
 
-    // 이미 재생 중인 오디오가 있다면 중지
     stopCurrentAudio();
 
-    // 두 텍스트를 결합
-    const textToRead = `${dialogueA}\n${dialogueB}\n${dialogueA}\n${dialogueB}\n${dialogueA}\n${dialogueB}`;
+    const textToRead = `${dialogueA}\n${dialogueB}`;
 
     try {
       const response = await fetch(API_ENDPOINTS.tts, {
@@ -68,7 +96,7 @@ const StageResult = ({
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ text: textToRead }), // 두 텍스트를 결합하여 전송
+        body: JSON.stringify({ text: textToRead }),
         credentials: "include",
       });
 
@@ -93,7 +121,9 @@ const StageResult = ({
 
       await audio.play();
     } catch (error) {
-      console.error("TTS 오류:", error);
+      if (import.meta.env.DEV) {
+        console.error("TTS 오류:", error);
+      }
       stopCurrentAudio();
     }
   };
@@ -102,12 +132,13 @@ const StageResult = ({
     return (
       <div className="w-full h-[calc(100vh-100px)] flex flex-col items-center justify-center">
         <div className="text-center p-8">
-          <p className="text-lg text-gray-600">
+          <p className="text-gray-600" style={baseTextStyle}>
             예문을 불러오는 중 문제가 발생했습니다.
           </p>
           <button
             onClick={() => setStage(1)}
-            className="mt-4 px-6 py-3 bg-teal-400 text-white rounded-lg"
+            className={`mt-4 ${isLargeTextMode ? "px-8 py-4" : "px-6 py-3"} bg-teal-400 text-white rounded-lg`}
+            style={baseTextStyle}
           >
             다시 시도하기
           </button>
@@ -119,176 +150,178 @@ const StageResult = ({
   return (
     <div className="w-full h-full flex flex-col bg-[#F7F8FB]">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 bg-white border-b border-gray-200">
+      <div className={`flex items-center justify-between ${isLargeTextMode ? "p-5" : "p-4"} bg-white border-b border-gray-200`}>
         <button
           onClick={() => setStage(1)}
-          className="w-8 h-8 flex items-center justify-center"
+          className={`${isLargeTextMode ? "w-10 h-10" : "w-8 h-8"} flex items-center justify-center`}
         >
-          <svg
-            className="w-5 h-5 text-gray-600"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M15 19l-7-7 7-7"
-            />
-          </svg>
+          <ChevronLeft className={`${isLargeTextMode ? "w-6 h-6" : "w-5 h-5"} text-gray-600`} />
         </button>
         <div className="text-center">
-          <h1 className="text-lg font-semibold text-gray-800">예문 생성</h1>
+          <h1 className="font-semibold text-gray-800" style={headerTextStyle}>예문 생성</h1>
         </div>
-        <div className="w-8"></div>
+        <div className={isLargeTextMode ? "w-10" : "w-8"}></div>
       </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto p-4">
-        {/* Description Section */}
-        {description && (
-          <div className="mb-6 p-4 bg-white rounded-2xl shadow-sm border border-gray-100">
-            <p className="text-gray-800 text-center font-medium leading-relaxed">
-              {description}
+      {/* Chat Messages */}
+      <div className={`flex-1 overflow-y-auto ${isLargeTextMode ? "p-5" : "p-4"} ${isLargeTextMode ? "space-y-5" : "space-y-4"}`}>
+        {/* AI message: 챕터 명, 예문문장이 잘 보이게 찍어주세요! */}
+        <div className="flex justify-start">
+          <div className={`max-w-[80%] ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-2xl bg-[#00DAAA] text-gray-900`}>
+            <p 
+              className="leading-relaxed"
+              style={baseTextStyle}
+            >
+              챕터 명, 예문문장이 잘 보이게 찍어주세요!
             </p>
+          </div>
+        </div>
+
+        {/* User message: Image and Extracted text */}
+        {(uploadedImage || extractedText) && (
+          <div className="flex justify-end">
+            <div className={`max-w-[80%] ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-2xl bg-white text-gray-800 shadow-sm border border-gray-100`}>
+              {uploadedImage && (
+                <div className={isLargeTextMode ? "mb-4" : "mb-3"}>
+                  <img
+                    src={uploadedImage}
+                    alt="Uploaded"
+                    className="w-full rounded-lg object-contain max-h-64"
+                  />
+                </div>
+              )}
+              {extractedText && (
+                <p 
+                  className="leading-relaxed whitespace-pre-wrap"
+                  style={baseTextStyle}
+                >
+                  {extractedText}
+                </p>
+              )}
+            </div>
           </div>
         )}
 
-        {/* Examples Section */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          {/* Pagination Dots */}
-          {examples.length > 1 && (
-            <div className="flex justify-center py-4 border-b border-gray-100">
-              {examples.map((_, index) => (
-                <button
-                  key={index}
-                  className={`w-2 h-2 mx-1 rounded-full transition-colors ${
-                    index === currentIndex ? "bg-[#00DAAA]" : "bg-gray-300"
-                  }`}
-                  onClick={() => handleDotClick(index)}
-                />
-              ))}
+        {/* Bot message: Example carousel */}
+        <div className="flex justify-start">
+          <div className="max-w-[90%] w-full bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            {/* Pagination Dots */}
+            {examples.length > 1 && (
+              <div className={`flex justify-center ${isLargeTextMode ? "py-4" : "py-3"} border-b border-gray-100`}>
+                {examples.map((_, index) => (
+                  <button
+                    key={index}
+                    className={`${isLargeTextMode ? "w-2 h-2" : "w-1.5 h-1.5"} mx-1 rounded-full transition-colors ${
+                      index === currentIndex ? "bg-[#00DAAA]" : "bg-gray-300"
+                    }`}
+                    onClick={() => handleDotClick(index)}
+                  />
+                ))}
+              </div>
+            )}
+
+            {/* Context Badge */}
+            <div className={`${isLargeTextMode ? "p-5" : "p-4"} text-left border-b border-gray-100`}>
+              <span 
+                className={`inline-block ${isLargeTextMode ? "px-5 py-2" : "px-4 py-1.5"} bg-[#00DAAA] text-gray-900 rounded-full font-medium`}
+                style={xSmallTextStyle}
+              >
+                {examples[currentIndex]?.context}
+              </span>
             </div>
-          )}
 
-          {/* Context Badge */}
-          <div className="p-4 text-center border-b border-gray-100">
-            <span className="inline-block px-4 py-2 bg-[#00DAAA] text-white rounded-full text-sm font-medium">
-              {examples[currentIndex]?.context}
-            </span>
-          </div>
-
-          {/* Dialogue */}
-          <div className="p-6 space-y-6">
-            {/* A's dialogue */}
-            <div className="space-y-3">
-              <div className="flex items-start space-x-3">
-                <div className="w-10 h-10 bg-[#00DAAA] rounded-full flex items-center justify-center flex-shrink-0">
-                  <span className="text-white font-bold text-sm">A</span>
+            {/* Dialogue */}
+            <div className={`${isLargeTextMode ? "p-5" : "p-4"} ${isLargeTextMode ? "space-y-5" : "space-y-4"}`}>
+              {/* A's dialogue */}
+              <div className={`flex items-start ${isLargeTextMode ? "space-x-4" : "space-x-3"}`}>
+                <div className={`${isLargeTextMode ? "w-12 h-12" : "w-10 h-10"} bg-[#00DAAA] rounded-full flex items-center justify-center flex-shrink-0`}>
+                  <span className="text-white font-bold" style={smallTextStyle}>A</span>
                 </div>
                 <div className="flex-1">
-                  <p className="text-gray-900 font-medium leading-relaxed text-base">
+                  <p 
+                    className="text-gray-900 font-medium leading-relaxed"
+                    style={baseTextStyle}
+                  >
                     {examples[currentIndex]?.dialogue?.A?.english}
                   </p>
-                  <p className="text-gray-600 text-sm mt-2">
+                  <p 
+                    className={`text-gray-600 ${isLargeTextMode ? "mt-2" : "mt-1"}`}
+                    style={xSmallTextStyle}
+                  >
                     {examples[currentIndex]?.dialogue?.A?.korean}
                   </p>
                 </div>
               </div>
-            </div>
 
-            {/* B's dialogue */}
-            <div className="space-y-3">
-              <div className="flex items-start space-x-3">
-                <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
-                  <span className="text-white font-bold text-sm">B</span>
+              {/* B's dialogue */}
+              <div className={`flex items-start ${isLargeTextMode ? "space-x-4" : "space-x-3"}`}>
+                <div className={`${isLargeTextMode ? "w-12 h-12" : "w-10 h-10"} bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0`}>
+                  <span className="text-white font-bold" style={smallTextStyle}>B</span>
                 </div>
                 <div className="flex-1">
-                  <p className="text-gray-900 font-medium leading-relaxed text-base">
+                  <p 
+                    className="text-gray-900 font-medium leading-relaxed"
+                    style={baseTextStyle}
+                  >
                     {examples[currentIndex]?.dialogue?.B?.english}
                   </p>
-                  <p className="text-gray-600 text-sm mt-2">
+                  <p 
+                    className={`text-gray-600 ${isLargeTextMode ? "mt-2" : "mt-1"}`}
+                    style={xSmallTextStyle}
+                  >
                     {examples[currentIndex]?.dialogue?.B?.korean}
                   </p>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Controls */}
-          <div className="flex justify-between items-center p-6 border-t border-gray-100">
-            {/* Previous Button */}
-            <button
-              onClick={handlePreviousCard}
-              disabled={currentIndex === 0}
-              className={`p-3 rounded-full transition-colors ${
-                currentIndex === 0
-                  ? "opacity-30 cursor-not-allowed"
-                  : "hover:bg-gray-100 active:bg-gray-200"
-              }`}
-            >
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                className="text-gray-600"
+            {/* Controls */}
+            <div className={`flex justify-between items-center ${isLargeTextMode ? "p-5" : "p-4"} border-t border-gray-100`}>
+              {/* Previous Button */}
+              <button
+                onClick={handlePreviousCard}
+                disabled={currentIndex === 0}
+                className={`${isLargeTextMode ? "p-3" : "p-2"} rounded-full transition-colors ${
+                  currentIndex === 0
+                    ? "opacity-30 cursor-not-allowed"
+                    : "hover:bg-gray-100 active:bg-gray-200"
+                }`}
               >
-                <path
-                  d="M15 18L9 12L15 6"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </button>
+                <ChevronLeft className={`${isLargeTextMode ? "w-6 h-6" : "w-5 h-5"} text-gray-600`} />
+              </button>
 
-            {/* TTS Button */}
-            <button
-              onClick={handleTTS}
-              className="w-14 h-14 bg-[#00DAAA] hover:bg-[#00C495] active:bg-[#00B085] rounded-full flex items-center justify-center transition-colors shadow-lg"
-            >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
-                <path d="M3 9v6h4l5 5V4l-5 5H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
-              </svg>
-            </button>
-
-            {/* Next Button */}
-            <button
-              onClick={handleNextCard}
-              disabled={currentIndex === examples.length - 1}
-              className={`p-3 rounded-full transition-colors ${
-                currentIndex === examples.length - 1
-                  ? "opacity-30 cursor-not-allowed"
-                  : "hover:bg-gray-100 active:bg-gray-200"
-              }`}
-            >
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                className="text-gray-600"
+              {/* TTS Button */}
+              <button
+                onClick={handleTTS}
+                className={`${isLargeTextMode ? "w-14 h-14" : "w-12 h-12"} bg-[#00DAAA] hover:bg-[#00C495] active:bg-[#00B085] rounded-full flex items-center justify-center transition-colors shadow-lg`}
               >
-                <path
-                  d="M9 18L15 12L9 6"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </button>
+                <svg width={isLargeTextMode ? "24" : "20"} height={isLargeTextMode ? "24" : "20"} viewBox="0 0 24 24" fill="#1F2937">
+                  <path d="M3 9v6h4l5 5V4l-5 5H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
+                </svg>
+              </button>
+
+              {/* Next Button */}
+              <button
+                onClick={handleNextCard}
+                disabled={currentIndex === examples.length - 1}
+                className={`${isLargeTextMode ? "p-3" : "p-2"} rounded-full transition-colors ${
+                  currentIndex === examples.length - 1
+                    ? "opacity-30 cursor-not-allowed"
+                    : "hover:bg-gray-100 active:bg-gray-200"
+                }`}
+              >
+                <ChevronRight className={`${isLargeTextMode ? "w-6 h-6" : "w-5 h-5"} text-gray-600`} />
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Generate New Button */}
-        <div className="mt-6 text-center">
+        <div className={`flex justify-center ${isLargeTextMode ? "mt-4" : "mt-2"}`}>
           <button
             onClick={() => setStage(1)}
-            className="px-8 py-3 bg-[#00DAAA] hover:bg-[#00C495] active:bg-[#00B085] text-white font-semibold rounded-full transition-colors shadow-lg"
+            className={`${isLargeTextMode ? "px-8 py-3" : "px-6 py-2.5"} bg-[#00DAAA] hover:bg-[#00C495] active:bg-[#00B085] text-gray-900 font-semibold rounded-full transition-colors shadow-lg`}
+            style={baseTextStyle}
           >
             다른 예문 생성하기
           </button>

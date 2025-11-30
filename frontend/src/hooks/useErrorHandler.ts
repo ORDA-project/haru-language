@@ -20,7 +20,9 @@ export const useErrorHandler = () => {
     (error: any, showToast: boolean = true) => {
       const customError = error instanceof CustomError ? error : handleApiError(error);
       
-      console.error('Error handled:', customError);
+      if (import.meta.env.DEV) {
+        console.error('Error handled:', customError);
+      }
       
       if (showToast) {
         addToast({

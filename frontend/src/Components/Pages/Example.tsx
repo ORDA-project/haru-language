@@ -3,6 +3,7 @@ import Cropper from "react-cropper";
 import "cropperjs/dist/cropper.css";
 import axios from "axios";
 import { useErrorHandler } from "../../hooks/useErrorHandler";
+import { API_BASE_URL } from "../../config/api";
 import StageUpload from "../Elements/StageUpload";
 import StageCrop from "../Elements/StageCrop";
 import StageLoading from "../Elements/StageLoading";
@@ -18,6 +19,7 @@ const App = () => {
   const [examples, setExamples] = useState<Example[]>([]);
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [description, setDescription] = useState<string>("");
+  const [extractedText, setExtractedText] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const { showError, showSuccess, showWarning } = useErrorHandler();
   const cropperRef = useRef<any>(null);
@@ -139,7 +141,7 @@ const App = () => {
       }
 
       const response = await axios.post("/example", formData, {
-        baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:8000",
+        baseURL: API_BASE_URL,
         headers,
         withCredentials: true,
         timeout: 30000, // 30초 타임아웃
@@ -151,14 +153,26 @@ const App = () => {
         throw new Error("서버에서 올바르지 않은 응답을 받았습니다.");
       }
 
-      const { generatedExample, audioContent } = response.data;
+      const { generatedExample } = response.data;
 
-      // Check if generatedExample has nested generatedExample structure
-      const actualExample =
-        generatedExample.generatedExample || generatedExample;
+      // 응답 구조: { extractedText, generatedExample: { generatedExample: { ... } } }
+      // 또는: { extractedText, generatedExample: { ... } }
+      let actualExample = generatedExample;
+      if (generatedExample?.generatedExample) {
+        actualExample = generatedExample.generatedExample;
+      }
 
-      setDescription(actualExample.description || "");
-      setExamples(actualExample.examples || []);
+      const description = actualExample?.description || "";
+      const examples = actualExample?.examples;
+      const extractedTextFromResponse = response.data.extractedText || "";
+
+      if (!examples || !Array.isArray(examples) || examples.length === 0) {
+        throw new Error("생성된 예문이 없습니다. 다시 시도해주세요.");
+      }
+
+      setDescription(description);
+      setExamples(examples);
+      setExtractedText(extractedTextFromResponse);
 
       showSuccess("분석 완료", "이미지에서 학습 예시를 생성했습니다!");
       setStage(4); // Show result
@@ -247,6 +261,8 @@ const App = () => {
         <StageResult
           description={description}
           examples={examples}
+          extractedText={extractedText}
+          uploadedImage={croppedImage}
           errorMessage={errorMessage}
           setStage={setStage}
         />

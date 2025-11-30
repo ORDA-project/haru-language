@@ -305,7 +305,9 @@ const startServer = async () => {
 
     app.listen(PORT, () => {
       if (PROD) {
-        console.log("ready");
+        if (process.env.NODE_ENV !== "production") {
+          console.log("Server ready");
+        }
       } else {
         log.info(`서버가 실행 중입니다: ${SERVER_URL}`);
         log.info(`헬스체크: ${SERVER_URL}/health`);

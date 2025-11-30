@@ -1,4 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
+import { useAtom } from "jotai";
+import { isLargeTextModeAtom } from "../../store/dataStore";
 import axios from "axios";
 import Cropper from "react-cropper";
 import "cropperjs/dist/cropper.css";
@@ -28,6 +30,16 @@ const StageChat = ({ onBack }: StageChatProps) => {
   const [croppedImage, setCroppedImage] = useState<string | null>(null);
   const [cropStage, setCropStage] = useState<"chat" | "crop">("chat");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [isLargeTextMode] = useAtom(isLargeTextModeAtom);
+  
+  // 큰글씨 모드에 따른 텍스트 크기
+  const baseFontSize = isLargeTextMode ? 20 : 16;
+  const largeFontSize = isLargeTextMode ? 24 : 20;
+  const headerFontSize = isLargeTextMode ? 22 : 18;
+  
+  const baseTextStyle: React.CSSProperties = { fontSize: `${baseFontSize}px`, wordBreak: 'keep-all', overflowWrap: 'break-word' as const };
+  const largeTextStyle: React.CSSProperties = { fontSize: `${largeFontSize}px`, wordBreak: 'keep-all', overflowWrap: 'break-word' as const };
+  const headerTextStyle: React.CSSProperties = { fontSize: `${headerFontSize}px` };
   const cropperRef = useRef<any>(null);
   const { showError, showSuccess } = useErrorHandler();
 
@@ -312,7 +324,7 @@ const StageChat = ({ onBack }: StageChatProps) => {
           </svg>
         </button>
         <div className="text-center">
-          <h1 className="text-lg font-semibold text-gray-800">
+          <h1 className="font-semibold text-gray-800" style={headerTextStyle}>
             {cropStage === "crop" ? "이미지 자르기" : "AI 대화"}
           </h1>
         </div>
@@ -323,7 +335,7 @@ const StageChat = ({ onBack }: StageChatProps) => {
       {cropStage === "crop" && uploadedImage && (
         <div className="flex-1 flex flex-col p-4">
           <div className="mb-4">
-            <p className="text-lg font-medium text-gray-800 text-center">
+            <p className="font-medium text-gray-800 text-center" style={largeTextStyle}>
               어떤 부분을 분석하고 싶으신가요?
             </p>
           </div>
@@ -352,12 +364,14 @@ const StageChat = ({ onBack }: StageChatProps) => {
             <button
               onClick={handleCrop}
               className="w-full py-4 bg-[#00DAAA] hover:bg-[#00C495] active:bg-[#00B085] text-white font-semibold rounded-full transition-colors shadow-lg"
+              style={baseTextStyle}
             >
               선택 영역 분석하기
             </button>
             <button
               onClick={handleBackToChat}
               className="w-full py-3 bg-white hover:bg-gray-50 active:bg-gray-100 text-gray-700 font-medium rounded-full border border-gray-300 transition-colors"
+              style={baseTextStyle}
             >
               다른 사진 선택하기
             </button>
@@ -373,7 +387,7 @@ const StageChat = ({ onBack }: StageChatProps) => {
             <div className="flex items-center">
               <div className="flex-1 h-px bg-gray-300"></div>
               <div className="px-4">
-                <span className="text-sm text-gray-500 font-medium">
+                <span className="text-gray-500 font-medium" style={{ fontSize: `${isLargeTextMode ? 18 : 14}px` }}>
                   {
                     new Date().toLocaleDateString("ko-KR", {
                       year: "2-digit",
@@ -409,11 +423,12 @@ const StageChat = ({ onBack }: StageChatProps) => {
                 >
                   {message.type === "ai" ? (
                     <div
-                      className="text-sm leading-relaxed"
+                      className="leading-relaxed"
+                      style={baseTextStyle}
                       dangerouslySetInnerHTML={{ __html: message.content }}
                     />
                   ) : (
-                    <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                    <p className="leading-relaxed whitespace-pre-wrap" style={baseTextStyle}>
                       {message.content}
                     </p>
                   )}
@@ -451,7 +466,7 @@ const StageChat = ({ onBack }: StageChatProps) => {
                         style={{ animationDelay: "0.2s" }}
                       ></div>
                     </div>
-                    <span className="text-sm text-gray-500">
+                    <span className="text-gray-500" style={{ fontSize: `${isLargeTextMode ? 18 : 14}px` }}>
                       AI가 답변을 준비하고 있습니다...
                     </span>
                   </div>
@@ -473,7 +488,7 @@ const StageChat = ({ onBack }: StageChatProps) => {
                   placeholder="궁금한 것을 질문해보세요..."
                   className="w-full px-4 py-3 border border-gray-300 rounded-2xl resize-none focus:outline-none focus:ring-2 focus:ring-[#00DAAA] focus:border-transparent bg-white"
                   rows={1}
-                  style={{ minHeight: "48px", maxHeight: "120px" }}
+                  style={{ minHeight: "48px", maxHeight: "120px", ...baseTextStyle }}
                 />
               </div>
               <button
