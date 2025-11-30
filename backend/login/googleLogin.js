@@ -68,8 +68,24 @@ const getRedirectBase = (req) => {
 };
 
 router.get("/", (req, res) => {
+  // 모바일 브라우저 호환성: Referer, Origin, 또는 query parameter에서 origin 확인
   const referer = req.get("Referer") || req.headers.origin;
-  if (referer) {
+  const originFromQuery = req.query.origin || req.query.redirect_uri;
+  
+  let originUrl = null;
+  
+  // 1. Query parameter 우선 확인 (모바일에서 더 안정적)
+  if (originFromQuery) {
+    try {
+      originUrl = new URL(originFromQuery);
+      req.session.loginOrigin = `${originUrl.protocol}//${originUrl.host}`;
+    } catch (error) {
+      console.warn("Invalid origin from query for Google login:", error.message);
+    }
+  }
+  
+  // 2. Referer 또는 Origin 헤더 확인
+  if (!req.session.loginOrigin && referer) {
     try {
       const refererUrl = new URL(referer);
       req.session.loginOrigin = `${refererUrl.protocol}//${refererUrl.host}`;

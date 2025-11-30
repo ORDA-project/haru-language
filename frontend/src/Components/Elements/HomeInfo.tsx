@@ -89,8 +89,16 @@ const HomeInfo = ({
         </div>
       )}
       <div
-        className="h-[200px] flex flex-col justify-start items-start p-[20px] rounded-[20px] bg-white shadow-[0px_3px_7px_2px_rgba(0,0,0,0.05)] my-[20px] border-4 border-[#00DAAA] cursor-pointer"
+        className="h-[200px] flex flex-col justify-start items-start p-[20px] rounded-[20px] bg-white shadow-[0px_3px_7px_2px_rgba(0,0,0,0.05)] my-[20px] border-4 border-[#00DAAA] cursor-pointer select-none"
+        style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
         onClick={() => navigate("/daily-sentence")}
+        onTouchStart={(e) => {
+          e.currentTarget.style.opacity = '0.8';
+        }}
+        onTouchEnd={(e) => {
+          e.currentTarget.style.opacity = '1';
+          navigate("/daily-sentence");
+        }}
       >
         <div className="font-bold leading-[150%] bg-[#00E8B6]" style={baseTextStyle}>
           <span>오늘의 한줄 영어</span>
@@ -113,8 +121,16 @@ const HomeInfo = ({
         </div>
       </div>
       <div
-        className="min-h-[120px] flex px-5 py-4 justify-between items-center rounded-[20px] bg-white shadow-[0px_3px_7px_2px_rgba(0,0,0,0.05)] cursor-pointer"
+        className="min-h-[120px] flex px-5 py-4 justify-between items-center rounded-[20px] bg-white shadow-[0px_3px_7px_2px_rgba(0,0,0,0.05)] cursor-pointer select-none"
+        style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
         onClick={() => {
+          navigate("/song-recommend");
+        }}
+        onTouchStart={(e) => {
+          e.currentTarget.style.opacity = '0.8';
+        }}
+        onTouchEnd={(e) => {
+          e.currentTarget.style.opacity = '1';
           navigate("/song-recommend");
         }}
       >
@@ -159,8 +175,16 @@ const HomeInfo = ({
         
         return (
           <div 
-            className="h-[120px] flex p-[0_20px] justify-between items-center rounded-[20px] bg-white shadow-[0px_3px_7px_2px_rgba(0,0,0,0.05)] my-[20px] cursor-pointer"
+            className="h-[120px] flex p-[0_20px] justify-between items-center rounded-[20px] bg-white shadow-[0px_3px_7px_2px_rgba(0,0,0,0.05)] my-[20px] cursor-pointer select-none"
+            style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
             onClick={() => navigate("/season")}
+            onTouchStart={(e) => {
+              e.currentTarget.style.opacity = '0.8';
+            }}
+            onTouchEnd={(e) => {
+              e.currentTarget.style.opacity = '1';
+              navigate("/season");
+            }}
           >
             <div className="flex flex-col w-full">
               <div className="font-bold leading-[150%]" style={largeTextStyle}>

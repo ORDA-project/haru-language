@@ -52,12 +52,15 @@ const Login: React.FC = () => {
 
   const handleGoogleLogin = () => {
     try {
-
       // 로그인 시도 토스트 표시
       showInfo("로그인 진행 중", "Google 로그인 페이지로 이동합니다...");
 
+      // 모바일 브라우저 호환성: origin을 query parameter로 전달
+      const currentOrigin = window.location.origin;
+      const loginUrl = `${API_ENDPOINTS.auth}/google?origin=${encodeURIComponent(currentOrigin)}`;
+      
       // Google OAuth 엔드포인트로 리다이렉트
-      window.location.href = `${API_ENDPOINTS.auth}/google`;
+      window.location.href = loginUrl;
     } catch (error) {
       console.error("Google login redirect error:", error);
       handleError(error);
@@ -67,12 +70,15 @@ const Login: React.FC = () => {
 
   const handleKakaoLogin = () => {
     try {
-
       // 로그인 시도 토스트 표시
       showInfo("로그인 진행 중", "Kakao 로그인 페이지로 이동합니다...");
 
+      // 모바일 브라우저 호환성: origin을 query parameter로 전달
+      const currentOrigin = window.location.origin;
+      const loginUrl = `${API_ENDPOINTS.auth}/kakao?origin=${encodeURIComponent(currentOrigin)}`;
+      
       // Kakao OAuth 엔드포인트로 리다이렉트
-      window.location.href = `${API_ENDPOINTS.auth}/kakao`;
+      window.location.href = loginUrl;
     } catch (error) {
       console.error("Kakao login redirect error:", error);
       handleError(error);

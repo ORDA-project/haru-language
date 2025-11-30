@@ -132,18 +132,19 @@ const AuthCallback: React.FC = () => {
           return;
         }
 
-        // JWT 토큰 저장 (시크릿 모드 호환성 고려)
+        // JWT 토큰 저장 (모바일/시크릿 모드 호환성 고려)
         if (response.token) {
           try {
             localStorage.setItem("accessToken", response.token);
+            console.log("[AuthCallback] 토큰 저장 성공 (모바일 호환)");
           } catch (storageError) {
             console.error("[AuthCallback] localStorage 저장 실패:", storageError);
-            // 시크릿 모드에서 localStorage가 제한될 수 있으므로 안내
-            showError("저장 오류", "토큰 저장에 실패했습니다. 일반 모드에서 다시 시도해주세요.");
-            navigate("/", { replace: true });
-            return;
+            // 모바일 브라우저나 시크릿 모드에서 localStorage가 제한될 수 있음
+            // 쿠키에 토큰이 있을 수 있으므로 계속 진행
+            console.warn("[AuthCallback] localStorage 저장 실패했지만 쿠키 인증으로 계속 진행");
           }
         } else {
+          console.error("[AuthCallback] 응답에 토큰이 없습니다");
           showError("로그인 오류", "토큰을 받지 못했습니다. 다시 시도해주세요.");
           navigate("/", { replace: true });
           return;
