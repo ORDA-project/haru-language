@@ -18,9 +18,15 @@ const Notification = sequelize.define("Notification", {
   },
   message: { type: DataTypes.STRING, allowNull: false },
   is_read: { type: DataTypes.BOOLEAN, defaultValue: false },
+  createdAt: {
+    type: DataTypes.DATE,
+    allowNull: false,
+    defaultValue: DataTypes.NOW,
+    field: 'created_at',
+  },
 }, {
   tableName: "notifications",
-  timestamps: false,    // 기존 동작 유지
+  timestamps: false,    // createdAt을 수동으로 정의했으므로 false 유지
   underscored: true,    // 표기 일관화 권장
 });
 

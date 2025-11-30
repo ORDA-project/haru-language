@@ -33,9 +33,14 @@ if (dbConfig.url) {
 (async () => {
   try {
     await sequelize.authenticate();
-    console.log("데이터베이스 연결 성공!");
+    if (process.env.NODE_ENV !== "production") {
+      console.log("데이터베이스 연결 성공!");
+    }
   } catch (error) {
-    console.error("데이터베이스 연결 실패:", error);
+    console.error("데이터베이스 연결 실패:", error.message);
+    if (process.env.NODE_ENV !== "production") {
+      console.error("상세 오류:", error);
+    }
   }
 })();
 
