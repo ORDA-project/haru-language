@@ -10,6 +10,11 @@ type ExampleDialogue = {
   korean?: string;
 };
 
+type ExampleItem = {
+  context: string;
+  dialogues: ExampleDialogue[];
+};
+
 const QuestionDetail = () => {
   const { date } = useParams<{ date: string }>();
   const navigate = useNavigate();
@@ -27,14 +32,24 @@ const QuestionDetail = () => {
     }
   }, [date]);
 
+  // 한국 시간 기준으로 날짜 문자열 추출 (YYYY-MM-DD)
+  const getDateString = (dateValue: string | Date): string => {
+    const date = typeof dateValue === 'string' ? new Date(dateValue) : dateValue;
+    // 한국 시간으로 변환
+    const koreaTime = new Date(date.toLocaleString("en-US", { timeZone: "Asia/Seoul" }));
+    const year = koreaTime.getFullYear();
+    const month = String(koreaTime.getMonth() + 1).padStart(2, '0');
+    const day = String(koreaTime.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   const availableDates = useMemo(() => {
     const dates = new Set<string>();
 
     const extractDate = (value?: string | null) => {
       if (!value) return;
-      const parsed = new Date(value);
-      if (Number.isNaN(parsed.getTime())) return;
-      dates.add(parsed.toISOString().split("T")[0]);
+      const dateStr = getDateString(value);
+      if (dateStr) dates.add(dateStr);
     };
 
     questionsData?.data?.forEach((question) => extractDate(question.created_at));
@@ -57,14 +72,16 @@ const QuestionDetail = () => {
 
   const targetDate = useMemo(() => {
     if (!selectedDate) return "";
-    return new Date(selectedDate).toDateString();
+    return selectedDate; // 이미 YYYY-MM-DD 형식
   }, [selectedDate]);
 
   const questions = useMemo(() => {
     if (!questionsData?.data || !targetDate) return [];
-    return questionsData.data.filter(
-      (q) => new Date(q.created_at).toDateString() === targetDate
-    );
+    return questionsData.data.filter((q) => {
+      if (!q.created_at) return false;
+      const questionDate = getDateString(q.created_at);
+      return questionDate === targetDate;
+    });
   }, [questionsData?.data, targetDate]);
 
   const exampleRecords = useMemo(() => {
@@ -97,7 +114,8 @@ const QuestionDetail = () => {
       .filter((example) => {
         const createdAt =
           example.created_at || example.createdAt || new Date().toISOString();
-        return new Date(createdAt).toDateString() === targetDate;
+        const exampleDate = getDateString(createdAt);
+        return exampleDate === targetDate;
       })
       .map((example) => {
         const rawDescription = example.description;
@@ -122,11 +140,13 @@ const QuestionDetail = () => {
           }
         }
 
-        const dialoguesFromDb: ExampleDialogue[] =
-          example.ExampleItems?.flatMap((item) => item.Dialogues || []) || [];
-
-        const dialoguesFromGenerated: ExampleDialogue[] =
-          generated?.examples?.flatMap((item: any) => {
+        // DB에서 가져온 ExampleItem들을 context별로 그룹화
+        const exampleItemsFromDb = example.ExampleItems || [];
+        
+        // Generated 예문들을 context별로 그룹화
+        const exampleItemsFromGenerated: ExampleItem[] = generated?.examples?.map((item: any) => ({
+          context: item.context || "",
+          dialogues: (() => {
             if (!item?.dialogue) return [];
             const { A, B } = item.dialogue;
             const normalized: ExampleDialogue[] = [];
@@ -145,26 +165,27 @@ const QuestionDetail = () => {
               });
             }
             return normalized;
-          }) || [];
+          })(),
+        })) || [];
 
-        const context =
-          example.ExampleItems?.[0]?.context ||
-          generated?.examples?.[0]?.context ||
-          generated?.extractedSentence;
-
-        const normalizedDialogues =
-          dialoguesFromDb.length > 0
-            ? dialoguesFromDb
-            : dialoguesFromGenerated.filter(
-                (dialogue) => dialogue.english?.trim()
-              );
+        // DB 데이터를 우선 사용, 없으면 generated 데이터 사용
+        const exampleItems: ExampleItem[] = exampleItemsFromDb.length > 0
+          ? exampleItemsFromDb.map((item) => ({
+              context: item.context || "",
+              dialogues: (item.Dialogues || []).map((d: { speaker: string; english: string; korean?: string }) => ({
+                speaker: d.speaker,
+                english: d.english,
+                korean: d.korean,
+              })),
+            }))
+          : exampleItemsFromGenerated.filter(
+              (item: ExampleItem) => item.dialogues.length > 0
+            );
 
         return {
           id: example.id,
           description,
-          hasDialogues: normalizedDialogues.length > 0,
-          dialogues: normalizedDialogues,
-          context,
+          exampleItems, // 모든 예문 항목들을 배열로 반환
         };
       });
   }, [exampleHistory?.data, targetDate]);
@@ -408,43 +429,56 @@ const QuestionDetail = () => {
             {exampleRecords.map((example) => (
               <div
                 key={`example-${example.id}`}
-                className="space-y-3 bg-white rounded-2xl shadow-sm border border-gray-100 p-4"
+                className="space-y-4 bg-white rounded-2xl shadow-sm border border-gray-100 p-4"
               >
-                {example.context && (
-                  <div className="inline-block px-3 py-1 rounded-full bg-[#00DAAA] text-white text-xs font-medium">
-                    {example.context}
-                  </div>
-                )}
                 {example.description &&
                   example.description !== "이미지에서 예문을 생성했어요." && (
-                    <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">
+                    <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap mb-3">
                       {example.description}
                     </p>
                   )}
-                {example.hasDialogues && (
-                  <div className="space-y-2">
-                    {example.dialogues.map(
-                      (dialogue: ExampleDialogue, idx: number) => (
-                        <div
-                          key={`${example.id}-dialogue-${idx}`}
-                          className="flex items-start space-x-2"
-                        >
-                          <span className="text-xs font-semibold text-gray-500 pt-0.5">
-                            {dialogue.speaker}
-                          </span>
-                          <div>
-                            <p className="text-sm text-gray-900">
-                              {dialogue.english}
-                            </p>
-                            {dialogue.korean && (
-                              <p className="text-xs text-gray-500">
-                                {dialogue.korean}
-                              </p>
+                {/* 모든 예문 항목들을 상황별로 표시 */}
+                {example.exampleItems && example.exampleItems.length > 0 && (
+                  <div className="space-y-4">
+                    {example.exampleItems.map((item: ExampleItem, itemIdx: number) => (
+                      <div key={`${example.id}-item-${itemIdx}`} className="space-y-3">
+                        {/* 상황 설명 라벨 */}
+                        {item.context && (
+                          <div className="inline-block px-3 py-1.5 rounded-full bg-[#B8E6D3] text-[#1A1A1A] text-xs font-semibold">
+                            {item.context}
+                          </div>
+                        )}
+                        {/* 대화 내용 */}
+                        {item.dialogues && item.dialogues.length > 0 && (
+                          <div className="space-y-2 pl-2">
+                            {item.dialogues.map(
+                              (dialogue: ExampleDialogue, dialogueIdx: number) => (
+                                <div
+                                  key={`${example.id}-item-${itemIdx}-dialogue-${dialogueIdx}`}
+                                  className="flex items-start space-x-3"
+                                >
+                                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0 ${
+                                    dialogue.speaker === "A" ? "bg-[#B8E6D3]" : "bg-[#A8D5E2]"
+                                  }`}>
+                                    {dialogue.speaker}
+                                  </div>
+                                  <div className="flex-1">
+                                    <p className="text-sm font-medium text-gray-900 leading-relaxed">
+                                      {dialogue.english}
+                                    </p>
+                                    {dialogue.korean && (
+                                      <p className="text-xs text-gray-600 leading-relaxed mt-1">
+                                        {dialogue.korean}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                              )
                             )}
                           </div>
-                        </div>
-                      )
-                    )}
+                        )}
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
