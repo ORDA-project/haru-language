@@ -143,6 +143,10 @@ const AuthCallback: React.FC = () => {
           });
         }
 
+        // user atom이 업데이트될 시간을 주기 위해 다음 틱에서 리다이렉트
+        // (React 상태 업데이트는 비동기이므로)
+        await new Promise(resolve => setTimeout(resolve, 0));
+
         // redirectUrl이 있으면 해당 경로로 이동, 없으면 /home으로 이동
         // redirectUrl은 백엔드에서 프론트엔드 URL을 포함하여 반환할 수 있으므로 경로만 추출
         if (redirectToPendingInvite()) {
