@@ -68,29 +68,24 @@ const getRedirectBase = (req) => {
 };
 
 router.get("/", (req, res) => {
-  // 모바일 브라우저 호환성: Referer, Origin, 또는 query parameter에서 origin 확인
   const referer = req.get("Referer") || req.headers.origin;
   const originFromQuery = req.query.origin || req.query.redirect_uri;
   
-  let originUrl = null;
-  
-  // 1. Query parameter 우선 확인 (모바일에서 더 안정적)
   if (originFromQuery) {
     try {
-      originUrl = new URL(originFromQuery);
+      const originUrl = new URL(originFromQuery);
       req.session.loginOrigin = `${originUrl.protocol}//${originUrl.host}`;
     } catch (error) {
-      console.warn("Invalid origin from query for Google login:", error.message);
+      // Invalid origin, fallback to default
     }
   }
   
-  // 2. Referer 또는 Origin 헤더 확인
   if (!req.session.loginOrigin && referer) {
     try {
       const refererUrl = new URL(referer);
       req.session.loginOrigin = `${refererUrl.protocol}//${refererUrl.host}`;
     } catch (error) {
-      console.warn("Invalid referer for Google login:", error.message);
+      // Invalid referer, fallback to default
     }
   }
 
@@ -108,15 +103,12 @@ router.get("/", (req, res) => {
 
 router.get("/callback", validateOAuthCode, async (req, res) => {
   const { code } = req.query;
-
-  // OAuth 콜백에서는 Referer가 Google이므로, 환경 변수에서 프론트엔드 URL 가져오기
   const redirectBase = process.env.CLIENT_URL || getRedirectBase(req);
   
-  // AJAX 요청 여부를 여러 방법으로 확인
   const isAjaxRequest = 
+    req.query.format === "json" ||
     req.get("X-Requested-With") === "XMLHttpRequest" ||
-    req.get("Accept")?.includes("application/json") ||
-    req.query.format === "json";
+    req.get("Accept")?.includes("application/json");
 
   try {
     // 보안: 환경 변수 검증
@@ -134,7 +126,7 @@ router.get("/callback", validateOAuthCode, async (req, res) => {
 
     const tokenRes = await axios.post(GOOGLE_TOKEN_URL, tokenBody.toString(), {
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      timeout: 10000, // 10초 타임아웃
+      timeout: 10000,
     });
 
     // 보안: 응답 검증
@@ -146,7 +138,7 @@ router.get("/callback", validateOAuthCode, async (req, res) => {
 
     const userRes = await axios.get(GOOGLE_USERINFO_URL, {
       headers: { Authorization: `Bearer ${googleAccessToken}` },
-      timeout: 10000, // 10초 타임아웃
+      timeout: 10000,
     });
 
     // 보안: 응답 검증
@@ -155,8 +147,6 @@ router.get("/callback", validateOAuthCode, async (req, res) => {
     }
 
     const { id, name, email } = userRes.data;
-    
-    // 보안: 입력 검증
     const googleId = String(id);
     if (!googleId || googleId.length > 100) {
       throw new Error("유효하지 않은 구글 사용자 ID입니다.");
@@ -177,7 +167,6 @@ router.get("/callback", validateOAuthCode, async (req, res) => {
     const { visit_count } = activity;
     const { mostVisitedDays } = await UserActivity.getMostVisitedDays(user.id);
 
-    // JWT 토큰 생성
     const tokenPayload = {
       userId: user.id,
       social_id: user.social_id,
@@ -191,17 +180,14 @@ router.get("/callback", validateOAuthCode, async (req, res) => {
     const accessToken = generateToken(tokenPayload);
 
     delete req.session.loginOrigin;
-
-    // 보안: URL에 사용자 정보 노출 방지 - 세션에 저장하고 리다이렉트
     req.session.loginSuccess = true;
-    req.session.tempUserName = user.name; // 임시로 세션에 저장 (리다이렉트 후 즉시 삭제)
+    req.session.tempUserName = user.name;
 
-    // AJAX 요청이면 항상 JSON 반환 (JWT 토큰 포함)
     if (isAjaxRequest) {
       return res.json({
         success: true,
         token: accessToken,
-        redirectUrl: `${redirectBase}/home`, // 보안: URL에 사용자 정보 제거
+        redirectUrl: `${redirectBase}/home`,
         user: {
           userId: user.id,
           name: user.name,
@@ -214,21 +200,15 @@ router.get("/callback", validateOAuthCode, async (req, res) => {
       });
     }
 
-    // 브라우저 직접 요청인 경우: 토큰을 쿠키에 저장하고 리다이렉트
-    // 주의: 프론트엔드는 AJAX로 로그인하고 localStorage를 사용하므로 쿠키는 백업용
-    // sameSite: "none"은 secure: true와 HTTPS가 필요 (프로덕션)
-    // 시크릿 모드에서도 작동하도록 설정
     res.cookie("accessToken", accessToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production", // 프로덕션에서만 secure: true (HTTPS 필요)
+      secure: process.env.NODE_ENV === "production",
       sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-      maxAge: 1000 * 60 * 60 * 24 * 7, // 7일
+      maxAge: 1000 * 60 * 60 * 24 * 7,
     });
 
-    // 보안: URL에 사용자 정보 제거
-    res.redirect(`${redirectBase}/home`);
+    res.redirect(`${redirectBase}/auth/google/callback`);
   } catch (error) {
-    // 보안: 민감한 정보는 로그에만 기록하고 사용자에게는 일반적인 메시지 전달
     const { logError } = require("../middleware/errorHandler");
     logError(error, {
       provider: "google",
@@ -237,10 +217,7 @@ router.get("/callback", validateOAuthCode, async (req, res) => {
     
     delete req.session.loginOrigin;
 
-    // 사용자에게는 일반적인 오류 메시지만 전달
     let userFriendlyMessage = "Google 로그인에 실패했습니다. 다시 시도해주세요.";
-    
-    // 특정 오류에 대한 친화적인 메시지
     const errorDetails = error.response?.data;
     if (errorDetails?.error === "invalid_grant") {
       userFriendlyMessage = "인증 코드가 만료되었거나 이미 사용되었습니다. 다시 로그인해주세요.";
@@ -248,20 +225,17 @@ router.get("/callback", validateOAuthCode, async (req, res) => {
       userFriendlyMessage = "Google 로그인 설정에 문제가 있습니다. 관리자에게 문의해주세요.";
     }
 
-    // 보안: URL에 오류 메시지 노출 방지 - 세션에 저장
     req.session.loginError = true;
     req.session.tempErrorMessage = userFriendlyMessage;
 
-    // 오류 발생 시에도 AJAX 요청이면 JSON 반환
     if (isAjaxRequest) {
       return res.status(400).json({
         success: false,
-        redirectUrl: `${redirectBase}/home`, // 보안: URL에 오류 정보 제거
+        redirectUrl: `${redirectBase}/home`,
         error: userFriendlyMessage,
       });
     }
 
-    // 보안: URL에 오류 정보 제거
     res.redirect(`${redirectBase}/home`);
   }
 });

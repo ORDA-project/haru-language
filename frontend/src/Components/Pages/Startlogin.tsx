@@ -15,9 +15,7 @@ const Login: React.FC = () => {
   const { showSuccess, showError, showInfo, handleError } = useErrorHandler();
 
 
-  // URL 파라미터에서 로그인 성공 정보 확인
   useEffect(() => {
-    // 보안: URL에서 민감한 정보 제거
     const url = new URL(window.location.href);
     let hasChanges = false;
 
@@ -36,33 +34,17 @@ const Login: React.FC = () => {
 
     if (hasChanges) {
       window.history.replaceState({}, "", url.toString());
-      // 보안: URL에서 민감한 정보 제거 후 종료
-      // 로그인 정보는 AuthCallback이나 Home에서 처리
       return;
     }
-  }, [
-    searchParams,
-    setUserData,
-    navigate,
-    showSuccess,
-    showError,
-    showInfo,
-    handleError,
-  ]);
+  }, [searchParams, setUserData, navigate, showSuccess, showError, showInfo, handleError]);
 
   const handleGoogleLogin = () => {
     try {
-      // 로그인 시도 토스트 표시
       showInfo("로그인 진행 중", "Google 로그인 페이지로 이동합니다...");
-
-      // 모바일 브라우저 호환성: origin을 query parameter로 전달
       const currentOrigin = window.location.origin;
       const loginUrl = `${API_ENDPOINTS.auth}/google?origin=${encodeURIComponent(currentOrigin)}`;
-      
-      // Google OAuth 엔드포인트로 리다이렉트
       window.location.href = loginUrl;
     } catch (error) {
-      console.error("Google login redirect error:", error);
       handleError(error);
       showError("로그인 오류", "Google 로그인을 시도할 수 없습니다.");
     }
@@ -70,17 +52,11 @@ const Login: React.FC = () => {
 
   const handleKakaoLogin = () => {
     try {
-      // 로그인 시도 토스트 표시
       showInfo("로그인 진행 중", "Kakao 로그인 페이지로 이동합니다...");
-
-      // 모바일 브라우저 호환성: origin을 query parameter로 전달
       const currentOrigin = window.location.origin;
       const loginUrl = `${API_ENDPOINTS.auth}/kakao?origin=${encodeURIComponent(currentOrigin)}`;
-      
-      // Kakao OAuth 엔드포인트로 리다이렉트
       window.location.href = loginUrl;
     } catch (error) {
-      console.error("Kakao login redirect error:", error);
       handleError(error);
       showError("로그인 오류", "Kakao 로그인을 시도할 수 없습니다.");
     }

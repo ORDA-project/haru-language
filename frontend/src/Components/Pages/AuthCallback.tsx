@@ -32,15 +32,11 @@ const AuthCallback: React.FC = () => {
     }
 
     const code = searchParams.get("code");
-    
-    // 보안: URL에서 사용자 정보 제거 (세션에서 가져오도록 변경)
-    // 기존 파라미터는 하위 호환성을 위해 유지하되, 우선순위는 낮춤
     const loginSuccess = searchParams.get("loginSuccess");
     const loginError = searchParams.get("loginError");
     const errorMessage = searchParams.get("errorMessage");
     const userName = searchParams.get("userName");
     
-    // 보안: URL에서 민감한 정보 제거
     if (loginSuccess || loginError || userName || errorMessage) {
       const newUrl = new URL(window.location.href);
       newUrl.searchParams.delete("loginSuccess");
@@ -104,7 +100,6 @@ const AuthCallback: React.FC = () => {
         return;
       }
 
-      // 중복 요청 방지
       if (isProcessingRef.current) {
         return;
       }
@@ -112,19 +107,15 @@ const AuthCallback: React.FC = () => {
       isProcessingRef.current = true;
 
       try {
-        // 보안: 코드를 사용하기 전에 URL에서 제거 (중복 사용 방지)
         const newUrl = new URL(window.location.href);
         newUrl.searchParams.delete("code");
         window.history.replaceState({}, "", newUrl.toString());
 
-        // 현재 경로에서 구글인지 카카오인지 확인
         const isGoogle = window.location.pathname.includes("/google");
-        
         const response = isGoogle
           ? await authApi.loginWithGoogle(code)
           : await authApi.loginWithKakao(code);
 
-        // 응답 검증
         if (!response.success) {
           const errorMsg = (response as any).error || "로그인에 실패했습니다.";
           showError("로그인 실패", errorMsg);
@@ -132,25 +123,18 @@ const AuthCallback: React.FC = () => {
           return;
         }
 
-        // JWT 토큰 저장 (모바일/시크릿 모드 호환성 고려)
         if (response.token) {
           try {
             localStorage.setItem("accessToken", response.token);
-            console.log("[AuthCallback] 토큰 저장 성공 (모바일 호환)");
           } catch (storageError) {
-            console.error("[AuthCallback] localStorage 저장 실패:", storageError);
-            // 모바일 브라우저나 시크릿 모드에서 localStorage가 제한될 수 있음
-            // 쿠키에 토큰이 있을 수 있으므로 계속 진행
-            console.warn("[AuthCallback] localStorage 저장 실패했지만 쿠키 인증으로 계속 진행");
+            // localStorage 저장 실패 시 쿠키 인증으로 계속 진행
           }
         } else {
-          console.error("[AuthCallback] 응답에 토큰이 없습니다");
           showError("로그인 오류", "토큰을 받지 못했습니다. 다시 시도해주세요.");
           navigate("/", { replace: true });
           return;
         }
 
-        // 사용자 정보 설정 (sessionStorage 사용 - 시크릿 모드 호환성 고려)
         if (response.user) {
           try {
             setUserData({
@@ -165,17 +149,12 @@ const AuthCallback: React.FC = () => {
               mostVisitedDays: response.user.mostVisitedDays || null,
             });
           } catch (userError) {
-            console.error("[AuthCallback] 사용자 정보 설정 실패:", userError);
-            // sessionStorage 저장 실패는 치명적이지 않을 수 있으므로, 토큰이 있으면 계속 진행
+            // 사용자 정보 설정 실패는 치명적이지 않을 수 있음
           }
         }
 
-        // user atom이 업데이트될 시간을 주기 위해 다음 틱에서 리다이렉트
-        // (React 상태 업데이트는 비동기이므로)
         await new Promise(resolve => setTimeout(resolve, 0));
 
-        // redirectUrl이 있으면 해당 경로로 이동, 없으면 /home으로 이동
-        // redirectUrl은 백엔드에서 프론트엔드 URL을 포함하여 반환할 수 있으므로 경로만 추출
         if (redirectToPendingInvite()) {
           showSuccess("로그인 성공", "로그인에 성공했습니다!");
           return;
@@ -183,15 +162,12 @@ const AuthCallback: React.FC = () => {
         
         showSuccess("로그인 성공", "로그인에 성공했습니다!");
         
-        // redirectUrl이 있으면 경로만 추출하여 사용, 없으면 /home으로 이동
         let targetPath = "/home";
         if (response.redirectUrl) {
           try {
-            // 전체 URL이면 경로만 추출, 이미 경로면 그대로 사용
             const url = new URL(response.redirectUrl, window.location.origin);
             targetPath = url.pathname + url.search;
           } catch {
-            // URL 파싱 실패 시 경로로 간주
             targetPath = response.redirectUrl.startsWith("/") 
               ? response.redirectUrl 
               : `/${response.redirectUrl}`;
@@ -200,9 +176,23 @@ const AuthCallback: React.FC = () => {
         
         navigate(targetPath, { replace: true });
       } catch (error) {
-        console.error("[AuthCallback] 로그인 에러:", error);
         handleError(error);
-        const errorMessage = (error as any)?.data?.error || (error as any)?.message || "로그인 처리 중 오류가 발생했습니다.";
+        
+        let errorMessage = "로그인 처리 중 오류가 발생했습니다.";
+        if ((error as any)?.status === 0) {
+          errorMessage = "서버에 연결할 수 없습니다. 네트워크 연결을 확인해주세요.";
+        } else if ((error as any)?.status === 401) {
+          errorMessage = "인증에 실패했습니다. 다시 시도해주세요.";
+        } else if ((error as any)?.status === 500) {
+          errorMessage = "서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.";
+        } else if ((error as any)?.data?.error) {
+          errorMessage = (error as any).data.error;
+        } else if ((error as any)?.data?.message) {
+          errorMessage = (error as any).data.message;
+        } else if ((error as any)?.message) {
+          errorMessage = (error as any).message;
+        }
+        
         showError("로그인 실패", errorMessage);
         navigate("/", { replace: true });
       } finally {
@@ -210,23 +200,32 @@ const AuthCallback: React.FC = () => {
       }
     };
 
-    // OAuth 콜백 코드가 있는 경우 (프론트엔드로 직접 콜백된 경우)
     if (code) {
       handleOAuthCallback();
       return;
     }
 
-    // 백엔드에서 리다이렉트된 경우 (loginSuccess/loginError 파라미터 사용)
-    if (loginSuccess === "true") {
-      handleSuccess();
-    } else if (loginError === "true") {
-      const displayMessage = errorMessage || "로그인에 실패했습니다. 다시 시도해주세요.";
-      showError("로그인 실패", displayMessage);
-      navigate("/", { replace: true });
-    } else {
-      showError("로그인 오류", "잘못된 로그인 요청입니다.");
-      navigate("/", { replace: true });
-    }
+    hydrateUserFromToken()
+      .then(() => {
+        showSuccess("로그인 성공", "로그인에 성공했습니다!");
+        if (redirectToPendingInvite()) {
+          return;
+        }
+        navigate("/home", { replace: true });
+      })
+      .catch((error) => {
+        if (loginSuccess === "true") {
+          handleSuccess();
+        } else if (loginError === "true") {
+          const displayMessage = errorMessage || "로그인에 실패했습니다. 다시 시도해주세요.";
+          showError("로그인 실패", displayMessage);
+          navigate("/", { replace: true });
+        } else {
+          handleError(error);
+          showError("로그인 오류", "로그인 정보를 확인할 수 없습니다. 다시 시도해주세요.");
+          navigate("/", { replace: true });
+        }
+      });
   }, [searchParams, setUserData, navigate, showSuccess, showError, handleError, redirectToPendingInvite]);
 
   return (
