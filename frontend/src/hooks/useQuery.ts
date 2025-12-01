@@ -141,7 +141,7 @@ export const useMutation = <TData = unknown, TVariables = unknown>(
 
   // onSuccess 처리
   useEffect(() => {
-    if (mutation.isSuccess && mutation.data && mutation.variables) {
+    if (mutation.isSuccess && mutation.data) {
       if (options?.showSuccessMessage) {
         showSuccess(options.showSuccessMessage);
       }
@@ -152,7 +152,8 @@ export const useMutation = <TData = unknown, TVariables = unknown>(
         });
       }
 
-      options?.onSuccess?.(mutation.data, mutation.variables);
+      // variables가 undefined일 수 있으므로 옵셔널 체이닝 사용
+      options?.onSuccess?.(mutation.data, mutation.variables as TVariables);
     }
   }, [
     mutation.isSuccess,
@@ -165,7 +166,7 @@ export const useMutation = <TData = unknown, TVariables = unknown>(
 
   // onError 처리
   useEffect(() => {
-    if (mutation.isError && mutation.error && mutation.variables) {
+    if (mutation.isError && mutation.error) {
       // showErrorToast가 함수인 경우 함수 결과를 사용, 아니면 boolean 값 사용
       const shouldShowError = typeof options?.showErrorToast === 'function' 
         ? options.showErrorToast(mutation.error)
@@ -174,7 +175,8 @@ export const useMutation = <TData = unknown, TVariables = unknown>(
       if (shouldShowError) {
         handleError(mutation.error, true);
       }
-      options?.onError?.(mutation.error, mutation.variables);
+      // variables가 undefined일 수 있으므로 옵셔널 체이닝 사용
+      options?.onError?.(mutation.error, mutation.variables as TVariables);
     }
   }, [
     mutation.isError,
@@ -186,8 +188,9 @@ export const useMutation = <TData = unknown, TVariables = unknown>(
 
   // onSettled 처리
   useEffect(() => {
-    if ((mutation.isSuccess || mutation.isError) && mutation.variables) {
-      options?.onSettled?.(mutation.data, mutation.error, mutation.variables);
+    if (mutation.isSuccess || mutation.isError) {
+      // variables가 undefined일 수 있으므로 옵셔널 체이닝 사용
+      options?.onSettled?.(mutation.data, mutation.error, mutation.variables as TVariables);
     }
   }, [
     mutation.isSuccess,

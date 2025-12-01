@@ -101,7 +101,7 @@ export class Http {
     // FormData 우선, 그 다음 json
     if (formData && (method === 'post' || method === 'patch' || method === 'put' || method === 'delete')) {
       requestInit.body = formData;
-    } else if (json && (method === 'post' || method === 'patch' || method === 'put' || method === 'delete')) {
+    } else if (json !== undefined && json !== null && (method === 'post' || method === 'patch' || method === 'put' || method === 'delete')) {
       requestInit.body = JSON.stringify(json);
     }
 
