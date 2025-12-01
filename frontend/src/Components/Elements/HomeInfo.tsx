@@ -91,13 +91,41 @@ const HomeInfo = ({
       <div
         className="h-[200px] flex flex-col justify-start items-start p-[20px] rounded-[20px] bg-white shadow-[0px_3px_7px_2px_rgba(0,0,0,0.05)] my-[20px] border-4 border-[#00DAAA] cursor-pointer select-none"
         style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
-        onClick={() => navigate("/daily-sentence")}
         onTouchStart={(e) => {
-          e.currentTarget.style.opacity = '0.8';
+          const touch = e.touches[0];
+          e.currentTarget.setAttribute('data-touch-start-y', touch.clientY.toString());
+          e.currentTarget.setAttribute('data-touch-start-time', Date.now().toString());
+        }}
+        onTouchMove={(e) => {
+          // 스크롤 중임을 표시
+          e.currentTarget.setAttribute('data-scrolling', 'true');
         }}
         onTouchEnd={(e) => {
-          e.currentTarget.style.opacity = '1';
-          navigate("/daily-sentence");
+          const element = e.currentTarget;
+          const startY = parseFloat(element.getAttribute('data-touch-start-y') || '0');
+          const startTime = parseInt(element.getAttribute('data-touch-start-time') || '0');
+          const endY = e.changedTouches[0].clientY;
+          const endTime = Date.now();
+          const isScrolling = element.getAttribute('data-scrolling') === 'true';
+          
+          // 정리
+          element.removeAttribute('data-touch-start-y');
+          element.removeAttribute('data-touch-start-time');
+          element.removeAttribute('data-scrolling');
+          
+          // 스크롤이 아니고 짧은 터치인 경우에만 클릭 처리
+          const moveDistance = Math.abs(endY - startY);
+          const timeDiff = endTime - startTime;
+          
+          if (!isScrolling && moveDistance < 10 && timeDiff < 300) {
+            navigate("/daily-sentence");
+          }
+        }}
+        onClick={(e) => {
+          // 모바일에서는 onTouchEnd에서 처리하므로 데스크톱에서만
+          if (!('ontouchstart' in window)) {
+            navigate("/daily-sentence");
+          }
         }}
       >
         <div className="font-bold leading-[150%] bg-[#00E8B6]" style={baseTextStyle}>
@@ -123,15 +151,41 @@ const HomeInfo = ({
       <div
         className="min-h-[120px] flex px-5 py-4 justify-between items-center rounded-[20px] bg-white shadow-[0px_3px_7px_2px_rgba(0,0,0,0.05)] cursor-pointer select-none"
         style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
-        onClick={() => {
-          navigate("/song-recommend");
-        }}
         onTouchStart={(e) => {
-          e.currentTarget.style.opacity = '0.8';
+          const touch = e.touches[0];
+          e.currentTarget.setAttribute('data-touch-start-y', touch.clientY.toString());
+          e.currentTarget.setAttribute('data-touch-start-time', Date.now().toString());
+        }}
+        onTouchMove={(e) => {
+          // 스크롤 중임을 표시
+          e.currentTarget.setAttribute('data-scrolling', 'true');
         }}
         onTouchEnd={(e) => {
-          e.currentTarget.style.opacity = '1';
-          navigate("/song-recommend");
+          const element = e.currentTarget;
+          const startY = parseFloat(element.getAttribute('data-touch-start-y') || '0');
+          const startTime = parseInt(element.getAttribute('data-touch-start-time') || '0');
+          const endY = e.changedTouches[0].clientY;
+          const endTime = Date.now();
+          const isScrolling = element.getAttribute('data-scrolling') === 'true';
+          
+          // 정리
+          element.removeAttribute('data-touch-start-y');
+          element.removeAttribute('data-touch-start-time');
+          element.removeAttribute('data-scrolling');
+          
+          // 스크롤이 아니고 짧은 터치인 경우에만 클릭 처리
+          const moveDistance = Math.abs(endY - startY);
+          const timeDiff = endTime - startTime;
+          
+          if (!isScrolling && moveDistance < 10 && timeDiff < 300) {
+            navigate("/song-recommend");
+          }
+        }}
+        onClick={(e) => {
+          // 모바일에서는 onTouchEnd에서 처리하므로 데스크톱에서만
+          if (!('ontouchstart' in window)) {
+            navigate("/song-recommend");
+          }
         }}
       >
         <div className="w-full flex-1 min-w-0 pr-4">
@@ -177,13 +231,41 @@ const HomeInfo = ({
           <div 
             className="h-[120px] flex p-[0_20px] justify-between items-center rounded-[20px] bg-white shadow-[0px_3px_7px_2px_rgba(0,0,0,0.05)] my-[20px] cursor-pointer select-none"
             style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
-            onClick={() => navigate("/season")}
             onTouchStart={(e) => {
-              e.currentTarget.style.opacity = '0.8';
+              const touch = e.touches[0];
+              e.currentTarget.setAttribute('data-touch-start-y', touch.clientY.toString());
+              e.currentTarget.setAttribute('data-touch-start-time', Date.now().toString());
+            }}
+            onTouchMove={(e) => {
+              // 스크롤 중임을 표시
+              e.currentTarget.setAttribute('data-scrolling', 'true');
             }}
             onTouchEnd={(e) => {
-              e.currentTarget.style.opacity = '1';
-              navigate("/season");
+              const element = e.currentTarget;
+              const startY = parseFloat(element.getAttribute('data-touch-start-y') || '0');
+              const startTime = parseInt(element.getAttribute('data-touch-start-time') || '0');
+              const endY = e.changedTouches[0].clientY;
+              const endTime = Date.now();
+              const isScrolling = element.getAttribute('data-scrolling') === 'true';
+              
+              // 정리
+              element.removeAttribute('data-touch-start-y');
+              element.removeAttribute('data-touch-start-time');
+              element.removeAttribute('data-scrolling');
+              
+              // 스크롤이 아니고 짧은 터치인 경우에만 클릭 처리
+              const moveDistance = Math.abs(endY - startY);
+              const timeDiff = endTime - startTime;
+              
+              if (!isScrolling && moveDistance < 10 && timeDiff < 300) {
+                navigate("/season");
+              }
+            }}
+            onClick={(e) => {
+              // 모바일에서는 onTouchEnd에서 처리하므로 데스크톱에서만
+              if (!('ontouchstart' in window)) {
+                navigate("/season");
+              }
             }}
           >
             <div className="flex flex-col w-full">
