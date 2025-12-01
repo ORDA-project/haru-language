@@ -82,55 +82,88 @@ const ImageUploadModal = ({
     }
   }, [isOpen, isCameraOpen]);
 
-  // 카메라가 열릴 때 비디오 재생 확인
+  // 카메라가 열릴 때 비디오에 스트림 연결 및 재생
   useEffect(() => {
     if (!isCameraOpen || !videoRef.current || !stream) return;
 
     const video = videoRef.current;
     const mountedRef = { current: true };
 
+    // 기존 srcObject 정리
+    if (video.srcObject) {
+      const oldStream = video.srcObject as MediaStream;
+      oldStream.getTracks().forEach((track) => track.stop());
+    }
+
+    // 스트림 연결
+    video.srcObject = stream;
+
+    // 모바일에서 재생을 보장하기 위한 추가 설정
+    video.setAttribute("playsinline", "true");
+    video.setAttribute("webkit-playsinline", "true");
+    video.setAttribute("x5-playsinline", "true");
+    video.setAttribute("x5-video-player-type", "h5");
+    video.setAttribute("x5-video-player-fullscreen", "false");
+
+    // 비디오 속성 설정
+    video.muted = true;
+    video.playsInline = true;
+    video.autoplay = true;
+
     const playVideo = () => {
-      if (!mountedRef.current || !video || !video.srcObject) return;
-      
-      // 비디오가 준비되지 않았으면 대기
-      if (video.readyState < 2) {
+      if (!mountedRef.current || !video || !video.srcObject) {
+        console.warn("비디오 재생 조건 불만족");
         return;
       }
-      
+
+      // 스트림 확인
+      const currentStream = video.srcObject as MediaStream;
+      const videoTrack = currentStream.getVideoTracks()[0];
+      if (!videoTrack || videoTrack.readyState !== 'live') {
+        console.warn("비디오 트랙이 활성화되지 않았습니다:", videoTrack?.readyState);
+        return;
+      }
+
+      console.log("비디오 재생 시도, readyState:", video.readyState, "paused:", video.paused);
+
       // 여러 방법으로 재생 시도
       const playPromise = video.play();
-      
+
       if (playPromise !== undefined) {
         playPromise
           .then(() => {
-            console.log("비디오 재생 성공");
+            console.log("✅ 비디오 재생 성공");
           })
           .catch((err) => {
-            console.error("비디오 재생 오류:", err);
+            console.error("❌ 비디오 재생 오류:", err);
             // 재생 실패 시 여러 번 재시도
             let retryCount = 0;
-            const maxRetries = 3;
-            
+            const maxRetries = 5;
+
             const retryPlay = () => {
               if (retryCount < maxRetries && mountedRef.current && video && video.srcObject) {
                 retryCount++;
                 setTimeout(() => {
                   if (mountedRef.current && video && video.srcObject) {
-                    video.play()
-                      .then(() => {
-                        console.log(`비디오 재생 재시도 ${retryCount} 성공`);
-                      })
-                      .catch((e) => {
-                        console.error(`비디오 재생 재시도 ${retryCount} 실패:`, e);
-                        if (retryCount < maxRetries) {
-                          retryPlay();
-                        }
-                      });
+                    const currentStream = video.srcObject as MediaStream;
+                    const track = currentStream.getVideoTracks()[0];
+                    if (track && track.readyState === 'live') {
+                      video.play()
+                        .then(() => {
+                          console.log(`✅ 비디오 재생 재시도 ${retryCount} 성공`);
+                        })
+                        .catch((e) => {
+                          console.error(`❌ 비디오 재생 재시도 ${retryCount} 실패:`, e);
+                          if (retryCount < maxRetries) {
+                            retryPlay();
+                          }
+                        });
+                    }
                   }
-                }, 200 * retryCount);
+                }, 300 * retryCount);
               }
             };
-            
+
             retryPlay();
           });
       }
@@ -138,21 +171,25 @@ const ImageUploadModal = ({
 
     const handleLoadedMetadata = () => {
       if (!mountedRef.current || !video) return;
+      console.log("📹 비디오 메타데이터 로드됨");
       playVideo();
     };
 
     const handleLoadedData = () => {
       if (!mountedRef.current || !video) return;
+      console.log("📹 비디오 데이터 로드됨");
       playVideo();
     };
 
     const handleCanPlay = () => {
       if (!mountedRef.current || !video) return;
+      console.log("📹 비디오 재생 가능");
       playVideo();
     };
 
     const handlePlay = () => {
       if (!mountedRef.current) return;
+      console.log("▶️ 비디오 재생 중");
       // 비디오가 재생되면 가이드 메시지를 3초 후에 숨김
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
@@ -173,21 +210,22 @@ const ImageUploadModal = ({
     video.addEventListener("canplay", handleCanPlay);
     video.addEventListener("play", handlePlay);
 
-    // 이미 로드된 경우 즉시 재생 시도
-    if (video.readyState >= 2) {
-      setTimeout(() => {
-        if (mountedRef.current) {
-          playVideo();
-        }
-      }, 100);
-    } else {
-      // 로드되지 않은 경우 짧은 지연 후 재생 시도
-      setTimeout(() => {
-        if (mountedRef.current) {
-          playVideo();
-        }
-      }, 200);
-    }
+    // 여러 시점에서 재생 시도
+    const attemptPlay = () => {
+      if (mountedRef.current) {
+        playVideo();
+      }
+    };
+
+    // 즉시 시도
+    setTimeout(attemptPlay, 0);
+    
+    // 여러 시점에서 재시도
+    setTimeout(attemptPlay, 50);
+    setTimeout(attemptPlay, 100);
+    setTimeout(attemptPlay, 200);
+    setTimeout(attemptPlay, 500);
+    setTimeout(attemptPlay, 1000);
 
     return () => {
       mountedRef.current = false;
@@ -223,59 +261,17 @@ const ImageUploadModal = ({
         },
       });
 
+      // 스트림의 비디오 트랙 확인
+      const videoTrack = mediaStream.getVideoTracks()[0];
+      if (!videoTrack) {
+        throw new Error("비디오 트랙을 찾을 수 없습니다.");
+      }
+      console.log("✅ 비디오 트랙 상태:", videoTrack.readyState, videoTrack.label);
+
       streamRef.current = mediaStream;
       setStream(mediaStream);
       setIsCameraOpen(true);
       setShowGuide(true);
-
-      // 비디오 요소에 스트림 연결
-      if (videoRef.current) {
-        const video = videoRef.current;
-        
-        // 기존 srcObject 정리
-        if (video.srcObject) {
-          const oldStream = video.srcObject as MediaStream;
-          oldStream.getTracks().forEach((track) => track.stop());
-        }
-        
-        // 스트림 연결
-        video.srcObject = mediaStream;
-        
-        // 모바일에서 재생을 보장하기 위한 추가 설정
-        video.setAttribute("playsinline", "true");
-        video.setAttribute("webkit-playsinline", "true");
-        video.setAttribute("x5-playsinline", "true");
-        video.setAttribute("x5-video-player-type", "h5");
-        video.setAttribute("x5-video-player-fullscreen", "false");
-        
-        // 비디오 속성 설정
-        video.muted = true;
-        video.playsInline = true;
-        
-        // 여러 시점에서 재생 시도
-        const attemptPlay = () => {
-          if (video && video.srcObject && video.readyState >= 2) {
-            const playPromise = video.play();
-            if (playPromise !== undefined) {
-              playPromise
-                .then(() => {
-                  console.log("비디오 재생 성공");
-                })
-                .catch((err) => {
-                  console.error("비디오 재생 실패:", err);
-                });
-            }
-          }
-        };
-        
-        // 즉시 시도
-        attemptPlay();
-        
-        // 짧은 지연 후 재시도
-        setTimeout(attemptPlay, 50);
-        setTimeout(attemptPlay, 150);
-        setTimeout(attemptPlay, 300);
-      }
     } catch (error) {
       console.error("카메라 접근 오류:", error);
       alert("카메라에 접근할 수 없습니다. 갤러리에서 이미지를 선택해주세요.");
@@ -296,9 +292,9 @@ const ImageUploadModal = ({
       return;
     }
 
-    const canvas = canvasRef.current;
-    const video = videoRef.current;
-    const context = canvas.getContext("2d");
+      const canvas = canvasRef.current;
+      const video = videoRef.current;
+      const context = canvas.getContext("2d");
 
     if (!context) {
       console.error("캔버스 컨텍스트를 가져올 수 없습니다.");
@@ -311,12 +307,12 @@ const ImageUploadModal = ({
     }
 
     try {
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      context.drawImage(video, 0, 0);
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        context.drawImage(video, 0, 0);
 
-      canvas.toBlob(
-        (blob) => {
+        canvas.toBlob(
+          (blob) => {
           if (!blob) {
             console.error("이미지 변환 실패");
             return;
@@ -326,17 +322,17 @@ const ImageUploadModal = ({
           cleanupCamera();
 
           // 파일 생성 및 전달
-          const file = new File([blob], "camera-photo.jpg", {
-            type: "image/jpeg",
-          });
+              const file = new File([blob], "camera-photo.jpg", {
+                type: "image/jpeg",
+              });
 
           // 상태 업데이트 후 콜백 호출
-          onImageSelect(file);
-          onClose();
-        },
-        "image/jpeg",
-        0.8
-      );
+              onImageSelect(file);
+              onClose();
+          },
+          "image/jpeg",
+          0.8
+        );
     } catch (error) {
       console.error("사진 촬영 오류:", error);
       alert("사진을 촬영하는 중 오류가 발생했습니다.");
@@ -470,8 +466,10 @@ const ImageUploadModal = ({
                 style={{
                   width: "100%",
                   height: "256px",
+                  minHeight: "256px",
                   objectFit: "cover",
                   backgroundColor: "#111827",
+                  display: "block",
                 }}
                 className="rounded-xl"
               />
