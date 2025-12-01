@@ -2,20 +2,46 @@ const fs = require('fs');
 const path = require('path');
 const csvParser = require('csv-parser');
 
-const csvFilePath = path.join(__dirname, '../seeders/songs.csv'); // 파일 하나만 사용
+// 여러 경로 시도 (개발/프로덕션 환경 대응)
+const possiblePaths = [
+  path.join(__dirname, '../seeders/songs.csv'), // 기본 경로
+  path.join(process.cwd(), 'seeders/songs.csv'), // 현재 작업 디렉토리 기준
+  path.join(process.cwd(), 'backend/seeders/songs.csv'), // 루트에서 실행 시
+];
+
+// CSV 파일 경로 찾기 함수
+const findCsvPath = () => {
+  for (const possiblePath of possiblePaths) {
+    if (fs.existsSync(possiblePath)) {
+      return possiblePath;
+    }
+  }
+  return possiblePaths[0]; // 기본 경로 반환 (에러는 나중에 처리)
+};
 
 const getRandomSong = (req) => {
   return new Promise((resolve, reject) => {
+    // CSV 파일 경로 찾기
+    const actualPath = findCsvPath();
+
+    if (!fs.existsSync(actualPath)) {
+      const errorMsg = `노래 데이터 파일을 찾을 수 없습니다. 시도한 경로: ${possiblePaths.join(', ')}`;
+      console.error('[songService]', errorMsg);
+      return reject(new Error(errorMsg));
+    }
+
     const songs = [];
 
-    fs.createReadStream(csvFilePath)
+    fs.createReadStream(actualPath)
       .pipe(csvParser())
       .on('data', (row) => {
         songs.push(row);
       })
       .on('end', () => {
         if (songs.length === 0) {
-          return reject('노래 데이터가 없습니다.');
+          const errorMsg = `노래 데이터가 비어있습니다. 경로: ${actualPath}`;
+          console.error('[songService]', errorMsg);
+          return reject(new Error(errorMsg));
         }
 
         const randomSong = songs[Math.floor(Math.random() * songs.length)];
@@ -31,7 +57,9 @@ const getRandomSong = (req) => {
         resolve(songData);
       })
       .on('error', (error) => {
-        reject('CSV 읽기 실패: ' + error.message);
+        const errorMsg = `CSV 읽기 실패: ${error.message}. 경로: ${actualPath}`;
+        console.error('[songService]', errorMsg, error);
+        reject(new Error(errorMsg));
       });
   });
 };

@@ -90,8 +90,15 @@ router.get("/", async (req, res) => {
     const mostVisitedDays = await UserActivity.getMostVisitedDays(user.userId);
     const mostVisitedDay = (mostVisitedDays?.mostVisitedDays || []).join(", ") || "데이터 없음";
     
-    // 추천 노래 가져오기
-    const songData = await getRandomSong(req);
+    // 추천 노래 가져오기 (에러 발생 시에도 홈 화면은 정상 표시)
+    let songData = null;
+    try {
+      songData = await getRandomSong(req);
+    } catch (songError) {
+      // 추천 곡 로딩 실패는 치명적이지 않으므로 로그만 남기고 계속 진행
+      logError(songError, { endpoint: "GET /home - getRandomSong" });
+      songData = null;
+    }
 
     // 오늘의 한줄 영어 - 날짜 기반 해시로 질문 선택 (같은 날에는 같은 질문)
     const allQuestions = await WritingQuestion.findAll({

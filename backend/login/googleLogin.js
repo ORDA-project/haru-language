@@ -2,7 +2,6 @@ const express = require("express");
 const axios = require("axios");
 const fs = require("fs");
 const { User, UserActivity } = require("../models");
-const { getRandomSong } = require("../services/songService");
 const { generateToken } = require("../utils/jwt");
 const { validateOAuthCode } = require("../middleware/validation");
 
