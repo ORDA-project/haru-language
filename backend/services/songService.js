@@ -49,8 +49,9 @@ const getRandomSong = (req) => {
         const songData = {
           Artist: randomSong.Artist || '정보 없음',
           Title: randomSong.Title || '정보 없음',
-          Lyric: randomSong.Lyric || '가사 없음',   // 여기만 주의
-          YouTube: randomSong.YouTube || '',        // 링크도 같이 쓰고 싶다면
+          Lyric: randomSong.Lyric || '가사 없음',
+          YouTube: randomSong.YouTube || '',        // 원본 필드명 유지
+          youtubeLink: randomSong.YouTube || '',    // songYoutubeRoute에서 사용하는 필드명
         };
 
         req.session.songData = songData;

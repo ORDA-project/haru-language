@@ -37,6 +37,37 @@ const SongRecommend = (props: RecommendProps) => {
       setSongLoading(true);
 
       try {
+        // 먼저 sessionStorage에서 노래 데이터 확인
+        let songDataFromStorage = null;
+        try {
+          const stored = sessionStorage.getItem('currentSongData');
+          if (stored) {
+            songDataFromStorage = JSON.parse(stored);
+          }
+        } catch (error) {
+          // sessionStorage 읽기 실패는 무시
+        }
+
+        // sessionStorage에 데이터가 있으면 사용, 없으면 API 호출
+        if (songDataFromStorage && songDataFromStorage.Title && songDataFromStorage.Artist) {
+          const { Title, Artist, Lyric } = songDataFromStorage;
+          
+          // 가사 데이터 처리
+          const lyricData = Lyric
+            ? Lyric.replace(/\n/g, "<br/>")
+            : "가사 정보가 없습니다.";
+
+          // 전역 상태에 저장
+          setCurrentSongData({
+            title: Title || "제목 없음",
+            artist: Artist || "아티스트 없음",
+            lyric: lyricData,
+          });
+          setSongLoading(false);
+          return;
+        }
+
+        // sessionStorage에 없으면 API 호출
         const timeoutId = setTimeout(() => {
           if (isSongLoading) {
             showInfo(
@@ -127,12 +158,46 @@ const SongRecommend = (props: RecommendProps) => {
     setIsYoutubeLoading(true);
 
     try {
+      // 먼저 sessionStorage에서 노래 데이터 확인
+      let songDataFromStorage = null;
+      try {
+        const stored = sessionStorage.getItem('currentSongData');
+        if (stored) {
+          songDataFromStorage = JSON.parse(stored);
+        }
+      } catch (error) {
+        // sessionStorage 읽기 실패는 무시
+      }
 
+      // sessionStorage에 YouTube 링크가 있으면 직접 사용
+      if (songDataFromStorage?.youtubeLink || songDataFromStorage?.YouTube) {
+        const youtubeUrl = songDataFromStorage.youtubeLink || songDataFromStorage.YouTube;
+        
+        // YouTube URL에서 video ID 추출
+        let videoId = null;
+        try {
+          const url = new URL(youtubeUrl);
+          if (url.hostname === 'youtu.be') {
+            videoId = url.pathname.slice(1);
+          } else if (url.hostname.includes('youtube.com')) {
+            videoId = url.searchParams.get('v');
+          }
+        } catch (error) {
+          // URL 파싱 실패
+        }
+
+        if (videoId) {
+          setYoutubeEmbedUrl(`https://www.youtube.com/embed/${videoId}`);
+          setIsYoutubeLoading(false);
+          return;
+        }
+      }
+
+      // sessionStorage에 없거나 링크가 없으면 API 호출
       const response = await http.get<{
         result?: boolean;
         embedUrl?: string;
       }>("/songYoutube");
-
 
       if (response?.result && response.embedUrl) {
         setYoutubeEmbedUrl(response.embedUrl);

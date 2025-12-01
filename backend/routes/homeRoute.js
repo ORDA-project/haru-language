@@ -141,6 +141,14 @@ router.get("/", async (req, res) => {
               korean: dailyQuestion.korean_text,
             }
           : null,
+        // 노래 데이터를 응답에 포함 (세션 대신 사용)
+        songData: songData ? {
+          Title: songData.Title,
+          Artist: songData.Artist,
+          Lyric: songData.Lyric,
+          YouTube: songData.YouTube,
+          youtubeLink: songData.youtubeLink || songData.YouTube,
+        } : null,
       },
       // 보안: 로그인 성공/실패 정보는 응답 body에만 포함 (URL에 노출 안함)
       loginSuccess,

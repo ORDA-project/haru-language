@@ -91,6 +91,13 @@ const Home = () => {
         recommendation: string;
         dailySentence?: { english: string; korean: string } | null;
         socialProvider?: string | null;
+        songData?: {
+          Title: string;
+          Artist: string;
+          Lyric: string;
+          YouTube?: string;
+          youtubeLink?: string;
+        } | null;
       };
       loginSuccess?: boolean;
       loginError?: boolean;
@@ -104,7 +111,7 @@ const Home = () => {
           throw new Error("서버에서 올바르지 않은 응답을 받았습니다.");
         }
 
-        const { name, visitCount, mostVisitedDay, recommendation, userId, dailySentence, socialProvider } =
+        const { name, visitCount, mostVisitedDay, recommendation, userId, dailySentence, socialProvider, songData } =
           data.userData;
         
         // 보안: 로그인 성공/실패 메시지 처리 (URL이 아닌 응답에서 가져옴)
@@ -114,6 +121,15 @@ const Home = () => {
           showSuccess("로그인 성공", `${userName}님 환영합니다!`);
         } else if (loginError && errorMessage) {
           showError("로그인 실패", errorMessage);
+        }
+
+        // 노래 데이터를 sessionStorage에 저장 (SongRecommend 페이지에서 사용)
+        if (songData) {
+          try {
+            sessionStorage.setItem('currentSongData', JSON.stringify(songData));
+          } catch (error) {
+            // sessionStorage 저장 실패는 치명적이지 않음
+          }
         }
 
         // 사용자 정보를 전역 상태에 저장 (서버에서 받은 최신 정보로 업데이트)
