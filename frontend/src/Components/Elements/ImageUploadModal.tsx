@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect, useCallback } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { Icons } from "./Icons";
 
 interface ImageUploadModalProps {
@@ -18,11 +18,124 @@ const ImageUploadModal = ({
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [showGuide, setShowGuide] = useState(true);
 
-  if (!isOpen) return null;
+  // 카메라 스트림 정리 함수 (상태 업데이트 없이 리소스만 정리)
+  const cleanupResources = () => {
+    // 타이머 정리
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+
+    // 스트림 정리
+    const currentStream = streamRef.current;
+    if (currentStream) {
+      try {
+        currentStream.getTracks().forEach((track) => {
+          track.stop();
+        });
+      } catch (error) {
+        console.error("스트림 정리 오류:", error);
+      }
+      streamRef.current = null;
+    }
+
+    // 비디오 정리
+    if (videoRef.current) {
+      try {
+        videoRef.current.srcObject = null;
+        videoRef.current.pause();
+      } catch (error) {
+        console.error("비디오 정리 오류:", error);
+      }
+    }
+  };
+
+  // 카메라 스트림 정리 함수 (상태 포함)
+  const cleanupCamera = () => {
+    cleanupResources();
+    // 상태 초기화
+    setStream(null);
+    setIsCameraOpen(false);
+    setShowGuide(true);
+  };
+
+  // 컴포넌트 언마운트 시 정리
+  useEffect(() => {
+    return () => {
+      cleanupResources();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // 모달이 닫힐 때 카메라 정리
+  useEffect(() => {
+    if (!isOpen && isCameraOpen) {
+      cleanupResources();
+      setStream(null);
+      setIsCameraOpen(false);
+      setShowGuide(true);
+    }
+  }, [isOpen, isCameraOpen]);
+
+  // 카메라가 열릴 때 비디오 재생 확인
+  useEffect(() => {
+    if (!isCameraOpen || !videoRef.current || !stream) return;
+
+    const video = videoRef.current;
+    const mountedRef = { current: true };
+
+    const handleLoadedMetadata = () => {
+      if (!mountedRef.current || !video) return;
+      video.play().catch((err) => {
+        console.error("비디오 재생 오류:", err);
+      });
+    };
+
+    const handlePlay = () => {
+      if (!mountedRef.current) return;
+      // 비디오가 재생되면 가이드 메시지를 3초 후에 숨김
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+      timeoutRef.current = setTimeout(() => {
+        if (mountedRef.current) {
+          setShowGuide((prev) => {
+            // 이전 상태를 확인하여 불필요한 업데이트 방지
+            if (prev) return false;
+            return prev;
+          });
+        }
+      }, 3000);
+    };
+
+    video.addEventListener("loadedmetadata", handleLoadedMetadata);
+    video.addEventListener("play", handlePlay);
+
+    // 이미 로드된 경우 재생 시도
+    if (video.readyState >= 2) {
+      // 다음 틱에서 실행하여 이벤트 리스너가 등록된 후 실행되도록
+      setTimeout(() => {
+        if (mountedRef.current) {
+          handleLoadedMetadata();
+        }
+      }, 0);
+    }
+
+    return () => {
+      mountedRef.current = false;
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+      video.removeEventListener("loadedmetadata", handleLoadedMetadata);
+      video.removeEventListener("play", handlePlay);
+    };
+  }, [isCameraOpen, stream]);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -34,151 +147,96 @@ const ImageUploadModal = ({
 
   const handleCameraClick = async () => {
     try {
+      // 기존 스트림이 있으면 정리
+      cleanupResources();
+
       const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { 
+        video: {
           facingMode: "environment", // 후면 카메라 우선
           width: { ideal: 1280 },
-          height: { ideal: 720 }
+          height: { ideal: 720 },
         },
       });
+
       streamRef.current = mediaStream;
       setStream(mediaStream);
       setIsCameraOpen(true);
+      setShowGuide(true);
 
+      // 비디오 요소에 스트림 연결
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
-        // 비디오가 로드되면 재생
-        videoRef.current.onloadedmetadata = () => {
-          if (videoRef.current) {
-            videoRef.current.play().catch((err) => {
-              console.error("비디오 재생 오류:", err);
-            });
-          }
-        };
       }
     } catch (error) {
       console.error("카메라 접근 오류:", error);
       alert("카메라에 접근할 수 없습니다. 갤러리에서 이미지를 선택해주세요.");
+      cleanupResources();
+      setStream(null);
+      setIsCameraOpen(false);
+      setShowGuide(true);
     }
   };
-
-  // 카메라가 열릴 때 비디오 재생 확인
-  useEffect(() => {
-    if (isCameraOpen && videoRef.current && stream) {
-      const video = videoRef.current;
-      
-      const handleLoadedMetadata = () => {
-        video.play().catch((err) => {
-          console.error("비디오 재생 오류:", err);
-        });
-      };
-
-      const handlePlay = () => {
-        // 비디오가 재생되면 가이드 메시지를 3초 후에 숨김
-        setTimeout(() => {
-          setShowGuide(false);
-        }, 3000);
-      };
-
-      video.addEventListener("loadedmetadata", handleLoadedMetadata);
-      video.addEventListener("play", handlePlay);
-
-      return () => {
-        video.removeEventListener("loadedmetadata", handleLoadedMetadata);
-        video.removeEventListener("play", handlePlay);
-      };
-    }
-  }, [isCameraOpen, stream]);
-
-  // 카메라 스트림 정리 함수
-  const cleanupCamera = useCallback(() => {
-    const currentStream = streamRef.current;
-    if (currentStream) {
-      currentStream.getTracks().forEach((track) => track.stop());
-      streamRef.current = null;
-      setStream(null);
-    }
-    if (videoRef.current) {
-      videoRef.current.srcObject = null;
-      videoRef.current.pause();
-    }
-    setIsCameraOpen(false);
-    setShowGuide(true);
-  }, []);
-
-  // 컴포넌트 언마운트 시 카메라 스트림 정리
-  useEffect(() => {
-    return () => {
-      const currentStream = streamRef.current;
-      if (currentStream) {
-        currentStream.getTracks().forEach((track) => track.stop());
-        streamRef.current = null;
-      }
-      if (videoRef.current) {
-        videoRef.current.srcObject = null;
-      }
-    };
-  }, []);
-
-  // 모달이 닫힐 때 카메라 정리
-  useEffect(() => {
-    if (!isOpen && isCameraOpen) {
-      cleanupCamera();
-    }
-  }, [isOpen, isCameraOpen, cleanupCamera]);
 
   const handleGalleryClick = () => {
     fileInputRef.current?.click();
   };
 
-  const handleCapturePhoto = useCallback(() => {
-    if (videoRef.current && canvasRef.current) {
-      const canvas = canvasRef.current;
-      const video = videoRef.current;
-      const context = canvas.getContext("2d");
-
-      if (context && video.videoWidth > 0 && video.videoHeight > 0) {
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        context.drawImage(video, 0, 0);
-
-        canvas.toBlob(
-          (blob) => {
-            if (blob) {
-              // 카메라 스트림 정리
-              const currentStream = streamRef.current;
-              if (currentStream) {
-                currentStream.getTracks().forEach((track) => track.stop());
-                streamRef.current = null;
-                setStream(null);
-              }
-              if (videoRef.current) {
-                videoRef.current.srcObject = null;
-              }
-              
-              const file = new File([blob], "camera-photo.jpg", {
-                type: "image/jpeg",
-              });
-              setIsCameraOpen(false);
-              setShowGuide(true);
-              onImageSelect(file);
-              onClose();
-            } else {
-              console.error("이미지 변환 실패");
-            }
-          },
-          "image/jpeg",
-          0.8
-        );
-      } else {
-        console.error("비디오가 아직 준비되지 않았습니다.");
-      }
+  const handleCapturePhoto = () => {
+    if (!videoRef.current || !canvasRef.current) {
+      console.error("비디오 또는 캔버스가 없습니다.");
+      return;
     }
-  }, [onImageSelect, onClose]);
 
-  const handleCloseCamera = useCallback(() => {
+    const canvas = canvasRef.current;
+    const video = videoRef.current;
+    const context = canvas.getContext("2d");
+
+    if (!context) {
+      console.error("캔버스 컨텍스트를 가져올 수 없습니다.");
+      return;
+    }
+
+    if (video.videoWidth === 0 || video.videoHeight === 0) {
+      console.error("비디오가 아직 준비되지 않았습니다.");
+      return;
+    }
+
+    try {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      context.drawImage(video, 0, 0);
+
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) {
+            console.error("이미지 변환 실패");
+            return;
+          }
+
+          // 카메라 스트림 정리
+          cleanupCamera();
+
+          // 파일 생성 및 전달
+          const file = new File([blob], "camera-photo.jpg", {
+            type: "image/jpeg",
+          });
+
+          // 상태 업데이트 후 콜백 호출
+          onImageSelect(file);
+          onClose();
+        },
+        "image/jpeg",
+        0.8
+      );
+    } catch (error) {
+      console.error("사진 촬영 오류:", error);
+      alert("사진을 촬영하는 중 오류가 발생했습니다.");
+    }
+  };
+
+  const handleCloseCamera = () => {
     cleanupCamera();
-  }, [cleanupCamera]);
+  };
 
   const handleBackdropClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
@@ -189,6 +247,9 @@ const ImageUploadModal = ({
       }
     }
   };
+
+  // 모달이 닫혀있으면 렌더링하지 않음
+  if (!isOpen) return null;
 
   return (
     <div
@@ -291,7 +352,7 @@ const ImageUploadModal = ({
                 className="w-full h-64 bg-gray-900 rounded-xl object-cover"
               />
               <canvas ref={canvasRef} className="hidden" />
-              
+
               {/* 안내 팝업 메시지 */}
               {showGuide && (
                 <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-10 bg-gray-100 border-2 border-blue-500 rounded-2xl px-4 py-3 shadow-lg">
