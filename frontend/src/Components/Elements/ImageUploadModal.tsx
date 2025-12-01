@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect, useCallback } from "react";
 import { Icons } from "./Icons";
 
 interface ImageUploadModalProps {
@@ -17,6 +17,7 @@ const ImageUploadModal = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [showGuide, setShowGuide] = useState(true);
@@ -40,6 +41,7 @@ const ImageUploadModal = ({
           height: { ideal: 720 }
         },
       });
+      streamRef.current = mediaStream;
       setStream(mediaStream);
       setIsCameraOpen(true);
 
@@ -88,40 +90,48 @@ const ImageUploadModal = ({
     }
   }, [isCameraOpen, stream]);
 
-  // 컴포넌트 언마운트 또는 모달 닫힐 때 카메라 스트림 정리
+  // 카메라 스트림 정리 함수
+  const cleanupCamera = useCallback(() => {
+    const currentStream = streamRef.current;
+    if (currentStream) {
+      currentStream.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+      setStream(null);
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+      videoRef.current.pause();
+    }
+    setIsCameraOpen(false);
+    setShowGuide(true);
+  }, []);
+
+  // 컴포넌트 언마운트 시 카메라 스트림 정리
   useEffect(() => {
     return () => {
-      if (stream) {
-        stream.getTracks().forEach((track) => track.stop());
+      const currentStream = streamRef.current;
+      if (currentStream) {
+        currentStream.getTracks().forEach((track) => track.stop());
+        streamRef.current = null;
       }
       if (videoRef.current) {
         videoRef.current.srcObject = null;
       }
     };
-  }, [stream]);
+  }, []);
 
   // 모달이 닫힐 때 카메라 정리
   useEffect(() => {
     if (!isOpen && isCameraOpen) {
-      // 카메라 스트림 정리
-      if (stream) {
-        stream.getTracks().forEach((track) => track.stop());
-        setStream(null);
-      }
-      if (videoRef.current) {
-        videoRef.current.srcObject = null;
-        videoRef.current.pause();
-      }
-      setIsCameraOpen(false);
-      setShowGuide(true);
+      cleanupCamera();
     }
-  }, [isOpen, isCameraOpen, stream]);
+  }, [isOpen, isCameraOpen, cleanupCamera]);
 
   const handleGalleryClick = () => {
     fileInputRef.current?.click();
   };
 
-  const handleCapturePhoto = () => {
+  const handleCapturePhoto = useCallback(() => {
     if (videoRef.current && canvasRef.current) {
       const canvas = canvasRef.current;
       const video = videoRef.current;
@@ -136,8 +146,10 @@ const ImageUploadModal = ({
           (blob) => {
             if (blob) {
               // 카메라 스트림 정리
-              if (stream) {
-                stream.getTracks().forEach((track) => track.stop());
+              const currentStream = streamRef.current;
+              if (currentStream) {
+                currentStream.getTracks().forEach((track) => track.stop());
+                streamRef.current = null;
                 setStream(null);
               }
               if (videoRef.current) {
@@ -162,21 +174,11 @@ const ImageUploadModal = ({
         console.error("비디오가 아직 준비되지 않았습니다.");
       }
     }
-  };
+  }, [onImageSelect, onClose]);
 
-  const handleCloseCamera = () => {
-    // 카메라 스트림 정리
-    if (stream) {
-      stream.getTracks().forEach((track) => track.stop());
-      setStream(null);
-    }
-    if (videoRef.current) {
-      videoRef.current.srcObject = null;
-      videoRef.current.pause();
-    }
-    setIsCameraOpen(false);
-    setShowGuide(true); // 가이드 메시지 다시 표시하도록 리셋
-  };
+  const handleCloseCamera = useCallback(() => {
+    cleanupCamera();
+  }, [cleanupCamera]);
 
   const handleBackdropClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
