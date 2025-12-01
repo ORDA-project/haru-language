@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { Icons } from "./Icons";
 
 interface ImageUploadModalProps {
@@ -19,6 +19,7 @@ const ImageUploadModal = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [stream, setStream] = useState<MediaStream | null>(null);
+  const [showGuide, setShowGuide] = useState(true);
 
   if (!isOpen) return null;
 
@@ -33,19 +34,88 @@ const ImageUploadModal = ({
   const handleCameraClick = async () => {
     try {
       const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment" }, // 후면 카메라 우선
+        video: { 
+          facingMode: "environment", // 후면 카메라 우선
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        },
       });
       setStream(mediaStream);
       setIsCameraOpen(true);
 
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
+        // 비디오가 로드되면 재생
+        videoRef.current.onloadedmetadata = () => {
+          if (videoRef.current) {
+            videoRef.current.play().catch((err) => {
+              console.error("비디오 재생 오류:", err);
+            });
+          }
+        };
       }
     } catch (error) {
       console.error("카메라 접근 오류:", error);
       alert("카메라에 접근할 수 없습니다. 갤러리에서 이미지를 선택해주세요.");
     }
   };
+
+  // 카메라가 열릴 때 비디오 재생 확인
+  useEffect(() => {
+    if (isCameraOpen && videoRef.current && stream) {
+      const video = videoRef.current;
+      
+      const handleLoadedMetadata = () => {
+        video.play().catch((err) => {
+          console.error("비디오 재생 오류:", err);
+        });
+      };
+
+      const handlePlay = () => {
+        // 비디오가 재생되면 가이드 메시지를 3초 후에 숨김
+        setTimeout(() => {
+          setShowGuide(false);
+        }, 3000);
+      };
+
+      video.addEventListener("loadedmetadata", handleLoadedMetadata);
+      video.addEventListener("play", handlePlay);
+
+      return () => {
+        video.removeEventListener("loadedmetadata", handleLoadedMetadata);
+        video.removeEventListener("play", handlePlay);
+      };
+    }
+  }, [isCameraOpen, stream]);
+
+  // 컴포넌트 언마운트 또는 모달 닫힐 때 카메라 스트림 정리
+  useEffect(() => {
+    return () => {
+      if (stream) {
+        stream.getTracks().forEach((track) => track.stop());
+      }
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
+      }
+    };
+  }, [stream]);
+
+  // 모달이 닫힐 때 카메라 정리
+  useEffect(() => {
+    if (!isOpen && isCameraOpen) {
+      // 카메라 스트림 정리
+      if (stream) {
+        stream.getTracks().forEach((track) => track.stop());
+        setStream(null);
+      }
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
+        videoRef.current.pause();
+      }
+      setIsCameraOpen(false);
+      setShowGuide(true);
+    }
+  }, [isOpen, isCameraOpen, stream]);
 
   const handleGalleryClick = () => {
     fileInputRef.current?.click();
@@ -57,7 +127,7 @@ const ImageUploadModal = ({
       const video = videoRef.current;
       const context = canvas.getContext("2d");
 
-      if (context) {
+      if (context && video.videoWidth > 0 && video.videoHeight > 0) {
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         context.drawImage(video, 0, 0);
@@ -65,26 +135,47 @@ const ImageUploadModal = ({
         canvas.toBlob(
           (blob) => {
             if (blob) {
+              // 카메라 스트림 정리
+              if (stream) {
+                stream.getTracks().forEach((track) => track.stop());
+                setStream(null);
+              }
+              if (videoRef.current) {
+                videoRef.current.srcObject = null;
+              }
+              
               const file = new File([blob], "camera-photo.jpg", {
                 type: "image/jpeg",
               });
+              setIsCameraOpen(false);
+              setShowGuide(true);
               onImageSelect(file);
               onClose();
+            } else {
+              console.error("이미지 변환 실패");
             }
           },
           "image/jpeg",
           0.8
         );
+      } else {
+        console.error("비디오가 아직 준비되지 않았습니다.");
       }
     }
   };
 
   const handleCloseCamera = () => {
+    // 카메라 스트림 정리
     if (stream) {
       stream.getTracks().forEach((track) => track.stop());
       setStream(null);
     }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+      videoRef.current.pause();
+    }
     setIsCameraOpen(false);
+    setShowGuide(true); // 가이드 메시지 다시 표시하도록 리셋
   };
 
   const handleBackdropClick = (e: React.MouseEvent) => {
@@ -194,9 +285,19 @@ const ImageUploadModal = ({
                 ref={videoRef}
                 autoPlay
                 playsInline
+                muted
                 className="w-full h-64 bg-gray-900 rounded-xl object-cover"
               />
               <canvas ref={canvasRef} className="hidden" />
+              
+              {/* 안내 팝업 메시지 */}
+              {showGuide && (
+                <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-10 bg-gray-100 border-2 border-blue-500 rounded-2xl px-4 py-3 shadow-lg">
+                  <p className="text-center text-black text-sm font-medium leading-relaxed whitespace-pre-line">
+                    챕터 명과 예문문장이{'\n'}잘 보이게 찍어주세요!
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Camera Controls */}
