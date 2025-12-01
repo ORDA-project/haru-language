@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useAtom } from "jotai";
+import { isLargeTextModeAtom } from "../../store/dataStore";
 import { useGetQuestionsByUserId } from "../../entities/questions/queries";
 import { useGetExampleHistory } from "../../entities/examples/queries";
 import NavBar from "../Templates/Navbar";
@@ -19,6 +21,34 @@ const QuestionDetail = () => {
   const { date } = useParams<{ date: string }>();
   const navigate = useNavigate();
   const [selectedDate, setSelectedDate] = useState<string>(date || "");
+  const [isLargeTextMode] = useAtom(isLargeTextModeAtom);
+  
+  // 큰글씨 모드에 따른 텍스트 크기
+  const baseFontSize = isLargeTextMode ? 20 : 16;
+  const smallFontSize = isLargeTextMode ? 18 : 14;
+  const xSmallFontSize = isLargeTextMode ? 16 : 12;
+  const headerFontSize = isLargeTextMode ? 22 : 18;
+  
+  const baseTextStyle: React.CSSProperties = { 
+    fontSize: `${baseFontSize}px`, 
+    wordBreak: 'keep-all', 
+    overflowWrap: 'break-word' as const 
+  };
+  const smallTextStyle: React.CSSProperties = { 
+    fontSize: `${smallFontSize}px`, 
+    wordBreak: 'keep-all', 
+    overflowWrap: 'break-word' as const 
+  };
+  const xSmallTextStyle: React.CSSProperties = { 
+    fontSize: `${xSmallFontSize}px`, 
+    wordBreak: 'keep-all', 
+    overflowWrap: 'break-word' as const 
+  };
+  const headerTextStyle: React.CSSProperties = { 
+    fontSize: `${headerFontSize}px`,
+    wordBreak: 'keep-all',
+    overflowWrap: 'break-word' as const
+  };
 
   // 해당 날짜의 질문들 가져오기 (현재 로그인한 사용자)
   const { data: questionsData, isLoading: questionsLoading } =
@@ -232,7 +262,7 @@ const QuestionDetail = () => {
   if (isLoading) {
     return (
       <div className="w-full h-full flex items-center justify-center bg-[#F7F8FB]">
-        <div className="text-[16px] text-[#666]">
+        <div className="text-[#666]" style={baseTextStyle}>
           학습 기록을 불러오는 중...
         </div>
       </div>
@@ -263,11 +293,11 @@ const QuestionDetail = () => {
             </svg>
           </button>
           <div className="text-center">
-            <h1 className="text-lg font-semibold text-gray-800">
+            <h1 className="font-semibold text-gray-800" style={headerTextStyle}>
               {formatDisplayDate(selectedDate || date)}
             </h1>
             {availableDates.length > 0 && (
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-gray-500 mt-1" style={xSmallTextStyle}>
                 총 {availableDates.length}일의 기록
               </p>
             )}
@@ -278,11 +308,12 @@ const QuestionDetail = () => {
           <button
             onClick={() => previousDate && handleNavigateToDate(previousDate)}
             disabled={!previousDate}
-            className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+            className={`px-3 py-2 rounded-lg font-medium transition-colors ${
               previousDate
                 ? "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 : "bg-gray-100 text-gray-400 cursor-not-allowed"
             }`}
+            style={smallTextStyle}
           >
             이전
           </button>
@@ -290,16 +321,18 @@ const QuestionDetail = () => {
             type="date"
             value={selectedDate || ""}
             onChange={handleDateInputChange}
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#00DAAA]"
+            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00DAAA]"
+            style={smallTextStyle}
           />
           <button
             onClick={() => nextDate && handleNavigateToDate(nextDate)}
             disabled={!nextDate}
-            className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+            className={`px-3 py-2 rounded-lg font-medium transition-colors ${
               nextDate
                 ? "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 : "bg-gray-100 text-gray-400 cursor-not-allowed"
             }`}
+            style={smallTextStyle}
           >
             다음
           </button>
@@ -313,7 +346,7 @@ const QuestionDetail = () => {
             {/* User Question */}
             <div className="flex justify-end">
               <div className="max-w-[80%] px-4 py-3 rounded-2xl bg-white text-gray-800 shadow-sm border border-gray-100">
-                <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                <p className="leading-relaxed whitespace-pre-wrap" style={baseTextStyle}>
                   {question.content}
                 </p>
               </div>
@@ -323,29 +356,29 @@ const QuestionDetail = () => {
             {question.Answers && question.Answers.length > 0 && (
               <div className="flex justify-start">
                 <div className="max-w-[80%] px-4 py-3 rounded-2xl bg-white text-gray-800 shadow-sm border border-gray-100">
-                  <div className="text-sm leading-relaxed">
+                  <div className="leading-relaxed" style={baseTextStyle}>
                     {question.Answers[0].content.includes(
                       "회화, 독해, 문법분석"
                     ) ? (
                       // 버튼 형태의 응답
                       <div className="space-y-3">
-                        <p className="text-sm text-gray-600 mb-3">
+                        <p className="text-gray-600 mb-3" style={baseTextStyle}>
                           {question.Answers[0].content}
                         </p>
                         <div className="flex flex-wrap gap-2">
-                          <button className="px-3 py-2 bg-[#00DAAA] text-white text-xs rounded-full">
+                          <button className="px-3 py-2 bg-[#00DAAA] text-white rounded-full" style={xSmallTextStyle}>
                             회화
                           </button>
-                          <button className="px-3 py-2 bg-white text-gray-700 text-xs rounded-full border border-gray-300">
+                          <button className="px-3 py-2 bg-white text-gray-700 rounded-full border border-gray-300" style={xSmallTextStyle}>
                             독해
                           </button>
-                          <button className="px-3 py-2 bg-white text-gray-700 text-xs rounded-full border border-gray-300">
+                          <button className="px-3 py-2 bg-white text-gray-700 rounded-full border border-gray-300" style={xSmallTextStyle}>
                             문법분석
                           </button>
-                          <button className="px-3 py-2 bg-white text-gray-700 text-xs rounded-full border border-gray-300">
+                          <button className="px-3 py-2 bg-white text-gray-700 rounded-full border border-gray-300" style={xSmallTextStyle}>
                             비즈니스
                           </button>
-                          <button className="px-3 py-2 bg-white text-gray-700 text-xs rounded-full border border-gray-300">
+                          <button className="px-3 py-2 bg-white text-gray-700 rounded-full border border-gray-300" style={xSmallTextStyle}>
                             어휘
                           </button>
                         </div>
@@ -355,14 +388,14 @@ const QuestionDetail = () => {
                       ) ? (
                       // 채팅/카메라 선택 버튼
                       <div className="space-y-3">
-                        <p className="text-sm text-gray-600 mb-3">
+                        <p className="text-gray-600 mb-3" style={baseTextStyle}>
                           {question.Answers[0].content}
                         </p>
                         <div className="flex gap-2">
-                          <button className="px-4 py-2 bg-white text-gray-700 text-sm rounded-full border border-gray-300">
+                          <button className="px-4 py-2 bg-white text-gray-700 rounded-full border border-gray-300" style={smallTextStyle}>
                             채팅
                           </button>
-                          <button className="px-4 py-2 bg-[#00DAAA] text-white text-sm rounded-full">
+                          <button className="px-4 py-2 bg-[#00DAAA] text-white rounded-full" style={smallTextStyle}>
                             카메라
                           </button>
                         </div>
@@ -373,11 +406,11 @@ const QuestionDetail = () => {
                       // 이미지와 상세 설명이 포함된 응답
                       <div className="space-y-4">
                         <div className="bg-white rounded-lg p-4 border border-gray-200">
-                          <h3 className="font-semibold text-gray-800 mb-3">
+                          <h3 className="font-semibold text-gray-800 mb-3" style={headerTextStyle}>
                             How Do You Feel Today?
                           </h3>
                           <div className="bg-gray-100 rounded-lg p-4 mb-3">
-                            <div className="text-sm text-gray-600 space-y-2">
+                            <div className="text-gray-600 space-y-2" style={baseTextStyle}>
                               <p>A: How do you feel today?</p>
                               <p>B: Not so good.</p>
                               <p>A: What's the matter?</p>
@@ -386,7 +419,7 @@ const QuestionDetail = () => {
                             </div>
                           </div>
                         </div>
-                        <div className="text-sm text-gray-700 leading-relaxed">
+                        <div className="text-gray-700 leading-relaxed" style={baseTextStyle}>
                           <p className="mb-3">
                             <strong>'How do you feel today?'</strong>는 한국어로{" "}
                             <strong>'오늘 기분이 어때?'</strong> 또는{" "}
@@ -395,10 +428,10 @@ const QuestionDetail = () => {
                             친근하고 일상적인 대화에서 자주 사용됩니다.
                           </p>
                           <div className="bg-[#E8F5E8] rounded-lg p-3 border border-[#4A7C59]">
-                            <h4 className="font-semibold text-[#2D5A2D] mb-2">
+                            <h4 className="font-semibold text-[#2D5A2D] mb-2" style={headerTextStyle}>
                               컨디션을 물을 때
                             </h4>
-                            <div className="text-sm text-[#2D5A2D] space-y-1">
+                            <div className="text-[#2D5A2D] space-y-1" style={baseTextStyle}>
                               <p>
                                 A: You looked tired yesterday. How do you feel
                                 today?
@@ -412,7 +445,7 @@ const QuestionDetail = () => {
                       </div>
                     ) : (
                       // 일반 텍스트 응답
-                      <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                      <p className="leading-relaxed whitespace-pre-wrap" style={baseTextStyle}>
                         {question.Answers[0].content}
                       </p>
                     )}
@@ -425,7 +458,7 @@ const QuestionDetail = () => {
 
         {exampleRecords.length > 0 && (
           <div className="space-y-4">
-            <div className="text-sm font-semibold text-gray-600">예문 기록</div>
+            <div className="font-semibold text-gray-600" style={headerTextStyle}>예문 기록</div>
             {exampleRecords.map((example) => (
               <div
                 key={`example-${example.id}`}
@@ -433,7 +466,7 @@ const QuestionDetail = () => {
               >
                 {example.description &&
                   example.description !== "이미지에서 예문을 생성했어요." && (
-                    <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap mb-3">
+                    <p className="text-gray-800 leading-relaxed whitespace-pre-wrap mb-3" style={baseTextStyle}>
                       {example.description}
                     </p>
                   )}
@@ -444,7 +477,7 @@ const QuestionDetail = () => {
                       <div key={`${example.id}-item-${itemIdx}`} className="space-y-3">
                         {/* 상황 설명 라벨 */}
                         {item.context && (
-                          <div className="inline-block px-3 py-1.5 rounded-full bg-[#B8E6D3] text-[#1A1A1A] text-xs font-semibold">
+                          <div className="inline-block px-3 py-1.5 rounded-full bg-[#B8E6D3] text-[#1A1A1A] font-semibold" style={xSmallTextStyle}>
                             {item.context}
                           </div>
                         )}
@@ -457,17 +490,17 @@ const QuestionDetail = () => {
                                   key={`${example.id}-item-${itemIdx}-dialogue-${dialogueIdx}`}
                                   className="flex items-start space-x-3"
                                 >
-                                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0 ${
+                                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0 ${
                                     dialogue.speaker === "A" ? "bg-[#B8E6D3]" : "bg-[#A8D5E2]"
-                                  }`}>
+                                  }`} style={xSmallTextStyle}>
                                     {dialogue.speaker}
                                   </div>
                                   <div className="flex-1">
-                                    <p className="text-sm font-medium text-gray-900 leading-relaxed">
+                                    <p className="font-medium text-gray-900 leading-relaxed" style={baseTextStyle}>
                                       {dialogue.english}
                                     </p>
                                     {dialogue.korean && (
-                                      <p className="text-xs text-gray-600 leading-relaxed mt-1">
+                                      <p className="text-gray-600 leading-relaxed mt-1" style={smallTextStyle}>
                                         {dialogue.korean}
                                       </p>
                                     )}
@@ -489,8 +522,8 @@ const QuestionDetail = () => {
         {questions.length === 0 && exampleRecords.length === 0 && (
           <div className="flex justify-center items-center py-8">
             <div className="text-center text-gray-500">
-              <p className="text-sm">이 날짜에는 학습 기록이 없습니다.</p>
-              <p className="text-xs mt-1">새로운 질문을 해보세요!</p>
+              <p style={baseTextStyle}>이 날짜에는 학습 기록이 없습니다.</p>
+              <p className="mt-1" style={smallTextStyle}>새로운 질문을 해보세요!</p>
             </div>
           </div>
         )}
