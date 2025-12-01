@@ -35,6 +35,11 @@ const FriendInvitePopup = React.memo(function FriendInvitePopup({
 
   const handleCopyLink = useCallback(async () => {
     if (!inviteLink) return;
+    // 브라우저 클립보드 API 지원 확인
+    if (!navigator.clipboard || !navigator.clipboard.writeText) {
+      setCopyStatus("error");
+      return;
+    }
     try {
       await navigator.clipboard.writeText(inviteLink);
       setCopyStatus("copied");

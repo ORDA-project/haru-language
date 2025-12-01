@@ -187,9 +187,17 @@ export default function MyPage() {
       const response = await createInvitationMutation.mutateAsync();
 
       // 클립보드에 링크 복사
-      if (response.inviteLink) {
-        await navigator.clipboard.writeText(response.inviteLink);
-        setCopiedInviteLink(response.inviteLink);
+      if (response && typeof response === 'object' && 'inviteLink' in response && response.inviteLink) {
+        const link = String(response.inviteLink);
+        // 브라우저 클립보드 API 지원 확인
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          try {
+            await navigator.clipboard.writeText(link);
+          } catch (error) {
+            console.warn("클립보드 복사 실패:", error);
+          }
+        }
+        setCopiedInviteLink(link);
         setShowInvitePopup(true);
       }
 

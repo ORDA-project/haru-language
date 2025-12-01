@@ -24,8 +24,20 @@ const friendService = {
     const token = crypto.randomBytes(16).toString("hex");
     await Invitation.create({ inviter_id: inviterId, token });
 
-    const clientUrl = process.env.CLIENT_URL || "http://localhost:3000";
-    return `${clientUrl}/invite?token=${token}`;
+    // 배포 환경에서 CLIENT_URL이 설정되지 않으면 에러 발생
+    const clientUrl = process.env.CLIENT_URL || process.env.FRONTEND_URL;
+    if (!clientUrl) {
+      if (process.env.NODE_ENV === "production") {
+        throw new Error("CLIENT_URL 환경 변수가 설정되지 않았습니다. 프로덕션 환경에서는 필수입니다.");
+      }
+      // 개발 환경에서만 localhost fallback 허용
+      console.warn("[friendService] CLIENT_URL이 설정되지 않아 localhost를 사용합니다.");
+      return `http://localhost:3000/invite?token=${token}`;
+    }
+    
+    // URL 정규화 (마지막 슬래시 제거)
+    const normalizedUrl = clientUrl.replace(/\/+$/, "");
+    return `${normalizedUrl}/invite?token=${token}`;
   },
 
   // 초대 응답 처리 (수락/거절)
@@ -124,11 +136,13 @@ const friendService = {
           where: { user_id: friendId },
         });
 
-        // 통계 정보를 friend 객체에 추가
-        friend.FriendDetails.stats = {
-          visitCount,
-          learningCount,
-        };
+        // 통계 정보를 friend 객체에 추가 (FriendDetails가 있는 경우에만)
+        if (friend.FriendDetails) {
+          friend.FriendDetails.stats = {
+            visitCount,
+            learningCount,
+          };
+        }
 
         return friend;
       })

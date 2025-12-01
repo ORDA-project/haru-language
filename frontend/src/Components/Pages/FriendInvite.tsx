@@ -62,23 +62,28 @@ const FriendInvite: React.FC = () => {
         setStatus("success");
         setMessage("친구와 성공적으로 연결되었습니다!");
         showSuccess("친구 연결 완료", "함께 학습을 시작해보세요.");
-      } catch (error) {
+      } catch (error: unknown) {
         // 409 Conflict (이미 친구인 경우)는 성공으로 처리
-        const httpError = error as any;
-        if (httpError?.status === 409 && httpError?.data?.message?.includes("이미 친구")) {
-          storePendingToken(null);
-          setStatus("success");
-          setMessage("이미 친구입니다.");
-          showSuccess("친구 확인", "이미 친구로 등록되어 있습니다.");
-          return;
+        if (error && typeof error === 'object') {
+          const httpError = error as { status?: number; data?: { message?: string } };
+          if (httpError?.status === 409 && httpError?.data?.message?.includes("이미 친구")) {
+            storePendingToken(null);
+            setStatus("success");
+            setMessage("이미 친구입니다.");
+            showSuccess("친구 확인", "이미 친구로 등록되어 있습니다.");
+            return;
+          }
         }
         
         handleError(error);
         setStatus("error");
-        const errorMessage =
-          (error as any)?.data?.message ||
-          (error as Error)?.message ||
-          "초대 링크를 처리하는 중 오류가 발생했습니다.";
+        let errorMessage = "초대 링크를 처리하는 중 오류가 발생했습니다.";
+        if (error && typeof error === 'object') {
+          const httpError = error as { data?: { message?: string }; message?: string };
+          errorMessage = httpError?.data?.message || httpError?.message || errorMessage;
+        } else if (error instanceof Error) {
+          errorMessage = error.message || errorMessage;
+        }
         setMessage(errorMessage);
         showError("친구 연결 실패", "링크가 만료되었거나 다시 시도가 필요합니다.");
       }

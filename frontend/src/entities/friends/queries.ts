@@ -18,7 +18,7 @@ export const useGetFriends = (enabled = true) => {
 
 export const useCreateInvitation = () => {
   return usePostMutation<CreateInvitationResponse, void>("/friends/invite", {
-    showSuccessMessage: "친구 초대 링크를 생성했어요.",
+    showSuccessMessage: undefined, // FriendInviteModal에서 직접 처리
   });
 };
 

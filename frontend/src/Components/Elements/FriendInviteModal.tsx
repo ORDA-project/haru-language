@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useCreateInvitation } from "../../entities/friends/queries";
 import { useErrorHandler } from "../../hooks/useErrorHandler";
+import FriendInvitePopup from "./FriendInvitePopup";
 
 interface FriendInviteModalProps {
   isOpen: boolean;
@@ -10,43 +11,62 @@ interface FriendInviteModalProps {
 const FriendInviteModal = ({ isOpen, onClose }: FriendInviteModalProps) => {
   const [inviteLink, setInviteLink] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
-  const { showSuccess, showError } = useErrorHandler();
+  const [showPopup, setShowPopup] = useState(false);
+  const { showError } = useErrorHandler();
   const createInvitation = useCreateInvitation();
+
+  // 모달이 닫힐 때 상태 초기화
+  useEffect(() => {
+    if (!isOpen) {
+      setInviteLink("");
+      setIsLoading(false);
+      setShowPopup(false);
+    }
+  }, [isOpen]);
 
   const handleCreateInvite = async () => {
     try {
       setIsLoading(true);
-      const result = await createInvitation.mutateAsync();
+      const response = await createInvitation.mutateAsync();
 
-      setInviteLink(result.inviteLink);
-      showSuccess(
-        "초대 링크 생성 완료",
-        "친구에게 공유할 링크가 생성되었습니다!"
-      );
-    } catch (error) {
+      // 응답 구조 확인 및 링크 설정
+      if (response && typeof response === 'object' && 'inviteLink' in response && response.inviteLink) {
+        const link = String(response.inviteLink);
+        // 클립보드에 링크 복사 (브라우저 지원 확인)
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          try {
+            await navigator.clipboard.writeText(link);
+          } catch (error) {
+            console.warn("클립보드 복사 실패:", error);
+          }
+        }
+        // 상태 업데이트를 명시적으로 처리
+        setInviteLink(link);
+        // 모달 닫고 팝업 표시
+        onClose();
+        setShowPopup(true);
+      } else {
+        // 응답 구조가 예상과 다를 경우
+        console.error("초대 링크가 응답에 없습니다. 응답:", response);
+        showError("초대 링크 생성 실패", "응답에 링크가 없습니다.");
+      }
+    } catch (error: unknown) {
       console.error("초대 링크 생성 실패:", error);
-      showError("초대 링크 생성 실패", "다시 시도해주세요.");
+      let errorMessage = "다시 시도해주세요.";
+      if (error && typeof error === 'object') {
+        const httpError = error as { data?: { message?: string }; message?: string };
+        errorMessage = httpError?.data?.message || httpError?.message || errorMessage;
+      }
+      showError("초대 링크 생성 실패", errorMessage);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleCopyLink = async () => {
-    if (!inviteLink) return;
-
-    try {
-      await navigator.clipboard.writeText(inviteLink);
-      showSuccess("링크 복사 완료", "친구에게 공유할 링크가 복사되었습니다!");
-    } catch (error) {
-      console.error("링크 복사 실패:", error);
-      showError("링크 복사 실패", "수동으로 링크를 복사해주세요.");
-    }
-  };
-
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <>
+      {isOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl p-6 w-full max-w-sm mx-auto shadow-xl">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
@@ -94,28 +114,13 @@ const FriendInviteModal = ({ isOpen, onClose }: FriendInviteModalProps) => {
             </p>
           </div>
 
-          {!inviteLink ? (
-            <button
-              onClick={handleCreateInvite}
-              disabled={isLoading}
-              className="w-full py-3 bg-[#00DAAA] hover:bg-[#00C495] disabled:bg-gray-300 text-white font-semibold rounded-xl transition-colors"
-            >
-              {isLoading ? "링크 생성 중..." : "초대 링크 생성하기"}
-            </button>
-          ) : (
-            <div className="space-y-3">
-              <div className="p-3 bg-gray-50 rounded-lg">
-                <p className="text-xs text-gray-500 mb-1">초대 링크</p>
-                <p className="text-sm text-gray-800 break-all">{inviteLink}</p>
-              </div>
-              <button
-                onClick={handleCopyLink}
-                className="w-full py-3 bg-[#00DAAA] hover:bg-[#00C495] text-white font-semibold rounded-xl transition-colors"
-              >
-                링크 복사하기
-              </button>
-            </div>
-          )}
+          <button
+            onClick={handleCreateInvite}
+            disabled={isLoading}
+            className="w-full py-3 bg-[#00DAAA] hover:bg-[#00C495] disabled:bg-gray-300 text-white font-semibold rounded-xl transition-colors"
+          >
+            {isLoading ? "링크 생성 중..." : "초대 링크 생성하기"}
+          </button>
         </div>
 
         {/* Footer */}
@@ -126,10 +131,15 @@ const FriendInviteModal = ({ isOpen, onClose }: FriendInviteModalProps) => {
         </div>
       </div>
     </div>
+      )}
+      <FriendInvitePopup
+        isVisible={showPopup}
+        onClose={() => setShowPopup(false)}
+        inviteLink={inviteLink}
+      />
+    </>
   );
 };
 
 export default FriendInviteModal;
-
-
 
