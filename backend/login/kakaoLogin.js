@@ -175,7 +175,13 @@ router.get("/callback", validateOAuthCode, async (req, res) => {
       maxAge: 1000 * 60 * 60 * 24 * 7,
     });
 
-    res.redirect(`${redirectBase}/auth/kakao/callback`);
+    try {
+      const redirectUrl = new URL(`${redirectBase}/auth/kakao/callback`);
+      redirectUrl.searchParams.set("token", accessToken);
+      res.redirect(redirectUrl.toString());
+    } catch (error) {
+      res.redirect(`${redirectBase}/auth/kakao/callback?token=${encodeURIComponent(accessToken)}`);
+    }
   } catch (error) {
     const { logError } = require("../middleware/errorHandler");
     const errorDetails = error.response?.data;

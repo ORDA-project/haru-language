@@ -59,7 +59,18 @@ const Home = () => {
   // 백엔드에서 파라미터 없이 /home으로 리다이렉트하므로 항상 API 호출해서 인증 확인
   // user atom이 변경되면 (로그인 후) 다시 API 호출
   useEffect(() => {
+    // 토큰이 있으면 API 호출 (user atom이 없어도 토큰으로 인증 가능)
+    const token = localStorage.getItem("accessToken");
+    
+    // user가 없거나 userId가 없고 토큰도 없으면 API 호출하지 않음 (401 에러 방지)
+    if ((!user || !user.userId) && !token) {
+      setLoading(false);
+      return;
+    }
+    
     // 로그인 상태와 관계없이 항상 /home API 호출해서 서버에서 인증 확인
+    // 로그인 직후에는 user atom이 아직 업데이트되지 않았을 수 있으므로
+    // 토큰이 있으면 API 호출
     setLoading(true);
 
     const timeoutId = setTimeout(() => {
@@ -79,6 +90,7 @@ const Home = () => {
         mostVisitedDay: string;
         recommendation: string;
         dailySentence?: { english: string; korean: string } | null;
+        socialProvider?: string | null;
       };
       loginSuccess?: boolean;
       loginError?: boolean;
@@ -92,7 +104,7 @@ const Home = () => {
           throw new Error("서버에서 올바르지 않은 응답을 받았습니다.");
         }
 
-        const { name, visitCount, mostVisitedDay, recommendation, userId, dailySentence } =
+        const { name, visitCount, mostVisitedDay, recommendation, userId, dailySentence, socialProvider } =
           data.userData;
         
         // 보안: 로그인 성공/실패 메시지 처리 (URL이 아닌 응답에서 가져옴)
@@ -104,15 +116,16 @@ const Home = () => {
           showError("로그인 실패", errorMessage);
         }
 
-        // 사용자 정보를 전역 상태에 저장
+        // 사용자 정보를 전역 상태에 저장 (서버에서 받은 최신 정보로 업데이트)
         setUserData({
           ...(user || {}),
           name,
           userId,
           visitCount,
           mostVisitedDays: mostVisitedDay,
-          socialProvider:
-            (data.userData as any)?.socialProvider || user?.socialProvider || null,
+          socialProvider: socialProvider || user?.socialProvider || null,
+          email: user?.email || undefined,
+          socialId: user?.socialId || undefined,
         });
         setVisitCount(visitCount || 0);
         setMostVisitedDay(mostVisitedDay || "");
@@ -150,7 +163,7 @@ const Home = () => {
       .finally(() => {
         setLoading(false);
       });
-  }, [setUserData, showSuccess, showError, user?.userId]); // user.userId 변경 시 다시 호출 (로그인 후)
+  }, [setUserData, showSuccess, showError, showWarning, user?.userId]); // user.userId 변경 시 다시 호출 (로그인 후)
 
 
   return (

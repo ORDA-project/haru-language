@@ -208,7 +208,13 @@ router.get("/callback", validateOAuthCode, async (req, res) => {
       maxAge: 1000 * 60 * 60 * 24 * 7,
     });
 
-    res.redirect(`${redirectBase}/auth/google/callback`);
+    try {
+      const redirectUrl = new URL(`${redirectBase}/auth/google/callback`);
+      redirectUrl.searchParams.set("token", accessToken);
+      res.redirect(redirectUrl.toString());
+    } catch (error) {
+      res.redirect(`${redirectBase}/auth/google/callback?token=${encodeURIComponent(accessToken)}`);
+    }
   } catch (error) {
     const { logError } = require("../middleware/errorHandler");
     logError(error, {

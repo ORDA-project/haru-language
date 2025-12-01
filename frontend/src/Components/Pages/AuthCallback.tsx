@@ -5,6 +5,7 @@ import { setUserAtom } from "../../store/authStore";
 import { useErrorHandler } from "../../hooks/useErrorHandler";
 import { API_ENDPOINTS } from "../../config/api";
 import { authApi } from "../../entities/authentication/api";
+import { http } from "../../utils/http";
 
 const AuthCallback: React.FC = () => {
   const navigate = useNavigate();
@@ -30,8 +31,10 @@ const AuthCallback: React.FC = () => {
     if (isProcessingRef.current) {
       return;
     }
-
+    
+    const processAuth = async () => {
     const code = searchParams.get("code");
+    const token = searchParams.get("token");
     const loginSuccess = searchParams.get("loginSuccess");
     const loginError = searchParams.get("loginError");
     const errorMessage = searchParams.get("errorMessage");
@@ -47,33 +50,33 @@ const AuthCallback: React.FC = () => {
     }
 
     const hydrateUserFromToken = async (retryCount = 0) => {
-      const maxRetries = 3;
-      const retryDelay = 500;
+      const maxRetries = 5;
+      const retryDelay = retryCount === 0 ? 1000 : 500;
 
       try {
-        const response = await fetch(`${API_ENDPOINTS.auth}/check`, {
-          method: "GET",
-          credentials: "include",
-        });
-
-        if (!response.ok) {
-          if (retryCount < maxRetries) {
-            await new Promise(resolve => setTimeout(resolve, retryDelay));
-            return hydrateUserFromToken(retryCount + 1);
-          }
-          throw new Error("토큰 정보를 확인할 수 없습니다.");
-        }
-
-        const data = await response.json();
+        const data = await http.get<{
+          isLoggedIn: boolean;
+          user: {
+            userId: number;
+            name: string;
+            email: string;
+            social_id: string;
+            social_provider: string | null;
+            visitCount: number;
+            mostVisitedDays: string | null;
+          } | null;
+          token: string | null;
+        }>("/auth/check");
         
         if (!data?.isLoggedIn || !data?.user) {
-          if (retryCount < maxRetries && data?.token === null) {
+          if (retryCount < maxRetries) {
             await new Promise(resolve => setTimeout(resolve, retryDelay));
             return hydrateUserFromToken(retryCount + 1);
           }
           throw new Error("로그인 정보가 존재하지 않습니다.");
         }
 
+        // 토큰 저장 (localStorage와 쿠키 모두 활용)
         if (data.token) {
           try {
             localStorage.setItem("accessToken", data.token);
@@ -82,15 +85,20 @@ const AuthCallback: React.FC = () => {
           }
         }
 
+        // 사용자 정보를 atom에 저장
         setUserData({
           name: data.user.name,
           email: data.user.email,
           userId: data.user.userId,
           socialId: data.user.social_id,
-          socialProvider: data.user.social_provider || data.user.socialProvider || null,
+          socialProvider: data.user.social_provider || null,
           visitCount: data.user.visitCount || 0,
           mostVisitedDays: data.user.mostVisitedDays || null,
         });
+        
+        // atom 업데이트가 완료되도록 충분한 시간 대기 (React 상태 업데이트 + atom 업데이트)
+        // sessionStorage에 저장되는 시간까지 고려하여 대기 시간 증가
+        await new Promise(resolve => setTimeout(resolve, 200));
       } catch (error) {
         if (retryCount < maxRetries) {
           await new Promise(resolve => setTimeout(resolve, retryDelay));
@@ -178,7 +186,9 @@ const AuthCallback: React.FC = () => {
           }
         }
 
-        await new Promise(resolve => setTimeout(resolve, 0));
+        // atom 업데이트가 완료되도록 충분한 시간 대기
+        // sessionStorage에 저장되는 시간까지 고려하여 대기 시간 증가
+        await new Promise(resolve => setTimeout(resolve, 300));
 
         if (redirectToPendingInvite()) {
           showSuccess("로그인 성공", "로그인에 성공했습니다!");
@@ -199,6 +209,8 @@ const AuthCallback: React.FC = () => {
           }
         }
         
+        // 사용자 정보가 완전히 로드될 때까지 추가 대기 후 이동
+        await new Promise(resolve => setTimeout(resolve, 200));
         navigate(targetPath, { replace: true });
       } catch (error) {
         handleError(error);
@@ -230,27 +242,59 @@ const AuthCallback: React.FC = () => {
       return;
     }
 
-    hydrateUserFromToken()
-      .then(() => {
+    if (token) {
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.delete("token");
+      window.history.replaceState({}, "", newUrl.toString());
+      
+      try {
+        localStorage.setItem("accessToken", token);
+        await hydrateUserFromToken();
+        
+        // 사용자 정보가 완전히 로드될 때까지 추가 대기
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
         showSuccess("로그인 성공", "로그인에 성공했습니다!");
         if (redirectToPendingInvite()) {
           return;
         }
         navigate("/home", { replace: true });
-      })
-      .catch((error) => {
-        if (loginSuccess === "true") {
-          handleSuccess();
-        } else if (loginError === "true") {
-          const displayMessage = errorMessage || "로그인에 실패했습니다. 다시 시도해주세요.";
-          showError("로그인 실패", displayMessage);
-          navigate("/", { replace: true });
-        } else {
-          handleError(error);
-          showError("로그인 오류", "로그인 정보를 확인할 수 없습니다. 다시 시도해주세요.");
-          navigate("/", { replace: true });
-        }
-      });
+        return;
+      } catch (error) {
+        handleError(error);
+        showError("로그인 오류", "로그인 정보를 확인할 수 없습니다. 다시 시도해주세요.");
+        navigate("/", { replace: true });
+        return;
+      }
+    }
+
+    try {
+      await hydrateUserFromToken();
+      
+      // 사용자 정보가 완전히 로드될 때까지 추가 대기
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      showSuccess("로그인 성공", "로그인에 성공했습니다!");
+      if (redirectToPendingInvite()) {
+        return;
+      }
+      navigate("/home", { replace: true });
+    } catch (error) {
+      if (loginSuccess === "true") {
+        await handleSuccess();
+      } else if (loginError === "true") {
+        const displayMessage = errorMessage || "로그인에 실패했습니다. 다시 시도해주세요.";
+        showError("로그인 실패", displayMessage);
+        navigate("/", { replace: true });
+      } else {
+        handleError(error);
+        showError("로그인 오류", "로그인 정보를 확인할 수 없습니다. 다시 시도해주세요.");
+        navigate("/", { replace: true });
+      }
+    }
+    };
+    
+    processAuth();
   }, [searchParams, setUserData, navigate, showSuccess, showError, handleError, redirectToPendingInvite]);
 
   return (
