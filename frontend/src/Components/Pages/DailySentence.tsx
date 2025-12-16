@@ -831,7 +831,7 @@ const DailySentence = () => {
       {/* 확인 팝업 */}
       {showConfirmPopup && (
         <div className="fixed inset-0 bg-white bg-opacity-30 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white shadow-2xl" style={{ width: '324px', height: '130px' }}>
+          <div className="bg-white shadow-2xl" style={{ width: '324px', height: '210px' }}>
             <div className="h-[60px] border-b border-gray-200 flex flex-col items-center justify-center">
               {languageMode === "korean" ? (
                 <>
