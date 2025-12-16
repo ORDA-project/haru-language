@@ -1,4 +1,4 @@
-﻿const express = require("express");
+const express = require("express");
 const router = express.Router();
 
 /**
@@ -57,8 +57,21 @@ router.get("/", async (req, res) => {
       });
     }
 
-    // 가사 줄바꿈 처리 (40자 기준)
-    const formattedLyric = songData.Lyric.replace(/(.{1,40})(\s|$)/g, "$1\n").trim();
+    // 가사 줄바꿈 처리 개선
+    // 원본 가사의 줄바꿈을 보존하고, 연속된 공백을 정리
+    let formattedLyric = songData.Lyric
+      // Windows 스타일 줄바꿈(\r\n)을 Unix 스타일(\n)으로 통일
+      .replace(/\r\n/g, '\n')
+      // Mac 스타일 줄바꿈(\r)을 Unix 스타일(\n)으로 통일
+      .replace(/\r/g, '\n')
+      // 연속된 줄바꿈을 최대 2개로 제한 (빈 줄 하나만 허용)
+      .replace(/\n{3,}/g, '\n\n')
+      // 각 줄의 앞뒤 공백 제거
+      .split('\n')
+      .map(line => line.trim())
+      .join('\n')
+      // 전체 앞뒤 공백 제거
+      .trim();
 
     // 세션에서 가사와 노래 정보를 반환
     return res.status(200).json({

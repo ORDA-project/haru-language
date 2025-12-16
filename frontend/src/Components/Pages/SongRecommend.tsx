@@ -52,9 +52,12 @@ const SongRecommend = (props: RecommendProps) => {
         if (songDataFromStorage && songDataFromStorage.Title && songDataFromStorage.Artist) {
           const { Title, Artist, Lyric } = songDataFromStorage;
           
-          // 가사 데이터 처리
+          // 가사 데이터 처리 - 줄바꿈을 보존하면서 HTML로 변환
           const lyricData = Lyric
-            ? Lyric.replace(/\n/g, "<br/>")
+            ? Lyric
+                .replace(/\r\n/g, '\n')  // Windows 스타일 줄바꿈 통일
+                .replace(/\r/g, '\n')     // Mac 스타일 줄바꿈 통일
+                .replace(/\n/g, "<br/>")  // 줄바꿈을 <br/>로 변환
             : "가사 정보가 없습니다.";
 
           // 전역 상태에 저장
@@ -93,9 +96,12 @@ const SongRecommend = (props: RecommendProps) => {
           throw new Error("추천할 곡 데이터가 비어있습니다.");
         }
 
-        // 가사 데이터 처리 - HTML 엔티티 대신 직접 \n 처리
+        // 가사 데이터 처리 - 줄바꿈을 보존하면서 HTML로 변환
         const lyricData = Lyric
-          ? Lyric.replace(/\n/g, "<br/>")
+          ? Lyric
+              .replace(/\r\n/g, '\n')  // Windows 스타일 줄바꿈 통일
+              .replace(/\r/g, '\n')     // Mac 스타일 줄바꿈 통일
+              .replace(/\n/g, "<br/>")  // 줄바꿈을 <br/>로 변환
           : "가사 정보가 없습니다.";
 
         // 전역 상태에 저장

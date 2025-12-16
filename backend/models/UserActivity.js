@@ -1,5 +1,6 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../db");
+const { getTodayBy4AM } = require("../utils/dateUtils");
 
 // UserActivity 모델 정의
 const UserActivity = sequelize.define("UserActivity", {
@@ -36,11 +37,8 @@ const getDayOfWeek = (date) =>
 
 // 방문 기록 업데이트
 UserActivity.updateVisit = async function (user_id) {
-  // 한국 시간(Asia/Seoul) 기준으로 오늘 날짜 계산
-  const now = new Date();
-  const koreaTime = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Seoul" }));
-  const today = new Date(koreaTime.getFullYear(), koreaTime.getMonth(), koreaTime.getDate());
-  today.setHours(0, 0, 0, 0);
+  // 오전 4시 기준으로 오늘 날짜 계산
+  const today = getTodayBy4AM();
 
   const lastActivity = await UserActivity.findOne({
     where: { user_id },
@@ -61,10 +59,16 @@ UserActivity.updateVisit = async function (user_id) {
       return newVisit;
     }
     
-    // 마지막 방문 날짜를 한국 시간 기준으로 계산
+    // 마지막 방문 날짜를 오전 4시 기준으로 계산
     const lastVisitDateObj = new Date(createdAt);
     const lastVisitKoreaTime = new Date(lastVisitDateObj.toLocaleString("en-US", { timeZone: "Asia/Seoul" }));
-    const lastVisitDate = new Date(lastVisitKoreaTime.getFullYear(), lastVisitKoreaTime.getMonth(), lastVisitKoreaTime.getDate());
+    
+    // 오전 4시 기준으로 날짜 계산
+    const hour = lastVisitKoreaTime.getHours();
+    const lastVisitDate = new Date(lastVisitKoreaTime);
+    if (hour < 4) {
+      lastVisitDate.setDate(lastVisitDate.getDate() - 1);
+    }
     lastVisitDate.setHours(0, 0, 0, 0);
 
     // 같은 날이면 업데이트하지 않음

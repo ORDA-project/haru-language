@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAtom } from "jotai";
 import { isLoggedInAtom } from "../../store/authStore";
 import { Icons } from "../Elements/Icons";
+import { getTodayStringBy4AM, hashDateString } from "../../utils/dateUtils";
 
 import Navbar from "../Templates/Navbar";
 import {
@@ -54,20 +55,14 @@ const DailySentence = () => {
       questionsData.data.length > 0 &&
       !currentQuestion
     ) {
-      // 날짜 기반 해시로 질문 선택 (같은 날에는 같은 질문)
-      const today = new Date();
-      const dateString = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+      // 오전 4시 기준 날짜 기반 해시로 질문 선택 (같은 날에는 같은 질문)
+      const dateString = getTodayStringBy4AM();
       
       // 날짜 문자열을 해시하여 질문 인덱스 결정
-      let hash = 0;
-      for (let i = 0; i < dateString.length; i++) {
-        const char = dateString.charCodeAt(i);
-        hash = ((hash << 5) - hash) + char;
-        hash = hash & hash;
-      }
+      const hash = hashDateString(dateString);
       
       // 해시 값을 양수로 변환하고 질문 개수로 나눈 나머지
-      const questionIndex = Math.abs(hash) % questionsData.data.length;
+      const questionIndex = hash % questionsData.data.length;
       setCurrentQuestion(questionsData.data[questionIndex]);
     }
   }, [questionsData?.data, currentQuestion]);
@@ -698,6 +693,12 @@ const DailySentence = () => {
                   <button
                     onClick={() => {
                       // 모르겠어요: 바로 결과 화면으로 이동
+                      // 현재 문장을 완료하지 않은 상태로 표시
+                      setCompletedSentences((prev) => {
+                        const newCompleted = [...prev];
+                        newCompleted[currentSentenceIndex] = false;
+                        return newCompleted;
+                      });
                       setCurrentStep("result");
                     }}
                     className="w-full text-center text-gray-600 underline py-2 text-sm hover:text-gray-800 transition-colors"
@@ -710,8 +711,16 @@ const DailySentence = () => {
           )}
 
           {/* Step 3: Result */}
-          {currentStep === "result" && translationResult && (
-            <div className="px-4 py-6 pb-6">
+          {currentStep === "result" && translationResult && (() => {
+            // 모든 문장을 완료했는지 확인 (한국어 모드에서만)
+            const allCompleted = languageMode === "korean" 
+              ? translationResult.sentencePairs && 
+                completedSentences.length === translationResult.sentencePairs.length &&
+                completedSentences.every(completed => completed)
+              : true; // 영어 모드는 항상 완료로 간주
+            
+            return (
+              <div className="px-4 py-6 pb-6">
               {/* Back Button */}
               <div className="mb-4">
                 <button
@@ -730,10 +739,16 @@ const DailySentence = () => {
                 </div>
                 <h3 className="text-2xl font-bold mb-2 text-gray-900">
                   {languageMode === "korean"
-                    ? "전부 다 맞았어요!"
-                    : "처리가 완료되었어요!"}
+                    ? allCompleted
+                      ? "전부 다 맞았어요!"
+                      : "학습 결과를 확인해보세요!"
+                    : "영어 첨삭이 완료되었어요!"}
                 </h3>
-                <p className="text-lg text-gray-600">훌륭합니다!</p>
+                <p className="text-lg text-gray-600">
+                  {languageMode === "korean" && !allCompleted
+                    ? "다음에는 더 잘할 수 있어요!"
+                    : "훌륭합니다!"}
+                </p>
               </div>
 
               {/* Translation Result */}
@@ -812,7 +827,8 @@ const DailySentence = () => {
                 다시 시작하기
               </button>
             </div>
-          )}
+            );
+          })()}
         </div>
       </div>
 
@@ -820,22 +836,22 @@ const DailySentence = () => {
       {showConfirmPopup && (
         <div className="fixed inset-0 bg-white bg-opacity-30 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-white mx-4 max-w-sm w-full shadow-2xl">
-            <div className="p-6 pb-4 border-b border-gray-200">
+            <div className="p-8 pb-6 border-b border-gray-200">
               {languageMode === "korean" ? (
                 <>
-                  <p className="text-lg font-bold text-gray-900 mb-2">
+                  <p className="text-lg font-bold text-gray-900 mb-3 text-center">
                     한국어로 입력하신것이 맞나요?
                   </p>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm font-bold text-gray-600 text-center">
                     영어로 번역해드릴게요
                   </p>
                 </>
               ) : (
                 <>
-                  <p className="text-lg font-bold text-gray-900 mb-2">
+                  <p className="text-lg font-bold text-gray-900 mb-3 text-center">
                     영어로 입력하셨나요?
                   </p>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm font-bold text-gray-600 text-center">
                     어법과 문맥을 체크해드릴게요.
                   </p>
                 </>
@@ -844,11 +860,11 @@ const DailySentence = () => {
             <div className="flex">
               <button
                 onClick={handlePopupNo}
-                className="flex-1 py-4 bg-white border-r border-gray-200 text-gray-800 font-bold hover:bg-gray-50 transition-colors"
+                className="flex-1 py-6 bg-white border-r border-gray-200 text-gray-800 font-bold hover:bg-gray-50 transition-colors"
               >
                 <div className="text-center">
                   <div>아니요.</div>
-                  <div className="text-sm font-normal">
+                  <div className="text-sm font-bold">
                     {languageMode === "korean"
                       ? "영어입력했어요"
                       : "한국어입력했어요"}
@@ -857,9 +873,9 @@ const DailySentence = () => {
               </button>
               <button
                 onClick={handleConfirmSubmit}
-                className="flex-1 py-4 bg-[#00E8B6] text-gray-800 font-bold hover:bg-[#00DAAA] transition-colors"
+                className="flex-1 py-6 bg-[#00E8B6] text-gray-800 font-bold hover:bg-[#00DAAA] transition-colors"
               >
-                네
+                <div className="text-center">네</div>
               </button>
             </div>
           </div>

@@ -2,6 +2,7 @@ const express = require("express");
 const { User, UserActivity, WritingQuestion } = require("../models");
 const { getRandomSong } = require("../services/songService");
 const { logError } = require("../middleware/errorHandler");
+const { getTodayStringBy4AM, hashDateString } = require("../utils/dateUtils");
 
 const router = express.Router();
 
@@ -100,27 +101,21 @@ router.get("/", async (req, res) => {
       songData = null;
     }
 
-    // 오늘의 한줄 영어 - 날짜 기반 해시로 질문 선택 (같은 날에는 같은 질문)
+    // 오늘의 한줄 영어 - 오전 4시 기준 날짜 기반 해시로 질문 선택 (같은 날에는 같은 질문)
     const allQuestions = await WritingQuestion.findAll({
       order: [["id", "ASC"]],
     });
     
     let dailyQuestion = null;
     if (allQuestions.length > 0) {
-      // 오늘 날짜를 문자열로 변환 (YYYY-MM-DD)
-      const today = new Date();
-      const dateString = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+      // 오전 4시 기준으로 오늘 날짜 문자열 가져오기
+      const dateString = getTodayStringBy4AM();
       
       // 날짜 문자열을 해시하여 질문 인덱스 결정
-      let hash = 0;
-      for (let i = 0; i < dateString.length; i++) {
-        const char = dateString.charCodeAt(i);
-        hash = ((hash << 5) - hash) + char;
-        hash = hash & hash; // Convert to 32bit integer
-      }
+      const hash = hashDateString(dateString);
       
       // 해시 값을 양수로 변환하고 질문 개수로 나눈 나머지
-      const questionIndex = Math.abs(hash) % allQuestions.length;
+      const questionIndex = hash % allQuestions.length;
       dailyQuestion = allQuestions[questionIndex];
     }
 
