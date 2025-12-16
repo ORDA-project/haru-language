@@ -35,6 +35,10 @@ const QuestionDetail = () => {
   const smallFontSize = isLargeTextMode ? 18 : 14;
   const xSmallFontSize = isLargeTextMode ? 16 : 12;
   const headerFontSize = isLargeTextMode ? 22 : 18;
+  // 문장 첨삭/예문 생성 텍스트: 큰글씨 모드일 때 16px, 아닐 때 12px
+  const correctionTextSize = isLargeTextMode ? 16 : 12;
+  // 피드백 텍스트: 큰글씨 모드일 때 18px, 아닐 때 14px
+  const feedbackTextSize = isLargeTextMode ? 18 : 14;
   
   const baseTextStyle: React.CSSProperties = { 
     fontSize: `${baseFontSize}px`, 
@@ -53,6 +57,16 @@ const QuestionDetail = () => {
   };
   const headerTextStyle: React.CSSProperties = { 
     fontSize: `${headerFontSize}px`,
+    wordBreak: 'keep-all',
+    overflowWrap: 'break-word' as const
+  };
+  const correctionTextStyle: React.CSSProperties = {
+    fontSize: `${correctionTextSize}px`,
+    wordBreak: 'keep-all',
+    overflowWrap: 'break-word' as const
+  };
+  const feedbackTextStyle: React.CSSProperties = {
+    fontSize: `${feedbackTextSize}px`,
     wordBreak: 'keep-all',
     overflowWrap: 'break-word' as const
   };
@@ -513,23 +527,23 @@ const QuestionDetail = () => {
                           className="bg-white shadow-sm border border-gray-100 rounded-lg"
                           style={{ 
                             width: '343px',
-                            paddingLeft: '16px',
-                            paddingTop: '16px',
+                            paddingLeft: '12px',
+                            paddingTop: '12px',
                             paddingBottom: '16px',
                             paddingRight: '16px'
                           }}
                         >
                           {/* 문장 첨삭 배지 - 흰색 칸 안으로 이동 */}
                           <div 
-                            className="inline-block rounded-full px-4 py-1.5 mb-3"
+                            className="inline-block rounded-full px-4 py-1.5 mb-2"
                             style={{ 
                               background: '#FF5E1666'
                             }}
                           >
-                            <span className="text-sm font-medium text-gray-900">문장 첨삭</span>
+                            <span className="font-medium text-gray-900" style={correctionTextStyle}>문장 첨삭</span>
                           </div>
                           
-                          <p className="text-gray-800 font-semibold leading-relaxed" style={baseTextStyle}>
+                          <p className="text-gray-800 font-semibold leading-relaxed" style={smallTextStyle}>
                             {record.processed_text}
                           </p>
                         </div>
@@ -548,7 +562,7 @@ const QuestionDetail = () => {
                           >
                             <ul className="space-y-1">
                               {feedback.map((fb: string, idx: number) => (
-                                <li key={idx} className="text-gray-700" style={smallTextStyle}>
+                                <li key={idx} className="text-gray-700" style={feedbackTextStyle}>
                                   • {fb}
                                 </li>
                               ))}
@@ -766,23 +780,23 @@ const QuestionDetail = () => {
                     style={{ 
                       width: '343px',
                       paddingLeft: '16px',
-                      paddingTop: '16px',
+                      paddingTop: '8px',
                       paddingBottom: '16px',
                       paddingRight: '16px'
                     }}
                   >
                     {/* 예문 상황 배지와 페이지네이션 도트 - 같은 줄에 배치 */}
-                    <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center justify-between mb-2">
                       <div className="inline-block bg-[#B8E6D3] rounded-full px-4 py-1.5 border border-[#B8E6D3]">
-                        <span className="text-sm font-medium text-gray-900">예문 상황</span>
+                        <span className="font-medium text-gray-900" style={correctionTextStyle}>예문 상황</span>
                       </div>
                       
-                      {/* 페이지네이션 도트 - 오른쪽 위 */}
+                      {/* 페이지네이션 도트 - 작은 점으로 변경 */}
                       {example.exampleItems.length > 1 && (
                         <div 
                           className="flex items-center"
                           style={{
-                            gap: '6px'
+                            gap: '4px'
                           }}
                         >
                           {example.exampleItems.map((_, idx: number) => (
@@ -790,8 +804,8 @@ const QuestionDetail = () => {
                               key={idx}
                               onClick={() => handleItemIndexChange(example.id, 'set', example.exampleItems.length, idx)}
                               style={{
-                                width: '8px',
-                                height: '8px',
+                                width: '4px',
+                                height: '4px',
                                 borderRadius: '50%',
                                 backgroundColor: idx === currentIndex ? '#00DAAA' : '#D1D5DB',
                                 transition: 'background-color 0.2s',
@@ -807,7 +821,7 @@ const QuestionDetail = () => {
                     
                     {/* 대화 내용 */}
                     {currentItem.dialogues && currentItem.dialogues.length > 0 && (
-                      <div className="space-y-2 mb-4">
+                      <div className="space-y-2 mb-3">
                         {currentItem.dialogues.map(
                           (dialogue: ExampleDialogue, dialogueIdx: number) => (
                             <div
@@ -819,8 +833,8 @@ const QuestionDetail = () => {
                               }`} style={xSmallTextStyle}>
                                 {dialogue.speaker}
                               </div>
-                              <div className="flex-1">
-                                <p className="font-medium text-gray-900 leading-relaxed" style={baseTextStyle}>
+                              <div className="flex-1" style={{ paddingLeft: '4px', marginTop: '-2px' }}>
+                                <p className="font-medium text-gray-900 leading-relaxed" style={smallTextStyle}>
                                   {dialogue.english}
                                 </p>
                                 {dialogue.korean && (

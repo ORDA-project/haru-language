@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAtom } from "jotai";
 import { isLoggedInAtom } from "../../store/authStore";
+import { isLargeTextModeAtom } from "../../store/dataStore";
 import { Icons } from "../Elements/Icons";
 import { getTodayStringBy4AM, hashDateString } from "../../utils/dateUtils";
 
@@ -20,6 +21,7 @@ type LanguageMode = "korean" | "english";
 const DailySentence = () => {
   const navigate = useNavigate();
   const [isLoggedIn] = useAtom(isLoggedInAtom);
+  const [isLargeTextMode] = useAtom(isLargeTextModeAtom);
   const [currentStep, setCurrentStep] = useState<Step>("question");
   const [languageMode, setLanguageMode] = useState<LanguageMode>("korean");
   const [currentQuestion, setCurrentQuestion] =
@@ -31,6 +33,47 @@ const DailySentence = () => {
   const [availableWords, setAvailableWords] = useState<string[]>([]);
   const [completedSentences, setCompletedSentences] = useState<boolean[]>([]);
   const [showConfirmPopup, setShowConfirmPopup] = useState<boolean>(false);
+
+  // 큰글씨 모드에 따른 텍스트 크기
+  const baseFontSize = isLargeTextMode ? 20 : 16;
+  const smallFontSize = isLargeTextMode ? 18 : 14;
+  const xSmallFontSize = isLargeTextMode ? 16 : 12;
+  const headerFontSize = isLargeTextMode ? 22 : 18;
+  // 문장 첨삭/예문 생성 텍스트: 큰글씨 모드일 때 16px, 아닐 때 12px
+  const correctionTextSize = isLargeTextMode ? 16 : 12;
+  // 피드백 텍스트: 큰글씨 모드일 때 18px, 아닐 때 14px
+  const feedbackTextSize = isLargeTextMode ? 18 : 14;
+  
+  const baseTextStyle: React.CSSProperties = { 
+    fontSize: `${baseFontSize}px`, 
+    wordBreak: 'keep-all', 
+    overflowWrap: 'break-word' as const 
+  };
+  const smallTextStyle: React.CSSProperties = { 
+    fontSize: `${smallFontSize}px`, 
+    wordBreak: 'keep-all', 
+    overflowWrap: 'break-word' as const 
+  };
+  const xSmallTextStyle: React.CSSProperties = { 
+    fontSize: `${xSmallFontSize}px`, 
+    wordBreak: 'keep-all', 
+    overflowWrap: 'break-word' as const 
+  };
+  const headerTextStyle: React.CSSProperties = { 
+    fontSize: `${headerFontSize}px`,
+    wordBreak: 'keep-all',
+    overflowWrap: 'break-word' as const
+  };
+  const correctionTextStyle: React.CSSProperties = {
+    fontSize: `${correctionTextSize}px`,
+    wordBreak: 'keep-all',
+    overflowWrap: 'break-word' as const
+  };
+  const feedbackTextStyle: React.CSSProperties = {
+    fontSize: `${feedbackTextSize}px`,
+    wordBreak: 'keep-all',
+    overflowWrap: 'break-word' as const
+  };
 
   // 보안: userId는 JWT 토큰에서 자동으로 가져옴 (전달 불필요)
   
@@ -333,7 +376,7 @@ const DailySentence = () => {
             <button onClick={() => navigate(-1)} className="p-2">
               <Icons.arrowLeft />
             </button>
-            <h1 className="text-lg font-bold text-gray-800">
+            <h1 className="font-bold text-gray-800" style={headerTextStyle}>
               오늘의 한줄 영어
             </h1>
             <div className="w-8" />
@@ -344,21 +387,23 @@ const DailySentence = () => {
             <div className="bg-gray-100 rounded-full p-1 flex">
               <button
                 onClick={() => handleModeChange("korean")}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                className={`px-4 py-2 rounded-full font-medium transition-colors ${
                   languageMode === "korean"
                     ? "bg-white text-[#00DAAA] shadow-sm"
                     : "text-gray-600"
                 }`}
+                style={smallTextStyle}
               >
                 한국어 모드
               </button>
               <button
                 onClick={() => handleModeChange("english")}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                className={`px-4 py-2 rounded-full font-medium transition-colors ${
                   languageMode === "english"
                     ? "bg-white text-[#00DAAA] shadow-sm"
                     : "text-gray-600"
                 }`}
+                style={smallTextStyle}
               >
                 영어 모드
               </button>
@@ -433,12 +478,12 @@ const DailySentence = () => {
                     <>
                       {/* 첫 번째 질문 */}
                       <div className="bg-gray-50 rounded-2xl p-4">
-                        <div className="text-lg font-bold text-gray-900 leading-relaxed mb-2">
+                        <div className="font-bold text-gray-900 leading-relaxed mb-2" style={baseTextStyle}>
                           {languageMode === "korean"
                             ? currentQuestion.englishQuestion
                             : currentQuestion.koreanQuestion}
                         </div>
-                        <div className="text-base text-gray-600 leading-relaxed">
+                        <div className="text-gray-600 leading-relaxed" style={baseTextStyle}>
                           {languageMode === "korean"
                             ? currentQuestion.koreanQuestion
                             : currentQuestion.englishQuestion}
@@ -451,12 +496,12 @@ const DailySentence = () => {
                           <div className="text-sm text-gray-500 mb-1">
                             (선택)
                           </div>
-                          <div className="text-lg font-bold text-gray-900 leading-relaxed mb-2">
+                          <div className="font-bold text-gray-900 leading-relaxed mb-2" style={baseTextStyle}>
                             {languageMode === "korean"
                               ? currentQuestion.secondQuestion.english
                               : currentQuestion.secondQuestion.korean}
                           </div>
-                          <div className="text-base text-gray-600 leading-relaxed">
+                          <div className="text-gray-600 leading-relaxed" style={baseTextStyle}>
                             {languageMode === "korean"
                               ? currentQuestion.secondQuestion.korean
                               : currentQuestion.secondQuestion.english}
@@ -470,12 +515,12 @@ const DailySentence = () => {
                           <div className="text-sm text-gray-500 mb-1">
                             (선택)
                           </div>
-                          <div className="text-lg font-bold text-gray-900 leading-relaxed mb-2">
+                          <div className="font-bold text-gray-900 leading-relaxed mb-2" style={baseTextStyle}>
                             {languageMode === "korean"
                               ? currentQuestion.thirdQuestion.english
                               : currentQuestion.thirdQuestion.korean}
                           </div>
-                          <div className="text-base text-gray-600 leading-relaxed">
+                          <div className="text-gray-600 leading-relaxed" style={baseTextStyle}>
                             {languageMode === "korean"
                               ? currentQuestion.thirdQuestion.korean
                               : currentQuestion.thirdQuestion.english}
@@ -496,7 +541,8 @@ const DailySentence = () => {
                         ? "여기에 답변을 작성해주세요..."
                         : "Please write your answer here..."
                     }
-                    className="w-full h-40 p-5 border-2 border-gray-200 rounded-2xl resize-none focus:outline-none focus:ring-2 focus:ring-[#00DAAA] focus:border-transparent text-lg"
+                    className="w-full h-40 p-5 border-2 border-gray-200 rounded-2xl resize-none focus:outline-none focus:ring-2 focus:ring-[#00DAAA] focus:border-transparent"
+                    style={baseTextStyle}
                   />
                 </div>
 
@@ -507,11 +553,12 @@ const DailySentence = () => {
                     translateWritingMutation.isPending ||
                     correctWritingMutation.isPending
                   }
-                  className={`w-full py-4 rounded-2xl font-bold text-lg mt-6 shadow-lg hover:shadow-xl transition-shadow ${
+                  className={`w-full py-4 rounded-2xl font-bold mt-6 shadow-lg hover:shadow-xl transition-shadow ${
                     userAnswer.trim()
                       ? "bg-[#FF6B35] text-white"
                       : "bg-gray-300 text-gray-500 cursor-not-allowed"
                   }`}
+                  style={baseTextStyle}
                 >
                   {translateWritingMutation.isPending ||
                   correctWritingMutation.isPending
@@ -538,7 +585,7 @@ const DailySentence = () => {
                     <span className="text-sm font-medium">이전 단계</span>
                   </button>
                 </div>
-                <h2 className="text-2xl font-bold mb-2 text-gray-900">
+                <h2 className="font-bold mb-2 text-gray-900" style={headerTextStyle}>
                   번역된 영어 문장을 올바른 순서로 배열해보세요
                 </h2>
 
@@ -737,14 +784,14 @@ const DailySentence = () => {
                 <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
                   <span className="text-3xl">🎉</span>
                 </div>
-                <h3 className="text-2xl font-bold mb-2 text-gray-900">
+                <h3 className="font-bold mb-2 text-gray-900" style={headerTextStyle}>
                   {languageMode === "korean"
                     ? allCompleted
                       ? "전부 다 맞았어요!"
                       : "학습 결과를 확인해보세요!"
                     : "영어 첨삭이 완료되었어요!"}
                 </h3>
-                <p className="text-lg text-gray-600">
+                <p className="text-gray-600" style={baseTextStyle}>
                   {languageMode === "korean" && !allCompleted
                     ? "다음에는 더 잘할 수 있어요!"
                     : "훌륭합니다!"}
@@ -755,10 +802,10 @@ const DailySentence = () => {
               <div className="bg-white rounded-3xl p-6 shadow-lg mb-6">
                 <div className="space-y-6">
                   <div>
-                    <p className="text-sm text-gray-600 mb-2 font-medium">
+                    <p className="text-gray-600 mb-2 font-medium" style={smallTextStyle}>
                       원본 답변:
                     </p>
-                    <p className="text-gray-800 text-lg leading-relaxed p-3 bg-gray-50 rounded-xl">
+                    <p className="text-gray-800 leading-relaxed p-3 bg-gray-50 rounded-xl" style={baseTextStyle}>
                       {translationResult.originalText}
                     </p>
                   </div>
@@ -766,11 +813,11 @@ const DailySentence = () => {
                   {translationResult.isCorrection ? (
                     // 영어 모드: 첨삭 결과 표시
                     <div>
-                      <p className="text-sm text-gray-600 mb-3 font-medium">
+                      <p className="text-gray-600 mb-3 font-medium" style={smallTextStyle}>
                         수정된 답변:
                       </p>
-                      <div className="bg-orange-50 rounded-xl p-4 border border-orange-200">
-                        <p className="text-gray-800 font-semibold text-lg leading-relaxed">
+                      <div className="bg-orange-50 rounded-xl p-4 border border-orange-200" style={{ paddingLeft: '12px', paddingTop: '12px' }}>
+                        <p className="text-gray-800 font-semibold leading-relaxed" style={smallTextStyle}>
                           {translationResult.processedText}
                         </p>
                       </div>
@@ -778,14 +825,14 @@ const DailySentence = () => {
                   ) : (
                     // 한국어 모드: 번역 결과 표시
                     <div>
-                      <p className="text-sm text-gray-600 mb-3 font-medium">
+                      <p className="text-gray-600 mb-3 font-medium" style={smallTextStyle}>
                         수정된 답변:
                       </p>
                       {translationResult.sentencePairs?.map(
                         (pair: any, index: number) => (
                           <div key={index} className="mb-4">
-                            <div className="bg-orange-50 rounded-xl p-4 border border-orange-200">
-                              <p className="text-gray-800 font-semibold text-lg leading-relaxed">
+                            <div className="bg-orange-50 rounded-xl p-4 border border-orange-200" style={{ paddingLeft: '12px', paddingTop: '12px' }}>
+                              <p className="text-gray-800 font-semibold leading-relaxed" style={smallTextStyle}>
                                 {pair.originalSentence}
                               </p>
                             </div>
@@ -797,7 +844,7 @@ const DailySentence = () => {
 
                   {/* 학습 피드백 - 영어 모드일 때는 하단에, 한국어 모드일 때도 하단에 */}
                   <div>
-                    <p className="text-sm text-gray-600 mb-3 font-medium">
+                    <p className="text-gray-600 mb-3 font-medium" style={smallTextStyle}>
                       학습 피드백:
                     </p>
                     <ul className="space-y-3">
@@ -805,7 +852,8 @@ const DailySentence = () => {
                         (feedback: string, index: number) => (
                           <li
                             key={index}
-                            className="text-sm text-gray-700 bg-green-50 p-4 rounded-xl border border-green-200"
+                            className="text-gray-700 bg-green-50 p-4 rounded-xl border border-green-200"
+                            style={feedbackTextStyle}
                           >
                             • {feedback}
                           </li>
@@ -818,7 +866,8 @@ const DailySentence = () => {
 
               <button
                 onClick={handleRestart}
-                className="w-full bg-[#00DAAA] text-white py-4 rounded-2xl font-bold text-lg shadow-lg hover:shadow-xl transition-shadow"
+                className="w-full bg-[#00DAAA] text-white py-4 rounded-2xl font-bold shadow-lg hover:shadow-xl transition-shadow"
+                style={baseTextStyle}
               >
                 다시 시작하기
               </button>

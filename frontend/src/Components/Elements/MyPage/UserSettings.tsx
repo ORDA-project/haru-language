@@ -19,6 +19,21 @@ const UserSettings = React.memo(function UserSettings({
   const [isLargeTextMode, setIsLargeTextMode] = useAtom(isLargeTextModeAtom);
   const [isAudioAlwaysPlay, setIsAudioAlwaysPlay] = useAtom(isAudioAlwaysPlayAtom);
 
+  // 큰글씨 모드에 따른 텍스트 크기
+  const baseFontSize = isLargeTextMode ? 20 : 16;
+  const headerFontSize = isLargeTextMode ? 22 : 18;
+  
+  const baseTextStyle: React.CSSProperties = { 
+    fontSize: `${baseFontSize}px`, 
+    wordBreak: 'keep-all', 
+    overflowWrap: 'break-word' as const 
+  };
+  const headerTextStyle: React.CSSProperties = { 
+    fontSize: `${headerFontSize}px`,
+    wordBreak: 'keep-all',
+    overflowWrap: 'break-word' as const
+  };
+
   const providerLabelMap: Record<string, string> = {
     kakao: "카카오",
     google: "구글",
@@ -42,22 +57,22 @@ const UserSettings = React.memo(function UserSettings({
     <div className="mb-6">
       <div className="w-full space-y-6">
         <div>
-          <h3 className="text-black font-bold text-xl mb-4">내 정보</h3>
-          <div className="bg-white rounded-[16px] space-y-2 p-4 shadow-md border border-gray-100">
+          <h3 className="text-black font-bold mb-4" style={headerTextStyle}>내 정보</h3>
+          <div className="bg-white rounded-[16px] space-y-2 px-4 pt-4 pb-3 shadow-md border border-gray-100">
             <div className="flex items-center justify-between py-2">
               <div className="flex items-center">
                 <Icons.font className="w-6 h-6 mr-3 text-gray-600" />
-                <span className="font-medium">큰글씨 모드</span>
+                <span className="font-medium" style={baseTextStyle}>큰글씨 모드</span>
               </div>
               <button
                 onClick={toggleLargeTextMode}
-                className={`relative w-12 h-6 rounded-full flex items-center transition-colors cursor-pointer ${
+                className={`relative w-12 h-4 rounded-full flex items-center transition-colors cursor-pointer ${
                   isLargeTextMode ? "bg-[#00DAAA]" : "bg-gray-300"
                 }`}
                 style={{ padding: '2px' }}
               >
                 <div
-                  className={`absolute w-5 h-5 bg-white rounded-full shadow-md transition-transform duration-200 ease-in-out ${
+                  className={`absolute w-4 h-4 bg-white rounded-full shadow-md transition-transform duration-200 ease-in-out ${
                     isLargeTextMode ? "translate-x-6" : "translate-x-0.5"
                   }`}
                 ></div>
@@ -66,41 +81,41 @@ const UserSettings = React.memo(function UserSettings({
             <div className="flex items-center justify-between py-2">
               <div className="flex items-center">
                 <Icons.audio className="w-6 h-6 mr-3 text-gray-600" />
-                <span className="font-medium">오디오 항상 듣기</span>
+                <span className="font-medium" style={baseTextStyle}>오디오 항상 듣기</span>
               </div>
               <button
                 onClick={toggleAudioAlwaysPlay}
-                className={`relative w-12 h-6 rounded-full flex items-center transition-colors cursor-pointer ${
+                className={`relative w-12 h-4 rounded-full flex items-center transition-colors cursor-pointer ${
                   isAudioAlwaysPlay ? "bg-[#00DAAA]" : "bg-gray-300"
                 }`}
                 style={{ padding: '2px' }}
               >
                 <div
-                  className={`absolute w-5 h-5 bg-white rounded-full shadow-md transition-transform duration-200 ease-in-out ${
+                  className={`absolute w-4 h-4 bg-white rounded-full shadow-md transition-transform duration-200 ease-in-out ${
                     isAudioAlwaysPlay ? "translate-x-6" : "translate-x-0.5"
                   }`}
                 ></div>
               </button>
             </div>
             <div className="flex items-center justify-between py-2">
-              <div className="flex items-center">
+              <div className="flex items-center" style={{ paddingLeft: '4px' }}>
                 <Icons.login className="w-6 h-6 mr-3 text-gray-600" />
-                <span className="font-medium">로그인 정보</span>
+                <span className="font-medium" style={baseTextStyle}>로그인 정보</span>
               </div>
-            <span className="text-green-600 font-semibold">
+            <span className="text-green-600 font-semibold" style={baseTextStyle}>
               {providerLabel}
             </span>
             </div>
             <div className="flex items-center justify-between py-2">
               <button onClick={onLogout} className="flex items-center">
                 <Icons.logout className="w-6 h-6 mr-3 text-gray-600" />
-                <span className="font-medium">로그아웃</span>
+                <span className="font-medium" style={baseTextStyle}>로그아웃</span>
               </button>
             </div>
             <div className="flex items-center justify-between py-2">
               <button onClick={onEditFriends} className="flex items-center">
                 <Icons.profile className="w-6 h-6 mr-3 text-gray-600" />
-                <span className="font-medium">친구목록 편집</span>
+                <span className="font-medium" style={baseTextStyle}>친구목록 편집</span>
               </button>
             </div>
           </div>
@@ -108,51 +123,51 @@ const UserSettings = React.memo(function UserSettings({
 
         {/* 앱 정보 섹션 */}
         <div>
-          <h3 className="text-black font-bold text-xl mb-4">앱 정보</h3>
+          <h3 className="text-black font-bold mb-4" style={headerTextStyle}>앱 정보</h3>
           <div className="bg-white rounded-[16px] flex flex-col gap-5 p-5 shadow-md border border-gray-100">
             <button
               onClick={() => navigate("/introduction", { state: { fromHelp: true } })}
               className="flex items-center hover:bg-gray-50 p-2 rounded-lg transition-colors"
             >
               <Icons.help className="w-6 h-6 mr-3" />
-              <span>도움말</span>
+              <span style={baseTextStyle}>도움말</span>
             </button>
             <button
               onClick={() => handleNavigation("/announcements")}
               className="flex items-center hover:bg-gray-50 p-2 rounded-lg transition-colors"
             >
               <Icons.announcement className="w-6 h-6 mr-3" />
-              <span>공지사항</span>
+              <span style={baseTextStyle}>공지사항</span>
             </button>
             <button
               onClick={() => handleNavigation("/privacy-policy")}
               className="flex items-center hover:bg-gray-50 p-2 rounded-lg transition-colors"
             >
-              <span>개인정보처리방침</span>
+              <span style={baseTextStyle}>개인정보처리방침</span>
             </button>
             <button
               onClick={() => handleNavigation("/terms-of-service")}
               className="flex items-center hover:bg-gray-50 p-2 rounded-lg transition-colors"
             >
-              <span>서비스 이용약관</span>
+              <span style={baseTextStyle}>서비스 이용약관</span>
             </button>
             <button
               onClick={() => handleNavigation("/version-info")}
               className="flex items-center hover:bg-gray-50 p-2 rounded-lg transition-colors"
             >
-              <span>버전정보</span>
+              <span style={baseTextStyle}>버전정보</span>
             </button>
             <button
               onClick={() => handleNavigation("/version-info")}
               className="flex items-center hover:bg-gray-50 p-2 rounded-lg transition-colors"
             >
-              <span>오픈소스 라이센스</span>
+              <span style={baseTextStyle}>오픈소스 라이센스</span>
             </button>
             <button
               onClick={() => handleNavigation("/delete-account")}
               className="flex items-center hover:bg-red-50 p-2 rounded-lg transition-colors text-red-600"
             >
-              <span>회원 탈퇴</span>
+              <span style={baseTextStyle}>회원 탈퇴</span>
             </button>
           </div>
         </div>
