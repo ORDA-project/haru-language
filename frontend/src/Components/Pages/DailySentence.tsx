@@ -768,15 +768,12 @@ const DailySentence = () => {
                     // 한국어 모드: 번역 결과 표시
                     <div>
                       <p className="text-sm text-gray-600 mb-3 font-medium">
-                        번역된 영어 문장들:
+                        수정된 답변:
                       </p>
                       {translationResult.sentencePairs?.map(
                         (pair: any, index: number) => (
                           <div key={index} className="mb-4">
-                            <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
-                              <p className="text-sm text-gray-600 mb-1">
-                                원본: {pair.koreanSentence}
-                              </p>
+                            <div className="bg-orange-50 rounded-xl p-4 border border-orange-200">
                               <p className="text-gray-800 font-semibold text-lg leading-relaxed">
                                 {pair.originalSentence}
                               </p>
@@ -805,15 +802,6 @@ const DailySentence = () => {
                       )}
                     </ul>
                   </div>
-                </div>
-              </div>
-
-              {/* 기록 저장 표시 블럭 */}
-              <div className="bg-purple-50 rounded-3xl p-6 shadow-lg mb-6 border border-purple-200">
-                <div className="flex items-center justify-center">
-                  <span className="text-purple-600 text-sm font-medium">
-                    ✓ 학습 기록에 저장되었습니다
-                  </span>
                 </div>
               </div>
 
