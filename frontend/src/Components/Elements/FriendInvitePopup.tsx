@@ -127,13 +127,7 @@ const FriendInvitePopup = React.memo(function FriendInvitePopup({
               <p className="text-xs text-gray-500 mb-1">복사된 링크</p>
               <div className="flex flex-col gap-2">
                 <p className="text-xs text-gray-700 break-all">{inviteLink}</p>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={handleCopyLink}
-                    className="px-3 py-1 text-xs font-medium text-white bg-[#00DAAA] hover:bg-[#00C495] rounded-full transition-colors"
-                  >
-                    다시 복사
-                  </button>
+                <div className="flex items-center justify-end gap-2">
                   {copyStatus === "copied" && (
                     <span className="text-[11px] text-[#00B085]">
                       링크가 복사되었습니다.
@@ -144,6 +138,12 @@ const FriendInvitePopup = React.memo(function FriendInvitePopup({
                       복사에 실패했습니다. 다시 시도해주세요.
                     </span>
                   )}
+                  <button
+                    onClick={handleCopyLink}
+                    className="px-3 py-1 text-xs font-medium text-white bg-[#00DAAA] hover:bg-[#00C495] rounded-full transition-colors"
+                  >
+                    다시 복사
+                  </button>
                 </div>
               </div>
             </div>
