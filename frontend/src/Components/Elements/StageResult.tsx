@@ -207,11 +207,11 @@ const StageResult = ({
           <div className="max-w-[90%] w-full bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
             {/* Pagination Dots */}
             {examples.length > 1 && (
-              <div className={`flex justify-center ${isLargeTextMode ? "py-4" : "py-3"} border-b border-gray-100`}>
+              <div className={`flex justify-center ${isLargeTextMode ? "py-2" : "py-1.5"} border-b border-gray-100`}>
                 {examples.map((_, index) => (
                   <button
                     key={index}
-                    className={`${isLargeTextMode ? "w-2 h-2" : "w-1.5 h-1.5"} mx-1 rounded-full transition-colors ${
+                    className={`w-1.5 h-1.5 mx-0.5 rounded-full transition-colors ${
                       index === currentIndex ? "bg-[#00DAAA]" : "bg-gray-300"
                     }`}
                     onClick={() => handleDotClick(index)}
@@ -223,8 +223,8 @@ const StageResult = ({
             {/* Context Badge */}
             <div className={`${isLargeTextMode ? "p-5" : "p-4"} text-left border-b border-gray-100`}>
               <span 
-                className={`inline-block ${isLargeTextMode ? "px-5 py-2" : "px-4 py-1.5"} bg-[#00DAAA] text-gray-900 rounded-full font-medium`}
-                style={xSmallTextStyle}
+                className={`inline-block ${isLargeTextMode ? "px-6 py-3" : "px-5 py-2.5"} bg-[#00DAAA] text-gray-900 rounded-full font-medium`}
+                style={baseTextStyle}
               >
                 {examples[currentIndex]?.context}
               </span>
@@ -233,9 +233,9 @@ const StageResult = ({
             {/* Dialogue */}
             <div className={`${isLargeTextMode ? "p-5" : "p-4"} ${isLargeTextMode ? "space-y-5" : "space-y-4"}`}>
               {/* A's dialogue */}
-              <div className={`flex items-start ${isLargeTextMode ? "space-x-4" : "space-x-3"}`}>
-                <div className={`${isLargeTextMode ? "w-12 h-12" : "w-10 h-10"} bg-[#00DAAA] rounded-full flex items-center justify-center flex-shrink-0`}>
-                  <span className="text-white font-bold" style={smallTextStyle}>A</span>
+              <div className={`flex items-start ${isLargeTextMode ? "space-x-3" : "space-x-2"}`}>
+                <div className={`${isLargeTextMode ? "w-8 h-8" : "w-7 h-7"} bg-[#00DAAA] rounded-full flex items-center justify-center flex-shrink-0`}>
+                  <span className="text-white font-bold" style={xSmallTextStyle}>A</span>
                 </div>
                 <div className="flex-1">
                   <p 
@@ -254,9 +254,9 @@ const StageResult = ({
               </div>
 
               {/* B's dialogue */}
-              <div className={`flex items-start ${isLargeTextMode ? "space-x-4" : "space-x-3"}`}>
-                <div className={`${isLargeTextMode ? "w-12 h-12" : "w-10 h-10"} bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0`}>
-                  <span className="text-white font-bold" style={smallTextStyle}>B</span>
+              <div className={`flex items-start ${isLargeTextMode ? "space-x-3" : "space-x-2"}`}>
+                <div className={`${isLargeTextMode ? "w-8 h-8" : "w-7 h-7"} bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0`}>
+                  <span className="text-white font-bold" style={xSmallTextStyle}>B</span>
                 </div>
                 <div className="flex-1">
                   <p 

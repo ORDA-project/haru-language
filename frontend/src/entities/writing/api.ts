@@ -44,8 +44,8 @@ export const writingApi = {
   },
 
   // 사용자의 모든 Writing 기록 조회
-  getWritingRecords: (userId: number): Promise<GetWritingRecordsResponse> => {
-    return http.get(`/writing-question/records/${userId}`);
+  getWritingRecords: (): Promise<GetWritingRecordsResponse> => {
+    return http.get("/writing/records");
   },
 
   // 특정 Writing 질문에 대한 사용자의 기록 조회

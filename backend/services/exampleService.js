@@ -36,7 +36,15 @@ async function generateExamples(inputSentence, userId) {
     "- 'dialogue': an object with 'A' and 'B' properties. " +
     "Each dialogue speaker (A and B) must be an object with 'english' and 'korean' string properties. " +
     "Example dialogue format: { 'A': { 'english': 'Hello', 'korean': '안녕' }, 'B': { 'english': 'Hi', 'korean': '안녕' } } " +
-    "You must create exactly 3 different examples with different contexts and dialogues. ";
+    "\n\nCRITICAL REQUIREMENTS FOR DIVERSITY: " +
+    "You must create exactly 3 COMPLETELY DIFFERENT examples. Each example MUST vary significantly: " +
+    "- Different subjects (different people, characters, or entities) " +
+    "- Different time settings (morning, afternoon, evening, different days, seasons, etc.) " +
+    "- Different vocabulary and expressions (use different words, phrases, and sentence structures) " +
+    "- Different contexts and situations (completely different scenarios, locations, or circumstances) " +
+    "- Different dialogue patterns (vary the conversation flow, question types, response styles) " +
+    "Do NOT simply rephrase the same content. Each example should feel like a unique, independent conversation. " +
+    "The three examples should cover different aspects, perspectives, or variations of the input sentence's meaning. ";
 
   // 사용자 맞춤 프롬프트 추가
   if (user) {

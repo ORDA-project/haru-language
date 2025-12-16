@@ -105,11 +105,10 @@ export const useWritingQuestion = (writingQuestionId: number) => {
 };
 
 // 사용자의 Writing 기록 조회
-export const useWritingRecords = (userId: number) => {
+export const useWritingRecords = () => {
   return useQuery({
-    queryKey: ["writingRecords", userId],
-    queryFn: () => writingApi.getWritingRecords(userId),
-    enabled: !!userId,
+    queryKey: ["writingRecords"],
+    queryFn: () => writingApi.getWritingRecords(),
   });
 };
 

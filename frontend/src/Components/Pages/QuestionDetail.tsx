@@ -4,6 +4,9 @@ import { useAtom } from "jotai";
 import { isLargeTextModeAtom } from "../../store/dataStore";
 import { useGetQuestionsByUserId } from "../../entities/questions/queries";
 import { useGetExampleHistory } from "../../entities/examples/queries";
+import { useWritingRecords } from "../../entities/writing/queries";
+import { useWritingQuestions } from "../../entities/writing/queries";
+import { useGenerateTTS } from "../../entities/tts/queries";
 import NavBar from "../Templates/Navbar";
 
 type ExampleDialogue = {
@@ -22,6 +25,10 @@ const QuestionDetail = () => {
   const navigate = useNavigate();
   const [selectedDate, setSelectedDate] = useState<string>(date || "");
   const [isLargeTextMode] = useAtom(isLargeTextModeAtom);
+  const [isPlayingTTS, setIsPlayingTTS] = useState(false);
+  const [currentPlayingExampleId, setCurrentPlayingExampleId] = useState<number | null>(null);
+  const [currentItemIndex, setCurrentItemIndex] = useState<Record<number, number>>({});
+  const ttsMutation = useGenerateTTS();
   
   // 큰글씨 모드에 따른 텍스트 크기
   const baseFontSize = isLargeTextMode ? 20 : 16;
@@ -55,6 +62,9 @@ const QuestionDetail = () => {
     useGetQuestionsByUserId();
   const { data: exampleHistory, isLoading: examplesLoading } =
     useGetExampleHistory();
+  const { data: writingRecordsData, isLoading: writingRecordsLoading } =
+    useWritingRecords();
+  const { data: writingQuestionsData } = useWritingQuestions();
 
   useEffect(() => {
     if (date && date !== selectedDate) {
@@ -86,11 +96,14 @@ const QuestionDetail = () => {
     exampleHistory?.data?.forEach((example) =>
       extractDate(example.created_at || example.createdAt)
     );
+    writingRecordsData?.data?.forEach((record: any) =>
+      extractDate(record.created_at)
+    );
 
     return Array.from(dates).sort(
       (a, b) => new Date(b).getTime() - new Date(a).getTime()
     );
-  }, [questionsData?.data, exampleHistory?.data]);
+  }, [questionsData?.data, exampleHistory?.data, writingRecordsData?.data]);
 
   useEffect(() => {
     if (!selectedDate && availableDates.length > 0) {
@@ -220,7 +233,26 @@ const QuestionDetail = () => {
       });
   }, [exampleHistory?.data, targetDate]);
 
-  const isLoading = questionsLoading || examplesLoading;
+  // Writing 기록 필터링
+  const writingRecords = useMemo(() => {
+    if (!writingRecordsData?.data || !targetDate) return [];
+    return writingRecordsData.data.filter((record: any) => {
+      if (!record.created_at) return false;
+      const recordDate = getDateString(record.created_at);
+      return recordDate === targetDate;
+    });
+  }, [writingRecordsData?.data, targetDate]);
+
+  // Writing 질문 맵 생성 (writing_question_id로 질문 찾기)
+  const writingQuestionMap = useMemo(() => {
+    const map = new Map();
+    writingQuestionsData?.data?.forEach((q: any) => {
+      map.set(q.id, q);
+    });
+    return map;
+  }, [writingQuestionsData?.data]);
+
+  const isLoading = questionsLoading || examplesLoading || writingRecordsLoading;
 
   const currentIndex = availableDates.findIndex(
     (d) => d === selectedDate
@@ -257,6 +289,91 @@ const QuestionDetail = () => {
 
   const handleBack = () => {
     navigate(-1);
+  };
+
+  // 현재 예문 항목 인덱스 가져오기
+  const getCurrentItemIndex = (exampleId: number, totalItems: number) => {
+    return currentItemIndex[exampleId] ?? 0;
+  };
+
+  // 예문 항목 인덱스 변경
+  const handleItemIndexChange = (exampleId: number, direction: 'prev' | 'next', totalItems: number) => {
+    const currentIndex = getCurrentItemIndex(exampleId, totalItems);
+    let newIndex = currentIndex;
+    
+    if (direction === 'prev') {
+      newIndex = currentIndex > 0 ? currentIndex - 1 : totalItems - 1;
+    } else {
+      newIndex = currentIndex < totalItems - 1 ? currentIndex + 1 : 0;
+    }
+    
+    setCurrentItemIndex(prev => ({
+      ...prev,
+      [exampleId]: newIndex
+    }));
+  };
+
+  // 스피커 버튼 클릭 핸들러 - 현재 화면에 보이는 예문 항목의 A와 B만 TTS로 읽기
+  const handleSpeakerClick = async (example: any) => {
+    if (isPlayingTTS && currentPlayingExampleId === example.id) {
+      // 이미 재생 중이면 중지
+      setIsPlayingTTS(false);
+      setCurrentPlayingExampleId(null);
+      return;
+    }
+
+    try {
+      setIsPlayingTTS(true);
+      setCurrentPlayingExampleId(example.id);
+
+      // 현재 화면에 보이는 예문 항목의 A와 B만 수집
+      let textToRead = "";
+      if (example.exampleItems && example.exampleItems.length > 0) {
+        const currentIndex = getCurrentItemIndex(example.id, example.exampleItems.length);
+        const currentItem = example.exampleItems[currentIndex];
+        if (currentItem.dialogues && currentItem.dialogues.length > 0) {
+          const englishTexts: string[] = [];
+          currentItem.dialogues.forEach((dialogue: ExampleDialogue) => {
+            if (dialogue.english) {
+              englishTexts.push(dialogue.english);
+            }
+          });
+          textToRead = englishTexts.join(". ");
+        }
+      }
+
+      if (!textToRead) {
+        setIsPlayingTTS(false);
+        setCurrentPlayingExampleId(null);
+        return;
+      }
+
+      // TTS API 호출
+      const response = await ttsMutation.mutateAsync({
+        text: textToRead,
+        speed: 1.0,
+      });
+
+      // Base64 오디오 데이터를 직접 Audio 객체로 재생
+      const audio = new Audio(`data:audio/mp3;base64,${response.audioContent}`);
+
+      audio.onended = () => {
+        setIsPlayingTTS(false);
+        setCurrentPlayingExampleId(null);
+      };
+
+      audio.onerror = () => {
+        console.error("오디오 재생 실패");
+        setIsPlayingTTS(false);
+        setCurrentPlayingExampleId(null);
+      };
+
+      await audio.play();
+    } catch (error) {
+      console.error("TTS 재생 오류:", error);
+      setIsPlayingTTS(false);
+      setCurrentPlayingExampleId(null);
+    }
   };
 
   if (isLoading) {
@@ -341,6 +458,80 @@ const QuestionDetail = () => {
 
       {/* Chat Content */}
       <div className="flex-1 overflow-y-auto p-4 space-y-6">
+        {/* 한줄영어 섹션 */}
+        {writingRecords.length > 0 && (
+          <div className="space-y-4">
+            <div className="font-semibold text-gray-600" style={headerTextStyle}>하루한줄</div>
+            {writingRecords.map((record: any) => {
+              const question = writingQuestionMap.get(record.writing_question_id);
+              const feedback = Array.isArray(record.feedback) 
+                ? record.feedback 
+                : (record.feedback ? [record.feedback] : []);
+              
+              return (
+                <div
+                  key={`writing-${record.id}`}
+                  className="space-y-3 bg-white rounded-2xl shadow-sm border border-gray-100 p-4"
+                >
+                  {/* 하루한줄 섹션 내용 - 불릿 포인트 형태 */}
+                  <div className="space-y-2">
+                    {/* 오늘의 주제 */}
+                    {question && (
+                      <div className="flex items-start">
+                        <span className="text-gray-800 mr-2" style={baseTextStyle}>•</span>
+                        <p className="text-gray-800 leading-relaxed flex-1" style={baseTextStyle}>
+                          {question.koreanQuestion || question.englishQuestion}
+                        </p>
+                      </div>
+                    )}
+                    
+                    {/* 내가 입력한 문장 */}
+                    <div className="flex items-start">
+                      <span className="text-gray-800 mr-2" style={baseTextStyle}>•</span>
+                      <p className="text-gray-800 leading-relaxed flex-1" style={baseTextStyle}>
+                        {record.original_text}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* 문장 첨삭 버전 + 피드백 */}
+                  {record.processed_text && (
+                    <div className="space-y-3 mt-4 pt-4 border-t border-gray-200">
+                      <div className="bg-orange-50 rounded-xl p-4 border border-orange-200">
+                        <p className="text-sm text-gray-600 mb-2 font-medium" style={xSmallTextStyle}>
+                          문장 첨삭 버전
+                        </p>
+                        <p className="text-gray-800 font-semibold leading-relaxed" style={baseTextStyle}>
+                          {record.processed_text}
+                        </p>
+                      </div>
+                      
+                      {feedback.length > 0 && (
+                        <div>
+                          <p className="text-sm text-gray-600 mb-2 font-medium" style={xSmallTextStyle}>
+                            피드백
+                          </p>
+                          <ul className="space-y-2">
+                            {feedback.map((fb: string, idx: number) => (
+                              <li
+                                key={idx}
+                                className="text-gray-700 bg-green-50 p-3 rounded-xl border border-green-200"
+                                style={smallTextStyle}
+                              >
+                                • {fb}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
         {questions.map((question, index) => (
           <div key={question.id} className="space-y-4">
             {/* User Question */}
@@ -470,48 +661,116 @@ const QuestionDetail = () => {
                       {example.description}
                     </p>
                   )}
-                {/* 모든 예문 항목들을 상황별로 표시 */}
-                {example.exampleItems && example.exampleItems.length > 0 && (
-                  <div className="space-y-4">
-                    {example.exampleItems.map((item: ExampleItem, itemIdx: number) => (
-                      <div key={`${example.id}-item-${itemIdx}`} className="space-y-3">
-                        {/* 상황 설명 라벨 */}
-                        {item.context && (
-                          <div className="inline-block px-3 py-1.5 rounded-full bg-[#B8E6D3] text-[#1A1A1A] font-semibold" style={xSmallTextStyle}>
-                            {item.context}
-                          </div>
-                        )}
-                        {/* 대화 내용 */}
-                        {item.dialogues && item.dialogues.length > 0 && (
-                          <div className="space-y-2 pl-2">
-                            {item.dialogues.map(
-                              (dialogue: ExampleDialogue, dialogueIdx: number) => (
-                                <div
-                                  key={`${example.id}-item-${itemIdx}-dialogue-${dialogueIdx}`}
-                                  className="flex items-start space-x-3"
-                                >
-                                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0 ${
-                                    dialogue.speaker === "A" ? "bg-[#B8E6D3]" : "bg-[#A8D5E2]"
-                                  }`} style={xSmallTextStyle}>
-                                    {dialogue.speaker}
-                                  </div>
-                                  <div className="flex-1">
-                                    <p className="font-medium text-gray-900 leading-relaxed" style={baseTextStyle}>
-                                      {dialogue.english}
-                                    </p>
-                                    {dialogue.korean && (
-                                      <p className="text-gray-600 leading-relaxed mt-1" style={smallTextStyle}>
-                                        {dialogue.korean}
-                                      </p>
-                                    )}
-                                  </div>
+                {/* 현재 선택된 예문 항목만 표시 */}
+                {example.exampleItems && example.exampleItems.length > 0 && (() => {
+                  const currentIndex = getCurrentItemIndex(example.id, example.exampleItems.length);
+                  const currentItem = example.exampleItems[currentIndex];
+                  
+                  return (
+                    <div className="space-y-3">
+                      {/* 상황 설명 라벨 */}
+                      {currentItem.context && (
+                        <div className="inline-block px-3 py-1.5 rounded-full bg-[#B8E6D3] text-[#1A1A1A] font-semibold" style={xSmallTextStyle}>
+                          {currentItem.context}
+                        </div>
+                      )}
+                      {/* 대화 내용 */}
+                      {currentItem.dialogues && currentItem.dialogues.length > 0 && (
+                        <div className="space-y-2 pl-2">
+                          {currentItem.dialogues.map(
+                            (dialogue: ExampleDialogue, dialogueIdx: number) => (
+                              <div
+                                key={`${example.id}-item-${currentIndex}-dialogue-${dialogueIdx}`}
+                                className="flex items-start space-x-3"
+                              >
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0 ${
+                                  dialogue.speaker === "A" ? "bg-[#B8E6D3]" : "bg-[#A8D5E2]"
+                                }`} style={xSmallTextStyle}>
+                                  {dialogue.speaker}
                                 </div>
-                              )
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                                <div className="flex-1">
+                                  <p className="font-medium text-gray-900 leading-relaxed" style={baseTextStyle}>
+                                    {dialogue.english}
+                                  </p>
+                                  {dialogue.korean && (
+                                    <p className="text-gray-600 leading-relaxed mt-1" style={smallTextStyle}>
+                                      {dialogue.korean}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            )
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+                {/* 스피커 아이콘 - 카드 하단 중앙에 좌우 화살표 사이에 배치 */}
+                {example.exampleItems && example.exampleItems.length > 0 && (
+                  <div className="flex justify-center items-center gap-2 mt-4 pt-4 border-t border-gray-200">
+                    <button
+                      onClick={() => handleItemIndexChange(example.id, 'prev', example.exampleItems.length)}
+                      className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M15 19l-7-7 7-7"
+                        />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => handleSpeakerClick(example)}
+                      className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors shadow-md ${
+                        isPlayingTTS && currentPlayingExampleId === example.id
+                          ? "bg-[#FF6B35] hover:bg-[#E55A2B]"
+                          : "bg-[#00DAAA] hover:bg-[#00C299]"
+                      }`}
+                    >
+                      {isPlayingTTS && currentPlayingExampleId === example.id ? (
+                        <svg
+                          className="w-6 h-6 text-white"
+                          fill="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
+                        </svg>
+                      ) : (
+                        <svg
+                          className="w-6 h-6 text-white"
+                          fill="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
+                        </svg>
+                      )}
+                    </button>
+                    <button
+                      onClick={() => handleItemIndexChange(example.id, 'next', example.exampleItems.length)}
+                      className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 5l7 7-7 7"
+                        />
+                      </svg>
+                    </button>
                   </div>
                 )}
               </div>
@@ -519,7 +778,7 @@ const QuestionDetail = () => {
           </div>
         )}
 
-        {questions.length === 0 && exampleRecords.length === 0 && (
+        {questions.length === 0 && exampleRecords.length === 0 && writingRecords.length === 0 && (
           <div className="flex justify-center items-center py-8">
             <div className="text-center text-gray-500">
               <p style={baseTextStyle}>이 날짜에는 학습 기록이 없습니다.</p>
