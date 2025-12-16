@@ -297,11 +297,13 @@ const QuestionDetail = () => {
   };
 
   // 예문 항목 인덱스 변경
-  const handleItemIndexChange = (exampleId: number, direction: 'prev' | 'next', totalItems: number) => {
+  const handleItemIndexChange = (exampleId: number, direction: 'prev' | 'next' | 'set', totalItems: number, targetIndex?: number) => {
     const currentIndex = getCurrentItemIndex(exampleId, totalItems);
     let newIndex = currentIndex;
     
-    if (direction === 'prev') {
+    if (direction === 'set' && targetIndex !== undefined) {
+      newIndex = targetIndex;
+    } else if (direction === 'prev') {
       newIndex = currentIndex > 0 ? currentIndex - 1 : totalItems - 1;
     } else {
       newIndex = currentIndex < totalItems - 1 ? currentIndex + 1 : 0;
@@ -457,11 +459,10 @@ const QuestionDetail = () => {
       </div>
 
       {/* Chat Content */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-6">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
         {/* 한줄영어 섹션 */}
         {writingRecords.length > 0 && (
-          <div className="space-y-4">
-            <div className="font-semibold text-gray-600" style={headerTextStyle}>하루한줄</div>
+          <>
             {writingRecords.map((record: any) => {
               const question = writingQuestionMap.get(record.writing_question_id);
               const feedback = Array.isArray(record.feedback) 
@@ -469,85 +470,100 @@ const QuestionDetail = () => {
                 : (record.feedback ? [record.feedback] : []);
               
               return (
-                <div
-                  key={`writing-${record.id}`}
-                  className="space-y-3 bg-white rounded-2xl shadow-sm border border-gray-100 p-4"
-                >
-                  {/* 하루한줄 섹션 내용 - 불릿 포인트 형태 */}
+                <div key={`writing-${record.id}`} className="space-y-4">
+                  {/* 1. 하루한줄 블록 */}
                   <div className="space-y-2">
-                    {/* 오늘의 주제 */}
-                    {question && (
-                      <div className="flex items-start">
-                        <span className="text-gray-800 mr-2" style={baseTextStyle}>•</span>
-                        <p className="text-gray-800 leading-relaxed flex-1" style={baseTextStyle}>
-                          {question.koreanQuestion || question.englishQuestion}
-                        </p>
+                    <div className="font-semibold text-gray-600" style={headerTextStyle}>하루한줄</div>
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
+                      <div className="space-y-2">
+                        {/* 오늘의 주제 */}
+                        {question && (
+                          <div className="flex items-start">
+                            <span className="text-gray-800 mr-2" style={baseTextStyle}>•</span>
+                            <p className="text-gray-800 leading-relaxed flex-1" style={baseTextStyle}>
+                              {question.koreanQuestion || question.englishQuestion}
+                            </p>
+                          </div>
+                        )}
+                        
+                        {/* 내가 입력한 문장 */}
+                        <div className="flex items-start">
+                          <span className="text-gray-800 mr-2" style={baseTextStyle}>•</span>
+                          <p className="text-gray-800 leading-relaxed flex-1" style={baseTextStyle}>
+                            {record.original_text}
+                          </p>
+                        </div>
                       </div>
-                    )}
-                    
-                    {/* 내가 입력한 문장 */}
-                    <div className="flex items-start">
-                      <span className="text-gray-800 mr-2" style={baseTextStyle}>•</span>
-                      <p className="text-gray-800 leading-relaxed flex-1" style={baseTextStyle}>
-                        {record.original_text}
-                      </p>
                     </div>
                   </div>
 
-                  {/* 문장 첨삭 버전 + 피드백 */}
+                  {/* 2. 문장 첨삭 블록 */}
                   {record.processed_text && (
-                    <div className="space-y-3 mt-4 pt-4 border-t border-gray-200">
-                      <div className="bg-orange-50 rounded-xl p-4 border border-orange-200">
-                        <p className="text-sm text-gray-600 mb-2 font-medium" style={xSmallTextStyle}>
-                          문장 첨삭 버전
-                        </p>
-                        <p className="text-gray-800 font-semibold leading-relaxed" style={baseTextStyle}>
-                          {record.processed_text}
-                        </p>
-                      </div>
-                      
-                      {feedback.length > 0 && (
-                        <div>
-                          <p className="text-sm text-gray-600 mb-2 font-medium" style={xSmallTextStyle}>
-                            피드백
-                          </p>
-                          <ul className="space-y-2">
-                            {feedback.map((fb: string, idx: number) => (
-                              <li
-                                key={idx}
-                                className="text-gray-700 bg-green-50 p-3 rounded-xl border border-green-200"
-                                style={smallTextStyle}
-                              >
-                                • {fb}
-                              </li>
-                            ))}
-                          </ul>
+                    <>
+                      <div className="space-y-2">
+                        <div className="inline-block bg-orange-50 rounded-full px-4 py-1.5 border border-orange-200">
+                          <span className="text-sm font-medium text-orange-800">문장 첨삭</span>
                         </div>
-                      )}
-                    </div>
+                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
+                          <div className="space-y-3">
+                            <div className="bg-orange-50 rounded-xl p-4 border border-orange-200">
+                              <p className="text-sm text-gray-600 mb-2 font-medium" style={xSmallTextStyle}>
+                                첨삭 버전 내용
+                              </p>
+                              <p className="text-gray-800 font-semibold leading-relaxed" style={baseTextStyle}>
+                                {record.processed_text}
+                              </p>
+                            </div>
+                            
+                            {feedback.length > 0 && (
+                              <div>
+                                <p className="text-sm text-gray-600 mb-2 font-medium" style={xSmallTextStyle}>
+                                  피드백 내용
+                                </p>
+                                <ul className="space-y-2">
+                                  {feedback.map((fb: string, idx: number) => (
+                                    <li key={idx} className="text-gray-700" style={smallTextStyle}>
+                                      • {fb}
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 구분선 */}
+                      <div className="border-t border-gray-300"></div>
+                    </>
                   )}
                 </div>
               );
             })}
-          </div>
+          </>
         )}
 
-        {questions.map((question, index) => (
-          <div key={question.id} className="space-y-4">
-            {/* User Question */}
-            <div className="flex justify-end">
-              <div className="max-w-[80%] px-4 py-3 rounded-2xl bg-white text-gray-800 shadow-sm border border-gray-100">
-                <p className="leading-relaxed whitespace-pre-wrap" style={baseTextStyle}>
-                  {question.content}
-                </p>
-              </div>
-            </div>
+        {/* 채팅기록 섹션 */}
+        {questions.length > 0 && (
+          <>
+            <div className="space-y-2">
+              <div className="font-semibold text-gray-600" style={headerTextStyle}>채팅기록</div>
+              {questions.map((question, index) => (
+                <div key={question.id} className="space-y-3">
+                  {/* User Question */}
+                  <div className="flex justify-end">
+                    <div className="max-w-[80%] px-4 py-3 rounded-2xl bg-white text-gray-800 shadow-sm border border-gray-100">
+                      <p className="leading-relaxed whitespace-pre-wrap" style={baseTextStyle}>
+                        {question.content}
+                      </p>
+                    </div>
+                  </div>
 
-            {/* AI Response */}
-            {question.Answers && question.Answers.length > 0 && (
-              <div className="flex justify-start">
-                <div className="max-w-[80%] px-4 py-3 rounded-2xl bg-white text-gray-800 shadow-sm border border-gray-100">
-                  <div className="leading-relaxed" style={baseTextStyle}>
+                  {/* AI Response */}
+                  {question.Answers && question.Answers.length > 0 && (
+                    <div className="flex justify-start">
+                      <div className="max-w-[80%] px-4 py-3 rounded-2xl bg-white text-gray-800 shadow-sm border border-gray-100">
+                        <div className="leading-relaxed" style={baseTextStyle}>
                     {question.Answers[0].content.includes(
                       "회화, 독해, 문법분석"
                     ) ? (
@@ -640,142 +656,181 @@ const QuestionDetail = () => {
                         {question.Answers[0].content}
                       </p>
                     )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* 구분선 */}
+            <div className="border-t border-gray-300"></div>
+          </>
+        )}
+
+        {/* 예문기록 섹션 */}
+        {exampleRecords.length > 0 && (
+          <>
+            <div className="space-y-2">
+              <div className="font-semibold text-gray-600" style={headerTextStyle}>예문기록</div>
+              {exampleRecords.map((example) => (
+                <div key={`example-${example.id}`} className="space-y-3">
+                  {/* 질문 내용 (사용자가 입력한 텍스트) */}
+                  {example.description &&
+                    example.description !== "이미지에서 예문을 생성했어요." && (
+                      <div className="flex justify-end">
+                        <div className="max-w-[80%] px-4 py-3 rounded-2xl bg-white text-gray-800 shadow-sm border border-gray-100">
+                          <p className="leading-relaxed whitespace-pre-wrap" style={baseTextStyle}>
+                            {example.description}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  
+                  {/* 답변 요약 내용 (AI 응답) */}
+                  <div className="flex justify-start">
+                    <div className="max-w-[80%] px-4 py-3 rounded-2xl bg-white text-gray-800 shadow-sm border border-gray-100">
+                      <p className="leading-relaxed" style={baseTextStyle}>
+                        예문을 생성했습니다.
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
-          </div>
-        ))}
+              ))}
+            </div>
 
-        {exampleRecords.length > 0 && (
-          <div className="space-y-4">
-            <div className="font-semibold text-gray-600" style={headerTextStyle}>예문 기록</div>
-            {exampleRecords.map((example) => (
-              <div
-                key={`example-${example.id}`}
-                className="space-y-4 bg-white rounded-2xl shadow-sm border border-gray-100 p-4"
-              >
-                {example.description &&
-                  example.description !== "이미지에서 예문을 생성했어요." && (
-                    <p className="text-gray-800 leading-relaxed whitespace-pre-wrap mb-3" style={baseTextStyle}>
-                      {example.description}
-                    </p>
-                  )}
-                {/* 현재 선택된 예문 항목만 표시 */}
-                {example.exampleItems && example.exampleItems.length > 0 && (() => {
-                  const currentIndex = getCurrentItemIndex(example.id, example.exampleItems.length);
-                  const currentItem = example.exampleItems[currentIndex];
-                  
-                  return (
-                    <div className="space-y-3">
-                      {/* 상황 설명 라벨 */}
-                      {currentItem.context && (
-                        <div className="inline-block px-3 py-1.5 rounded-full bg-[#B8E6D3] text-[#1A1A1A] font-semibold" style={xSmallTextStyle}>
-                          {currentItem.context}
-                        </div>
-                      )}
-                      {/* 대화 내용 */}
-                      {currentItem.dialogues && currentItem.dialogues.length > 0 && (
-                        <div className="space-y-2 pl-2">
-                          {currentItem.dialogues.map(
-                            (dialogue: ExampleDialogue, dialogueIdx: number) => (
-                              <div
-                                key={`${example.id}-item-${currentIndex}-dialogue-${dialogueIdx}`}
-                                className="flex items-start space-x-3"
-                              >
-                                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0 ${
-                                  dialogue.speaker === "A" ? "bg-[#B8E6D3]" : "bg-[#A8D5E2]"
-                                }`} style={xSmallTextStyle}>
-                                  {dialogue.speaker}
-                                </div>
-                                <div className="flex-1">
-                                  <p className="font-medium text-gray-900 leading-relaxed" style={baseTextStyle}>
-                                    {dialogue.english}
-                                  </p>
-                                  {dialogue.korean && (
-                                    <p className="text-gray-600 leading-relaxed mt-1" style={smallTextStyle}>
-                                      {dialogue.korean}
-                                    </p>
-                                  )}
-                                </div>
-                              </div>
-                            )
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })()}
-                {/* 스피커 아이콘 - 카드 하단 중앙에 좌우 화살표 사이에 배치 */}
-                {example.exampleItems && example.exampleItems.length > 0 && (
-                  <div className="flex justify-center items-center gap-2 mt-4 pt-4 border-t border-gray-200">
-                    <button
-                      onClick={() => handleItemIndexChange(example.id, 'prev', example.exampleItems.length)}
-                      className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors"
-                    >
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M15 19l-7-7 7-7"
-                        />
-                      </svg>
-                    </button>
-                    <button
-                      onClick={() => handleSpeakerClick(example)}
-                      className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors shadow-md ${
-                        isPlayingTTS && currentPlayingExampleId === example.id
-                          ? "bg-[#FF6B35] hover:bg-[#E55A2B]"
-                          : "bg-[#00DAAA] hover:bg-[#00C299]"
-                      }`}
-                    >
-                      {isPlayingTTS && currentPlayingExampleId === example.id ? (
-                        <svg
-                          className="w-6 h-6 text-white"
-                          fill="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
-                        </svg>
-                      ) : (
-                        <svg
-                          className="w-6 h-6 text-white"
-                          fill="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
-                        </svg>
-                      )}
-                    </button>
-                    <button
-                      onClick={() => handleItemIndexChange(example.id, 'next', example.exampleItems.length)}
-                      className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors"
-                    >
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M9 5l7 7-7 7"
-                        />
-                      </svg>
-                    </button>
+            {/* 구분선 */}
+            <div className="border-t border-gray-300"></div>
+
+            {/* 예문 상황 섹션 */}
+            {exampleRecords.map((example) => {
+              if (!example.exampleItems || example.exampleItems.length === 0) return null;
+              
+              const currentIndex = getCurrentItemIndex(example.id, example.exampleItems.length);
+              const currentItem = example.exampleItems[currentIndex];
+              
+              return (
+                <div key={`example-situation-${example.id}`} className="space-y-2">
+                  <div className="inline-block bg-[#B8E6D3] rounded-full px-4 py-1.5 border border-[#B8E6D3]">
+                    <span className="text-sm font-medium text-gray-900">예문 상황</span>
                   </div>
-                )}
-              </div>
-            ))}
-          </div>
+                  <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
+                    {/* 페이지네이션 도트 */}
+                    {example.exampleItems.length > 1 && (
+                      <div className="flex justify-center items-center gap-0.5 py-1.5 mb-3">
+                        {example.exampleItems.map((_, idx: number) => (
+                          <button
+                            key={idx}
+                            onClick={() => handleItemIndexChange(example.id, 'set', example.exampleItems.length, idx)}
+                            className={`w-1.5 h-1.5 rounded-full transition-colors ${
+                              idx === currentIndex ? "bg-[#00DAAA]" : "bg-gray-300"
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    )}
+                    
+                    {/* 대화 내용 */}
+                    {currentItem.dialogues && currentItem.dialogues.length > 0 && (
+                      <div className="space-y-3">
+                        {currentItem.dialogues.map(
+                          (dialogue: ExampleDialogue, dialogueIdx: number) => (
+                            <div
+                              key={`${example.id}-item-${currentIndex}-dialogue-${dialogueIdx}`}
+                              className="flex items-start space-x-3"
+                            >
+                              <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0 ${
+                                dialogue.speaker === "A" ? "bg-[#B8E6D3]" : "bg-[#A8D5E2]"
+                              }`} style={xSmallTextStyle}>
+                                {dialogue.speaker}
+                              </div>
+                              <div className="flex-1">
+                                <p className="font-medium text-gray-900 leading-relaxed" style={baseTextStyle}>
+                                  {dialogue.english}
+                                </p>
+                                {dialogue.korean && (
+                                  <p className="text-gray-600 leading-relaxed mt-1" style={smallTextStyle}>
+                                    {dialogue.korean}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          )
+                        )}
+                      </div>
+                    )}
+                    
+                    {/* 스피커 아이콘과 화살표 */}
+                    <div className="flex justify-center items-center gap-2 mt-4 pt-4 border-t border-gray-200">
+                      <button
+                        onClick={() => handleItemIndexChange(example.id, 'prev', example.exampleItems.length)}
+                        className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors"
+                      >
+                        <svg
+                          className="w-5 h-5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M15 19l-7-7 7-7"
+                          />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => handleSpeakerClick(example)}
+                        className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors shadow-md ${
+                          isPlayingTTS && currentPlayingExampleId === example.id
+                            ? "bg-[#FF6B35] hover:bg-[#E55A2B]"
+                            : "bg-[#00DAAA] hover:bg-[#00C299]"
+                        }`}
+                      >
+                        {isPlayingTTS && currentPlayingExampleId === example.id ? (
+                          <svg
+                            className="w-6 h-6 text-white"
+                            fill="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
+                          </svg>
+                        ) : (
+                          <svg
+                            className="w-6 h-6 text-white"
+                            fill="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
+                          </svg>
+                        )}
+                      </button>
+                      <button
+                        onClick={() => handleItemIndexChange(example.id, 'next', example.exampleItems.length)}
+                        className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors"
+                      >
+                        <svg
+                          className="w-5 h-5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 5l7 7-7 7"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </>
         )}
 
         {questions.length === 0 && exampleRecords.length === 0 && writingRecords.length === 0 && (
