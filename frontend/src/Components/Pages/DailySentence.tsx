@@ -152,6 +152,9 @@ const DailySentence = () => {
   }, [languageMode]);
 
   const handleNextSentence = useCallback(() => {
+    // 한국어 모드에서만 사용되는 함수
+    if (!translationResult || !translationResult.sentencePairs) return;
+
     // 현재 문장을 완료로 표시
     setCompletedSentences((prev) => {
       const newCompleted = [...prev];
@@ -160,7 +163,6 @@ const DailySentence = () => {
     });
 
     if (
-      translationResult &&
       currentSentenceIndex < translationResult.sentencePairs.length - 1
     ) {
       const nextIndex = currentSentenceIndex + 1;
@@ -221,17 +223,17 @@ const DailySentence = () => {
     setAvailableWords((prev) => [...prev, word]);
   }, []);
 
-  // 정답 확인 - 번역된 문장을 기준으로 확인
+  // 정답 확인 - 번역된 문장을 기준으로 확인 (한국어 모드에서만 사용)
   const isCorrectAnswer = useCallback(() => {
     if (
       !translationResult ||
+      !translationResult.sentencePairs ||
       !translationResult.sentencePairs[currentSentenceIndex]
     ) {
       return false;
     }
 
-    // 언어 모드에 따라 번역된 문장을 기준으로 정답 확인
-    // 백엔드 API 응답 구조: originalSentence가 번역된 문장, koreanSentence/englishSentence가 원본
+    // 백엔드 API 응답 구조: originalSentence가 번역된 문장
     const correctSentence =
       translationResult.sentencePairs[currentSentenceIndex].originalSentence;
 
@@ -272,17 +274,20 @@ const DailySentence = () => {
           setAvailableWords([]);
           setCompletedSentences([]);
         } else if (targetStep === "sentence-construction") {
-          setSelectedWords([]);
-          setAvailableWords([]);
-          // translationResult가 있으면 첫 번째 문장으로 초기화
-          if (translationResult && translationResult.sentencePairs[0]) {
-            const firstSentence = translationResult.sentencePairs[0];
-            // 백엔드 API 응답 구조: shuffledWords가 이미 섞인 단어들
-            if (
-              firstSentence.shuffledWords &&
-              firstSentence.shuffledWords.length > 0
-            ) {
-              setAvailableWords([...firstSentence.shuffledWords]);
+          // 한국어 모드에서만 사용되는 단계
+          if (languageMode === "korean" && translationResult?.sentencePairs) {
+            setSelectedWords([]);
+            setAvailableWords([]);
+            // translationResult가 있으면 첫 번째 문장으로 초기화
+            if (translationResult.sentencePairs[0]) {
+              const firstSentence = translationResult.sentencePairs[0];
+              // 백엔드 API 응답 구조: shuffledWords가 이미 섞인 단어들
+              if (
+                firstSentence.shuffledWords &&
+                firstSentence.shuffledWords.length > 0
+              ) {
+                setAvailableWords([...firstSentence.shuffledWords]);
+              }
             }
             setCurrentSentenceIndex(0);
             // 완료 상태를 다시 초기화
@@ -522,8 +527,11 @@ const DailySentence = () => {
             </div>
           )}
 
-          {/* Step 2: Sentence Construction */}
-          {currentStep === "sentence-construction" && translationResult && (
+          {/* Step 2: Sentence Construction - 한국어 모드에서만 표시 */}
+          {currentStep === "sentence-construction" && 
+           translationResult && 
+           languageMode === "korean" &&
+           translationResult.sentencePairs && (
             <div className="px-4 py-6">
               <div className="bg-white rounded-3xl p-6 shadow-lg">
                 <div className="flex items-center mb-4">
@@ -675,25 +683,26 @@ const DailySentence = () => {
                   </div>
                 )}
 
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => {
-                      // 못고치겠어요 버튼: 바로 결과 화면으로 이동
-                      setCurrentStep("result");
-                    }}
-                    className="flex-1 bg-gray-300 text-gray-700 py-4 rounded-2xl font-bold text-lg shadow-lg hover:shadow-xl transition-shadow"
-                  >
-                    못고치겠어요
-                  </button>
+                <div className="flex flex-col">
                   <button
                     onClick={handleNextSentence}
                     disabled={!isCorrectAnswer()}
-                    className="flex-1 bg-[#FF6B35] text-white py-4 rounded-2xl font-bold text-lg shadow-lg hover:shadow-xl transition-shadow disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full bg-[#FF6B35] text-white py-4 rounded-2xl font-bold text-lg shadow-lg hover:shadow-xl transition-shadow disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {currentSentenceIndex <
+                    {translationResult.sentencePairs &&
+                    currentSentenceIndex <
                     translationResult.sentencePairs.length - 1
                       ? "다음 문장"
                       : "결과 확인"}
+                  </button>
+                  <button
+                    onClick={() => {
+                      // 모르겠어요: 바로 결과 화면으로 이동
+                      setCurrentStep("result");
+                    }}
+                    className="w-full text-center text-gray-600 underline py-2 text-sm hover:text-gray-800 transition-colors"
+                  >
+                    모르겠어요...
                   </button>
                 </div>
               </div>
@@ -821,10 +830,9 @@ const DailySentence = () => {
 
       {/* 확인 팝업 */}
       {showConfirmPopup && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-3xl p-6 mx-4 max-w-sm w-full shadow-2xl">
-            <div className="text-left mb-4">
-              <h3 className="text-sm text-gray-500 mb-2">팝업</h3>
+        <div className="fixed inset-0 bg-white bg-opacity-30 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white mx-4 max-w-sm w-full shadow-2xl">
+            <div className="p-6 pb-4 border-b border-gray-200">
               {languageMode === "korean" ? (
                 <>
                   <p className="text-lg font-bold text-gray-900 mb-2">
@@ -845,18 +853,23 @@ const DailySentence = () => {
                 </>
               )}
             </div>
-            <div className="flex gap-3 mt-6">
+            <div className="flex">
               <button
                 onClick={handlePopupNo}
-                className="flex-1 py-3 rounded-xl bg-white border-2 border-gray-200 text-gray-800 font-medium hover:bg-gray-50 transition-colors"
+                className="flex-1 py-4 bg-white border-r border-gray-200 text-gray-800 font-bold hover:bg-gray-50 transition-colors"
               >
-                {languageMode === "korean"
-                  ? "아니요. 영어입력했어요"
-                  : "아니요. 한국어입력했어요"}
+                <div className="text-center">
+                  <div>아니요.</div>
+                  <div className="text-sm font-normal">
+                    {languageMode === "korean"
+                      ? "영어입력했어요"
+                      : "한국어입력했어요"}
+                  </div>
+                </div>
               </button>
               <button
                 onClick={handleConfirmSubmit}
-                className="flex-1 py-3 rounded-xl bg-[#00E8B6] text-gray-800 font-medium hover:bg-[#00DAAA] transition-colors"
+                className="flex-1 py-4 bg-[#00E8B6] text-gray-800 font-bold hover:bg-[#00DAAA] transition-colors"
               >
                 네
               </button>
