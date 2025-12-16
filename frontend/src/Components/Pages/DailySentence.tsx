@@ -1,37 +1,16 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAtom } from "jotai";
 import { isLoggedInAtom } from "../../store/authStore";
 import { Icons } from "../Elements/Icons";
 
-// 아이콘들을 개별적으로 메모이제이션
-const MemoizedArrowLeft = React.memo((props: React.SVGProps<SVGSVGElement>) => (
-  <Icons.arrowLeft {...props} />
-));
-const MemoizedSpeaker = React.memo((props: React.SVGProps<SVGSVGElement>) => (
-  <Icons.speaker {...props} />
-));
-const MemoizedCamera = React.memo((props: React.SVGProps<SVGSVGElement>) => (
-  <Icons.camera {...props} />
-));
-const MemoizedHome = React.memo((props: React.SVGProps<SVGSVGElement>) => (
-  <Icons.home {...props} />
-));
-const MemoizedProfile = React.memo((props: React.SVGProps<SVGSVGElement>) => (
-  <Icons.profile {...props} />
-));
 import Navbar from "../Templates/Navbar";
-
-// Navbar 메모이제이션
-const MemoizedNavbar = React.memo(Navbar);
 import {
   useWritingQuestions,
   useCorrectWriting,
   useTranslateWriting,
-  useTranslateEnglishToKorean,
 } from "../../entities/writing/queries";
 import { WritingQuestion } from "../../entities/writing/types";
-import { useGenerateTTS } from "../../entities/tts/queries";
 
 type Step = "question" | "sentence-construction" | "result";
 
@@ -47,10 +26,10 @@ const DailySentence = () => {
   const [userAnswer, setUserAnswer] = useState("");
   const [translationResult, setTranslationResult] = useState<any>(null);
   const [currentSentenceIndex, setCurrentSentenceIndex] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
   const [selectedWords, setSelectedWords] = useState<string[]>([]);
   const [availableWords, setAvailableWords] = useState<string[]>([]);
   const [completedSentences, setCompletedSentences] = useState<boolean[]>([]);
+  const [showConfirmPopup, setShowConfirmPopup] = useState<boolean>(false);
 
   // 보안: userId는 JWT 토큰에서 자동으로 가져옴 (전달 불필요)
   
@@ -67,18 +46,12 @@ const DailySentence = () => {
   const { data: questionsData, isLoading: questionsLoading } =
     useWritingQuestions();
   const translateWritingMutation = useTranslateWriting();
-  const translateEnglishToKoreanMutation = useTranslateEnglishToKorean();
-  const ttsMutation = useGenerateTTS();
-
-  // 질문 데이터를 메모이제이션하여 무한 루프 방지
-  const memoizedQuestionsData = useMemo(() => {
-    return questionsData?.data;
-  }, [questionsData?.data]);
+  const correctWritingMutation = useCorrectWriting();
 
   useEffect(() => {
     if (
-      memoizedQuestionsData &&
-      memoizedQuestionsData.length > 0 &&
+      questionsData?.data &&
+      questionsData.data.length > 0 &&
       !currentQuestion
     ) {
       // 날짜 기반 해시로 질문 선택 (같은 날에는 같은 질문)
@@ -90,80 +63,26 @@ const DailySentence = () => {
       for (let i = 0; i < dateString.length; i++) {
         const char = dateString.charCodeAt(i);
         hash = ((hash << 5) - hash) + char;
-        hash = hash & hash; // Convert to 32bit integer
+        hash = hash & hash;
       }
       
       // 해시 값을 양수로 변환하고 질문 개수로 나눈 나머지
-      const questionIndex = Math.abs(hash) % memoizedQuestionsData.length;
-      setCurrentQuestion(memoizedQuestionsData[questionIndex]);
+      const questionIndex = Math.abs(hash) % questionsData.data.length;
+      setCurrentQuestion(questionsData.data[questionIndex]);
     }
-  }, [memoizedQuestionsData, currentQuestion]);
+  }, [questionsData?.data, currentQuestion]);
 
-  const playAudio = useCallback(async () => {
-    if (!currentQuestion) return;
-
-    try {
-      setIsPlaying(true);
-
-      // 현재 모드에 따라 읽을 텍스트 결정
-      const textToRead =
-        languageMode === "korean"
-          ? currentQuestion.englishQuestion
-          : currentQuestion.koreanQuestion;
-
-      // TTS API 호출
-      const response = await ttsMutation.mutateAsync({
-        text: textToRead,
-        speed: 1.0,
-      });
-
-      // Base64 오디오 데이터를 Blob으로 변환
-      let audioUrl;
-
-      if (response.audioContent.startsWith("data:audio/")) {
-        // 더미 데이터의 경우 (data URL 형식)
-        audioUrl = response.audioContent;
-      } else {
-        // 실제 API 응답의 경우 (Base64 문자열)
-        const audioBlob = new Blob(
-          [
-            Uint8Array.from(atob(response.audioContent), (c) =>
-              c.charCodeAt(0)
-            ),
-          ],
-          { type: "audio/mpeg" }
-        );
-        audioUrl = URL.createObjectURL(audioBlob);
-      }
-
-      const audio = new Audio(audioUrl);
-
-      audio.onended = () => {
-        setIsPlaying(false);
-        // Blob URL의 경우에만 메모리 정리
-        if (!response.audioContent.startsWith("data:audio/")) {
-          URL.revokeObjectURL(audioUrl);
-        }
-      };
-
-      audio.onerror = () => {
-        console.error("오디오 재생 실패");
-        setIsPlaying(false);
-        // Blob URL의 경우에만 메모리 정리
-        if (!response.audioContent.startsWith("data:audio/")) {
-          URL.revokeObjectURL(audioUrl);
-        }
-      };
-
-      await audio.play();
-    } catch (error) {
-      console.error("음성 재생 실패:", error);
-      setIsPlaying(false);
-    }
-  }, [currentQuestion, languageMode, ttsMutation]);
-
-  const handleUserAnswerSubmit = useCallback(async () => {
+  // 완료 버튼 클릭 시 팝업 표시
+  const handleCompleteClick = useCallback(() => {
     if (!userAnswer.trim() || !currentQuestion) return;
+    setShowConfirmPopup(true);
+  }, [userAnswer, currentQuestion]);
+
+  // 팝업에서 "네" 클릭 시 실제 처리
+  const handleConfirmSubmit = useCallback(async () => {
+    if (!userAnswer.trim() || !currentQuestion) return;
+
+    setShowConfirmPopup(false);
 
     try {
       let translationResponse;
@@ -174,34 +93,43 @@ const DailySentence = () => {
           text: userAnswer,
           writingQuestionId: currentQuestion.id,
         });
-      } else {
-        // 영어 모드: 영어 → 한국어 번역
-        translationResponse =
-          await translateEnglishToKoreanMutation.mutateAsync({
-            text: userAnswer,
-            writingQuestionId: currentQuestion.id,
-          });
-      }
 
-      setTranslationResult(translationResponse.data);
-      setCurrentSentenceIndex(0);
-      // 완료된 문장 배열 초기화
-      setCompletedSentences(
-        new Array(translationResponse.data.sentencePairs.length).fill(false)
-      );
-      // 첫 번째 문장의 번역된 문장 단어들로 초기화
-      if (translationResponse.data.sentencePairs[0]) {
-        const firstSentence = translationResponse.data.sentencePairs[0];
-        // 백엔드 API 응답 구조: originalSentence가 번역된 문장, shuffledWords가 이미 섞인 단어들
-        if (
-          firstSentence.shuffledWords &&
-          firstSentence.shuffledWords.length > 0
-        ) {
-          setAvailableWords([...firstSentence.shuffledWords]);
-          setSelectedWords([]);
+        setTranslationResult(translationResponse.data);
+        setCurrentSentenceIndex(0);
+        // 완료된 문장 배열 초기화
+        setCompletedSentences(
+          new Array(translationResponse.data.sentencePairs.length).fill(false)
+        );
+        // 첫 번째 문장의 번역된 문장 단어들로 초기화
+        if (translationResponse.data.sentencePairs[0]) {
+          const firstSentence = translationResponse.data.sentencePairs[0];
+          // 백엔드 API 응답 구조: originalSentence가 번역된 문장, shuffledWords가 이미 섞인 단어들
+          if (
+            firstSentence.shuffledWords &&
+            firstSentence.shuffledWords.length > 0
+          ) {
+            setAvailableWords([...firstSentence.shuffledWords]);
+            setSelectedWords([]);
+          }
         }
+        setCurrentStep("sentence-construction");
+      } else {
+        // 영어 모드: 영어 어법 체크 (sentence-construction 건너뛰고 바로 result로)
+        const correctionResponse = await correctWritingMutation.mutateAsync({
+          text: userAnswer,
+          writingQuestionId: currentQuestion.id,
+        });
+
+        // correctWriting 응답을 translateWriting과 유사한 구조로 변환
+        setTranslationResult({
+          originalText: correctionResponse.data.originalText,
+          processedText: correctionResponse.data.processedText,
+          hasErrors: correctionResponse.data.hasErrors,
+          feedback: correctionResponse.data.feedback,
+          isCorrection: true, // correction 결과임을 표시
+        });
+        setCurrentStep("result");
       }
-      setCurrentStep("sentence-construction");
     } catch (error) {
       console.error("처리 중 오류:", error);
     }
@@ -209,9 +137,19 @@ const DailySentence = () => {
     userAnswer,
     currentQuestion,
     translateWritingMutation,
-    translateEnglishToKoreanMutation,
+    correctWritingMutation,
     languageMode,
   ]);
+
+  // 팝업에서 "아니요" 클릭 시 언어 모드 변경
+  const handlePopupNo = useCallback(() => {
+    setShowConfirmPopup(false);
+    if (languageMode === "korean") {
+      setLanguageMode("english");
+    } else {
+      setLanguageMode("korean");
+    }
+  }, [languageMode]);
 
   const handleNextSentence = useCallback(() => {
     // 현재 문장을 완료로 표시
@@ -309,7 +247,12 @@ const DailySentence = () => {
   // 단계 이동 함수
   const handleStepNavigation = useCallback(
     (targetStep: Step) => {
-      const steps = ["question", "sentence-construction", "result"];
+      // 언어 모드에 따라 사용 가능한 단계 결정
+      const steps =
+        languageMode === "korean"
+          ? ["question", "sentence-construction", "result"]
+          : ["question", "result"];
+      
       const currentIndex = steps.indexOf(currentStep);
       const targetIndex = steps.indexOf(targetStep);
 
@@ -350,7 +293,7 @@ const DailySentence = () => {
         }
       }
     },
-    [currentStep, translationResult]
+    [currentStep, translationResult, languageMode]
   );
 
   // 이전 단계로 이동
@@ -382,13 +325,13 @@ const DailySentence = () => {
   return (
     <div className="min-h-screen bg-[#F7F8FB] flex justify-center">
       <div className="w-full max-w-[440px] bg-white shadow-lg relative">
-        <MemoizedNavbar currentPage="daily-sentence" />
+        <Navbar currentPage="daily-sentence" />
 
         {/* Header */}
         <div className="bg-white px-4 py-4 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <button onClick={() => navigate(-1)} className="p-2">
-              <MemoizedArrowLeft />
+              <Icons.arrowLeft />
             </button>
             <h1 className="text-lg font-bold text-gray-800">
               오늘의 한줄 영어
@@ -427,9 +370,13 @@ const DailySentence = () => {
           {/* Progress Indicator */}
           <div className="px-4 py-4">
             <div className="flex items-center justify-center space-x-2">
-              {["question", "sentence-construction", "result"].map(
-                (step, index) => {
-                  const steps = ["question", "sentence-construction", "result"];
+              {(() => {
+                // 한국어 모드일 때는 3단계, 영어 모드일 때는 2단계
+                const steps =
+                  languageMode === "korean"
+                    ? ["question", "sentence-construction", "result"]
+                    : ["question", "result"];
+                return steps.map((step, index) => {
                   const currentIndex = steps.indexOf(currentStep);
                   const isCompleted = currentIndex > index;
                   const isCurrent = currentStep === step;
@@ -451,7 +398,7 @@ const DailySentence = () => {
                       >
                         {index + 1}
                       </div>
-                      {index < 2 && (
+                      {index < steps.length - 1 && (
                         <div
                           className={`w-8 h-0.5 ${
                             isCompleted ? "bg-[#00DAAA]" : "bg-gray-200"
@@ -460,8 +407,8 @@ const DailySentence = () => {
                       )}
                     </div>
                   );
-                }
-              )}
+                });
+              })()}
             </div>
           </div>
 
@@ -554,11 +501,11 @@ const DailySentence = () => {
                 </div>
 
                 <button
-                  onClick={handleUserAnswerSubmit}
+                  onClick={handleCompleteClick}
                   disabled={
                     !userAnswer.trim() ||
                     translateWritingMutation.isPending ||
-                    translateEnglishToKoreanMutation.isPending
+                    correctWritingMutation.isPending
                   }
                   className={`w-full py-4 rounded-2xl font-bold text-lg mt-6 shadow-lg hover:shadow-xl transition-shadow ${
                     userAnswer.trim()
@@ -567,7 +514,7 @@ const DailySentence = () => {
                   }`}
                 >
                   {translateWritingMutation.isPending ||
-                  translateEnglishToKoreanMutation.isPending
+                  correctWritingMutation.isPending
                     ? "처리 중..."
                     : "완료"}
                 </button>
@@ -584,14 +531,12 @@ const DailySentence = () => {
                     onClick={handlePreviousStep}
                     className="flex items-center space-x-2 text-gray-600 hover:text-[#00DAAA] transition-colors"
                   >
-                    <MemoizedArrowLeft />
+                    <Icons.arrowLeft />
                     <span className="text-sm font-medium">이전 단계</span>
                   </button>
                 </div>
                 <h2 className="text-2xl font-bold mb-2 text-gray-900">
-                  {languageMode === "korean"
-                    ? "번역된 영어 문장을 올바른 순서로 배열해보세요"
-                    : "번역된 한국어 문장을 올바른 순서로 배열해보세요"}
+                  번역된 영어 문장을 올바른 순서로 배열해보세요
                 </h2>
 
                 {/* 문장별 진행 상황 - 사용자 입력 문장 개수에 맞춤 */}
@@ -638,25 +583,18 @@ const DailySentence = () => {
                   {/* 사용자 입력 원본 문장 표시 */}
                   <div className="bg-blue-50 rounded-xl p-4 border border-blue-200 mb-4">
                     <p className="text-sm text-gray-600 mb-1">
-                      {languageMode === "korean"
-                        ? "사용자 입력 (한국어)"
-                        : "사용자 입력 (영어)"}
+                      사용자 입력 (한국어)
                     </p>
                     <p className="text-base text-gray-800 font-medium leading-relaxed">
-                      {languageMode === "korean"
-                        ? translationResult.sentencePairs[currentSentenceIndex]
-                            ?.koreanSentence || translationResult.originalText
-                        : translationResult.sentencePairs[currentSentenceIndex]
-                            ?.englishSentence || translationResult.originalText}
+                      {translationResult.sentencePairs[currentSentenceIndex]
+                        ?.koreanSentence || translationResult.originalText}
                     </p>
                   </div>
 
                   {/* 번역된 문장 표시 (재조합할 문장) */}
                   <div className="bg-green-50 rounded-xl p-4 border border-green-200">
                     <p className="text-sm text-gray-600 mb-1">
-                      {languageMode === "korean"
-                        ? "번역된 영어 문장 (재조합할 문장)"
-                        : "번역된 한국어 문장 (재조합할 문장)"}
+                      번역된 영어 문장 (재조합할 문장)
                     </p>
                     <p className="text-base text-gray-800 font-medium leading-relaxed">
                       {(() => {
@@ -737,16 +675,27 @@ const DailySentence = () => {
                   </div>
                 )}
 
-                <button
-                  onClick={handleNextSentence}
-                  disabled={!isCorrectAnswer()}
-                  className="w-full bg-[#FF6B35] text-white py-4 rounded-2xl font-bold text-lg shadow-lg hover:shadow-xl transition-shadow disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {currentSentenceIndex <
-                  translationResult.sentencePairs.length - 1
-                    ? "다음 문장"
-                    : "결과 확인"}
-                </button>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => {
+                      // 못고치겠어요 버튼: 바로 결과 화면으로 이동
+                      setCurrentStep("result");
+                    }}
+                    className="flex-1 bg-gray-300 text-gray-700 py-4 rounded-2xl font-bold text-lg shadow-lg hover:shadow-xl transition-shadow"
+                  >
+                    못고치겠어요
+                  </button>
+                  <button
+                    onClick={handleNextSentence}
+                    disabled={!isCorrectAnswer()}
+                    className="flex-1 bg-[#FF6B35] text-white py-4 rounded-2xl font-bold text-lg shadow-lg hover:shadow-xl transition-shadow disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {currentSentenceIndex <
+                    translationResult.sentencePairs.length - 1
+                      ? "다음 문장"
+                      : "결과 확인"}
+                  </button>
+                </div>
               </div>
             </div>
           )}
@@ -760,7 +709,7 @@ const DailySentence = () => {
                   onClick={handlePreviousStep}
                   className="flex items-center space-x-2 text-gray-600 hover:text-[#00DAAA] transition-colors"
                 >
-                  <MemoizedArrowLeft />
+                  <Icons.arrowLeft />
                   <span className="text-sm font-medium">이전 단계</span>
                 </button>
               </div>
@@ -771,7 +720,9 @@ const DailySentence = () => {
                   <span className="text-3xl">🎉</span>
                 </div>
                 <h3 className="text-2xl font-bold mb-2 text-gray-900">
-                  전부 다 맞았어요!
+                  {languageMode === "korean"
+                    ? "전부 다 맞았어요!"
+                    : "처리가 완료되었어요!"}
                 </h3>
                 <p className="text-lg text-gray-600">훌륭합니다!</p>
               </div>
@@ -792,37 +743,48 @@ const DailySentence = () => {
                     </p>
                   </div>
 
-                  <div>
-                    <p className="text-sm text-gray-600 mb-3 font-medium">
-                      {languageMode === "korean"
-                        ? "번역된 영어 문장들:"
-                        : "번역된 한국어 문장들:"}
-                    </p>
-                    {translationResult.sentencePairs.map(
-                      (pair: any, index: number) => (
-                        <div key={index} className="mb-4">
-                          <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
-                            <p className="text-sm text-gray-600 mb-1">
-                              원본:{" "}
-                              {languageMode === "korean"
-                                ? pair.koreanSentence
-                                : pair.englishSentence}
-                            </p>
-                            <p className="text-gray-800 font-semibold text-lg leading-relaxed">
-                              {pair.originalSentence}
-                            </p>
+                  {translationResult.isCorrection ? (
+                    // 영어 모드: 첨삭 결과 표시
+                    <div>
+                      <p className="text-sm text-gray-600 mb-3 font-medium">
+                        수정된 답변:
+                      </p>
+                      <div className="bg-orange-50 rounded-xl p-4 border border-orange-200">
+                        <p className="text-gray-800 font-semibold text-lg leading-relaxed">
+                          {translationResult.processedText}
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    // 한국어 모드: 번역 결과 표시
+                    <div>
+                      <p className="text-sm text-gray-600 mb-3 font-medium">
+                        번역된 영어 문장들:
+                      </p>
+                      {translationResult.sentencePairs?.map(
+                        (pair: any, index: number) => (
+                          <div key={index} className="mb-4">
+                            <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
+                              <p className="text-sm text-gray-600 mb-1">
+                                원본: {pair.koreanSentence}
+                              </p>
+                              <p className="text-gray-800 font-semibold text-lg leading-relaxed">
+                                {pair.originalSentence}
+                              </p>
+                            </div>
                           </div>
-                        </div>
-                      )
-                    )}
-                  </div>
+                        )
+                      )}
+                    </div>
+                  )}
 
+                  {/* 학습 피드백 - 영어 모드일 때는 하단에, 한국어 모드일 때도 하단에 */}
                   <div>
                     <p className="text-sm text-gray-600 mb-3 font-medium">
                       학습 피드백:
                     </p>
                     <ul className="space-y-3">
-                      {translationResult.feedback.map(
+                      {translationResult.feedback?.map(
                         (feedback: string, index: number) => (
                           <li
                             key={index}
@@ -837,6 +799,15 @@ const DailySentence = () => {
                 </div>
               </div>
 
+              {/* 기록 저장 표시 블럭 */}
+              <div className="bg-purple-50 rounded-3xl p-6 shadow-lg mb-6 border border-purple-200">
+                <div className="flex items-center justify-center">
+                  <span className="text-purple-600 text-sm font-medium">
+                    ✓ 학습 기록에 저장되었습니다
+                  </span>
+                </div>
+              </div>
+
               <button
                 onClick={handleRestart}
                 className="w-full bg-[#00DAAA] text-white py-4 rounded-2xl font-bold text-lg shadow-lg hover:shadow-xl transition-shadow"
@@ -847,6 +818,52 @@ const DailySentence = () => {
           )}
         </div>
       </div>
+
+      {/* 확인 팝업 */}
+      {showConfirmPopup && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-3xl p-6 mx-4 max-w-sm w-full shadow-2xl">
+            <div className="text-left mb-4">
+              <h3 className="text-sm text-gray-500 mb-2">팝업</h3>
+              {languageMode === "korean" ? (
+                <>
+                  <p className="text-lg font-bold text-gray-900 mb-2">
+                    한국어로 입력하신것이 맞나요?
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    영어로 번역해드릴게요
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-lg font-bold text-gray-900 mb-2">
+                    영어로 입력하셨나요?
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    어법과 문맥을 체크해드릴게요.
+                  </p>
+                </>
+              )}
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={handlePopupNo}
+                className="flex-1 py-3 rounded-xl bg-white border-2 border-gray-200 text-gray-800 font-medium hover:bg-gray-50 transition-colors"
+              >
+                {languageMode === "korean"
+                  ? "아니요. 영어입력했어요"
+                  : "아니요. 한국어입력했어요"}
+              </button>
+              <button
+                onClick={handleConfirmSubmit}
+                className="flex-1 py-3 rounded-xl bg-[#00E8B6] text-gray-800 font-medium hover:bg-[#00DAAA] transition-colors"
+              >
+                네
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
