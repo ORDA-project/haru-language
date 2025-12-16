@@ -549,39 +549,8 @@ const DailySentence = () => {
                         ? "여기에 답변을 작성해주세요..."
                         : "Please write your answer here..."
                     }
-                    className="w-full h-40 p-5 pr-12 border-2 border-gray-200 rounded-2xl resize-none focus:outline-none focus:ring-2 focus:ring-[#00DAAA] focus:border-transparent text-lg"
+                    className="w-full h-40 p-5 border-2 border-gray-200 rounded-2xl resize-none focus:outline-none focus:ring-2 focus:ring-[#00DAAA] focus:border-transparent text-lg"
                   />
-
-                  {/* 마이크 아이콘 */}
-                  <button className="absolute bottom-4 right-4 p-2 text-gray-400 hover:text-[#00DAAA] transition-colors">
-                    <MemoizedSpeaker />
-                  </button>
-                </div>
-
-                {/* 언어 토글 */}
-                <div className="flex justify-end mt-4">
-                  <div className="bg-gray-100 rounded-full p-1 flex">
-                    <button
-                      onClick={() => setLanguageMode("korean")}
-                      className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-                        languageMode === "korean"
-                          ? "bg-white text-[#00DAAA] shadow-sm"
-                          : "text-gray-600"
-                      }`}
-                    >
-                      한
-                    </button>
-                    <button
-                      onClick={() => setLanguageMode("english")}
-                      className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-                        languageMode === "english"
-                          ? "bg-white text-[#00DAAA] shadow-sm"
-                          : "text-gray-600"
-                      }`}
-                    >
-                      영
-                    </button>
-                  </div>
                 </div>
 
                 <button
