@@ -474,16 +474,15 @@ const QuestionDetail = () => {
                   {/* 1. 하루한줄 블록 */}
                   <div className="space-y-2" style={{ gap: '10px' }}>
                     <div className="font-semibold text-gray-600" style={headerTextStyle}>하루한줄</div>
-                    <div className="flex justify-end">
-                      <div 
-                        className="bg-white shadow-sm border border-gray-100 rounded-lg"
-                        style={{ 
-                          width: '343px',
-                          padding: '16px'
-                        }}
-                      >
+                    <div 
+                      className="bg-white shadow-sm border border-gray-100 rounded-lg"
+                      style={{ 
+                        width: '343px',
+                        padding: '16px'
+                      }}
+                    >
                       <div className="space-y-2">
-                        {/* 오늘의 주제 */}
+                        {/* 오늘의 주제 - 불릿 있음 */}
                         {question && (
                           <div className="flex items-start">
                             <span className="text-gray-800 mr-2" style={baseTextStyle}>•</span>
@@ -493,16 +492,14 @@ const QuestionDetail = () => {
                           </div>
                         )}
                         
-                        {/* 내가 입력한 문장 */}
-                        <div className="flex items-start">
-                          <span className="text-gray-800 mr-2" style={baseTextStyle}>•</span>
-                          <p className="text-gray-800 leading-relaxed flex-1" style={baseTextStyle}>
+                        {/* 내가 입력한 문장 - 불릿 없음 */}
+                        <div>
+                          <p className="text-gray-800 leading-relaxed" style={baseTextStyle}>
                             {record.original_text}
                           </p>
                         </div>
                       </div>
                     </div>
-                  </div>
                   </div>
 
                   {/* 2. 문장 첨삭 블록 */}
@@ -530,9 +527,6 @@ const QuestionDetail = () => {
                             <span className="text-sm font-medium text-gray-900">문장 첨삭</span>
                           </div>
                           
-                          <p className="text-sm text-gray-600 mb-2 font-medium" style={xSmallTextStyle}>
-                          
-                          </p>
                           <p className="text-gray-800 font-semibold leading-relaxed" style={baseTextStyle}>
                             {record.processed_text}
                           </p>
@@ -550,9 +544,6 @@ const QuestionDetail = () => {
                               paddingLeft: '16px'
                             }}
                           >
-                            <p className="text-sm text-gray-600 mb-2 font-medium" style={xSmallTextStyle}>
-                             
-                            </p>
                             <ul className="space-y-1">
                               {feedback.map((fb: string, idx: number) => (
                                 <li key={idx} className="text-gray-700" style={smallTextStyle}>
