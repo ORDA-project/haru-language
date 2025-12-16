@@ -753,10 +753,6 @@ const DailySentence = () => {
 
               {/* Translation Result */}
               <div className="bg-white rounded-3xl p-6 shadow-lg mb-6">
-                <h3 className="text-xl font-bold mb-6 text-[#00DAAA]">
-                  학습 결과
-                </h3>
-
                 <div className="space-y-6">
                   <div>
                     <p className="text-sm text-gray-600 mb-2 font-medium">
@@ -835,36 +831,37 @@ const DailySentence = () => {
       {/* 확인 팝업 */}
       {showConfirmPopup && (
         <div className="fixed inset-0 bg-white bg-opacity-30 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white mx-4 max-w-sm w-full shadow-2xl">
-            <div className="p-8 pb-6 border-b border-gray-200">
+          <div className="bg-white shadow-2xl" style={{ width: '324px', height: '130px' }}>
+            <div className="h-[60px] border-b border-gray-200 flex flex-col items-center justify-center">
               {languageMode === "korean" ? (
                 <>
-                  <p className="text-lg font-bold text-gray-900 mb-3 text-center">
+                  <p className="text-[18px] font-bold text-gray-900 text-center">
                     한국어로 입력하신것이 맞나요?
                   </p>
-                  <p className="text-sm font-bold text-gray-600 text-center">
+                  <p className="text-[18px] font-bold text-gray-600 text-center">
                     영어로 번역해드릴게요
                   </p>
                 </>
               ) : (
                 <>
-                  <p className="text-lg font-bold text-gray-900 mb-3 text-center">
+                  <p className="text-[18px] font-bold text-gray-900 text-center">
                     영어로 입력하셨나요?
                   </p>
-                  <p className="text-sm font-bold text-gray-600 text-center">
+                  <p className="text-[18px] font-bold text-gray-600 text-center">
                     어법과 문맥을 체크해드릴게요.
                   </p>
                 </>
               )}
             </div>
-            <div className="flex">
+            <div className="flex h-[70px]">
               <button
                 onClick={handlePopupNo}
-                className="flex-1 py-6 bg-white border-r border-gray-200 text-gray-800 font-bold hover:bg-gray-50 transition-colors"
+                className="w-[162px] h-[70px] bg-white border-r border-gray-200 text-gray-800 font-bold hover:bg-gray-50 transition-colors flex items-center justify-center"
+                style={{ fontSize: '18px' }}
               >
                 <div className="text-center">
                   <div>아니요.</div>
-                  <div className="text-sm font-bold">
+                  <div>
                     {languageMode === "korean"
                       ? "영어입력했어요"
                       : "한국어입력했어요"}
@@ -873,9 +870,10 @@ const DailySentence = () => {
               </button>
               <button
                 onClick={handleConfirmSubmit}
-                className="flex-1 py-6 bg-[#00E8B6] text-gray-800 font-bold hover:bg-[#00DAAA] transition-colors"
+                className="w-[162px] h-[70px] bg-[#00E8B6] text-gray-800 font-bold hover:bg-[#00DAAA] transition-colors flex items-center justify-center"
+                style={{ fontSize: '18px' }}
               >
-                <div className="text-center">네</div>
+                네
               </button>
             </div>
           </div>
