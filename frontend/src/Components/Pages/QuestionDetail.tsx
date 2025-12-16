@@ -472,9 +472,15 @@ const QuestionDetail = () => {
               return (
                 <div key={`writing-${record.id}`} className="space-y-4">
                   {/* 1. 하루한줄 블록 */}
-                  <div className="space-y-2">
+                  <div className="space-y-2" style={{ gap: '10px' }}>
                     <div className="font-semibold text-gray-600" style={headerTextStyle}>하루한줄</div>
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
+                    <div 
+                      className="bg-white shadow-sm border border-gray-100 rounded-lg"
+                      style={{ 
+                        width: '343px',
+                        padding: '16px'
+                      }}
+                    >
                       <div className="space-y-2">
                         {/* 오늘의 주제 */}
                         {question && (
@@ -500,37 +506,53 @@ const QuestionDetail = () => {
                   {/* 2. 문장 첨삭 블록 */}
                   {record.processed_text && (
                     <>
-                      <div className="space-y-2">
+                      <div className="space-y-2" style={{ gap: '10px' }}>
                         <div className="inline-block bg-orange-50 rounded-full px-4 py-1.5 border border-orange-200">
                           <span className="text-sm font-medium text-orange-800">문장 첨삭</span>
                         </div>
-                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
-                          <div className="space-y-3">
-                            <div className="bg-orange-50 rounded-xl p-4 border border-orange-200">
-                              <p className="text-sm text-gray-600 mb-2 font-medium" style={xSmallTextStyle}>
-                                첨삭 버전 내용
-                              </p>
-                              <p className="text-gray-800 font-semibold leading-relaxed" style={baseTextStyle}>
-                                {record.processed_text}
-                              </p>
-                            </div>
-                            
-                            {feedback.length > 0 && (
-                              <div>
-                                <p className="text-sm text-gray-600 mb-2 font-medium" style={xSmallTextStyle}>
-                                  피드백 내용
-                                </p>
-                                <ul className="space-y-2">
-                                  {feedback.map((fb: string, idx: number) => (
-                                    <li key={idx} className="text-gray-700" style={smallTextStyle}>
-                                      • {fb}
-                                    </li>
-                                  ))}
-                                </ul>
-                              </div>
-                            )}
-                          </div>
+                        {/* 큰 흰색 칸 - 첨삭 버전 내용 */}
+                        <div 
+                          className="bg-white shadow-sm border border-gray-100 rounded-lg"
+                          style={{ 
+                            width: '343px',
+                            paddingLeft: '40px',
+                            paddingTop: '16px',
+                            paddingBottom: '16px',
+                            paddingRight: '16px'
+                          }}
+                        >
+                          <p className="text-sm text-gray-600 mb-2 font-medium" style={xSmallTextStyle}>
+                            첨삭 버전 내용
+                          </p>
+                          <p className="text-gray-800 font-semibold leading-relaxed" style={baseTextStyle}>
+                            {record.processed_text}
+                          </p>
                         </div>
+                        
+                        {/* 피드백 블록 */}
+                        {feedback.length > 0 && (
+                          <div 
+                            className="bg-white shadow-sm border border-gray-100 rounded-lg"
+                            style={{ 
+                              width: '343px',
+                              paddingRight: '40px',
+                              paddingTop: '16px',
+                              paddingBottom: '16px',
+                              paddingLeft: '16px'
+                            }}
+                          >
+                            <p className="text-sm text-gray-600 mb-2 font-medium" style={xSmallTextStyle}>
+                              피드백 내용
+                            </p>
+                            <ul className="space-y-1">
+                              {feedback.map((fb: string, idx: number) => (
+                                <li key={idx} className="text-gray-700" style={smallTextStyle}>
+                                  • {fb}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
                       </div>
 
                       {/* 구분선 */}
@@ -711,14 +733,24 @@ const QuestionDetail = () => {
               const currentItem = example.exampleItems[currentIndex];
               
               return (
-                <div key={`example-situation-${example.id}`} className="space-y-2">
+                <div key={`example-situation-${example.id}`} className="space-y-2" style={{ gap: '10px' }}>
                   <div className="inline-block bg-[#B8E6D3] rounded-full px-4 py-1.5 border border-[#B8E6D3]">
                     <span className="text-sm font-medium text-gray-900">예문 상황</span>
                   </div>
-                  <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
+                  {/* 큰 흰색 칸 - 예문 상황 안내 */}
+                  <div 
+                    className="bg-white shadow-sm border border-gray-100 rounded-lg relative"
+                    style={{ 
+                      width: '343px',
+                      paddingLeft: '40px',
+                      paddingTop: '16px',
+                      paddingBottom: '16px',
+                      paddingRight: '16px'
+                    }}
+                  >
                     {/* 페이지네이션 도트 */}
                     {example.exampleItems.length > 1 && (
-                      <div className="flex justify-center items-center gap-0.5 py-1.5 mb-3">
+                      <div className="flex justify-center items-center gap-0.5 mb-3">
                         {example.exampleItems.map((_, idx: number) => (
                           <button
                             key={idx}
@@ -733,12 +765,12 @@ const QuestionDetail = () => {
                     
                     {/* 대화 내용 */}
                     {currentItem.dialogues && currentItem.dialogues.length > 0 && (
-                      <div className="space-y-3">
+                      <div className="space-y-2 mb-4">
                         {currentItem.dialogues.map(
                           (dialogue: ExampleDialogue, dialogueIdx: number) => (
                             <div
                               key={`${example.id}-item-${currentIndex}-dialogue-${dialogueIdx}`}
-                              className="flex items-start space-x-3"
+                              className="flex items-start space-x-2"
                             >
                               <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0 ${
                                 dialogue.speaker === "A" ? "bg-[#B8E6D3]" : "bg-[#A8D5E2]"
@@ -762,7 +794,7 @@ const QuestionDetail = () => {
                     )}
                     
                     {/* 스피커 아이콘과 화살표 */}
-                    <div className="flex justify-center items-center gap-2 mt-4 pt-4 border-t border-gray-200">
+                    <div className="flex justify-center items-center gap-2 pt-4 border-t border-gray-200">
                       <button
                         onClick={() => handleItemIndexChange(example.id, 'prev', example.exampleItems.length)}
                         className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors"
