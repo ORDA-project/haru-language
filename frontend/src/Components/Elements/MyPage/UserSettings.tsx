@@ -66,14 +66,14 @@ const UserSettings = React.memo(function UserSettings({
               </div>
               <button
                 onClick={toggleLargeTextMode}
-                className={`relative w-12 h-4 rounded-full flex items-center transition-colors cursor-pointer ${
+                className={`relative w-20 h-5 rounded-full flex items-center transition-colors cursor-pointer ${
                   isLargeTextMode ? "bg-[#00DAAA]" : "bg-gray-300"
                 }`}
                 style={{ padding: '2px' }}
               >
                 <div
                   className={`absolute w-4 h-4 bg-white rounded-full shadow-md transition-transform duration-200 ease-in-out ${
-                    isLargeTextMode ? "translate-x-6" : "translate-x-0.5"
+                    isLargeTextMode ? "translate-x-[56px]" : "translate-x-0.5"
                   }`}
                 ></div>
               </button>
@@ -85,24 +85,24 @@ const UserSettings = React.memo(function UserSettings({
               </div>
               <button
                 onClick={toggleAudioAlwaysPlay}
-                className={`relative w-12 h-4 rounded-full flex items-center transition-colors cursor-pointer ${
+                className={`relative w-20 h-5 rounded-full flex items-center transition-colors cursor-pointer ${
                   isAudioAlwaysPlay ? "bg-[#00DAAA]" : "bg-gray-300"
                 }`}
                 style={{ padding: '2px' }}
               >
                 <div
                   className={`absolute w-4 h-4 bg-white rounded-full shadow-md transition-transform duration-200 ease-in-out ${
-                    isAudioAlwaysPlay ? "translate-x-6" : "translate-x-0.5"
+                    isAudioAlwaysPlay ? "translate-x-[56px]" : "translate-x-0.5"
                   }`}
                 ></div>
               </button>
             </div>
             <div className="flex items-center justify-between py-2">
-              <div className="flex items-center" style={{ paddingLeft: '4px' }}>
+              <div className="flex items-center">
                 <Icons.login className="w-6 h-6 mr-3 text-gray-600" />
                 <span className="font-medium" style={baseTextStyle}>로그인 정보</span>
               </div>
-            <span className="text-green-600 font-semibold" style={baseTextStyle}>
+            <span className="text-green-600 font-semibold" style={{ ...baseTextStyle, paddingRight: '4px' }}>
               {providerLabel}
             </span>
             </div>

@@ -537,13 +537,14 @@ const QuestionDetail = () => {
                           <div 
                             className="inline-block rounded-full px-4 py-1.5 mb-2"
                             style={{ 
-                              background: '#FF5E1666'
+                              background: '#FF5E1666',
+                              marginLeft: '-8px'
                             }}
                           >
                             <span className="font-medium text-gray-900" style={correctionTextStyle}>문장 첨삭</span>
                           </div>
                           
-                          <p className="text-gray-800 font-semibold leading-relaxed" style={smallTextStyle}>
+                          <p className="text-gray-800 font-semibold leading-relaxed" style={{...smallTextStyle, paddingLeft: '16px'}}>
                             {record.processed_text}
                           </p>
                         </div>
@@ -787,34 +788,53 @@ const QuestionDetail = () => {
                   >
                     {/* 예문 상황 배지와 페이지네이션 도트 - 같은 줄에 배치 */}
                     <div className="flex items-center justify-between mb-2">
-                      <div className="inline-block bg-[#B8E6D3] rounded-full px-4 py-1.5 border border-[#B8E6D3]">
+                      <div className="inline-block bg-[#B8E6D3] rounded-full px-4 py-1.5 border border-[#B8E6D3]" style={{ marginLeft: '-8px' }}>
                         <span className="font-medium text-gray-900" style={correctionTextStyle}>예문 상황</span>
                       </div>
                       
-                      {/* 페이지네이션 도트 - 작은 점으로 변경 */}
+                      {/* 페이지네이션 도트 */}
                       {example.exampleItems.length > 1 && (
                         <div 
                           className="flex items-center"
                           style={{
-                            gap: '4px'
+                            gap: '6px'
                           }}
                         >
-                          {example.exampleItems.map((_, idx: number) => (
-                            <button
-                              key={idx}
-                              onClick={() => handleItemIndexChange(example.id, 'set', example.exampleItems.length, idx)}
-                              style={{
-                                width: '4px',
-                                height: '4px',
-                                borderRadius: '50%',
-                                backgroundColor: idx === currentIndex ? '#00DAAA' : '#D1D5DB',
-                                transition: 'background-color 0.2s',
-                                border: 'none',
-                                cursor: 'pointer',
-                                padding: 0
-                              }}
-                            />
-                          ))}
+                          {example.exampleItems.map((_, idx: number) => {
+                            const isActive = idx === currentIndex;
+                            return (
+                              <button
+                                key={idx}
+                                onClick={() => handleItemIndexChange(example.id, 'set', example.exampleItems.length, idx)}
+                                aria-label={`예문 ${idx + 1}로 이동`}
+                                className="transition-all duration-200 ease-in-out hover:scale-110 focus:outline-none rounded-full"
+                                style={{
+                                  width: '8px',
+                                  height: '8px',
+                                  borderRadius: '50%',
+                                  backgroundColor: isActive ? '#00DAAA' : '#D1D5DB',
+                                  border: 'none',
+                                  cursor: 'pointer',
+                                  padding: '4px',
+                                  minWidth: '16px',
+                                  minHeight: '16px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center'
+                                }}
+                              >
+                                <span
+                                  style={{
+                                    width: '8px',
+                                    height: '8px',
+                                    borderRadius: '50%',
+                                    backgroundColor: isActive ? '#00DAAA' : '#D1D5DB',
+                                    display: 'block'
+                                  }}
+                                />
+                              </button>
+                            );
+                          })}
                         </div>
                       )}
                     </div>
