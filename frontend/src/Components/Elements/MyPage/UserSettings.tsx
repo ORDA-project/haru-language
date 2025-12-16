@@ -51,13 +51,14 @@ const UserSettings = React.memo(function UserSettings({
               </div>
               <button
                 onClick={toggleLargeTextMode}
-                className={`relative w-14 h-3 rounded-full flex items-center p-0.5 shadow-sm transition-colors cursor-pointer ${
+                className={`relative w-14 h-6 rounded-full flex items-center transition-colors cursor-pointer ${
                   isLargeTextMode ? "bg-[#00DAAA]" : "bg-gray-300"
                 }`}
+                style={{ padding: '2px' }}
               >
                 <div
-                  className={`absolute w-2.5 h-2.5 bg-white rounded-full shadow-sm transition-transform duration-200 ease-in-out ${
-                    isLargeTextMode ? "translate-x-11" : "translate-x-0"
+                  className={`absolute w-5 h-5 bg-white rounded-full shadow-lg transition-transform duration-200 ease-in-out ${
+                    isLargeTextMode ? "translate-x-8" : "translate-x-0"
                   }`}
                 ></div>
               </button>
@@ -69,13 +70,14 @@ const UserSettings = React.memo(function UserSettings({
               </div>
               <button
                 onClick={toggleAudioAlwaysPlay}
-                className={`relative w-14 h-3 rounded-full flex items-center p-0.5 shadow-sm transition-colors cursor-pointer ${
+                className={`relative w-14 h-6 rounded-full flex items-center transition-colors cursor-pointer ${
                   isAudioAlwaysPlay ? "bg-[#00DAAA]" : "bg-gray-300"
                 }`}
+                style={{ padding: '2px' }}
               >
                 <div
-                  className={`absolute w-2.5 h-2.5 bg-white rounded-full shadow-sm transition-transform duration-200 ease-in-out ${
-                    isAudioAlwaysPlay ? "translate-x-11" : "translate-x-0"
+                  className={`absolute w-5 h-5 bg-white rounded-full shadow-lg transition-transform duration-200 ease-in-out ${
+                    isAudioAlwaysPlay ? "translate-x-8" : "translate-x-0"
                   }`}
                 ></div>
               </button>
