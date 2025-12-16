@@ -474,13 +474,14 @@ const QuestionDetail = () => {
                   {/* 1. 하루한줄 블록 */}
                   <div className="space-y-2" style={{ gap: '10px' }}>
                     <div className="font-semibold text-gray-600" style={headerTextStyle}>하루한줄</div>
-                    <div 
-                      className="bg-white shadow-sm border border-gray-100 rounded-lg"
-                      style={{ 
-                        width: '343px',
-                        padding: '16px'
-                      }}
-                    >
+                    <div className="flex justify-end">
+                      <div 
+                        className="bg-white shadow-sm border border-gray-100 rounded-lg"
+                        style={{ 
+                          width: '343px',
+                          padding: '16px'
+                        }}
+                      >
                       <div className="space-y-2">
                         {/* 오늘의 주제 */}
                         {question && (
@@ -502,14 +503,12 @@ const QuestionDetail = () => {
                       </div>
                     </div>
                   </div>
+                  </div>
 
                   {/* 2. 문장 첨삭 블록 */}
                   {record.processed_text && (
                     <>
                       <div className="space-y-2" style={{ gap: '10px' }}>
-                        <div className="inline-block bg-orange-50 rounded-full px-4 py-1.5 border border-orange-200">
-                          <span className="text-sm font-medium text-orange-800">문장 첨삭</span>
-                        </div>
                         {/* 큰 흰색 칸 - 첨삭 버전 내용 */}
                         <div 
                           className="bg-white shadow-sm border border-gray-100 rounded-lg"
@@ -521,8 +520,18 @@ const QuestionDetail = () => {
                             paddingRight: '16px'
                           }}
                         >
+                          {/* 문장 첨삭 배지 - 흰색 칸 안으로 이동 */}
+                          <div 
+                            className="inline-block rounded-full px-4 py-1.5 mb-3"
+                            style={{ 
+                              background: '#FF5E1666'
+                            }}
+                          >
+                            <span className="text-sm font-medium text-gray-900">문장 첨삭</span>
+                          </div>
+                          
                           <p className="text-sm text-gray-600 mb-2 font-medium" style={xSmallTextStyle}>
-                            첨삭 버전 내용
+                          
                           </p>
                           <p className="text-gray-800 font-semibold leading-relaxed" style={baseTextStyle}>
                             {record.processed_text}
@@ -542,7 +551,7 @@ const QuestionDetail = () => {
                             }}
                           >
                             <p className="text-sm text-gray-600 mb-2 font-medium" style={xSmallTextStyle}>
-                              피드백 내용
+                             
                             </p>
                             <ul className="space-y-1">
                               {feedback.map((fb: string, idx: number) => (
@@ -722,9 +731,6 @@ const QuestionDetail = () => {
               ))}
             </div>
 
-            {/* 구분선 */}
-            <div className="border-t border-gray-300"></div>
-
             {/* 예문 상황 섹션 */}
             {exampleRecords.map((example) => {
               if (!example.exampleItems || example.exampleItems.length === 0) return null;
@@ -734,9 +740,6 @@ const QuestionDetail = () => {
               
               return (
                 <div key={`example-situation-${example.id}`} className="space-y-2" style={{ gap: '10px' }}>
-                  <div className="inline-block bg-[#B8E6D3] rounded-full px-4 py-1.5 border border-[#B8E6D3]">
-                    <span className="text-sm font-medium text-gray-900">예문 상황</span>
-                  </div>
                   {/* 큰 흰색 칸 - 예문 상황 안내 */}
                   <div 
                     className="bg-white shadow-sm border border-gray-100 rounded-lg relative"
@@ -748,6 +751,11 @@ const QuestionDetail = () => {
                       paddingRight: '16px'
                     }}
                   >
+                    {/* 예문 상황 배지 - 흰색 칸 안으로 이동 */}
+                    <div className="inline-block bg-[#B8E6D3] rounded-full px-4 py-1.5 border border-[#B8E6D3] mb-3">
+                      <span className="text-sm font-medium text-gray-900">예문 상황</span>
+                    </div>
+                    
                     {/* 페이지네이션 도트 */}
                     {example.exampleItems.length > 1 && (
                       <div className="flex justify-center items-center gap-0.5 mb-3">
