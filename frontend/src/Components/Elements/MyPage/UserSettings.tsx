@@ -44,40 +44,40 @@ const UserSettings = React.memo(function UserSettings({
         <div>
           <h3 className="text-black font-bold text-xl mb-4">내 정보</h3>
           <div className="bg-white rounded-[16px] space-y-2 p-4 shadow-md border border-gray-100">
-            <div className="flex items-center justify-between py-1">
+            <div className="flex items-center justify-between py-2">
               <div className="flex items-center">
-                <Icons.font className="w-5 h-5 mr-2 text-gray-600" />
-                <span className="font-medium text-sm">큰글씨 모드</span>
+                <Icons.font className="w-6 h-6 mr-3 text-gray-600" />
+                <span className="font-medium">큰글씨 모드</span>
               </div>
               <button
                 onClick={toggleLargeTextMode}
-                className={`relative w-14 h-6 rounded-full flex items-center transition-colors cursor-pointer ${
+                className={`relative w-12 h-6 rounded-full flex items-center transition-colors cursor-pointer ${
                   isLargeTextMode ? "bg-[#00DAAA]" : "bg-gray-300"
                 }`}
                 style={{ padding: '2px' }}
               >
                 <div
-                  className={`absolute top-0.5 left-0 w-5 h-5 bg-white rounded-full shadow-lg transition-transform duration-200 ease-in-out ${
-                    isLargeTextMode ? "translate-x-8" : "translate-x-0"
+                  className={`absolute w-5 h-5 bg-white rounded-full shadow-md transition-transform duration-200 ease-in-out ${
+                    isLargeTextMode ? "translate-x-6" : "translate-x-0.5"
                   }`}
                 ></div>
               </button>
             </div>
-            <div className="flex items-center justify-between py-1">
+            <div className="flex items-center justify-between py-2">
               <div className="flex items-center">
-                <Icons.audio className="w-5 h-5 mr-2 text-gray-600" />
-                <span className="font-medium text-sm">오디오 항상 듣기</span>
+                <Icons.audio className="w-6 h-6 mr-3 text-gray-600" />
+                <span className="font-medium">오디오 항상 듣기</span>
               </div>
               <button
                 onClick={toggleAudioAlwaysPlay}
-                className={`relative w-14 h-6 rounded-full flex items-center transition-colors cursor-pointer ${
+                className={`relative w-12 h-6 rounded-full flex items-center transition-colors cursor-pointer ${
                   isAudioAlwaysPlay ? "bg-[#00DAAA]" : "bg-gray-300"
                 }`}
                 style={{ padding: '2px' }}
               >
                 <div
-                  className={`absolute top-0.5 left-0 w-5 h-5 bg-white rounded-full shadow-lg transition-transform duration-200 ease-in-out ${
-                    isAudioAlwaysPlay ? "translate-x-8" : "translate-x-0"
+                  className={`absolute w-5 h-5 bg-white rounded-full shadow-md transition-transform duration-200 ease-in-out ${
+                    isAudioAlwaysPlay ? "translate-x-6" : "translate-x-0.5"
                   }`}
                 ></div>
               </button>

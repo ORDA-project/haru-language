@@ -474,29 +474,31 @@ const QuestionDetail = () => {
                   {/* 1. 하루한줄 블록 */}
                   <div className="space-y-2" style={{ gap: '10px' }}>
                     <div className="font-semibold text-gray-600" style={headerTextStyle}>하루한줄</div>
-                    <div 
-                      className="bg-white shadow-sm border border-gray-100 rounded-lg"
-                      style={{ 
-                        width: '343px',
-                        padding: '16px'
-                      }}
-                    >
-                      <div className="space-y-2">
-                        {/* 오늘의 주제 - 불릿 있음 */}
-                        {question && (
-                          <div className="flex items-start">
-                            <span className="text-gray-800 mr-2" style={baseTextStyle}>•</span>
-                            <p className="text-gray-800 leading-relaxed flex-1" style={baseTextStyle}>
-                              {question.koreanQuestion || question.englishQuestion}
+                    <div className="flex justify-end">
+                      <div 
+                        className="bg-white shadow-sm border border-gray-100 rounded-lg"
+                        style={{ 
+                          width: '343px',
+                          padding: '16px'
+                        }}
+                      >
+                        <div className="space-y-2">
+                          {/* 오늘의 주제 - 불릿 있음 */}
+                          {question && (
+                            <div className="flex items-start">
+                              <span className="text-gray-800 mr-2" style={baseTextStyle}>•</span>
+                              <p className="text-gray-800 leading-relaxed flex-1" style={baseTextStyle}>
+                                {question.koreanQuestion || question.englishQuestion}
+                              </p>
+                            </div>
+                          )}
+                          
+                          {/* 내가 입력한 문장 - 불릿 없음 */}
+                          <div>
+                            <p className="text-gray-800 leading-relaxed" style={baseTextStyle}>
+                              {record.original_text}
                             </p>
                           </div>
-                        )}
-                        
-                        {/* 내가 입력한 문장 - 불릿 없음 */}
-                        <div>
-                          <p className="text-gray-800 leading-relaxed" style={baseTextStyle}>
-                            {record.original_text}
-                          </p>
                         </div>
                       </div>
                     </div>
@@ -511,7 +513,7 @@ const QuestionDetail = () => {
                           className="bg-white shadow-sm border border-gray-100 rounded-lg"
                           style={{ 
                             width: '343px',
-                            paddingLeft: '40px',
+                            paddingLeft: '16px',
                             paddingTop: '16px',
                             paddingBottom: '16px',
                             paddingRight: '16px'
@@ -712,7 +714,34 @@ const QuestionDetail = () => {
                   
                   {/* 답변 요약 내용 (AI 응답) */}
                   <div className="flex justify-start">
-                    <div className="max-w-[80%] px-4 py-3 rounded-2xl bg-white text-gray-800 shadow-sm border border-gray-100">
+                    <div className="max-w-[80%] px-4 py-3 rounded-2xl bg-white text-gray-800 shadow-sm border border-gray-100 relative">
+                      {/* 페이지네이션 도트 - 오른쪽 위 */}
+                      {example.exampleItems && example.exampleItems.length > 0 && (
+                        <div 
+                          className="absolute flex items-center"
+                          style={{
+                            top: '12px',
+                            right: '12px',
+                            gap: '6px'
+                          }}
+                        >
+                          {example.exampleItems.slice(0, 3).map((_, idx: number) => {
+                            const currentIndex = getCurrentItemIndex(example.id, example.exampleItems.length);
+                            return (
+                              <div
+                                key={idx}
+                                style={{
+                                  width: '8px',
+                                  height: '8px',
+                                  borderRadius: '50%',
+                                  backgroundColor: idx === currentIndex ? '#00DAAA' : '#D1D5DB',
+                                  transition: 'background-color 0.2s'
+                                }}
+                              />
+                            );
+                          })}
+                        </div>
+                      )}
                       <p className="leading-relaxed" style={baseTextStyle}>
                         예문을 생성했습니다.
                       </p>
@@ -736,31 +765,45 @@ const QuestionDetail = () => {
                     className="bg-white shadow-sm border border-gray-100 rounded-lg relative"
                     style={{ 
                       width: '343px',
-                      paddingLeft: '40px',
+                      paddingLeft: '16px',
                       paddingTop: '16px',
                       paddingBottom: '16px',
                       paddingRight: '16px'
                     }}
                   >
-                    {/* 예문 상황 배지 - 흰색 칸 안으로 이동 */}
-                    <div className="inline-block bg-[#B8E6D3] rounded-full px-4 py-1.5 border border-[#B8E6D3] mb-3">
-                      <span className="text-sm font-medium text-gray-900">예문 상황</span>
-                    </div>
-                    
-                    {/* 페이지네이션 도트 */}
-                    {example.exampleItems.length > 1 && (
-                      <div className="flex justify-center items-center gap-0.5 mb-3">
-                        {example.exampleItems.map((_, idx: number) => (
-                          <button
-                            key={idx}
-                            onClick={() => handleItemIndexChange(example.id, 'set', example.exampleItems.length, idx)}
-                            className={`w-1.5 h-1.5 rounded-full transition-colors ${
-                              idx === currentIndex ? "bg-[#00DAAA]" : "bg-gray-300"
-                            }`}
-                          />
-                        ))}
+                    {/* 예문 상황 배지와 페이지네이션 도트 - 같은 줄에 배치 */}
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="inline-block bg-[#B8E6D3] rounded-full px-4 py-1.5 border border-[#B8E6D3]">
+                        <span className="text-sm font-medium text-gray-900">예문 상황</span>
                       </div>
-                    )}
+                      
+                      {/* 페이지네이션 도트 - 오른쪽 위 */}
+                      {example.exampleItems.length > 1 && (
+                        <div 
+                          className="flex items-center"
+                          style={{
+                            gap: '6px'
+                          }}
+                        >
+                          {example.exampleItems.map((_, idx: number) => (
+                            <button
+                              key={idx}
+                              onClick={() => handleItemIndexChange(example.id, 'set', example.exampleItems.length, idx)}
+                              style={{
+                                width: '8px',
+                                height: '8px',
+                                borderRadius: '50%',
+                                backgroundColor: idx === currentIndex ? '#00DAAA' : '#D1D5DB',
+                                transition: 'background-color 0.2s',
+                                border: 'none',
+                                cursor: 'pointer',
+                                padding: 0
+                              }}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
                     
                     {/* 대화 내용 */}
                     {currentItem.dialogues && currentItem.dialogues.length > 0 && (
