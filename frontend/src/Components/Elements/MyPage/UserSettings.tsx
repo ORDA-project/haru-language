@@ -57,7 +57,7 @@ const UserSettings = React.memo(function UserSettings({
                 style={{ padding: '2px' }}
               >
                 <div
-                  className={`absolute w-5 h-5 bg-white rounded-full shadow-lg transition-transform duration-200 ease-in-out ${
+                  className={`absolute top-0.5 left-0 w-5 h-5 bg-white rounded-full shadow-lg transition-transform duration-200 ease-in-out ${
                     isLargeTextMode ? "translate-x-8" : "translate-x-0"
                   }`}
                 ></div>
@@ -76,7 +76,7 @@ const UserSettings = React.memo(function UserSettings({
                 style={{ padding: '2px' }}
               >
                 <div
-                  className={`absolute w-5 h-5 bg-white rounded-full shadow-lg transition-transform duration-200 ease-in-out ${
+                  className={`absolute top-0.5 left-0 w-5 h-5 bg-white rounded-full shadow-lg transition-transform duration-200 ease-in-out ${
                     isAudioAlwaysPlay ? "translate-x-8" : "translate-x-0"
                   }`}
                 ></div>
