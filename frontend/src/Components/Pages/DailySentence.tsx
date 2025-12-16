@@ -845,7 +845,7 @@ const DailySentence = () => {
                   <p className="text-[18px] font-bold text-gray-900 text-center leading-tight">
                     한국어로 입력하신것이 맞나요?
                   </p>
-                  <p className="text-[18px] font-bold text-gray-600 text-center leading-tight mt-3">
+                  <p className="text-[18px] font-bold text-gray-600 text-center leading-tight mt-2">
                     영어로 번역해드릴게요
                   </p>
                 </>
@@ -854,7 +854,7 @@ const DailySentence = () => {
                   <p className="text-[18px] font-bold text-gray-900 text-center leading-tight">
                     영어로 입력하셨나요?
                   </p>
-                  <p className="text-[18px] font-bold text-gray-600 text-center leading-tight mt-3">
+                  <p className="text-[18px] font-bold text-gray-600 text-center leading-tight mt-2">
                     어법과 문맥을 체크해드릴게요.
                   </p>
                 </>
