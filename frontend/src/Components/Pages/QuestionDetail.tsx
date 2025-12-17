@@ -668,9 +668,9 @@ const QuestionDetail = () => {
                           }}
                         >
                           {/* 문장 첨삭 배지 - 흰색 칸 안으로 이동 */}
-                          <div 
-                            className="inline-block rounded-full px-4 py-1.5 mb-2"
-                            style={{ 
+                          <div
+                            className="inline-block rounded-full px-2.5 py-1 mb-2"
+                            style={{
                               background: '#FF5E1666',
                               marginLeft: '-4px'
                             }}
@@ -895,7 +895,7 @@ const QuestionDetail = () => {
                   >
                     {/* 예문 상황 배지와 페이지네이션 도트 - 같은 줄에 배치 */}
                     <div className="flex items-center justify-between mb-2">
-                      <div className="inline-block bg-[#B8E6D3] rounded-full px-4 py-1.5 border border-[#B8E6D3]" style={{ marginLeft: '-4px' }}>
+                      <div className="inline-block bg-[#B8E6D3] rounded-full px-2.5 py-1 border border-[#B8E6D3]" style={{ marginLeft: '-4px' }}>
                         <span className="font-medium text-gray-900" style={correctionTextStyle}>예문 상황</span>
                       </div>
                       

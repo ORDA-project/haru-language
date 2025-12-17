@@ -113,38 +113,36 @@ const FriendInvitePopup = React.memo(function FriendInvitePopup({
 
           {/* 성공 메시지 */}
           <h3 className="text-xl font-bold text-gray-800 mb-2">
-            친구링크 복사 완료!
+            나의 친구링크가 복사되었어요.
           </h3>
-          <p className="text-gray-600 text-sm leading-relaxed">
-            친구에게 링크를 공유해서
-            <br />
-            함께 학습해보세요
+          <p className="text-gray-600 text-sm leading-relaxed mb-4">
+            친구에게 링크를 공유해서 함께 학습해보세요
           </p>
 
-          {/* 복사된 링크 미리보기 (선택사항) */}
+          {/* 복사된 링크 미리보기 */}
           {inviteLink && (
-            <div className="mt-4 p-3 bg-gray-50 rounded-lg text-left">
-              <p className="text-xs text-gray-500 mb-1">복사된 링크</p>
-              <div className="flex flex-col gap-2">
+            <div className="mt-4 text-left">
+              <p className="text-sm text-gray-800 mb-2 font-medium">복사된 링크</p>
+              <div className="bg-gray-100 rounded-lg p-3 mb-4">
                 <p className="text-xs text-gray-700 break-all">{inviteLink}</p>
-                <div className="flex items-center justify-end gap-2">
-                  {copyStatus === "copied" && (
-                    <span className="text-[11px] text-[#00B085]">
-                      링크가 복사되었습니다.
-                    </span>
-                  )}
-                  {copyStatus === "error" && (
-                    <span className="text-[11px] text-red-500">
-                      복사에 실패했습니다. 다시 시도해주세요.
-                    </span>
-                  )}
-                  <button
-                    onClick={handleCopyLink}
-                    className="px-3 py-1 text-xs font-medium text-white bg-[#00DAAA] hover:bg-[#00C495] rounded-full transition-colors"
-                  >
-                    다시 복사
-                  </button>
-                </div>
+              </div>
+              <div className="flex items-center justify-end gap-2">
+                {copyStatus === "copied" && (
+                  <span className="text-[11px] text-[#00B085]">
+                    링크가 복사되었습니다.
+                  </span>
+                )}
+                {copyStatus === "error" && (
+                  <span className="text-[11px] text-red-500">
+                    복사에 실패했습니다. 다시 시도해주세요.
+                  </span>
+                )}
+                <button
+                  onClick={handleCopyLink}
+                  className="px-4 py-2 text-sm font-medium text-white bg-[#00DAAA] hover:bg-[#00C495] rounded-lg transition-colors"
+                >
+                  다시 복사
+                </button>
               </div>
             </div>
           )}
