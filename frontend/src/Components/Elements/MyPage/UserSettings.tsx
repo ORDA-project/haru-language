@@ -42,10 +42,6 @@ const UserSettings = React.memo(function UserSettings({
   const providerLabel =
     providerLabelMap[user?.socialProvider || ""] || "알 수 없음";
 
-  const handleNavigation = (path: string) => {
-    navigate(path);
-  };
-
   const toggleLargeTextMode = () => {
     setIsLargeTextMode(!isLargeTextMode);
   };
@@ -66,14 +62,14 @@ const UserSettings = React.memo(function UserSettings({
               </div>
               <button
                 onClick={toggleLargeTextMode}
-                className={`relative w-20 h-5 rounded-full flex items-center transition-colors cursor-pointer ${
+                className={`relative w-10 h-5 rounded-full flex items-center transition-colors cursor-pointer ${
                   isLargeTextMode ? "bg-[#00DAAA]" : "bg-gray-300"
                 }`}
                 style={{ padding: '2px' }}
               >
                 <div
-                  className={`absolute w-4 h-4 bg-white rounded-full shadow-md transition-transform duration-200 ease-in-out ${
-                    isLargeTextMode ? "translate-x-[56px]" : "translate-x-0.5"
+                  className={`absolute w-5 h-5 bg-white rounded-full shadow-md transition-transform duration-200 ease-in-out ${
+                    isLargeTextMode ? "translate-x-5" : "translate-x-0.5"
                   }`}
                 ></div>
               </button>
@@ -85,14 +81,14 @@ const UserSettings = React.memo(function UserSettings({
               </div>
               <button
                 onClick={toggleAudioAlwaysPlay}
-                className={`relative w-20 h-5 rounded-full flex items-center transition-colors cursor-pointer ${
+                className={`relative w-10 h-5 rounded-full flex items-center transition-colors cursor-pointer ${
                   isAudioAlwaysPlay ? "bg-[#00DAAA]" : "bg-gray-300"
                 }`}
                 style={{ padding: '2px' }}
               >
                 <div
-                  className={`absolute w-4 h-4 bg-white rounded-full shadow-md transition-transform duration-200 ease-in-out ${
-                    isAudioAlwaysPlay ? "translate-x-[56px]" : "translate-x-0.5"
+                  className={`absolute w-5 h-5 bg-white rounded-full shadow-md transition-transform duration-200 ease-in-out ${
+                    isAudioAlwaysPlay ? "translate-x-5" : "translate-x-0.5"
                   }`}
                 ></div>
               </button>
@@ -133,38 +129,32 @@ const UserSettings = React.memo(function UserSettings({
               <span style={baseTextStyle}>도움말</span>
             </button>
             <button
-              onClick={() => handleNavigation("/announcements")}
+              onClick={() => navigate("/announcements")}
               className="flex items-center hover:bg-gray-50 p-2 rounded-lg transition-colors"
             >
               <Icons.announcement className="w-6 h-6 mr-3" />
               <span style={baseTextStyle}>공지사항</span>
             </button>
             <button
-              onClick={() => handleNavigation("/privacy-policy")}
+              onClick={() => navigate("/privacy-policy")}
               className="flex items-center hover:bg-gray-50 p-2 rounded-lg transition-colors"
             >
               <span style={baseTextStyle}>개인정보처리방침</span>
             </button>
             <button
-              onClick={() => handleNavigation("/terms-of-service")}
+              onClick={() => navigate("/terms-of-service")}
               className="flex items-center hover:bg-gray-50 p-2 rounded-lg transition-colors"
             >
               <span style={baseTextStyle}>서비스 이용약관</span>
             </button>
             <button
-              onClick={() => handleNavigation("/version-info")}
+              onClick={() => navigate("/version-info")}
               className="flex items-center hover:bg-gray-50 p-2 rounded-lg transition-colors"
             >
               <span style={baseTextStyle}>버전정보</span>
             </button>
             <button
-              onClick={() => handleNavigation("/version-info")}
-              className="flex items-center hover:bg-gray-50 p-2 rounded-lg transition-colors"
-            >
-              <span style={baseTextStyle}>오픈소스 라이센스</span>
-            </button>
-            <button
-              onClick={() => handleNavigation("/delete-account")}
+              onClick={() => navigate("/delete-account")}
               className="flex items-center hover:bg-red-50 p-2 rounded-lg transition-colors text-red-600"
             >
               <span style={baseTextStyle}>회원 탈퇴</span>

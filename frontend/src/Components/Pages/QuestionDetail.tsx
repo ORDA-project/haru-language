@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAtom } from "jotai";
 import { isLargeTextModeAtom } from "../../store/dataStore";
@@ -7,6 +7,7 @@ import { useGetExampleHistory } from "../../entities/examples/queries";
 import { useWritingRecords } from "../../entities/writing/queries";
 import { useWritingQuestions } from "../../entities/writing/queries";
 import { useGenerateTTS } from "../../entities/tts/queries";
+import { useErrorHandler } from "../../hooks/useErrorHandler";
 import NavBar from "../Templates/Navbar";
 
 type ExampleDialogue = {
@@ -29,6 +30,8 @@ const QuestionDetail = () => {
   const [currentPlayingExampleId, setCurrentPlayingExampleId] = useState<number | null>(null);
   const [currentItemIndex, setCurrentItemIndex] = useState<Record<number, number>>({});
   const ttsMutation = useGenerateTTS();
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const { showWarning, showError } = useErrorHandler();
   
   // 큰글씨 모드에 따른 텍스트 크기
   const baseFontSize = isLargeTextMode ? 20 : 16;
@@ -331,8 +334,18 @@ const QuestionDetail = () => {
 
   // 스피커 버튼 클릭 핸들러 - 현재 화면에 보이는 예문 항목의 A와 B만 TTS로 읽기
   const handleSpeakerClick = async (example: any) => {
+    // 이미 재생 중이면 중지
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+    
+    // 브라우저 TTS도 중지
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+
     if (isPlayingTTS && currentPlayingExampleId === example.id) {
-      // 이미 재생 중이면 중지
       setIsPlayingTTS(false);
       setCurrentPlayingExampleId(null);
       return;
@@ -347,10 +360,10 @@ const QuestionDetail = () => {
       if (example.exampleItems && example.exampleItems.length > 0) {
         const currentIndex = getCurrentItemIndex(example.id, example.exampleItems.length);
         const currentItem = example.exampleItems[currentIndex];
-        if (currentItem.dialogues && currentItem.dialogues.length > 0) {
+        if (currentItem && currentItem.dialogues && currentItem.dialogues.length > 0) {
           const englishTexts: string[] = [];
           currentItem.dialogues.forEach((dialogue: ExampleDialogue) => {
-            if (dialogue.english) {
+            if (dialogue && dialogue.english) {
               englishTexts.push(dialogue.english);
             }
           });
@@ -358,37 +371,162 @@ const QuestionDetail = () => {
         }
       }
 
-      if (!textToRead) {
+      if (!textToRead || textToRead.trim() === "") {
         setIsPlayingTTS(false);
         setCurrentPlayingExampleId(null);
+        showWarning("재생할 예문이 없습니다", "예문을 불러올 수 없습니다.");
         return;
       }
 
-      // TTS API 호출
-      const response = await ttsMutation.mutateAsync({
-        text: textToRead,
-        speed: 1.0,
-      });
+      console.log("TTS 재생할 텍스트:", textToRead);
+
+      // TTS API 호출 (최대 3번 재시도)
+      let response = null;
+      let retryCount = 0;
+      const maxRetries = 3;
+
+      while (retryCount < maxRetries && (!response || !response.audioContent)) {
+        try {
+          response = await ttsMutation.mutateAsync({
+            text: textToRead,
+            speed: 1.0,
+          });
+          console.log("TTS 응답:", response);
+          
+          if (response && response.audioContent) {
+            break; // 성공하면 루프 종료
+          }
+        } catch (error) {
+          console.error(`TTS API 호출 실패 (시도 ${retryCount + 1}/${maxRetries}):`, error);
+        }
+        
+        retryCount++;
+        if (retryCount < maxRetries) {
+          // 재시도 전 잠시 대기
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+      }
+
+      // TTS API가 실패하면 브라우저 내장 TTS 사용
+      if (!response || !response.audioContent) {
+        console.log("TTS API 실패, 브라우저 내장 TTS 사용");
+        
+        // Web Speech API 사용
+        if ('speechSynthesis' in window) {
+          // 기존 음성 중지
+          window.speechSynthesis.cancel();
+          
+          const utterance = new SpeechSynthesisUtterance(textToRead);
+          utterance.lang = 'en-US';
+          utterance.rate = 1.0;
+          utterance.pitch = 1.0;
+          utterance.volume = 1.0;
+
+          utterance.onend = () => {
+            setIsPlayingTTS(false);
+            setCurrentPlayingExampleId(null);
+          };
+
+          utterance.onerror = (error) => {
+            console.error("브라우저 TTS 오류:", error);
+            setIsPlayingTTS(false);
+            setCurrentPlayingExampleId(null);
+          };
+
+          window.speechSynthesis.speak(utterance);
+          return;
+        } else {
+          // Web Speech API도 없으면 에러
+          setIsPlayingTTS(false);
+          setCurrentPlayingExampleId(null);
+          showError("TTS 오류", "음성을 재생할 수 없습니다. 브라우저가 TTS를 지원하지 않습니다.");
+          return;
+        }
+      }
 
       // Base64 오디오 데이터를 직접 Audio 객체로 재생
-      const audio = new Audio(`data:audio/mp3;base64,${response.audioContent}`);
+      const audioUrl = `data:audio/mp3;base64,${response.audioContent}`;
+      const audio = new Audio(audioUrl);
+      
+      // 오디오 객체를 ref에 저장
+      audioRef.current = audio;
 
       audio.onended = () => {
         setIsPlayingTTS(false);
         setCurrentPlayingExampleId(null);
+        if (audioRef.current === audio) {
+          audioRef.current = null;
+        }
       };
 
-      audio.onerror = () => {
-        console.error("오디오 재생 실패");
-        setIsPlayingTTS(false);
-        setCurrentPlayingExampleId(null);
+      audio.onerror = (error) => {
+        console.error("오디오 재생 실패:", error);
+        // 오디오 재생 실패 시 브라우저 TTS로 대체
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.cancel();
+          const utterance = new SpeechSynthesisUtterance(textToRead);
+          utterance.lang = 'en-US';
+          utterance.rate = 1.0;
+          utterance.onend = () => {
+            setIsPlayingTTS(false);
+            setCurrentPlayingExampleId(null);
+          };
+          utterance.onerror = () => {
+            setIsPlayingTTS(false);
+            setCurrentPlayingExampleId(null);
+          };
+          window.speechSynthesis.speak(utterance);
+        } else {
+          setIsPlayingTTS(false);
+          setCurrentPlayingExampleId(null);
+        }
+        if (audioRef.current === audio) {
+          audioRef.current = null;
+        }
       };
 
-      await audio.play();
+      // 오디오 로드 대기
+      audio.oncanplaythrough = async () => {
+        try {
+          await audio.play();
+          console.log("오디오 재생 시작");
+        } catch (playError) {
+          console.error("오디오 재생 시작 실패:", playError);
+          // 재생 실패 시 브라우저 TTS로 대체
+          if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(textToRead);
+            utterance.lang = 'en-US';
+            utterance.rate = 1.0;
+            utterance.onend = () => {
+              setIsPlayingTTS(false);
+              setCurrentPlayingExampleId(null);
+            };
+            utterance.onerror = () => {
+              setIsPlayingTTS(false);
+              setCurrentPlayingExampleId(null);
+            };
+            window.speechSynthesis.speak(utterance);
+          } else {
+            setIsPlayingTTS(false);
+            setCurrentPlayingExampleId(null);
+          }
+          if (audioRef.current === audio) {
+            audioRef.current = null;
+          }
+        }
+      };
+
+      // 오디오 로드 시작
+      audio.load();
     } catch (error) {
       console.error("TTS 재생 오류:", error);
       setIsPlayingTTS(false);
       setCurrentPlayingExampleId(null);
+      showError("TTS 오류", "음성 생성 중 오류가 발생했습니다. 다시 시도해주세요.");
+      if (audioRef.current) {
+        audioRef.current = null;
+      }
     }
   };
 
@@ -538,7 +676,7 @@ const QuestionDetail = () => {
                             className="inline-block rounded-full px-4 py-1.5 mb-2"
                             style={{ 
                               background: '#FF5E1666',
-                              marginLeft: '-8px'
+                              marginLeft: '-4px'
                             }}
                           >
                             <span className="font-medium text-gray-900" style={correctionTextStyle}>문장 첨삭</span>
@@ -561,7 +699,7 @@ const QuestionDetail = () => {
                               paddingLeft: '16px'
                             }}
                           >
-                            <ul className="space-y-1">
+                            <ul className="space-y-1" style={{ paddingLeft: '8px' }}>
                               {feedback.map((fb: string, idx: number) => (
                                 <li key={idx} className="text-gray-700" style={feedbackTextStyle}>
                                   • {fb}
@@ -691,7 +829,7 @@ const QuestionDetail = () => {
                       </div>
                     ) : (
                       // 일반 텍스트 응답
-                      <p className="leading-relaxed whitespace-pre-wrap" style={baseTextStyle}>
+                      <p className="leading-relaxed whitespace-pre-wrap" style={{...baseTextStyle, paddingLeft: '8px'}}>
                         {question.Answers[0].content}
                       </p>
                     )}
@@ -729,35 +867,8 @@ const QuestionDetail = () => {
                   
                   {/* 답변 요약 내용 (AI 응답) */}
                   <div className="flex justify-start">
-                    <div className="max-w-[80%] px-4 py-3 rounded-2xl bg-white text-gray-800 shadow-sm border border-gray-100 relative">
-                      {/* 페이지네이션 도트 - 오른쪽 위 */}
-                      {example.exampleItems && example.exampleItems.length > 0 && (
-                        <div 
-                          className="absolute flex items-center"
-                          style={{
-                            top: '12px',
-                            right: '12px',
-                            gap: '6px'
-                          }}
-                        >
-                          {example.exampleItems.slice(0, 3).map((_, idx: number) => {
-                            const currentIndex = getCurrentItemIndex(example.id, example.exampleItems.length);
-                            return (
-                              <div
-                                key={idx}
-                                style={{
-                                  width: '8px',
-                                  height: '8px',
-                                  borderRadius: '50%',
-                                  backgroundColor: idx === currentIndex ? '#00DAAA' : '#D1D5DB',
-                                  transition: 'background-color 0.2s'
-                                }}
-                              />
-                            );
-                          })}
-                        </div>
-                      )}
-                      <p className="leading-relaxed" style={baseTextStyle}>
+                    <div className="max-w-[80%] px-4 py-3 rounded-2xl bg-white text-gray-800 shadow-sm border border-gray-100">
+                      <p className="leading-relaxed" style={{...baseTextStyle, paddingLeft: '8px'}}>
                         예문을 생성했습니다.
                       </p>
                     </div>
@@ -788,7 +899,7 @@ const QuestionDetail = () => {
                   >
                     {/* 예문 상황 배지와 페이지네이션 도트 - 같은 줄에 배치 */}
                     <div className="flex items-center justify-between mb-2">
-                      <div className="inline-block bg-[#B8E6D3] rounded-full px-4 py-1.5 border border-[#B8E6D3]" style={{ marginLeft: '-8px' }}>
+                      <div className="inline-block bg-[#B8E6D3] rounded-full px-4 py-1.5 border border-[#B8E6D3]" style={{ marginLeft: '-4px' }}>
                         <span className="font-medium text-gray-900" style={correctionTextStyle}>예문 상황</span>
                       </div>
                       
@@ -841,7 +952,7 @@ const QuestionDetail = () => {
                     
                     {/* 대화 내용 */}
                     {currentItem.dialogues && currentItem.dialogues.length > 0 && (
-                      <div className="space-y-2 mb-3">
+                      <div className="space-y-2 mb-3" style={{ paddingLeft: '8px' }}>
                         {currentItem.dialogues.map(
                           (dialogue: ExampleDialogue, dialogueIdx: number) => (
                             <div
