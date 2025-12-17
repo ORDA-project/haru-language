@@ -669,10 +669,11 @@ const QuestionDetail = () => {
                         >
                           {/* 문장 첨삭 배지 - 흰색 칸 안으로 이동 */}
                           <div
-                            className="inline-block rounded-full px-2.5 py-1 mb-2"
+                            className="inline-block rounded-full px-2 py-0.5 mb-1"
                             style={{
                               background: '#FF5E1666',
-                              marginLeft: '-4px'
+                              marginLeft: '-4px',
+                              marginTop: '-4px'
                             }}
                           >
                             <span className="font-medium text-gray-900" style={correctionTextStyle}>문장 첨삭</span>
@@ -894,8 +895,8 @@ const QuestionDetail = () => {
                     }}
                   >
                     {/* 예문 상황 배지와 페이지네이션 도트 - 같은 줄에 배치 */}
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="inline-block bg-[#B8E6D3] rounded-full px-2.5 py-1 border border-[#B8E6D3]" style={{ marginLeft: '-4px' }}>
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="inline-block bg-[#B8E6D3] rounded-full px-2 py-0.5 border border-[#B8E6D3]" style={{ marginLeft: '-4px', marginTop: '-4px' }}>
                         <span className="font-medium text-gray-900" style={correctionTextStyle}>예문 상황</span>
                       </div>
                       
@@ -904,7 +905,7 @@ const QuestionDetail = () => {
                         <div 
                           className="flex items-center"
                           style={{
-                            gap: '6px'
+                            gap: '4px'
                           }}
                         >
                           {example.exampleItems.map((_, idx: number) => {
@@ -916,15 +917,15 @@ const QuestionDetail = () => {
                                 aria-label={`예문 ${idx + 1}로 이동`}
                                 className="transition-all duration-200 ease-in-out hover:scale-110 focus:outline-none rounded-full"
                                 style={{
-                                  width: '8px',
-                                  height: '8px',
+                                  width: '6px',
+                                  height: '6px',
                                   borderRadius: '50%',
                                   backgroundColor: isActive ? '#00DAAA' : '#D1D5DB',
                                   border: 'none',
                                   cursor: 'pointer',
-                                  padding: '4px',
-                                  minWidth: '16px',
-                                  minHeight: '16px',
+                                  padding: '0',
+                                  minWidth: '6px',
+                                  minHeight: '6px',
                                   display: 'flex',
                                   alignItems: 'center',
                                   justifyContent: 'center'
@@ -932,8 +933,8 @@ const QuestionDetail = () => {
                               >
                                 <span
                                   style={{
-                                    width: '8px',
-                                    height: '8px',
+                                    width: '6px',
+                                    height: '6px',
                                     borderRadius: '50%',
                                     backgroundColor: isActive ? '#00DAAA' : '#D1D5DB',
                                     display: 'block'
