@@ -888,8 +888,8 @@ const QuestionDetail = () => {
                     className="bg-white shadow-sm border border-gray-100 rounded-lg relative"
                     style={{ 
                       width: '343px',
-                      paddingLeft: '16px',
-                      paddingTop: '8px',
+                      paddingLeft: '12px',
+                      paddingTop: '12px',
                       paddingBottom: '16px',
                       paddingRight: '16px'
                     }}
