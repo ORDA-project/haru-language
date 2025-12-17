@@ -628,11 +628,7 @@ const QuestionDetail = () => {
                     <div className="font-semibold text-gray-600" style={headerTextStyle}>하루한줄</div>
                     <div className="flex justify-end">
                       <div 
-                        className="bg-white shadow-sm border border-gray-100 rounded-lg"
-                        style={{ 
-                          width: '343px',
-                          padding: '16px'
-                        }}
+                        className="max-w-[80%] px-4 py-3 rounded-2xl bg-white text-gray-800 shadow-sm border border-gray-100"
                       >
                         <div className="space-y-2">
                           {/* 오늘의 주제 - 불릿 있음 */}
@@ -868,7 +864,7 @@ const QuestionDetail = () => {
                   {/* 답변 요약 내용 (AI 응답) */}
                   <div className="flex justify-start">
                     <div className="max-w-[80%] px-4 py-3 rounded-2xl bg-white text-gray-800 shadow-sm border border-gray-100">
-                      <p className="leading-relaxed" style={{...baseTextStyle, paddingLeft: '8px'}}>
+                      <p className="leading-relaxed" style={baseTextStyle}>
                         예문을 생성했습니다.
                       </p>
                     </div>
