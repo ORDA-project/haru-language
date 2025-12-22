@@ -1,10 +1,10 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useAtom } from "jotai";
 import { Example } from "../../types";
 import { API_ENDPOINTS, API_BASE_URL } from "../../config/api";
 import { isLargeTextModeAtom } from "../../store/dataStore";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import { useErrorHandler } from "../../hooks/useErrorHandler";
 import ImageUploadModal from "./ImageUploadModal";
 
@@ -17,6 +17,105 @@ interface StageResultProps {
   setStage: React.Dispatch<React.SetStateAction<number>>;
 }
 
+interface ExampleApiResponse {
+  extractedText?: string;
+  generatedExample?: {
+    generatedExample?: {
+      description?: string;
+      examples?: Array<{
+        context?: string;
+        dialogue?: {
+          A?: { english?: string; korean?: string };
+          B?: { english?: string; korean?: string };
+        };
+      }>;
+    };
+    description?: string;
+    examples?: Array<{
+      context?: string;
+      dialogue?: {
+        A?: { english?: string; korean?: string };
+        B?: { english?: string; korean?: string };
+      };
+    }>;
+  };
+}
+
+interface GroupCurrentIndices {
+  [groupIndex: number]: number;
+}
+
+// 상수
+const EXAMPLES_PER_GROUP = 3;
+const API_TIMEOUT = 30000;
+const EXAMPLE_CARD_WIDTH = 343;
+const ADD_BUTTON_WIDTH = Math.floor(EXAMPLE_CARD_WIDTH / 3); // 114px
+
+// 유틸리티 함수
+const dataURItoBlob = (dataURI: string): Blob => {
+  const byteString = atob(dataURI.split(",")[1]);
+  const mimeString = dataURI.split(",")[0].split(":")[1].split(";")[0];
+  const ab = new ArrayBuffer(byteString.length);
+  const ia = new Uint8Array(ab);
+  for (let i = 0; i < byteString.length; i++) {
+    ia[i] = byteString.charCodeAt(i);
+  }
+  return new Blob([ab], { type: mimeString });
+};
+
+const groupExamples = (examples: Example[]): Example[][] => {
+  const groups: Example[][] = [];
+  for (let i = 0; i < examples.length; i += EXAMPLES_PER_GROUP) {
+    groups.push(examples.slice(i, i + EXAMPLES_PER_GROUP));
+  }
+  return groups;
+};
+
+const normalizeExampleResponse = (response: ExampleApiResponse) => {
+  let actualExample = response?.generatedExample;
+  if (actualExample?.generatedExample) {
+    actualExample = actualExample.generatedExample;
+  }
+  return actualExample;
+};
+
+const transformApiExamplesToLocal = (apiExamples: Array<any>): Example[] => {
+  return apiExamples.map((ex) => ({
+    id: `${Date.now()}-${Math.random()}`,
+    context: ex.context || "",
+    dialogue: {
+      A: {
+        english: ex.dialogue?.A?.english || "",
+        korean: ex.dialogue?.A?.korean || "",
+      },
+      B: {
+        english: ex.dialogue?.B?.english || "",
+        korean: ex.dialogue?.B?.korean || "",
+      },
+    },
+  }));
+};
+
+const getAuthHeaders = (): Record<string, string> => {
+  const token = localStorage.getItem("accessToken");
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+  return headers;
+};
+
+const createFormDataFromImage = (image: string | File): FormData => {
+  const formData = new FormData();
+  if (typeof image === "string") {
+    const blob = dataURItoBlob(image);
+    formData.append("image", blob, "cropped-image.png");
+  } else {
+    formData.append("image", image);
+  }
+  return formData;
+};
+
 const StageResult = ({
   description,
   examples,
@@ -25,17 +124,9 @@ const StageResult = ({
   errorMessage,
   setStage,
 }: StageResultProps) => {
-  // 예문을 3개씩 그룹화하여 관리
-  const [exampleGroups, setExampleGroups] = useState<Example[][]>(() => {
-    // 초기 예문을 3개씩 그룹화
-    const groups: Example[][] = [];
-    for (let i = 0; i < examples.length; i += 3) {
-      groups.push(examples.slice(i, i + 3));
-    }
-    return groups;
-  });
-  // 각 그룹의 현재 인덱스 (그룹 인덱스 -> 예문 인덱스)
-  const [groupCurrentIndices, setGroupCurrentIndices] = useState<{ [key: number]: number }>({});
+  // State
+  const [exampleGroups, setExampleGroups] = useState<Example[][]>(() => groupExamples(examples));
+  const [groupCurrentIndices, setGroupCurrentIndices] = useState<GroupCurrentIndices>({});
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -43,81 +134,87 @@ const StageResult = ({
   const [playingExampleId, setPlayingExampleId] = useState<string | null>(null);
   const [isLargeTextMode] = useAtom(isLargeTextModeAtom);
   const { showError, showSuccess } = useErrorHandler();
-  
-  // 큰글씨 모드에 따른 텍스트 크기 (px 단위로 명시적 설정)
-  const baseFontSize = isLargeTextMode ? 20 : 16;
-  const smallFontSize = isLargeTextMode ? 18 : 14;
-  const xSmallFontSize = isLargeTextMode ? 16 : 12;
-  const headerFontSize = isLargeTextMode ? 24 : 20;
-  
-  // 스타일 객체 생성
-  const baseTextStyle: React.CSSProperties = { 
-    fontSize: `${baseFontSize}px`, 
-    wordBreak: 'keep-all', 
-    overflowWrap: 'break-word' as const 
-  };
-  const smallTextStyle: React.CSSProperties = { 
-    fontSize: `${smallFontSize}px`, 
-    wordBreak: 'keep-all', 
-    overflowWrap: 'break-word' as const 
-  };
-  const xSmallTextStyle: React.CSSProperties = { 
-    fontSize: `${xSmallFontSize}px`, 
-    wordBreak: 'keep-all', 
-    overflowWrap: 'break-word' as const 
-  };
-  const headerTextStyle: React.CSSProperties = { 
-    fontSize: `${headerFontSize}px` 
-  };
 
-  const stopCurrentAudio = () => {
+  // 초기 예문이 변경되면 그룹 재생성
+  useEffect(() => {
+    if (examples.length > 0) {
+      setExampleGroups(groupExamples(examples));
+    }
+  }, [examples]);
+
+  // 스타일 계산 (메모이제이션)
+  const textStyles = useMemo(() => {
+    const baseFontSize = isLargeTextMode ? 20 : 16;
+    const smallFontSize = isLargeTextMode ? 18 : 14;
+    const xSmallFontSize = isLargeTextMode ? 16 : 12;
+    const headerFontSize = isLargeTextMode ? 24 : 20;
+
+    return {
+      base: {
+        fontSize: `${baseFontSize}px`,
+        wordBreak: 'keep-all' as const,
+        overflowWrap: 'break-word' as const,
+      },
+      small: {
+        fontSize: `${smallFontSize}px`,
+        wordBreak: 'keep-all' as const,
+        overflowWrap: 'break-word' as const,
+      },
+      xSmall: {
+        fontSize: `${xSmallFontSize}px`,
+        wordBreak: 'keep-all' as const,
+        overflowWrap: 'break-word' as const,
+      },
+      header: {
+        fontSize: `${headerFontSize}px`,
+      },
+    };
+  }, [isLargeTextMode]);
+
+  // 오디오 정리
+  const stopCurrentAudio = useCallback(() => {
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
       audioRef.current = null;
     }
-  };
+  }, []);
 
   useEffect(() => {
     return () => {
       stopCurrentAudio();
     };
+  }, [stopCurrentAudio]);
+
+  // 그룹 네비게이션 핸들러
+  const handleNextInGroup = useCallback((groupIndex: number) => {
+    setGroupCurrentIndices((prev) => {
+      const group = exampleGroups[groupIndex];
+      if (!group) return prev;
+      const currentIdx = prev[groupIndex] || 0;
+      if (currentIdx < group.length - 1) {
+        return { ...prev, [groupIndex]: currentIdx + 1 };
+      }
+      return prev;
+    });
+  }, [exampleGroups]);
+
+  const handlePreviousInGroup = useCallback((groupIndex: number) => {
+    setGroupCurrentIndices((prev) => {
+      const currentIdx = prev[groupIndex] || 0;
+      if (currentIdx > 0) {
+        return { ...prev, [groupIndex]: currentIdx - 1 };
+      }
+      return prev;
+    });
   }, []);
 
-  // 그룹 내에서 다음 예문으로 이동
-  const handleNextInGroup = (groupIndex: number) => {
-    const group = exampleGroups[groupIndex];
-    if (!group) return;
-    const currentIdx = groupCurrentIndices[groupIndex] || 0;
-    if (currentIdx < group.length - 1) {
-      setGroupCurrentIndices((prev) => ({
-        ...prev,
-        [groupIndex]: currentIdx + 1,
-      }));
-    }
-  };
+  const handleDotClick = useCallback((groupIndex: number, index: number) => {
+    setGroupCurrentIndices((prev) => ({ ...prev, [groupIndex]: index }));
+  }, []);
 
-  // 그룹 내에서 이전 예문으로 이동
-  const handlePreviousInGroup = (groupIndex: number) => {
-    const currentIdx = groupCurrentIndices[groupIndex] || 0;
-    if (currentIdx > 0) {
-      setGroupCurrentIndices((prev) => ({
-        ...prev,
-        [groupIndex]: currentIdx - 1,
-      }));
-    }
-  };
-
-  // 그룹 내에서 특정 인덱스로 이동
-  const handleDotClick = (groupIndex: number, index: number) => {
-    setGroupCurrentIndices((prev) => ({
-      ...prev,
-      [groupIndex]: index,
-    }));
-  };
-
-  // A와 B를 순차적으로 재생하는 함수
-  const playDialogueSequence = async (dialogueA: string, dialogueB: string, exampleId: string) => {
+  // TTS 재생
+  const playDialogueSequence = useCallback(async (dialogueA: string, dialogueB: string, exampleId: string) => {
     const playSingleDialogue = async (text: string): Promise<void> => {
       return new Promise((resolve, reject) => {
         fetch(API_ENDPOINTS.tts, {
@@ -133,18 +230,23 @@ const StageResult = ({
           .then(({ audioContent }) => {
             const audio = new Audio(`data:audio/mp3;base64,${audioContent}`);
             audioRef.current = audio;
+            
+            const cleanup = () => {
+              if (audioRef.current === audio) {
+                audioRef.current = null;
+              }
+            };
+
             audio.onended = () => {
               resolve();
-              if (audioRef.current === audio) {
-                audioRef.current = null;
-              }
+              cleanup();
             };
+            
             audio.onerror = () => {
               reject(new Error("오디오 재생 실패"));
-              if (audioRef.current === audio) {
-                audioRef.current = null;
-              }
+              cleanup();
             };
+            
             audio.oncanplaythrough = async () => {
               try {
                 await audio.play();
@@ -152,6 +254,7 @@ const StageResult = ({
                 reject(playError);
               }
             };
+            
             audio.load();
           })
           .catch(reject);
@@ -159,9 +262,7 @@ const StageResult = ({
     };
 
     try {
-      // A 재생
       await playSingleDialogue(dialogueA);
-      // B 재생
       await playSingleDialogue(dialogueB);
       setIsPlayingTTS(false);
       setPlayingExampleId(null);
@@ -173,157 +274,152 @@ const StageResult = ({
       setIsPlayingTTS(false);
       setPlayingExampleId(null);
     }
-  };
+  }, [stopCurrentAudio]);
 
-  const handleAddMoreExamples = async () => {
-    if (isLoadingMore) return;
+  // 예문 생성 API 호출 (공통 로직)
+  const generateExamplesFromImage = useCallback(async (image: string | File): Promise<Example[]> => {
+    const formData = createFormDataFromImage(image);
+    const headers = getAuthHeaders();
 
-    // 이미지가 있으면 이미지로 다시 생성, 없으면 extractedText 사용
-    if (!uploadedImage && !extractedText) {
-      showError("예문 추가 실패", "예문을 생성할 수 있는 데이터가 없습니다.");
+    const response = await axios.post<ExampleApiResponse>("/example", formData, {
+      baseURL: API_BASE_URL,
+      headers,
+      withCredentials: true,
+      timeout: API_TIMEOUT,
+    });
+
+    if (import.meta.env.DEV) {
+      console.log("예문 생성 응답:", response.data);
+    }
+
+    const actualExample = normalizeExampleResponse(response.data);
+
+    if (!actualExample) {
+      throw new Error("예문 데이터를 찾을 수 없습니다.");
+    }
+
+    if (!actualExample.examples || !Array.isArray(actualExample.examples)) {
+      throw new Error("예문 배열이 올바르지 않습니다.");
+    }
+
+    if (actualExample.examples.length === 0) {
+      throw new Error("생성된 예문이 없습니다.");
+    }
+
+    return transformApiExamplesToLocal(actualExample.examples);
+  }, []);
+
+  // 예문 추가 핸들러
+  const handleAddMoreExamples = useCallback(async () => {
+    if (isLoadingMore || (!uploadedImage && !extractedText)) {
+      if (!uploadedImage && !extractedText) {
+        showError("예문 추가 실패", "예문을 생성할 수 있는 데이터가 없습니다.");
+      }
       return;
     }
 
     setIsLoadingMore(true);
     try {
-      // 이미지가 있으면 이미지로 다시 생성
       if (uploadedImage) {
-        const blob = dataURItoBlob(uploadedImage);
-        const formData = new FormData();
-        formData.append("image", blob, "cropped-image.png");
-
-        const token = localStorage.getItem("accessToken");
-        const headers: Record<string, string> = {};
-        if (token) {
-          headers["Authorization"] = `Bearer ${token}`;
-        }
-
-        const response = await axios.post("/example", formData, {
-          baseURL: API_BASE_URL,
-          headers,
-          withCredentials: true,
-          timeout: 30000,
-        });
-
-        if (response.data?.generatedExample?.examples) {
-          const newExamples = response.data.generatedExample.examples.map(
-            (ex: any) => ({
-              id: `${Date.now()}-${Math.random()}`,
-              context: ex.context || "",
-              dialogue: {
-                A: {
-                  english: ex.dialogue?.A?.english || "",
-                  korean: ex.dialogue?.A?.korean || "",
-                },
-                B: {
-                  english: ex.dialogue?.B?.english || "",
-                  korean: ex.dialogue?.B?.korean || "",
-                },
-              },
-            })
-          );
-          // 새로운 그룹으로 추가
-          setExampleGroups((prev) => [...prev, newExamples]);
-          // 새 그룹의 첫 번째 예문으로 설정
-          const newGroupIndex = exampleGroups.length;
-          setGroupCurrentIndices((prev) => ({
-            ...prev,
-            [newGroupIndex]: 0,
-          }));
-          showSuccess("예문 추가 완료", "새로운 예문 3개가 추가되었습니다!");
-        } else {
-          throw new Error("예문 생성에 실패했습니다.");
-        }
-      } else {
-        // extractedText만 있는 경우는 이미지 업로드 모달 열기
-        setIsModalOpen(true);
-        setIsLoadingMore(false);
-      }
-    } catch (error: any) {
-      console.error("예문 추가 오류:", error);
-      showError("예문 추가 실패", "예문을 추가하는 중 오류가 발생했습니다.");
-      setIsLoadingMore(false);
-    }
-  };
-
-  const dataURItoBlob = (dataURI: string): Blob => {
-    const byteString = atob(dataURI.split(",")[1]);
-    const mimeString = dataURI.split(",")[0].split(":")[1].split(";")[0];
-    const ab = new ArrayBuffer(byteString.length);
-    const ia = new Uint8Array(ab);
-    for (let i = 0; i < byteString.length; i++) {
-      ia[i] = byteString.charCodeAt(i);
-    }
-    return new Blob([ab], { type: mimeString });
-  };
-
-  const handleImageSelect = async (file: File) => {
-    setIsModalOpen(false);
-    setIsLoadingMore(true);
-
-    try {
-      const formData = new FormData();
-      formData.append("image", file);
-
-      const token = localStorage.getItem("accessToken");
-      const headers: Record<string, string> = {};
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-      }
-
-      const response = await axios.post("/example", formData, {
-        baseURL: API_BASE_URL,
-        headers,
-        withCredentials: true,
-        timeout: 30000,
-      });
-
-      if (response.data?.generatedExample?.examples) {
-        const newExamples = response.data.generatedExample.examples.map(
-          (ex: any) => ({
-            id: `${Date.now()}-${Math.random()}`,
-            context: ex.context || "",
-            dialogue: {
-              A: {
-                english: ex.dialogue?.A?.english || "",
-                korean: ex.dialogue?.A?.korean || "",
-              },
-              B: {
-                english: ex.dialogue?.B?.english || "",
-                korean: ex.dialogue?.B?.korean || "",
-              },
-            },
-          })
-        );
-        // 새로운 그룹으로 추가
+        const newExamples = await generateExamplesFromImage(uploadedImage);
+        
         setExampleGroups((prev) => [...prev, newExamples]);
-        // 새 그룹의 첫 번째 예문으로 설정
         const newGroupIndex = exampleGroups.length;
         setGroupCurrentIndices((prev) => ({
           ...prev,
           [newGroupIndex]: 0,
         }));
         showSuccess("예문 추가 완료", "새로운 예문 3개가 추가되었습니다!");
+      } else {
+        setIsModalOpen(true);
       }
     } catch (error) {
-      console.error("이미지 예문 생성 오류:", error);
-      showError("예문 생성 실패", "이미지에서 예문을 생성하는 중 오류가 발생했습니다.");
+      const errorMessage = getErrorMessage(error);
+      showError("예문 추가 실패", errorMessage);
+      
+      if (import.meta.env.DEV) {
+        console.error("예문 추가 오류:", error);
+      }
     } finally {
       setIsLoadingMore(false);
     }
+  }, [isLoadingMore, uploadedImage, extractedText, exampleGroups.length, generateExamplesFromImage, showError, showSuccess]);
+
+  // 이미지 선택 핸들러
+  const handleImageSelect = useCallback(async (file: File) => {
+    setIsModalOpen(false);
+    setIsLoadingMore(true);
+
+    try {
+      const newExamples = await generateExamplesFromImage(file);
+      
+      setExampleGroups((prev) => [...prev, newExamples]);
+      const newGroupIndex = exampleGroups.length;
+      setGroupCurrentIndices((prev) => ({
+        ...prev,
+        [newGroupIndex]: 0,
+      }));
+      showSuccess("예문 추가 완료", "새로운 예문 3개가 추가되었습니다!");
+    } catch (error) {
+      const errorMessage = getErrorMessage(error);
+      showError("예문 생성 실패", errorMessage);
+      
+      if (import.meta.env.DEV) {
+        console.error("이미지 예문 생성 오류:", error);
+      }
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [exampleGroups.length, generateExamplesFromImage, showError, showSuccess]);
+
+  // 에러 메시지 추출
+  const getErrorMessage = (error: unknown): string => {
+    if (axios.isAxiosError(error)) {
+      const axiosError = error as AxiosError<{ message?: string }>;
+      if (axiosError.response) {
+        return axiosError.response.data?.message || "서버에서 오류가 발생했습니다.";
+      }
+      if (axiosError.request) {
+        return "서버에 연결할 수 없습니다. 네트워크를 확인해주세요.";
+      }
+      return axiosError.message || "요청 중 오류가 발생했습니다.";
+    }
+    if (error instanceof Error) {
+      return error.message;
+    }
+    return "알 수 없는 오류가 발생했습니다.";
   };
 
+  // 예문 카드 재생 핸들러
+  const handlePlayExample = useCallback((example: Example) => {
+    if (playingExampleId === example.id) {
+      stopCurrentAudio();
+      setPlayingExampleId(null);
+      setIsPlayingTTS(false);
+      return;
+    }
+
+    const dialogueA = example.dialogue.A.english;
+    const dialogueB = example.dialogue.B.english;
+    
+    stopCurrentAudio();
+    setPlayingExampleId(example.id);
+    setIsPlayingTTS(true);
+    playDialogueSequence(dialogueA, dialogueB, example.id);
+  }, [playingExampleId, stopCurrentAudio, playDialogueSequence]);
+
+  // Early return
   if (exampleGroups.length === 0) {
     return (
       <div className="w-full h-[calc(100vh-100px)] flex flex-col items-center justify-center">
         <div className="text-center p-8">
-          <p className="text-gray-600" style={baseTextStyle}>
+          <p className="text-gray-600" style={textStyles.base}>
             예문을 불러오는 중 문제가 발생했습니다.
           </p>
           <button
             onClick={() => setStage(1)}
             className={`mt-4 ${isLargeTextMode ? "px-8 py-4" : "px-6 py-3"} bg-teal-400 text-white rounded-lg`}
-            style={baseTextStyle}
+            style={textStyles.base}
           >
             다시 시도하기
           </button>
@@ -339,11 +435,12 @@ const StageResult = ({
         <button
           onClick={() => setStage(1)}
           className={`${isLargeTextMode ? "w-10 h-10" : "w-8 h-8"} flex items-center justify-center`}
+          aria-label="뒤로 가기"
         >
           <ChevronLeft className={`${isLargeTextMode ? "w-6 h-6" : "w-5 h-5"} text-gray-600`} />
         </button>
         <div className="text-center">
-          <h1 className="font-semibold text-gray-800" style={headerTextStyle}>예문 생성</h1>
+          <h1 className="font-semibold text-gray-800" style={textStyles.header}>예문 생성</h1>
         </div>
         <div className={isLargeTextMode ? "w-10" : "w-8"}></div>
       </div>
@@ -357,7 +454,7 @@ const StageResult = ({
               <div className={isLargeTextMode ? "mb-4" : "mb-3"}>
                 <img
                   src={uploadedImage}
-                  alt="Uploaded"
+                  alt="업로드된 이미지"
                   className="w-full rounded-lg object-contain max-h-64"
                 />
               </div>
@@ -365,18 +462,18 @@ const StageResult = ({
           </div>
         )}
 
-        {/* 사진에 대한 설명 - AI 메시지 형태로 표시 */}
+        {/* 사진에 대한 설명 */}
         {description && (
           <div className="flex justify-start">
             <div className={`max-w-[80%] ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-2xl bg-white text-gray-800 shadow-sm border border-gray-100`}>
-              <p className="leading-relaxed" style={baseTextStyle}>
+              <p className="leading-relaxed" style={textStyles.base}>
                 {description}
               </p>
             </div>
           </div>
         )}
 
-        {/* Example Groups - 각 그룹을 세로로 표시 */}
+        {/* Example Groups */}
         {exampleGroups.map((group, groupIndex) => {
           const currentIdx = groupCurrentIndices[groupIndex] || 0;
           const example = group[currentIdx];
@@ -386,10 +483,10 @@ const StageResult = ({
           
           return (
             <React.Fragment key={`group-${groupIndex}`}>
-              {/* 상황 설명 - AI 메시지 형태로 각 예문 위에 표시 */}
+              {/* 상황 설명 */}
               <div className="flex justify-start">
                 <div className={`max-w-[80%] ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-2xl bg-white text-gray-800 shadow-sm border border-gray-100`}>
-                  <p className="leading-relaxed" style={baseTextStyle}>
+                  <p className="leading-relaxed" style={textStyles.base}>
                     {example.context || "이런 상황에서 사용할 수 있는 대화예요!"}
                   </p>
                 </div>
@@ -397,11 +494,20 @@ const StageResult = ({
 
               {/* Example Card */}
               <div className="flex justify-start">
-                <div className="max-w-[90%] w-full bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden" style={{ width: '343px', paddingLeft: '12px', paddingTop: '12px', paddingBottom: '16px', paddingRight: '16px' }}>
+                <div 
+                  className="max-w-[90%] w-full bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden" 
+                  style={{ 
+                    width: `${EXAMPLE_CARD_WIDTH}px`, 
+                    paddingLeft: '12px', 
+                    paddingTop: '12px', 
+                    paddingBottom: '16px', 
+                    paddingRight: '16px' 
+                  }}
+                >
                   {/* Context Badge and Dots */}
                   <div className="flex items-center justify-between mb-3">
                     <div className="inline-block bg-[#B8E6D3] rounded-full px-2 py-0.5 border border-[#B8E6D3]" style={{ marginLeft: '-4px', marginTop: '-4px' }}>
-                      <span className="font-medium text-gray-900" style={xSmallTextStyle}>예문 상황</span>
+                      <span className="font-medium text-gray-900" style={textStyles.xSmall}>예문 상황</span>
                     </div>
                     <div className="flex items-center" style={{ gap: '4px' }}>
                       {[0, 1, 2].map((dotIdx) => (
@@ -415,6 +521,7 @@ const StageResult = ({
                             backgroundColor: dotIdx === currentIdx && dotIdx < group.length ? '#00DAAA' : '#D1D5DB',
                             cursor: dotIdx < group.length ? 'pointer' : 'default'
                           }}
+                          aria-label={`예문 ${dotIdx + 1}`}
                         />
                       ))}
                     </div>
@@ -424,14 +531,14 @@ const StageResult = ({
                   <div className="space-y-2 mb-3" style={{ paddingLeft: '8px' }}>
                     {/* A's dialogue */}
                     <div className="flex items-start space-x-2">
-                      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0 bg-[#B8E6D3]`} style={xSmallTextStyle}>
+                      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0 bg-[#B8E6D3]`} style={textStyles.xSmall}>
                         A
                       </div>
                       <div className="flex-1" style={{ paddingLeft: '4px', marginTop: '-2px' }}>
-                        <p className="font-medium text-gray-900 leading-relaxed" style={smallTextStyle}>
+                        <p className="font-medium text-gray-900 leading-relaxed" style={textStyles.small}>
                           {example.dialogue?.A?.english || "예문 내용"}
                         </p>
-                        <p className="text-gray-600 leading-relaxed mt-1" style={smallTextStyle}>
+                        <p className="text-gray-600 leading-relaxed mt-1" style={textStyles.small}>
                           {example.dialogue?.A?.korean || "예문 한글버전"}
                         </p>
                       </div>
@@ -439,14 +546,14 @@ const StageResult = ({
 
                     {/* B's dialogue */}
                     <div className="flex items-start space-x-2">
-                      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0 bg-[#B8E6D3]`} style={xSmallTextStyle}>
+                      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0 bg-[#B8E6D3]`} style={textStyles.xSmall}>
                         B
                       </div>
                       <div className="flex-1" style={{ paddingLeft: '4px', marginTop: '-2px' }}>
-                        <p className="font-medium text-gray-900 leading-relaxed" style={smallTextStyle}>
+                        <p className="font-medium text-gray-900 leading-relaxed" style={textStyles.small}>
                           {example.dialogue?.B?.english || "예문 내용"}
                         </p>
-                        <p className="text-gray-600 leading-relaxed mt-1" style={smallTextStyle}>
+                        <p className="text-gray-600 leading-relaxed mt-1" style={textStyles.small}>
                           {example.dialogue?.B?.korean || "예문 한글버전"}
                         </p>
                       </div>
@@ -459,31 +566,18 @@ const StageResult = ({
                       onClick={() => handlePreviousInGroup(groupIndex)}
                       disabled={currentIdx === 0}
                       className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                      aria-label="이전 예문"
                     >
                       <ChevronLeft className="w-5 h-5" />
                     </button>
                     <button
-                      onClick={() => {
-                        if (isCardPlaying) {
-                          stopCurrentAudio();
-                          setPlayingExampleId(null);
-                          setIsPlayingTTS(false);
-                          return;
-                        }
-
-                        const dialogueA = example.dialogue.A.english;
-                        const dialogueB = example.dialogue.B.english;
-                        
-                        stopCurrentAudio();
-                        setPlayingExampleId(example.id);
-                        setIsPlayingTTS(true);
-                        playDialogueSequence(dialogueA, dialogueB, example.id);
-                      }}
+                      onClick={() => handlePlayExample(example)}
                       className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors shadow-md ${
                         isCardPlaying
                           ? "bg-[#FF6B35] hover:bg-[#E55A2B]"
                           : "bg-[#00DAAA] hover:bg-[#00C299]"
                       }`}
+                      aria-label={isCardPlaying ? "재생 중지" : "음성 재생"}
                     >
                       {isCardPlaying ? (
                         <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
@@ -499,6 +593,7 @@ const StageResult = ({
                       onClick={() => handleNextInGroup(groupIndex)}
                       disabled={currentIdx >= group.length - 1}
                       className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                      aria-label="다음 예문"
                     >
                       <ChevronRight className="w-5 h-5" />
                     </button>
@@ -509,38 +604,45 @@ const StageResult = ({
           );
         })}
 
-        {/* Add Example Button - 왼쪽 하단에 위치 */}
+        {/* Add Example Button */}
         <div className={`flex justify-start ${isLargeTextMode ? "mt-4" : "mt-2"}`}>
           <button
             onClick={handleAddMoreExamples}
             disabled={isLoadingMore}
-            className={`${isLargeTextMode ? "px-6 py-2.5" : "px-5 py-2"} bg-[#00DAAA] hover:bg-[#00C495] active:bg-[#00B085] text-gray-900 font-semibold rounded-full transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2`}
-            style={baseTextStyle}
+            className="bg-[#00DAAA] hover:bg-[#00C495] active:bg-[#00B085] text-gray-900 font-semibold rounded-full transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+            style={{
+              width: `${ADD_BUTTON_WIDTH}px`,
+              height: isLargeTextMode ? '36px' : '32px',
+              fontSize: isLargeTextMode ? '14px' : '12px',
+              padding: '0 12px'
+            }}
+            aria-label="예문 추가"
           >
             {isLoadingMore ? (
               <>
-                <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <svg className="animate-spin" width="14" height="14" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                생성 중...
+                <span>생성 중...</span>
               </>
             ) : (
               <>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M12 5v14M5 12h14" />
                 </svg>
-                예문추가
+                <span>예문추가</span>
               </>
             )}
           </button>
         </div>
       </div>
 
-      {/* Floating Camera Button - 오른쪽 하단에 위치 (하단 네비게이션 바로 위) */}
+      {/* Floating Camera Button */}
       <button
         onClick={() => setIsModalOpen(true)}
         className="fixed bottom-20 right-4 w-14 h-14 bg-[#00DAAA] hover:bg-[#00C495] rounded-full flex items-center justify-center shadow-lg transition-colors z-30"
+        aria-label="카메라 열기"
       >
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
           <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
