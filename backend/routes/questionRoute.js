@@ -1,5 +1,5 @@
 const express = require("express");
-const { getAnswer } = require("../services/questionService");
+const { getAnswer, deleteQuestion } = require("../services/questionService");
 const { getQuestionsAndAnswersByUserId } = require("../services/historyService");
 const { User } = require("../models");
 const { logError } = require("../middleware/errorHandler");
@@ -74,6 +74,37 @@ router.get("/:userId", async (req, res) => {
     logError(error, { endpoint: "GET /question/:userId" });
     return res.status(500).json({
       message: "질문과 답변 조회 중 오류가 발생했습니다.",
+    });
+  }
+});
+
+// 질문 기록 삭제
+router.delete("/:questionId", async (req, res) => {
+  try {
+    const user = req.user;
+    if (!user || !user.userId) {
+      return res.status(401).json({ message: "인증이 필요합니다." });
+    }
+
+    const questionId = parseInt(req.params.questionId, 10);
+    if (!Number.isInteger(questionId) || questionId <= 0) {
+      return res.status(400).json({ message: "유효하지 않은 questionId입니다." });
+    }
+
+    const result = await deleteQuestion(user.userId, questionId);
+    return res.status(200).json(result);
+  } catch (error) {
+    logError(error, { endpoint: "DELETE /question/:questionId" });
+    
+    if (error.message?.includes("NOT_FOUND")) {
+      return res.status(404).json({ message: error.message.replace("NOT_FOUND: ", "") });
+    }
+    if (error.message?.includes("BAD_REQUEST")) {
+      return res.status(400).json({ message: error.message.replace("BAD_REQUEST: ", "") });
+    }
+    
+    return res.status(500).json({
+      message: "질문 삭제 중 오류가 발생했습니다.",
     });
   }
 });

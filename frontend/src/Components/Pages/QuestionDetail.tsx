@@ -2,9 +2,9 @@ import React, { useEffect, useMemo, useState, useRef, useCallback } from "react"
 import { useParams, useNavigate } from "react-router-dom";
 import { useAtom } from "jotai";
 import { isLargeTextModeAtom } from "../../store/dataStore";
-import { useGetQuestionsByUserId } from "../../entities/questions/queries";
-import { useGetExampleHistory } from "../../entities/examples/queries";
-import { useWritingRecords } from "../../entities/writing/queries";
+import { useGetQuestionsByUserId, useDeleteQuestion } from "../../entities/questions/queries";
+import { useGetExampleHistory, useDeleteExample } from "../../entities/examples/queries";
+import { useWritingRecords, useDeleteWritingRecord } from "../../entities/writing/queries";
 import { useWritingQuestions } from "../../entities/writing/queries";
 import { useGenerateTTS } from "../../entities/tts/queries";
 import { useErrorHandler } from "../../hooks/useErrorHandler";
@@ -32,7 +32,10 @@ const QuestionDetail = () => {
   const [currentItemIndex, setCurrentItemIndex] = useState<Record<number, number>>({});
   const ttsMutation = useGenerateTTS();
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const { showWarning, showError } = useErrorHandler();
+  const { showWarning, showError, showSuccess } = useErrorHandler();
+  const deleteWritingRecordMutation = useDeleteWritingRecord();
+  const deleteExampleMutation = useDeleteExample();
+  const deleteQuestionMutation = useDeleteQuestion();
   
   // 스타일 계산 (메모이제이션)
   const textStyles = useMemo(() => createExtendedTextStyles(isLargeTextMode), [isLargeTextMode]);
@@ -593,7 +596,28 @@ const QuestionDetail = () => {
                 : (record.feedback ? [record.feedback] : []);
               
               return (
-                <div key={`writing-${record.id}`} className="space-y-4">
+                <div key={`writing-${record.id}`} className="space-y-4 relative">
+                  {/* 삭제 버튼 */}
+                  <button
+                    onClick={async () => {
+                      if (window.confirm("이 기록을 삭제하시겠습니까?")) {
+                        try {
+                          await deleteWritingRecordMutation.mutateAsync(record.id);
+                          showSuccess("삭제 완료", "기록이 삭제되었습니다.");
+                        } catch (error) {
+                          showError("삭제 실패", "기록 삭제에 실패했습니다.");
+                        }
+                      }
+                    }}
+                    disabled={deleteWritingRecordMutation.isPending}
+                    className="absolute top-0 right-0 w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors disabled:opacity-50 z-10"
+                    aria-label="기록 삭제"
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                    </svg>
+                  </button>
+                  
                   {/* 1. 하루한줄 블록 */}
                   <div className="space-y-2" style={{ gap: '10px' }}>
                     <div className="font-semibold text-gray-600" style={headerTextStyle}>하루한줄</div>
@@ -710,7 +734,28 @@ const QuestionDetail = () => {
             <div className="space-y-2">
               <div className="font-semibold text-gray-600" style={headerTextStyle}>채팅기록</div>
               {questions.map((question, index) => (
-                <div key={question.id} className="space-y-3">
+                <div key={question.id} className="space-y-3 relative">
+                  {/* 삭제 버튼 */}
+                  <button
+                    onClick={async () => {
+                      if (window.confirm("이 질문 기록을 삭제하시겠습니까?")) {
+                        try {
+                          await deleteQuestionMutation.mutateAsync(question.id);
+                          showSuccess("삭제 완료", "질문 기록이 삭제되었습니다.");
+                        } catch (error) {
+                          showError("삭제 실패", "질문 기록 삭제에 실패했습니다.");
+                        }
+                      }
+                    }}
+                    disabled={deleteQuestionMutation.isPending}
+                    className="absolute top-0 right-0 w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors disabled:opacity-50 z-10"
+                    aria-label="질문 기록 삭제"
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                    </svg>
+                  </button>
+                  
                   {/* User Question */}
                   <div className="flex justify-end">
                     <div className="max-w-[80%] px-4 py-3 rounded-2xl bg-white text-gray-800 shadow-sm border border-gray-100">
@@ -836,7 +881,28 @@ const QuestionDetail = () => {
             <div className="space-y-2">
               <div className="font-semibold text-gray-600" style={headerTextStyle}>예문기록</div>
               {exampleRecords.map((example) => (
-                <div key={`example-${example.id}`} className="space-y-3">
+                <div key={`example-${example.id}`} className="space-y-3 relative">
+                  {/* 삭제 버튼 */}
+                  <button
+                    onClick={async () => {
+                      if (window.confirm("이 예문 기록을 삭제하시겠습니까?")) {
+                        try {
+                          await deleteExampleMutation.mutateAsync(example.id);
+                          showSuccess("삭제 완료", "예문 기록이 삭제되었습니다.");
+                        } catch (error) {
+                          showError("삭제 실패", "예문 기록 삭제에 실패했습니다.");
+                        }
+                      }
+                    }}
+                    disabled={deleteExampleMutation.isPending}
+                    className="absolute top-0 right-0 w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors disabled:opacity-50 z-10"
+                    aria-label="예문 기록 삭제"
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                    </svg>
+                  </button>
+                  
                   {/* 질문 내용 (사용자가 입력한 텍스트) */}
                   {example.description &&
                     example.description !== "이미지에서 예문을 생성했어요." && (
@@ -869,7 +935,27 @@ const QuestionDetail = () => {
               const currentItem = example.exampleItems[currentIndex];
               
               return (
-                <div key={`example-situation-${example.id}`} className="space-y-2" style={{ gap: '10px' }}>
+                <div key={`example-situation-${example.id}`} className="space-y-2 relative" style={{ gap: '10px' }}>
+                  {/* 삭제 버튼 */}
+                  <button
+                    onClick={async () => {
+                      if (window.confirm("이 예문 기록을 삭제하시겠습니까?")) {
+                        try {
+                          await deleteExampleMutation.mutateAsync(example.id);
+                          showSuccess("삭제 완료", "예문 기록이 삭제되었습니다.");
+                        } catch (error) {
+                          showError("삭제 실패", "예문 기록 삭제에 실패했습니다.");
+                        }
+                      }
+                    }}
+                    disabled={deleteExampleMutation.isPending}
+                    className="absolute top-0 right-0 w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors disabled:opacity-50 z-10"
+                    aria-label="예문 기록 삭제"
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                    </svg>
+                  </button>
                   {/* 큰 흰색 칸 - 예문 상황 안내 */}
                   <div 
                     className="bg-white shadow-sm border border-gray-100 rounded-lg relative"

@@ -434,8 +434,8 @@ const StageResult = ({
         {/* 사진에 대한 설명 */}
         {description && (
           <div className="flex justify-start">
-            <div className={`max-w-[80%] ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-2xl bg-white text-gray-800 shadow-sm border border-gray-100`}>
-              <p className="leading-relaxed" style={textStyles.base}>
+            <div className={`max-w-[80%] ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-lg bg-blue-50 text-gray-800 border border-blue-100`}>
+              <p className="leading-relaxed whitespace-pre-wrap" style={{ ...textStyles.base, color: '#1e40af', lineHeight: '1.6' }}>
                 {description}
               </p>
             </div>
@@ -453,18 +453,20 @@ const StageResult = ({
           return (
             <React.Fragment key={`group-${groupIndex}`}>
               {/* 상황 설명 */}
-              <div className="flex justify-start">
-                <div 
-                  className={`max-w-[80%] ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-lg bg-gray-50 text-gray-700 border border-gray-200`}
-                  style={{
-                    boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
-                  }}
-                >
-                  <p className="leading-relaxed" style={{ ...textStyles.base, color: '#374151' }}>
-                    {formatContextText(example.context)}
-                  </p>
+              {example.context && (
+                <div className="flex justify-start">
+                  <div 
+                    className={`max-w-[80%] ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-lg bg-gray-50 text-gray-700 border border-gray-200`}
+                    style={{
+                      boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
+                    }}
+                  >
+                    <p className="leading-relaxed whitespace-pre-wrap" style={{ ...textStyles.base, color: '#374151', lineHeight: '1.6' }}>
+                      {formatContextText(example.context)}
+                    </p>
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Example Card */}
               <div className="flex justify-start">

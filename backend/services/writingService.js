@@ -255,10 +255,33 @@ async function getWritingRecords(userId, writingQuestionId = null) {
   }
 }
 
+async function deleteWritingRecord(userId, recordId) {
+  validateUserId(userId);
+  if (!recordId || !Number.isInteger(recordId) || recordId <= 0) {
+    throw new Error("BAD_REQUEST: 유효하지 않은 recordId입니다.");
+  }
+
+  try {
+    const record = await WritingRecord.findOne({
+      where: { id: recordId, user_id: userId },
+    });
+
+    if (!record) {
+      throw new Error("NOT_FOUND: 해당 기록을 찾을 수 없거나 삭제 권한이 없습니다.");
+    }
+
+    await record.destroy();
+    return { message: "기록이 삭제되었습니다." };
+  } catch (error) {
+    handleServiceError(error, "기록 삭제에 실패했습니다.");
+  }
+}
+
 module.exports = { 
   correctWriting, 
   translateWriting, 
   translateEnglishToKorean,
   getWritingRecords,
+  deleteWritingRecord,
 };
 

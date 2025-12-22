@@ -19,20 +19,14 @@ export const groupExamples = (examples: Example[]): Example[][] => {
 
 /**
  * 상황 설명 텍스트 포맷팅
+ * 백엔드에서 이미 자세한 설명을 생성하므로 그대로 사용
  */
 export const formatContextText = (context: string | undefined): string => {
   if (!context) {
     return "이런 상황에서 사용하는 대화입니다";
   }
 
-  // 마침표 제거
-  const cleanContext = context.replace(/\.+$/, '').trim();
-
-  // "상황"이 포함되어 있으면 그대로 사용, 없으면 추가
-  if (cleanContext.includes('상황')) {
-    return cleanContext;
-  }
-
-  return `${cleanContext} 상황`;
+  // 백엔드에서 이미 자세한 설명을 생성하므로 그대로 반환
+  return context.trim();
 };
 

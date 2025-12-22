@@ -79,4 +79,29 @@ async function getAnswer(question, userId) {
   }
 }
 
-module.exports = { getAnswer };
+async function deleteQuestion(userId, questionId) {
+  if (!userId) {
+    throw new Error("BAD_REQUEST: userId는 필수입니다.");
+  }
+  if (!questionId || !Number.isInteger(questionId) || questionId <= 0) {
+    throw new Error("BAD_REQUEST: 유효하지 않은 questionId입니다.");
+  }
+
+  try {
+    const question = await Question.findOne({
+      where: { id: questionId, user_id: userId },
+    });
+
+    if (!question) {
+      throw new Error("NOT_FOUND: 해당 질문을 찾을 수 없거나 삭제 권한이 없습니다.");
+    }
+
+    await question.destroy();
+    return { message: "질문 기록이 삭제되었습니다." };
+  } catch (error) {
+    console.error("질문 삭제 중 오류:", error.message);
+    throw error;
+  }
+}
+
+module.exports = { getAnswer, deleteQuestion };

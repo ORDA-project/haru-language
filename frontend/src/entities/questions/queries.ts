@@ -1,4 +1,6 @@
 import { useGetQuery, usePostMutation } from "../../hooks/useQuery";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { questionApi } from "./api";
 import {
   CreateQuestionParams,
   CreateQuestionResponse,
@@ -64,4 +66,19 @@ export const useCreateQuestion = () => {
       invalidateQueries: [["questions"]],
     }
   );
+};
+
+// 질문 기록 삭제
+export const useDeleteQuestion = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (questionId: number) => {
+      return await questionApi.deleteQuestion(questionId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["questions"] });
+      queryClient.invalidateQueries({ queryKey: ["questions", "current"] });
+    },
+  });
 };

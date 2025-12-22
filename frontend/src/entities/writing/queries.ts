@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { writingApi } from "./api";
+import { useDeleteMutation } from "../../hooks/useQuery";
 import {
   CorrectWritingParams,
   TranslateWritingParams,
@@ -288,6 +289,20 @@ export const useTranslateEnglishToKorean = () => {
       queryClient.invalidateQueries({
         queryKey: ["writingRecords", variables.writingQuestionId],
       });
+    },
+  });
+};
+
+// Writing 기록 삭제
+export const useDeleteWritingRecord = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (recordId: number) => {
+      return await writingApi.deleteWritingRecord(recordId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["writingRecords"] });
     },
   });
 };

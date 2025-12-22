@@ -4,6 +4,7 @@ const {
   translateWriting,
   translateEnglishToKorean,
   getWritingRecords,
+  deleteWritingRecord,
 } = require("../services/writingService");
 const { WritingQuestion, WritingExample } = require("../models");
 const { getUserIdBySocialId } = require("../utils/userUtils");
@@ -184,6 +185,26 @@ router.get("/questions", async (_req, res) => {
     });
   } catch (error) {
     return handleError(error, res, "GET /writing/questions");
+  }
+});
+
+// Writing 기록 삭제
+router.delete("/records/:recordId", async (req, res) => {
+  try {
+    const userId = await getSessionUserId(req);
+    if (!userId) {
+      return res.status(401).json({ message: "로그인이 필요합니다." });
+    }
+
+    const recordId = parseInt(req.params.recordId, 10);
+    if (!Number.isInteger(recordId) || recordId <= 0) {
+      return res.status(400).json({ message: "유효하지 않은 recordId입니다." });
+    }
+
+    const result = await deleteWritingRecord(userId, recordId);
+    return res.status(200).json(result);
+  } catch (error) {
+    return handleError(error, res, "DELETE /writing/records/:recordId");
   }
 });
 

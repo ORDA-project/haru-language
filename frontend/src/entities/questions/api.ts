@@ -9,4 +9,9 @@ export const questionApi = {
   getQuestionsByUserId: (userId: number): Promise<GetQuestionsResponse> => {
     return http.get(`/question/${userId}`);
   },
+
+  // 질문 기록 삭제
+  deleteQuestion: (questionId: number): Promise<{ message: string }> => {
+    return http.delete(`/question/${questionId}`);
+  },
 };

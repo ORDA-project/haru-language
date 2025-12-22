@@ -3,6 +3,7 @@ const multer = require("multer");
 const fs = require("fs").promises;
 const { detectText } = require("../services/ocrService");
 const generateExamples = require("../services/exampleService");
+const { deleteExample } = require("../services/exampleService");
 const { getExamplesByUserId } = require("../services/historyService");
 const { User } = require("../models");
 
@@ -223,6 +224,36 @@ router.get("/:userId", async (req, res) => {
     console.error("예문 조회 API 오류:", error.message);
     res.status(500).json({
       message: "예문 조회 중 오류가 발생했습니다.",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+});
+
+// 예문 기록 삭제
+router.delete("/:exampleId", async (req, res) => {
+  try {
+    const user = requireAuthenticatedUser(req, res);
+    if (!user) return;
+
+    const exampleId = parseInt(req.params.exampleId, 10);
+    if (!Number.isInteger(exampleId) || exampleId <= 0) {
+      return res.status(400).json({ message: "유효하지 않은 exampleId입니다." });
+    }
+
+    const result = await deleteExample(user.userId, exampleId);
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error("예문 삭제 API 오류:", error.message);
+    
+    if (error.message?.includes("NOT_FOUND")) {
+      return res.status(404).json({ message: error.message.replace("NOT_FOUND: ", "") });
+    }
+    if (error.message?.includes("BAD_REQUEST")) {
+      return res.status(400).json({ message: error.message.replace("BAD_REQUEST: ", "") });
+    }
+    
+    return res.status(500).json({
+      message: "예문 삭제 중 오류가 발생했습니다.",
       error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }

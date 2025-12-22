@@ -21,4 +21,9 @@ export const exampleApi = {
   getExamplesByUserId: (userId: number): Promise<GetExamplesResponse> => {
     return http.get(`/example/${userId}`);
   },
+
+  // 예문 기록 삭제
+  deleteExample: (exampleId: number): Promise<{ message: string }> => {
+    return http.delete(`/example/${exampleId}`);
+  },
 };

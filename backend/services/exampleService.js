@@ -28,11 +28,20 @@ async function generateExamples(inputSentence, userId) {
     "You are an AI assistant that creates English learning examples from sentences. " +
     "You MUST return a JSON object with a 'generatedExample' object containing: " +
     "1. 'extractedSentence': the input sentence, " +
-    "2. 'description': a brief explanation in Korean, " +
+    "2. 'description': a detailed, practical explanation in Korean (2-3 sentences) that explains: " +
+    "   - When and in what situations this sentence/expression is actually used in real life, " +
+    "   - What context or circumstances make it appropriate, " +
+    "   - How native speakers typically use it, " +
+    "   - Why someone would say this (the purpose or intent behind it). " +
+    "   Make it practical and relatable, like '이 표현은 ~할 때 쓰는 거예요' or '현지에서는 ~한 상황에서 자주 사용해요'. " +
     "3. 'examples': an array of exactly 3 examples. " +
     "Each example must have: " +
     "- 'id': an integer (1, 2, 3), " +
-    "- 'context': a string describing the situation in Korean, " +
+    "- 'context': a detailed situation description in Korean (1-2 sentences) that includes: " +
+    "   - Specific time, place, and setting (e.g., '아침에 친구와 함께 카페에 있을 때', '회의실에서 동료에게 말할 때'), " +
+    "   - The relationship between speakers (friends, colleagues, family, etc.), " +
+    "   - The emotional tone or atmosphere (casual, formal, concerned, etc.), " +
+    "   - Why this conversation is happening in this context. " +
     "- 'dialogue': an object with 'A' and 'B' properties. " +
     "Each dialogue speaker (A and B) must be an object with 'english' and 'korean' string properties. " +
     "Example dialogue format: { 'A': { 'english': 'Hello', 'korean': '안녕' }, 'B': { 'english': 'Hi', 'korean': '안녕' } } " +
@@ -256,4 +265,30 @@ async function generateExamples(inputSentence, userId) {
   return gptResponse;
 }
 
+async function deleteExample(userId, exampleId) {
+  if (!userId) {
+    throw new Error("BAD_REQUEST: userId는 필수입니다.");
+  }
+  if (!exampleId || !Number.isInteger(exampleId) || exampleId <= 0) {
+    throw new Error("BAD_REQUEST: 유효하지 않은 exampleId입니다.");
+  }
+
+  try {
+    const example = await Example.findOne({
+      where: { id: exampleId, user_id: userId },
+    });
+
+    if (!example) {
+      throw new Error("NOT_FOUND: 해당 예문을 찾을 수 없거나 삭제 권한이 없습니다.");
+    }
+
+    await example.destroy();
+    return { message: "예문 기록이 삭제되었습니다." };
+  } catch (error) {
+    console.error("예문 삭제 중 오류:", error.message);
+    throw error;
+  }
+}
+
 module.exports = generateExamples;
+module.exports.deleteExample = deleteExample;

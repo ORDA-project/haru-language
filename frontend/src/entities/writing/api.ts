@@ -55,4 +55,9 @@ export const writingApi = {
   ): Promise<GetWritingRecordsResponse> => {
     return http.get(`/writing-question/records/${userId}/${writingQuestionId}`);
   },
+
+  // Writing 기록 삭제
+  deleteWritingRecord: (recordId: number): Promise<{ message: string }> => {
+    return http.delete(`/writing/records/${recordId}`);
+  },
 };

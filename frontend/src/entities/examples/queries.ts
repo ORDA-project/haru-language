@@ -1,4 +1,5 @@
 import { useGetQuery, usePostMutation, useQuery } from "../../hooks/useQuery";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { http, isHttpError } from "../../utils/http";
 import { CreateExampleParams, GetExamplesResponse } from "./types";
 
@@ -34,5 +35,20 @@ export const useCreateExample = () => {
   return usePostMutation<any, CreateExampleParams>("/example", {
     showSuccessMessage: "Example Created Successfully",
     invalidateQueries: [["examples"], ["examples", "current"], ["friends"]],
+  });
+};
+
+// 예문 기록 삭제
+export const useDeleteExample = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (exampleId: number) => {
+      return await http.delete<{ message: string }>(`/example/${exampleId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["examples"] });
+      queryClient.invalidateQueries({ queryKey: ["examples", "current"] });
+    },
   });
 };
