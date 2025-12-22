@@ -126,9 +126,10 @@ const App = () => {
       const fileName = blob.type === "image/jpeg" ? "cropped-image.jpg" : "cropped-image.png";
       formData.append("image", blob, fileName);
 
-      // 타임아웃 경고 메시지
+      // 타임아웃 경고 메시지 (loading 상태를 ref로 추적하여 stale closure 방지)
+      const loadingRef = { current: true };
       const timeoutId = setTimeout(() => {
-        if (loading) {
+        if (loadingRef.current) {
           showWarning(
             "처리 중",
             "이미지 분석이 진행 중입니다. 잠시만 기다려주세요..."
@@ -150,8 +151,9 @@ const App = () => {
       });
 
       clearTimeout(timeoutId);
+      loadingRef.current = false;
 
-      if (!response.data || !response.data.generatedExample) {
+      if (!response?.data || !response.data.generatedExample) {
         throw new Error("서버에서 올바르지 않은 응답을 받았습니다.");
       }
 

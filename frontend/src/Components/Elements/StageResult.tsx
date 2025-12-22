@@ -137,10 +137,18 @@ const StageResult = ({
   const { showError, showSuccess } = useErrorHandler();
   const isInitializedRef = useRef(false);
 
-  // 화면 크기 감지
+  // 화면 크기 감지 (throttling 적용)
   useEffect(() => {
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    
     const updateWidth = () => {
-      setWindowWidth(window.innerWidth);
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      timeoutId = setTimeout(() => {
+        setWindowWidth(window.innerWidth);
+        timeoutId = null;
+      }, 150); // 150ms throttling
     };
     
     updateWidth();
@@ -148,6 +156,9 @@ const StageResult = ({
     
     return () => {
       window.removeEventListener('resize', updateWidth);
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
     };
   }, []);
 
@@ -165,6 +176,11 @@ const StageResult = ({
 
   // 스타일 계산 (메모이제이션)
   const textStyles = useMemo(() => createTextStyles(isLargeTextMode), [isLargeTextMode]);
+  
+  // newImageSets의 그룹 인덱스 집합을 메모이제이션 (성능 최적화)
+  const newImageSetGroupIndices = useMemo(() => {
+    return new Set(newImageSets.map(set => set.exampleGroupIndex));
+  }, [newImageSets]);
 
   // 오디오 정리
   const stopCurrentAudio = useCallback(() => {
@@ -376,16 +392,18 @@ const StageResult = ({
           return newGroups;
         });
         
-        // 스크롤을 새로 추가된 예문으로 이동
-        setTimeout(() => {
-          const chatContainer = document.querySelector('.overflow-y-auto');
-          if (chatContainer) {
-            chatContainer.scrollTo({
-              top: chatContainer.scrollHeight,
-              behavior: 'smooth'
-            });
-          }
-        }, 100);
+        // 스크롤을 새로 추가된 예문으로 이동 (requestAnimationFrame 사용)
+        requestAnimationFrame(() => {
+          setTimeout(() => {
+            const chatContainer = document.querySelector('.overflow-y-auto');
+            if (chatContainer) {
+              chatContainer.scrollTo({
+                top: chatContainer.scrollHeight,
+                behavior: 'smooth'
+              });
+            }
+          }, 100);
+        });
         
         showSuccess("예문 추가 완료", "새로운 예문 3개가 추가되었습니다!");
       } else {
@@ -548,6 +566,12 @@ const StageResult = ({
       return;
     }
 
+    // 안전한 접근을 위한 null 체크
+    if (!example?.dialogue?.A?.english || !example?.dialogue?.B?.english) {
+      showError("재생 오류", "예문 데이터가 올바르지 않습니다.");
+      return;
+    }
+
     const dialogueA = example.dialogue.A.english;
     const dialogueB = example.dialogue.B.english;
     
@@ -632,15 +656,15 @@ const StageResult = ({
         {/* 원본 Example Groups (새 이미지 세트에 속하지 않은 그룹들만) */}
         {exampleGroups.map((group, groupIndex) => {
           // 새로운 이미지 세트에 속한 그룹은 건너뛰기 (이미 newImageSets에서 렌더링됨)
-          const isNewImageSetGroup = newImageSets.some(set => set.exampleGroupIndex === groupIndex);
-          if (isNewImageSetGroup) return null;
+          // Set을 사용하여 O(1) 조회로 성능 최적화
+          if (newImageSetGroupIndices.has(groupIndex)) return null;
           
           const currentIdx = groupCurrentIndices[groupIndex] || 0;
-          const example = group[currentIdx];
-          if (!example) {
+          const example = group?.[currentIdx];
+          if (!example || !group || group.length === 0) {
             if (import.meta.env.DEV) {
               console.warn(`예문 그룹 ${groupIndex}의 인덱스 ${currentIdx}에 예문이 없습니다.`, {
-                groupLength: group.length,
+                groupLength: group?.length || 0,
                 currentIdx,
                 groupCurrentIndices,
               });
@@ -707,9 +731,11 @@ const StageResult = ({
                         <p className="font-medium text-gray-900 leading-relaxed" style={textStyles.small}>
                           {example.dialogue?.A?.english || "예문 내용"}
                         </p>
-                        <p className="text-gray-600 leading-relaxed mt-1" style={textStyles.small}>
-                          {example.dialogue?.A?.korean || "예문 한글버전"}
-                        </p>
+                        {example.dialogue?.A?.korean && (
+                          <p className="text-gray-600 leading-relaxed mt-1" style={textStyles.small}>
+                            {example.dialogue.A.korean}
+                          </p>
+                        )}
                       </div>
                     </div>
 
@@ -722,9 +748,11 @@ const StageResult = ({
                         <p className="font-medium text-gray-900 leading-relaxed" style={textStyles.small}>
                           {example.dialogue?.B?.english || "예문 내용"}
                         </p>
-                        <p className="text-gray-600 leading-relaxed mt-1" style={textStyles.small}>
-                          {example.dialogue?.B?.korean || "예문 한글버전"}
-                        </p>
+                        {example.dialogue?.B?.korean && (
+                          <p className="text-gray-600 leading-relaxed mt-1" style={textStyles.small}>
+                            {example.dialogue.B.korean}
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -792,9 +820,14 @@ const StageResult = ({
         {/* 새로운 이미지 세트들 - 각 세트는 이미지, 설명, 예문 그룹 순서로 표시 */}
         {newImageSets.map((imageSet, setIndex) => {
           const groupIndex = imageSet.exampleGroupIndex;
-          const group = exampleGroups[groupIndex];
+          const group = exampleGroups?.[groupIndex];
           const currentIdx = groupCurrentIndices[groupIndex] || 0;
           const example = group?.[currentIdx];
+          
+          // 그룹이나 예문이 없으면 렌더링하지 않음
+          if (!group || !example || group.length === 0) {
+            return null;
+          }
           
           return (
             <React.Fragment key={imageSet.timestamp}>

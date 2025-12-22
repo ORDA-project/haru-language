@@ -109,9 +109,11 @@ const StageChat = ({ onBack }: StageChatProps) => {
     }
   }, []);
 
-  // 메시지 스크롤
+  // 메시지 스크롤 (requestAnimationFrame 사용하여 성능 최적화)
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    requestAnimationFrame(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    });
   }, [messages]);
 
   const handleSendMessage = async () => {
@@ -241,12 +243,12 @@ const StageChat = ({ onBack }: StageChatProps) => {
         return;
       }
 
-      // 사용자가 선택한 영역을 그대로 가져오되, 너무 크면 리사이즈
+      // 사용자가 선택한 영역을 그대로 가져오되, 너무 크면 리사이즈 (OCR 성능을 위해 크기 제한)
       const croppedCanvas = cropper.getCroppedCanvas({
         imageSmoothingEnabled: true,
-        imageSmoothingQuality: "high",
-        maxWidth: 1920,
-        maxHeight: 1920,
+        imageSmoothingQuality: "medium", // high -> medium으로 변경하여 처리 속도 개선
+        maxWidth: 1200, // 1920 -> 1200으로 줄여서 처리 시간 단축
+        maxHeight: 1200, // 1920 -> 1200으로 줄여서 처리 시간 단축
       });
 
       if (!croppedCanvas) {
@@ -271,15 +273,17 @@ const StageChat = ({ onBack }: StageChatProps) => {
       // 크롭된 이미지 그리기
       ctx.drawImage(croppedCanvas, 0, 0);
 
-      const croppedDataURL = finalCanvas.toDataURL("image/jpeg", 0.8);
+      // JPEG 품질을 낮춰서 파일 크기와 처리 시간 단축 (0.8 -> 0.7)
+      const croppedDataURL = finalCanvas.toDataURL("image/jpeg", 0.7);
       setCroppedImage(croppedDataURL);
       setCropStage("chat");
 
-      // 이미지를 메시지로 추가
+      // 이미지를 메시지로 추가 (실제 이미지 URL 포함)
       const imageMessage: Message = {
         id: Date.now().toString(),
         type: "user",
-        content: `[이미지 업로드됨]`,
+        content: "", // 텍스트 없이 이미지만 표시
+        imageUrl: croppedDataURL, // 크롭된 이미지 URL 저장
         timestamp: new Date(),
       };
       setMessages((prev) => {
@@ -524,16 +528,29 @@ const StageChat = ({ onBack }: StageChatProps) => {
                           : "bg-gray-200 text-gray-800 shadow-sm border border-gray-100"
                       }`}
                     >
-                      {message.type === "ai" ? (
-                        <div
-                          className="leading-relaxed"
-                          style={baseTextStyle}
-                          dangerouslySetInnerHTML={{ __html: message.content }}
-                        />
-                      ) : (
-                        <p className="leading-relaxed whitespace-pre-wrap" style={baseTextStyle}>
-                          {message.content}
-                        </p>
+                      {/* 사용자 메시지에 이미지가 있는 경우 */}
+                      {message.type === "user" && message.imageUrl && (
+                        <div className="mb-2">
+                          <img
+                            src={message.imageUrl}
+                            alt="업로드된 이미지"
+                            className="w-full rounded-lg object-contain max-h-64"
+                          />
+                        </div>
+                      )}
+                      {/* 텍스트 내용 표시 (이미지가 있으면 이미지 아래에 표시) */}
+                      {message.content && (
+                        message.type === "ai" ? (
+                          <div
+                            className="leading-relaxed"
+                            style={baseTextStyle}
+                            dangerouslySetInnerHTML={{ __html: message.content }}
+                          />
+                        ) : (
+                          <p className="leading-relaxed whitespace-pre-wrap" style={baseTextStyle}>
+                            {message.content}
+                          </p>
+                        )
                       )}
                     </div>
                   </div>
@@ -541,11 +558,11 @@ const StageChat = ({ onBack }: StageChatProps) => {
 
                 {/* 예문 카드 */}
                 {message.examples && message.examples.length > 0 && (
-                  <div className="flex justify-start">
+                  <div className="flex flex-col justify-start space-y-4">
                     {message.examples.map((example, exampleIndex) => (
                       <div
                         key={exampleIndex}
-                        className="max-w-[90%] w-full bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden mb-4"
+                        className="max-w-[90%] w-full bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden"
                         style={{ width: '343px', paddingLeft: '12px', paddingTop: '12px', paddingBottom: '16px', paddingRight: '16px' }}
                       >
                         {/* Context Badge and Dots */}
@@ -554,9 +571,17 @@ const StageChat = ({ onBack }: StageChatProps) => {
                             <span className="font-medium text-gray-900" style={{ fontSize: `${isLargeTextMode ? 16 : 12}px` }}>예문 상황</span>
                           </div>
                           <div className="flex items-center" style={{ gap: '4px' }}>
-                            <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#00DAAA' }} />
-                            <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#D1D5DB' }} />
-                            <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#D1D5DB' }} />
+                            {message.examples && message.examples.length > 0 && [0, 1, 2].map((dotIdx) => (
+                              <div
+                                key={dotIdx}
+                                style={{
+                                  width: '6px',
+                                  height: '6px',
+                                  borderRadius: '50%',
+                                  backgroundColor: dotIdx === exampleIndex ? '#00DAAA' : '#D1D5DB',
+                                }}
+                              />
+                            ))}
                           </div>
                         </div>
 
@@ -602,6 +627,12 @@ const StageChat = ({ onBack }: StageChatProps) => {
                           </button>
                           <button
                             onClick={async () => {
+                              // 안전한 접근을 위한 null 체크
+                              if (!example?.dialogue?.A?.english || !example?.dialogue?.B?.english) {
+                                showError("재생 오류", "예문 데이터가 올바르지 않습니다.");
+                                return;
+                              }
+                              
                               const dialogueA = example.dialogue.A.english;
                               const dialogueB = example.dialogue.B.english;
                               const textToRead = `${dialogueA}. ${dialogueB}`;

@@ -17,21 +17,26 @@ const GameStyleNotification: React.FC<GameStyleNotificationProps> = ({
   const [isExiting, setIsExiting] = useState(false);
 
   useEffect(() => {
-    // 페이드인 애니메이션
-    const fadeInTimer = setTimeout(() => {
-      setIsVisible(true);
-    }, 10);
+    // 페이드인 애니메이션 (requestAnimationFrame 사용)
+    const fadeInId = requestAnimationFrame(() => {
+      setTimeout(() => {
+        setIsVisible(true);
+      }, 10);
+    });
 
     // 자동으로 사라지기
     const exitTimer = setTimeout(() => {
       setIsExiting(true);
-      setTimeout(() => {
-        onClose();
-      }, 300); // 페이드아웃 애니메이션 시간
+      // 페이드아웃 후 닫기 (requestAnimationFrame 사용)
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          onClose();
+        }, 300); // 페이드아웃 애니메이션 시간
+      });
     }, duration);
 
     return () => {
-      clearTimeout(fadeInTimer);
+      cancelAnimationFrame(fadeInId);
       clearTimeout(exitTimer);
     };
   }, [duration, onClose]);

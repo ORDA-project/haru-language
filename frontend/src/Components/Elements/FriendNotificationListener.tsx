@@ -50,10 +50,12 @@ const FriendNotificationListener = () => {
     setCurrentNotification(null);
     isShowingNotificationRef.current = false;
     
-    // 다음 알림 표시
-    setTimeout(() => {
-      showNextNotification();
-    }, 300); // 페이드아웃 애니메이션 시간
+    // 다음 알림 표시 (requestAnimationFrame 사용)
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        showNextNotification();
+      }, 300); // 페이드아웃 애니메이션 시간
+    });
   }, [showNextNotification]);
 
   // 알림 조회 및 표시 함수 (비동기 처리로 성능 개선)
@@ -69,8 +71,8 @@ const FriendNotificationListener = () => {
       const notifications = response.notifications || [];
       if (notifications.length === 0) return;
 
-      // 상태 업데이트를 다음 프레임으로 지연시켜 메인 스레드 부하 감소
-      await new Promise(resolve => setTimeout(resolve, 0));
+      // 상태 업데이트를 다음 프레임으로 지연시켜 메인 스레드 부하 감소 (requestAnimationFrame 사용)
+      await new Promise(resolve => requestAnimationFrame(resolve));
 
       const notificationIds: number[] = [];
 
@@ -92,11 +94,11 @@ const FriendNotificationListener = () => {
         });
       });
 
-      // 알림 표시 시작 (다음 프레임에서 실행)
+      // 알림 표시 시작 (다음 프레임에서 실행 - requestAnimationFrame 사용)
       if (notificationQueueRef.current.length > 0 && !isShowingNotificationRef.current) {
-        setTimeout(() => {
+        requestAnimationFrame(() => {
           showNextNotification();
-        }, 0);
+        });
       }
 
       // 모든 알림을 표시한 후 읽음 처리 (비동기로 처리)
@@ -142,10 +144,10 @@ const FriendNotificationListener = () => {
         clearTimeout(intervalRef.current);
       }
       
-      // 즉시 한 번 체크 (비동기로 처리)
-      setTimeout(() => {
+      // 즉시 한 번 체크 (requestAnimationFrame 사용)
+      requestAnimationFrame(() => {
         fetchAndDisplayNotifications();
-      }, 0);
+      });
       
       // 주기적으로 알림 체크 (재귀적 setTimeout 사용으로 이전 작업 완료 후 실행)
       const scheduleNextCheck = () => {
