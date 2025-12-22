@@ -359,6 +359,15 @@ const StageResult = ({
             ...indices,
             [newGroupIndex]: 0,
           }));
+          
+          if (import.meta.env.DEV) {
+            console.log("예문 추가 완료:", {
+              newGroupIndex,
+              totalGroups: newGroups.length,
+              newExamplesCount: newExamples.length,
+            });
+          }
+          
           // 부모 컴포넌트에 업데이트 알림 (새로운 예문 추가 시)
           if (onExamplesUpdate) {
             const allExamples = newGroups.flat();
@@ -366,6 +375,18 @@ const StageResult = ({
           }
           return newGroups;
         });
+        
+        // 스크롤을 새로 추가된 예문으로 이동
+        setTimeout(() => {
+          const chatContainer = document.querySelector('.overflow-y-auto');
+          if (chatContainer) {
+            chatContainer.scrollTo({
+              top: chatContainer.scrollHeight,
+              behavior: 'smooth'
+            });
+          }
+        }, 100);
+        
         showSuccess("예문 추가 완료", "새로운 예문 3개가 추가되었습니다!");
       } else {
         setIsModalOpen(true);
