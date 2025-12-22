@@ -146,7 +146,7 @@ const App = () => {
         baseURL: API_BASE_URL,
         headers,
         withCredentials: true,
-        timeout: 30000, // 30초 타임아웃
+        timeout: 60000, // 60초 타임아웃 (OCR + GPT 처리 시간 고려)
       });
 
       clearTimeout(timeoutId);
@@ -204,12 +204,12 @@ const App = () => {
         return;
       }
 
-      // 사용자가 선택한 영역을 그대로 가져오되, 너무 크면 리사이즈
+      // 사용자가 선택한 영역을 그대로 가져오되, 너무 크면 리사이즈 (OCR 성능을 위해 크기 제한)
       const croppedCanvas = cropper.getCroppedCanvas({
         imageSmoothingEnabled: true,
-        imageSmoothingQuality: "high",
-        maxWidth: 1920,
-        maxHeight: 1920,
+        imageSmoothingQuality: "medium", // high -> medium으로 변경하여 처리 속도 개선
+        maxWidth: 1200, // 1920 -> 1200으로 줄여서 처리 시간 단축
+        maxHeight: 1200, // 1920 -> 1200으로 줄여서 처리 시간 단축
       });
 
       if (!croppedCanvas) {
@@ -234,7 +234,8 @@ const App = () => {
       // 크롭된 이미지 그리기
       ctx.drawImage(croppedCanvas, 0, 0);
 
-      const croppedDataURL = finalCanvas.toDataURL("image/jpeg", 0.8);
+      // JPEG 품질을 낮춰서 파일 크기와 처리 시간 단축 (0.8 -> 0.7)
+      const croppedDataURL = finalCanvas.toDataURL("image/jpeg", 0.7);
       setCroppedImage(croppedDataURL);
       setStage(3);
       handleGenerateExamples(croppedDataURL);

@@ -53,7 +53,7 @@ interface GroupCurrentIndices {
 }
 
 // 상수
-const API_TIMEOUT = 30000;
+const API_TIMEOUT = 60000; // 60초 타임아웃 (OCR + GPT 처리 시간 고려)
 const EXAMPLE_CARD_WIDTH = 343;
 const ADD_BUTTON_WIDTH = Math.floor(EXAMPLE_CARD_WIDTH / 3); // 114px
 
@@ -426,9 +426,9 @@ const StageResult = ({
       const cropper = cropperRef.current.cropper;
       const croppedCanvas = cropper.getCroppedCanvas({
         imageSmoothingEnabled: true,
-        imageSmoothingQuality: "high",
-        maxWidth: 1920,
-        maxHeight: 1920,
+        imageSmoothingQuality: "medium", // high -> medium으로 변경하여 처리 속도 개선
+        maxWidth: 1200, // 1920 -> 1200으로 줄여서 처리 시간 단축
+        maxHeight: 1200, // 1920 -> 1200으로 줄여서 처리 시간 단축
       });
 
       if (!croppedCanvas) {
@@ -453,7 +453,8 @@ const StageResult = ({
       // 크롭된 이미지 그리기
       ctx.drawImage(croppedCanvas, 0, 0);
 
-      const croppedDataURL = finalCanvas.toDataURL("image/jpeg", 0.8);
+      // JPEG 품질을 낮춰서 파일 크기와 처리 시간 단축 (0.8 -> 0.7)
+      const croppedDataURL = finalCanvas.toDataURL("image/jpeg", 0.7);
       
       // 크롭 단계 닫기
       setShowCropStage(false);

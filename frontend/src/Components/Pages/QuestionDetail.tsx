@@ -11,6 +11,7 @@ import { useErrorHandler } from "../../hooks/useErrorHandler";
 import NavBar from "../Templates/Navbar";
 import { createExtendedTextStyles } from "../../utils/styleUtils";
 import { getTodayStringBy4AM } from "../../utils/dateUtils";
+import { removeExamplesFromStorage, removeChatMessagesFromStorage } from "../../utils/storageUtils";
 
 type ExampleDialogue = {
   speaker: string;
@@ -618,29 +619,69 @@ const QuestionDetail = () => {
                 </button>
               </div>
               
-              {isDeleteModeWriting && selectedWritingIds.size > 0 && (
-                <div className="flex justify-end">
-                  <button
-                    onClick={async () => {
-                      if (window.confirm(`선택한 ${selectedWritingIds.size}개의 하루한줄 기록을 삭제하시겠습니까?`)) {
-                        try {
-                          const deletePromises = Array.from(selectedWritingIds).map(id =>
-                            deleteWritingRecordMutation.mutateAsync(id)
-                          );
-                          await Promise.all(deletePromises);
-                          showSuccess("삭제 완료", `${selectedWritingIds.size}개의 하루한줄 기록이 삭제되었습니다.`);
+              {isDeleteModeWriting && (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={selectedWritingIds.size === writingRecords.length && writingRecords.length > 0}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedWritingIds(new Set(writingRecords.map((r: any) => r.id)));
+                        } else {
                           setSelectedWritingIds(new Set());
-                          setIsDeleteModeWriting(false);
-                        } catch (error) {
-                          showError("삭제 실패", "하루한줄 기록 삭제에 실패했습니다.");
                         }
-                      }
-                    }}
-                    disabled={deleteWritingRecordMutation.isPending}
-                    className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors disabled:opacity-50"
-                  >
-                    선택 삭제 ({selectedWritingIds.size})
-                  </button>
+                      }}
+                      className="w-5 h-5 rounded border-gray-300 text-[#00DAAA] focus:ring-[#00DAAA]"
+                    />
+                    <span style={smallTextStyle}>전체 선택</span>
+                  </div>
+                  {selectedWritingIds.size > 0 && (
+                    <button
+                      onClick={async () => {
+                        if (window.confirm(`선택한 ${selectedWritingIds.size}개의 하루한줄 기록을 삭제하시겠습니까?`)) {
+                          try {
+                            const deletePromises = Array.from(selectedWritingIds).map(id =>
+                              deleteWritingRecordMutation.mutateAsync(id)
+                            );
+                            await Promise.all(deletePromises);
+                            showSuccess("삭제 완료", `${selectedWritingIds.size}개의 하루한줄 기록이 삭제되었습니다.`);
+                            setSelectedWritingIds(new Set());
+                            setIsDeleteModeWriting(false);
+                          } catch (error) {
+                            showError("삭제 실패", "하루한줄 기록 삭제에 실패했습니다.");
+                          }
+                        }
+                      }}
+                      disabled={deleteWritingRecordMutation.isPending}
+                      className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors disabled:opacity-50"
+                    >
+                      선택 삭제 ({selectedWritingIds.size})
+                    </button>
+                  )}
+                  {selectedWritingIds.size === writingRecords.length && writingRecords.length > 0 && (
+                    <button
+                      onClick={async () => {
+                        if (window.confirm(`모든 하루한줄 기록(${writingRecords.length}개)을 삭제하시겠습니까?`)) {
+                          try {
+                            const deletePromises = writingRecords.map((r: any) =>
+                              deleteWritingRecordMutation.mutateAsync(r.id)
+                            );
+                            await Promise.all(deletePromises);
+                            showSuccess("삭제 완료", `모든 하루한줄 기록(${writingRecords.length}개)이 삭제되었습니다.`);
+                            setSelectedWritingIds(new Set());
+                            setIsDeleteModeWriting(false);
+                          } catch (error) {
+                            showError("삭제 실패", "하루한줄 기록 삭제에 실패했습니다.");
+                          }
+                        }
+                      }}
+                      disabled={deleteWritingRecordMutation.isPending}
+                      className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50"
+                    >
+                      전체 삭제
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -800,29 +841,78 @@ const QuestionDetail = () => {
                 </button>
               </div>
               
-              {isDeleteModeQuestion && selectedQuestionIds.size > 0 && (
-                <div className="flex justify-end">
-                  <button
-                    onClick={async () => {
-                      if (window.confirm(`선택한 ${selectedQuestionIds.size}개의 채팅 기록을 삭제하시겠습니까?`)) {
-                        try {
-                          const deletePromises = Array.from(selectedQuestionIds).map(id =>
-                            deleteQuestionMutation.mutateAsync(id)
-                          );
-                          await Promise.all(deletePromises);
-                          showSuccess("삭제 완료", `${selectedQuestionIds.size}개의 채팅 기록이 삭제되었습니다.`);
+              {isDeleteModeQuestion && (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={selectedQuestionIds.size === questions.length && questions.length > 0}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedQuestionIds(new Set(questions.map((q: any) => q.id)));
+                        } else {
                           setSelectedQuestionIds(new Set());
-                          setIsDeleteModeQuestion(false);
-                        } catch (error) {
-                          showError("삭제 실패", "채팅 기록 삭제에 실패했습니다.");
                         }
-                      }
-                    }}
-                    disabled={deleteQuestionMutation.isPending}
-                    className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors disabled:opacity-50"
-                  >
-                    선택 삭제 ({selectedQuestionIds.size})
-                  </button>
+                      }}
+                      className="w-5 h-5 rounded border-gray-300 text-[#00DAAA] focus:ring-[#00DAAA]"
+                    />
+                    <span style={smallTextStyle}>전체 선택</span>
+                  </div>
+                  {selectedQuestionIds.size > 0 && (
+                    <button
+                      onClick={async () => {
+                        if (window.confirm(`선택한 ${selectedQuestionIds.size}개의 채팅 기록을 삭제하시겠습니까?`)) {
+                          try {
+                            const selectedQuestions = questions.filter((q: any) => selectedQuestionIds.has(q.id));
+                            const deletePromises = Array.from(selectedQuestionIds).map(id =>
+                              deleteQuestionMutation.mutateAsync(id)
+                            );
+                            await Promise.all(deletePromises);
+                            // localStorage에서도 채팅 메시지 제거
+                            const questionContents = selectedQuestions.map((q: any) => q.content || "");
+                            removeChatMessagesFromStorage(Array.from(selectedQuestionIds), questionContents, "stage_chat_messages");
+                            removeChatMessagesFromStorage(Array.from(selectedQuestionIds), questionContents, "chat_messages");
+                            showSuccess("삭제 완료", `${selectedQuestionIds.size}개의 채팅 기록이 삭제되었습니다.`);
+                            setSelectedQuestionIds(new Set());
+                            setIsDeleteModeQuestion(false);
+                          } catch (error) {
+                            showError("삭제 실패", "채팅 기록 삭제에 실패했습니다.");
+                          }
+                        }
+                      }}
+                      disabled={deleteQuestionMutation.isPending}
+                      className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors disabled:opacity-50"
+                    >
+                      선택 삭제 ({selectedQuestionIds.size})
+                    </button>
+                  )}
+                  {selectedQuestionIds.size === questions.length && questions.length > 0 && (
+                    <button
+                      onClick={async () => {
+                        if (window.confirm(`모든 채팅 기록(${questions.length}개)을 삭제하시겠습니까?`)) {
+                          try {
+                            const deletePromises = questions.map((q: any) =>
+                              deleteQuestionMutation.mutateAsync(q.id)
+                            );
+                            await Promise.all(deletePromises);
+                            // localStorage에서도 모든 채팅 메시지 제거
+                            const questionContents = questions.map((q: any) => q.content || "");
+                            removeChatMessagesFromStorage(questions.map((q: any) => q.id), questionContents, "stage_chat_messages");
+                            removeChatMessagesFromStorage(questions.map((q: any) => q.id), questionContents, "chat_messages");
+                            showSuccess("삭제 완료", `모든 채팅 기록(${questions.length}개)이 삭제되었습니다.`);
+                            setSelectedQuestionIds(new Set());
+                            setIsDeleteModeQuestion(false);
+                          } catch (error) {
+                            showError("삭제 실패", "채팅 기록 삭제에 실패했습니다.");
+                          }
+                        }
+                      }}
+                      disabled={deleteQuestionMutation.isPending}
+                      className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50"
+                    >
+                      전체 삭제
+                    </button>
+                  )}
                 </div>
               )}
               
@@ -996,29 +1086,73 @@ const QuestionDetail = () => {
                 </button>
               </div>
               
-              {isDeleteMode && selectedExampleIds.size > 0 && (
-                <div className="flex justify-end">
-                  <button
-                    onClick={async () => {
-                      if (window.confirm(`선택한 ${selectedExampleIds.size}개의 예문 기록을 삭제하시겠습니까?`)) {
-                        try {
-                          const deletePromises = Array.from(selectedExampleIds).map(id =>
-                            deleteExampleMutation.mutateAsync(id)
-                          );
-                          await Promise.all(deletePromises);
-                          showSuccess("삭제 완료", `${selectedExampleIds.size}개의 예문 기록이 삭제되었습니다.`);
+              {isDeleteMode && (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={selectedExampleIds.size === exampleRecords.length && exampleRecords.length > 0}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedExampleIds(new Set(exampleRecords.map((ex: any) => ex.id)));
+                        } else {
                           setSelectedExampleIds(new Set());
-                          setIsDeleteMode(false);
-                        } catch (error) {
-                          showError("삭제 실패", "예문 기록 삭제에 실패했습니다.");
                         }
-                      }
-                    }}
-                    disabled={deleteExampleMutation.isPending}
-                    className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors disabled:opacity-50"
-                  >
-                    선택 삭제 ({selectedExampleIds.size})
-                  </button>
+                      }}
+                      className="w-5 h-5 rounded border-gray-300 text-[#00DAAA] focus:ring-[#00DAAA]"
+                    />
+                    <span style={smallTextStyle}>전체 선택</span>
+                  </div>
+                  {selectedExampleIds.size > 0 && (
+                    <button
+                      onClick={async () => {
+                        if (window.confirm(`선택한 ${selectedExampleIds.size}개의 예문 기록을 삭제하시겠습니까?`)) {
+                          try {
+                            const deletePromises = Array.from(selectedExampleIds).map(id =>
+                              deleteExampleMutation.mutateAsync(id)
+                            );
+                            await Promise.all(deletePromises);
+                            // localStorage에서도 예문 제거
+                            removeExamplesFromStorage(Array.from(selectedExampleIds));
+                            showSuccess("삭제 완료", `${selectedExampleIds.size}개의 예문 기록이 삭제되었습니다.`);
+                            setSelectedExampleIds(new Set());
+                            setIsDeleteMode(false);
+                          } catch (error) {
+                            showError("삭제 실패", "예문 기록 삭제에 실패했습니다.");
+                          }
+                        }
+                      }}
+                      disabled={deleteExampleMutation.isPending}
+                      className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors disabled:opacity-50"
+                    >
+                      선택 삭제 ({selectedExampleIds.size})
+                    </button>
+                  )}
+                  {selectedExampleIds.size === exampleRecords.length && exampleRecords.length > 0 && (
+                    <button
+                      onClick={async () => {
+                        if (window.confirm(`모든 예문 기록(${exampleRecords.length}개)을 삭제하시겠습니까?`)) {
+                          try {
+                            const deletePromises = exampleRecords.map((ex: any) =>
+                              deleteExampleMutation.mutateAsync(ex.id)
+                            );
+                            await Promise.all(deletePromises);
+                            // localStorage에서도 모든 예문 제거
+                            removeExamplesFromStorage(exampleRecords.map((ex: any) => ex.id));
+                            showSuccess("삭제 완료", `모든 예문 기록(${exampleRecords.length}개)이 삭제되었습니다.`);
+                            setSelectedExampleIds(new Set());
+                            setIsDeleteMode(false);
+                          } catch (error) {
+                            showError("삭제 실패", "예문 기록 삭제에 실패했습니다.");
+                          }
+                        }
+                      }}
+                      disabled={deleteExampleMutation.isPending}
+                      className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50"
+                    >
+                      전체 삭제
+                    </button>
+                  )}
                 </div>
               )}
 

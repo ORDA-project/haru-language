@@ -129,10 +129,32 @@ router.post("/", upload.single("image"), async (req, res) => {
       fileMimetype: req.file?.mimetype,
     });
 
-    // 프로덕션에서는 일반적인 에러 메시지만 반환
-    const errorMessage = "예문 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.";
+    // 특정 에러 타입에 따라 적절한 상태 코드 반환
+    let statusCode = 500;
+    let errorMessage = "예문 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.";
 
-    res.status(500).json({
+    // OCR 관련 에러
+    if (error.message?.includes("OCR") || error.message?.includes("텍스트를 추출")) {
+      statusCode = 400;
+      errorMessage = "이미지에서 텍스트를 추출할 수 없습니다. 더 선명한 이미지를 사용해주세요.";
+    }
+    // GPT 관련 에러
+    else if (error.message?.includes("GPT") || error.message?.includes("예문 생성")) {
+      statusCode = 500;
+      errorMessage = "예문 생성에 실패했습니다. 잠시 후 다시 시도해주세요.";
+    }
+    // 인증 관련 에러
+    else if (error.message?.includes("로그인") || error.message?.includes("인증")) {
+      statusCode = 401;
+      errorMessage = "로그인이 필요합니다.";
+    }
+    // 파일 관련 에러
+    else if (error.message?.includes("파일") || error.message?.includes("이미지")) {
+      statusCode = 400;
+      errorMessage = "이미지 파일 처리 중 오류가 발생했습니다. 다른 이미지를 시도해주세요.";
+    }
+
+    res.status(statusCode).json({
       message: errorMessage,
     });
   } finally {
