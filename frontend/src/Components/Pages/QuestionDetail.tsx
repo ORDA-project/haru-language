@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useRef } from "react";
+import React, { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAtom } from "jotai";
 import { isLargeTextModeAtom } from "../../store/dataStore";
@@ -9,6 +9,7 @@ import { useWritingQuestions } from "../../entities/writing/queries";
 import { useGenerateTTS } from "../../entities/tts/queries";
 import { useErrorHandler } from "../../hooks/useErrorHandler";
 import NavBar from "../Templates/Navbar";
+import { createExtendedTextStyles } from "../../utils/styleUtils";
 
 type ExampleDialogue = {
   speaker: string;
@@ -33,46 +34,16 @@ const QuestionDetail = () => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const { showWarning, showError } = useErrorHandler();
   
-  // 큰글씨 모드에 따른 텍스트 크기
-  const baseFontSize = isLargeTextMode ? 20 : 16;
-  const smallFontSize = isLargeTextMode ? 18 : 14;
-  const xSmallFontSize = isLargeTextMode ? 16 : 12;
-  const headerFontSize = isLargeTextMode ? 22 : 18;
-  // 문장 첨삭/예문 생성 텍스트: 큰글씨 모드일 때 16px, 아닐 때 12px
-  const correctionTextSize = isLargeTextMode ? 16 : 12;
-  // 피드백 텍스트: 큰글씨 모드일 때 18px, 아닐 때 14px
-  const feedbackTextSize = isLargeTextMode ? 18 : 14;
+  // 스타일 계산 (메모이제이션)
+  const textStyles = useMemo(() => createExtendedTextStyles(isLargeTextMode), [isLargeTextMode]);
   
-  const baseTextStyle: React.CSSProperties = { 
-    fontSize: `${baseFontSize}px`, 
-    wordBreak: 'keep-all', 
-    overflowWrap: 'break-word' as const 
-  };
-  const smallTextStyle: React.CSSProperties = { 
-    fontSize: `${smallFontSize}px`, 
-    wordBreak: 'keep-all', 
-    overflowWrap: 'break-word' as const 
-  };
-  const xSmallTextStyle: React.CSSProperties = { 
-    fontSize: `${xSmallFontSize}px`, 
-    wordBreak: 'keep-all', 
-    overflowWrap: 'break-word' as const 
-  };
-  const headerTextStyle: React.CSSProperties = { 
-    fontSize: `${headerFontSize}px`,
-    wordBreak: 'keep-all',
-    overflowWrap: 'break-word' as const
-  };
-  const correctionTextStyle: React.CSSProperties = {
-    fontSize: `${correctionTextSize}px`,
-    wordBreak: 'keep-all',
-    overflowWrap: 'break-word' as const
-  };
-  const feedbackTextStyle: React.CSSProperties = {
-    fontSize: `${feedbackTextSize}px`,
-    wordBreak: 'keep-all',
-    overflowWrap: 'break-word' as const
-  };
+  // 하위 호환성을 위한 별칭
+  const baseTextStyle = textStyles.base;
+  const smallTextStyle = textStyles.small;
+  const xSmallTextStyle = textStyles.xSmall;
+  const headerTextStyle = textStyles.header;
+  const correctionTextStyle = textStyles.correction;
+  const feedbackTextStyle = textStyles.feedback;
 
   // 해당 날짜의 질문들 가져오기 (현재 로그인한 사용자)
   const { data: questionsData, isLoading: questionsLoading } =
@@ -699,13 +670,22 @@ const QuestionDetail = () => {
                             <span className="font-medium text-gray-800" style={smallTextStyle}>학습 피드백:</span>
                           </div>
                           {feedback.length > 0 ? (
-                            <ul className="space-y-1" style={{ paddingLeft: '8px' }}>
+                            <div className="space-y-3">
                               {feedback.map((fb: string, idx: number) => (
-                                <li key={idx} className="text-gray-700" style={feedbackTextStyle}>
-                                  • {fb}
-                                </li>
+                                <p 
+                                  key={idx} 
+                                  className="text-gray-700 leading-relaxed" 
+                                  style={{
+                                    ...feedbackTextStyle,
+                                    whiteSpace: 'pre-wrap',
+                                    wordBreak: 'keep-all',
+                                    overflowWrap: 'break-word'
+                                  }}
+                                >
+                                  {fb}
+                                </p>
                               ))}
-                            </ul>
+                            </div>
                           ) : (
                             <p className="text-gray-400 italic" style={feedbackTextStyle}>
                               피드백이 없습니다. 완벽해요!!

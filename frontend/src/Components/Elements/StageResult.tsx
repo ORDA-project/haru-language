@@ -7,6 +7,9 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import axios, { AxiosError } from "axios";
 import { useErrorHandler } from "../../hooks/useErrorHandler";
 import ImageUploadModal from "./ImageUploadModal";
+import { dataURItoBlob, MAX_IMAGE_SIZE } from "../../utils/imageUtils";
+import { createTextStyles } from "../../utils/styleUtils";
+import { groupExamples, formatContextText, EXAMPLES_PER_GROUP } from "../../utils/exampleUtils";
 
 interface StageResultProps {
   description: string;
@@ -15,6 +18,7 @@ interface StageResultProps {
   uploadedImage?: string | null;
   errorMessage: string;
   setStage: React.Dispatch<React.SetStateAction<number>>;
+  onExamplesUpdate?: (newExamples: Example[]) => void;
 }
 
 interface ExampleApiResponse {
@@ -46,30 +50,9 @@ interface GroupCurrentIndices {
 }
 
 // 상수
-const EXAMPLES_PER_GROUP = 3;
 const API_TIMEOUT = 30000;
 const EXAMPLE_CARD_WIDTH = 343;
 const ADD_BUTTON_WIDTH = Math.floor(EXAMPLE_CARD_WIDTH / 3); // 114px
-
-// 유틸리티 함수
-const dataURItoBlob = (dataURI: string): Blob => {
-  const byteString = atob(dataURI.split(",")[1]);
-  const mimeString = dataURI.split(",")[0].split(":")[1].split(";")[0];
-  const ab = new ArrayBuffer(byteString.length);
-  const ia = new Uint8Array(ab);
-  for (let i = 0; i < byteString.length; i++) {
-    ia[i] = byteString.charCodeAt(i);
-  }
-  return new Blob([ab], { type: mimeString });
-};
-
-const groupExamples = (examples: Example[]): Example[][] => {
-  const groups: Example[][] = [];
-  for (let i = 0; i < examples.length; i += EXAMPLES_PER_GROUP) {
-    groups.push(examples.slice(i, i + EXAMPLES_PER_GROUP));
-  }
-  return groups;
-};
 
 const normalizeExampleResponse = (response: ExampleApiResponse) => {
   let actualExample = response?.generatedExample;
@@ -109,6 +92,9 @@ const createFormDataFromImage = (image: string | File): FormData => {
   const formData = new FormData();
   if (typeof image === "string") {
     const blob = dataURItoBlob(image);
+    if (blob.size > MAX_IMAGE_SIZE) {
+      throw new Error("이미지 파일이 너무 큽니다. (5MB 이하로 해주세요)");
+    }
     formData.append("image", blob, "cropped-image.png");
   } else {
     formData.append("image", image);
@@ -123,6 +109,7 @@ const StageResult = ({
   uploadedImage,
   errorMessage,
   setStage,
+  onExamplesUpdate,
 }: StageResultProps) => {
   // State
   const [exampleGroups, setExampleGroups] = useState<Example[][]>(() => groupExamples(examples));
@@ -142,34 +129,16 @@ const StageResult = ({
     }
   }, [examples]);
 
-  // 스타일 계산 (메모이제이션)
-  const textStyles = useMemo(() => {
-    const baseFontSize = isLargeTextMode ? 20 : 16;
-    const smallFontSize = isLargeTextMode ? 18 : 14;
-    const xSmallFontSize = isLargeTextMode ? 16 : 12;
-    const headerFontSize = isLargeTextMode ? 24 : 20;
+  // exampleGroups가 변경되면 부모 컴포넌트에 알림
+  useEffect(() => {
+    if (onExamplesUpdate && exampleGroups.length > 0) {
+      const allExamples = exampleGroups.flat();
+      onExamplesUpdate(allExamples);
+    }
+  }, [exampleGroups, onExamplesUpdate]);
 
-    return {
-      base: {
-        fontSize: `${baseFontSize}px`,
-        wordBreak: 'keep-all' as const,
-        overflowWrap: 'break-word' as const,
-      },
-      small: {
-        fontSize: `${smallFontSize}px`,
-        wordBreak: 'keep-all' as const,
-        overflowWrap: 'break-word' as const,
-      },
-      xSmall: {
-        fontSize: `${xSmallFontSize}px`,
-        wordBreak: 'keep-all' as const,
-        overflowWrap: 'break-word' as const,
-      },
-      header: {
-        fontSize: `${headerFontSize}px`,
-      },
-    };
-  }, [isLargeTextMode]);
+  // 스타일 계산 (메모이제이션)
+  const textStyles = useMemo(() => createTextStyles(isLargeTextMode), [isLargeTextMode]);
 
   // 오디오 정리
   const stopCurrentAudio = useCallback(() => {
@@ -485,9 +454,14 @@ const StageResult = ({
             <React.Fragment key={`group-${groupIndex}`}>
               {/* 상황 설명 */}
               <div className="flex justify-start">
-                <div className={`max-w-[80%] ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-2xl bg-white text-gray-800 shadow-sm border border-gray-100`}>
-                  <p className="leading-relaxed" style={textStyles.base}>
-                    {example.context || "이런 상황에서 사용할 수 있는 대화예요!"}
+                <div 
+                  className={`max-w-[80%] ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-lg bg-gray-50 text-gray-700 border border-gray-200`}
+                  style={{
+                    boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
+                  }}
+                >
+                  <p className="leading-relaxed" style={{ ...textStyles.base, color: '#374151' }}>
+                    {formatContextText(example.context)}
                   </p>
                 </div>
               </div>
@@ -613,7 +587,7 @@ const StageResult = ({
             style={{
               width: `${ADD_BUTTON_WIDTH}px`,
               height: isLargeTextMode ? '36px' : '32px',
-              fontSize: isLargeTextMode ? '14px' : '12px',
+              fontSize: isLargeTextMode ? '16px' : '14px',
               padding: '0 12px'
             }}
             aria-label="예문 추가"
@@ -638,10 +612,11 @@ const StageResult = ({
         </div>
       </div>
 
-      {/* Floating Camera Button */}
+      {/* Floating Camera Button - 2번 이미지처럼 하단 네비게이션 바로 위 */}
       <button
         onClick={() => setIsModalOpen(true)}
         className="fixed bottom-20 right-4 w-14 h-14 bg-[#00DAAA] hover:bg-[#00C495] rounded-full flex items-center justify-center shadow-lg transition-colors z-30"
+        style={{ bottom: '88px' }}
         aria-label="카메라 열기"
       >
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
