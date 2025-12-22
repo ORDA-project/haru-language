@@ -122,7 +122,12 @@ const StageResult = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showCropStage, setShowCropStage] = useState(false);
   const [selectedImageForCrop, setSelectedImageForCrop] = useState<string | null>(null);
-  const [newImageMessages, setNewImageMessages] = useState<Array<{ image: string; timestamp: number }>>([]);
+  const [newImageSets, setNewImageSets] = useState<Array<{ 
+    image: string; 
+    description: string; 
+    exampleGroupIndex: number;
+    timestamp: number;
+  }>>([]);
   const cropperRef = useRef<any>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isPlayingTTS, setIsPlayingTTS] = useState(false);
@@ -266,8 +271,8 @@ const StageResult = ({
     }
   }, [stopCurrentAudio]);
 
-  // 예문 생성 API 호출 (공통 로직)
-  const generateExamplesFromImage = useCallback(async (image: string | File): Promise<Example[]> => {
+  // 예문 생성 API 호출 (공통 로직) - 예문과 설명을 함께 반환
+  const generateExamplesFromImage = useCallback(async (image: string | File): Promise<{ examples: Example[]; description: string }> => {
     try {
       const formData = createFormDataFromImage(image);
       const headers = getAuthHeaders();
@@ -316,7 +321,10 @@ const StageResult = ({
         throw new Error("생성된 예문이 없습니다.");
       }
 
-      return transformApiExamplesToLocal(actualExample.examples);
+      return {
+        examples: transformApiExamplesToLocal(actualExample.examples),
+        description: actualExample.description || ""
+      };
     } catch (error) {
       if (import.meta.env.DEV) {
         console.error("예문 생성 오류 상세:", error);
@@ -342,7 +350,7 @@ const StageResult = ({
     setIsLoadingMore(true);
     try {
       if (uploadedImage) {
-        const newExamples = await generateExamplesFromImage(uploadedImage);
+        const { examples: newExamples } = await generateExamplesFromImage(uploadedImage);
         
         setExampleGroups((prev) => {
           const newGroups = [...prev, newExamples];
@@ -426,16 +434,13 @@ const StageResult = ({
 
       const croppedDataURL = finalCanvas.toDataURL("image/jpeg", 0.8);
       
-      // 사용자 메시지로 이미지 추가
-      setNewImageMessages((prev) => [...prev, { image: croppedDataURL, timestamp: Date.now() }]);
-      
       // 크롭 단계 닫기
       setShowCropStage(false);
       setSelectedImageForCrop(null);
       
       // 예문 생성
       setIsLoadingMore(true);
-      const newExamples = await generateExamplesFromImage(croppedDataURL);
+      const { examples: newExamples, description: newDescription } = await generateExamplesFromImage(croppedDataURL);
       
       setExampleGroups((prev) => {
         const newGroups = [...prev, newExamples];
@@ -444,6 +449,15 @@ const StageResult = ({
           ...indices,
           [newGroupIndex]: 0,
         }));
+        
+        // 새로운 이미지 세트 추가 (이미지, 설명, 예문 그룹 인덱스)
+        setNewImageSets((prevSets) => [...prevSets, {
+          image: croppedDataURL,
+          description: newDescription,
+          exampleGroupIndex: newGroupIndex,
+          timestamp: Date.now(),
+        }]);
+        
         // 부모 컴포넌트에 업데이트 알림 (새로운 예문 추가 시)
         if (onExamplesUpdate) {
           const allExamples = newGroups.flat();
@@ -593,8 +607,12 @@ const StageResult = ({
           </div>
         )}
 
-        {/* Example Groups */}
+        {/* 원본 Example Groups (새 이미지 세트에 속하지 않은 그룹들만) */}
         {exampleGroups.map((group, groupIndex) => {
+          // 새로운 이미지 세트에 속한 그룹은 건너뛰기 (이미 newImageSets에서 렌더링됨)
+          const isNewImageSetGroup = newImageSets.some(set => set.exampleGroupIndex === groupIndex);
+          if (isNewImageSetGroup) return null;
+          
           const currentIdx = groupCurrentIndices[groupIndex] || 0;
           const example = group[currentIdx];
           if (!example) return null;
@@ -731,29 +749,192 @@ const StageResult = ({
           );
         })}
 
-        {/* User messages: New cropped images - 예문 그룹들 아래에 표시 */}
-        {newImageMessages.map((msg, msgIndex) => (
-          <React.Fragment key={msg.timestamp}>
-            {/* 새로운 사진 구분선 */}
-            {msgIndex === 0 && exampleGroups.length > 0 && (
-              <div className="border-t border-gray-300 my-4"></div>
-            )}
-            {msgIndex > 0 && (
-              <div className="border-t border-gray-300 my-4"></div>
-            )}
-            <div className="flex justify-end">
-              <div className={`max-w-[80%] ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-2xl bg-white text-gray-800 shadow-sm border border-gray-100`}>
-                <div className={isLargeTextMode ? "mb-4" : "mb-3"}>
-                  <img
-                    src={msg.image}
-                    alt="크롭된 이미지"
-                    className="w-full rounded-lg object-contain max-h-64"
-                  />
+        {/* 새로운 이미지 세트들 - 각 세트는 이미지, 설명, 예문 그룹 순서로 표시 */}
+        {newImageSets.map((imageSet, setIndex) => {
+          const groupIndex = imageSet.exampleGroupIndex;
+          const group = exampleGroups[groupIndex];
+          const currentIdx = groupCurrentIndices[groupIndex] || 0;
+          const example = group?.[currentIdx];
+          
+          return (
+            <React.Fragment key={imageSet.timestamp}>
+              {/* 구분선 */}
+              {setIndex === 0 && exampleGroups.length > newImageSets.length && (
+                <div className="border-t border-gray-300 my-4"></div>
+              )}
+              {setIndex > 0 && (
+                <div className="border-t border-gray-300 my-4"></div>
+              )}
+              
+              {/* 1. 새 이미지 */}
+              <div className="flex justify-end">
+                <div className={`max-w-[80%] ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-2xl bg-white text-gray-800 shadow-sm border border-gray-100`}>
+                  <div className={isLargeTextMode ? "mb-4" : "mb-3"}>
+                    <img
+                      src={imageSet.image}
+                      alt="크롭된 이미지"
+                      className="w-full rounded-lg object-contain max-h-64"
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
-          </React.Fragment>
-        ))}
+              
+              {/* 2. 새 이미지 설명 */}
+              {imageSet.description && (
+                <div className="flex justify-start">
+                  <div className={`max-w-[80%] ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-lg bg-white text-gray-900 border border-gray-200`}>
+                    <p 
+                      className="leading-relaxed whitespace-pre-wrap" 
+                      style={{ ...textStyles.base, color: '#111827', lineHeight: '1.6' }}
+                      dangerouslySetInnerHTML={{
+                        __html: imageSet.description
+                          .replace(/\*\*(.*?)\*\*/g, '<u>$1</u>')
+                          .replace(/__(.*?)__/g, '<u>$1</u>')
+                          .replace(/\*(.*?)\*/g, '<u>$1</u>')
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+              
+              {/* 3. 새 예문 그룹 */}
+              {group && example && (
+                <React.Fragment>
+                  {/* Example Card */}
+                  <div className="flex justify-start">
+                    <div 
+                      className="max-w-[90%] w-full bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden" 
+                      style={{ 
+                        width: `${EXAMPLE_CARD_WIDTH}px`, 
+                        paddingLeft: '12px', 
+                        paddingTop: '12px', 
+                        paddingBottom: '16px', 
+                        paddingRight: '16px' 
+                      }}
+                    >
+                      {/* Context Badge and Dots */}
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="inline-block bg-[#B8E6D3] rounded-full px-2 py-0.5 border border-[#B8E6D3]" style={{ marginLeft: '-4px', marginTop: '-4px' }}>
+                          <span className="font-medium text-gray-900" style={textStyles.xSmall}>예문 상황</span>
+                        </div>
+                        <div className="flex items-center" style={{ gap: '4px' }}>
+                          {[0, 1, 2].map((dotIdx) => (
+                            <div
+                              key={dotIdx}
+                              onClick={() => dotIdx < group.length && handleDotClick(groupIndex, dotIdx)}
+                              style={{
+                                width: '6px',
+                                height: '6px',
+                                borderRadius: '50%',
+                                backgroundColor: dotIdx === currentIdx && dotIdx < group.length ? '#00DAAA' : '#D1D5DB',
+                                cursor: dotIdx < group.length ? 'pointer' : 'default'
+                              }}
+                              aria-label={`예문 ${dotIdx + 1}`}
+                            />
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Dialogue */}
+                      <div className="space-y-2 mb-3" style={{ paddingLeft: '8px' }}>
+                        {/* A's dialogue */}
+                        <div className="flex items-start space-x-2">
+                          <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0 bg-[#B8E6D3]`} style={textStyles.xSmall}>
+                            A
+                          </div>
+                          <div className="flex-1" style={{ paddingLeft: '4px', marginTop: '-2px' }}>
+                            <p className="font-medium text-gray-900 leading-relaxed" style={textStyles.small}>
+                              {example.dialogue?.A?.english || "예문 내용"}
+                            </p>
+                            <p className="text-gray-600 leading-relaxed mt-1" style={textStyles.small}>
+                              {example.dialogue?.A?.korean || "예문 한글버전"}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* B's dialogue */}
+                        <div className="flex items-start space-x-2">
+                          <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0 bg-[#00DAAA]`} style={textStyles.xSmall}>
+                            B
+                          </div>
+                          <div className="flex-1" style={{ paddingLeft: '4px', marginTop: '-2px' }}>
+                            <p className="font-medium text-gray-900 leading-relaxed" style={textStyles.small}>
+                              {example.dialogue?.B?.english || "예문 내용"}
+                            </p>
+                            <p className="text-gray-600 leading-relaxed mt-1" style={textStyles.small}>
+                              {example.dialogue?.B?.korean || "예문 한글버전"}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Navigation and Play Button */}
+                      <div className="flex items-center justify-between">
+                        <button
+                          onClick={() => handlePreviousInGroup(groupIndex)}
+                          disabled={currentIdx === 0}
+                          className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
+                            currentIdx === 0
+                              ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                              : "bg-gray-100 hover:bg-gray-200 text-gray-600"
+                          }`}
+                          aria-label="이전 예문"
+                        >
+                          <ChevronLeft className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={() => handlePlayExample(example)}
+                          className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors shadow-md ${
+                            playingExampleId === example.id
+                              ? "bg-[#FF6B35] hover:bg-[#E55A2B]"
+                              : "bg-[#00DAAA] hover:bg-[#00C299]"
+                          }`}
+                          aria-label={playingExampleId === example.id ? "재생 중지" : "음성 재생"}
+                        >
+                          {playingExampleId === example.id ? (
+                            <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
+                            </svg>
+                          ) : (
+                            <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
+                            </svg>
+                          )}
+                        </button>
+                        <button
+                          onClick={() => handleNextInGroup(groupIndex)}
+                          disabled={currentIdx >= group.length - 1}
+                          className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
+                            currentIdx >= group.length - 1
+                              ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                              : "bg-gray-100 hover:bg-gray-200 text-gray-600"
+                          }`}
+                          aria-label="다음 예문"
+                        >
+                          <ChevronRight className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* 상황 설명 - 예문 카드 아래에 표시 */}
+                  {example.context && (
+                    <div className="flex justify-start">
+                      <div 
+                        className={`max-w-[80%] ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-lg bg-gray-50 text-gray-800 border border-gray-200 shadow-sm`}
+                        style={{ marginTop: '8px' }}
+                      >
+                        <p className="leading-relaxed whitespace-pre-wrap" style={{ ...textStyles.base, lineHeight: '1.6' }}>
+                          {formatContextText(example.context)}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </React.Fragment>
+              )}
+            </React.Fragment>
+          );
+        })}
 
         {/* Add Example Button */}
         <div className={`flex justify-start ${isLargeTextMode ? "mt-4" : "mt-2"}`}>
