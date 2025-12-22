@@ -399,7 +399,7 @@ const StageResult = ({
   }
 
   return (
-    <div className="w-full h-full flex flex-col bg-[#F7F8FB]">
+    <div className="w-full h-full flex flex-col bg-[#F7F8FB] relative">
       {/* Header */}
       <div className={`flex items-center justify-between ${isLargeTextMode ? "p-5" : "p-4"} bg-white border-b border-gray-200`}>
         <button
@@ -622,10 +622,11 @@ const StageResult = ({
         </div>
       </div>
 
-      {/* Floating Camera Button - AI 대화와 동일한 배치 */}
+      {/* Floating Camera Button - 네비게이션 바 위에 배치 (72px + 16px = 88px) */}
       <button
         onClick={() => setIsModalOpen(true)}
-        className="fixed bottom-26 right-4 w-10 h-10 bg-[#00DAAA] hover:bg-[#00C495] rounded-full flex items-center justify-center shadow-lg transition-colors z-30"
+        className="fixed right-4 w-10 h-10 bg-[#00DAAA] hover:bg-[#00C495] rounded-full flex items-center justify-center shadow-lg transition-colors z-30"
+        style={{ bottom: '88px' }}
         aria-label="카메라 열기"
       >
         <Icons.camera
