@@ -268,35 +268,66 @@ const StageResult = ({
 
   // 예문 생성 API 호출 (공통 로직)
   const generateExamplesFromImage = useCallback(async (image: string | File): Promise<Example[]> => {
-    const formData = createFormDataFromImage(image);
-    const headers = getAuthHeaders();
+    try {
+      const formData = createFormDataFromImage(image);
+      const headers = getAuthHeaders();
+      
+      // FormData를 보낼 때는 Content-Type을 설정하지 않음 (브라우저가 자동으로 boundary 설정)
+      // axios가 자동으로 설정하는 것을 방지하기 위해 명시적으로 제거하지 않아도 됨
+      
+      if (import.meta.env.DEV) {
+        console.log("예문 생성 요청 시작...", {
+          imageType: typeof image,
+          formDataKeys: Array.from(formData.keys()),
+        });
+      }
 
-    const response = await axios.post<ExampleApiResponse>("/example", formData, {
-      baseURL: API_BASE_URL,
-      headers,
-      withCredentials: true,
-      timeout: API_TIMEOUT,
-    });
+      const response = await axios.post<ExampleApiResponse>("/example", formData, {
+        baseURL: API_BASE_URL,
+        headers: {
+          ...headers,
+          // Content-Type을 명시적으로 설정하지 않음 (FormData는 브라우저가 자동 설정)
+        },
+        withCredentials: true,
+        timeout: API_TIMEOUT,
+      });
 
-    if (import.meta.env.DEV) {
-      console.log("예문 생성 응답:", response.data);
+      if (import.meta.env.DEV) {
+        console.log("예문 생성 응답:", response.data);
+      }
+
+      const actualExample = normalizeExampleResponse(response.data);
+
+      if (!actualExample) {
+        if (import.meta.env.DEV) {
+          console.error("예문 데이터를 찾을 수 없습니다. 응답:", response.data);
+        }
+        throw new Error("예문 데이터를 찾을 수 없습니다.");
+      }
+
+      if (!actualExample.examples || !Array.isArray(actualExample.examples)) {
+        if (import.meta.env.DEV) {
+          console.error("예문 배열이 올바르지 않습니다. actualExample:", actualExample);
+        }
+        throw new Error("예문 배열이 올바르지 않습니다.");
+      }
+
+      if (actualExample.examples.length === 0) {
+        throw new Error("생성된 예문이 없습니다.");
+      }
+
+      return transformApiExamplesToLocal(actualExample.examples);
+    } catch (error) {
+      if (import.meta.env.DEV) {
+        console.error("예문 생성 오류 상세:", error);
+        if (axios.isAxiosError(error)) {
+          console.error("응답 데이터:", error.response?.data);
+          console.error("응답 상태:", error.response?.status);
+          console.error("요청 헤더:", error.config?.headers);
+        }
+      }
+      throw error;
     }
-
-    const actualExample = normalizeExampleResponse(response.data);
-
-    if (!actualExample) {
-      throw new Error("예문 데이터를 찾을 수 없습니다.");
-    }
-
-    if (!actualExample.examples || !Array.isArray(actualExample.examples)) {
-      throw new Error("예문 배열이 올바르지 않습니다.");
-    }
-
-    if (actualExample.examples.length === 0) {
-      throw new Error("생성된 예문이 없습니다.");
-    }
-
-    return transformApiExamplesToLocal(actualExample.examples);
   }, []);
 
   // 예문 추가 핸들러
@@ -444,10 +475,25 @@ const StageResult = ({
     if (axios.isAxiosError(error)) {
       const axiosError = error as AxiosError<{ message?: string }>;
       if (axiosError.response) {
-        return axiosError.response.data?.message || "서버에서 오류가 발생했습니다.";
+        const status = axiosError.response.status;
+        const message = axiosError.response.data?.message || "서버에서 오류가 발생했습니다.";
+        
+        if (status === 400) {
+          return `잘못된 요청: ${message}`;
+        }
+        if (status === 401) {
+          return "로그인이 필요합니다. 다시 로그인해주세요.";
+        }
+        if (status === 500) {
+          return `서버 오류: ${message}`;
+        }
+        return message;
       }
       if (axiosError.request) {
         return "서버에 연결할 수 없습니다. 네트워크를 확인해주세요.";
+      }
+      if (axiosError.code === 'ECONNABORTED') {
+        return "요청 시간이 초과되었습니다. 다시 시도해주세요.";
       }
       return axiosError.message || "요청 중 오류가 발생했습니다.";
     }
