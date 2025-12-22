@@ -684,18 +684,21 @@ const QuestionDetail = () => {
                           </p>
                         </div>
                         
-                        {/* 피드백 블록 */}
-                        {feedback.length > 0 && (
-                          <div 
-                            className="bg-white shadow-sm border border-gray-100 rounded-lg"
-                            style={{ 
-                              width: '343px',
-                              paddingRight: '40px',
-                              paddingTop: '16px',
-                              paddingBottom: '16px',
-                              paddingLeft: '16px'
-                            }}
-                          >
+                        {/* 피드백 블록 - 항상 표시 */}
+                        <div 
+                          className="bg-white shadow-sm border border-gray-100 rounded-lg"
+                          style={{ 
+                            width: '343px',
+                            paddingRight: '40px',
+                            paddingTop: '16px',
+                            paddingBottom: '16px',
+                            paddingLeft: '16px'
+                          }}
+                        >
+                          <div className="mb-2">
+                            <span className="font-medium text-gray-800" style={smallTextStyle}>학습 피드백:</span>
+                          </div>
+                          {feedback.length > 0 ? (
                             <ul className="space-y-1" style={{ paddingLeft: '8px' }}>
                               {feedback.map((fb: string, idx: number) => (
                                 <li key={idx} className="text-gray-700" style={feedbackTextStyle}>
@@ -703,8 +706,12 @@ const QuestionDetail = () => {
                                 </li>
                               ))}
                             </ul>
-                          </div>
-                        )}
+                          ) : (
+                            <p className="text-gray-400 italic" style={feedbackTextStyle}>
+                              피드백이 없습니다. 완벽해요!!
+                            </p>
+                          )}
+                        </div>
                       </div>
 
                       {/* 구분선 */}

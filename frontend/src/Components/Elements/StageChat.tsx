@@ -9,12 +9,23 @@ import { useErrorHandler } from "../../hooks/useErrorHandler";
 import { http } from "../../utils/http";
 import ImageUploadModal from "./ImageUploadModal";
 import { Icons } from "./Icons";
+import { getTodayStringBy4AM } from "../../utils/dateUtils";
+
+interface ExampleData {
+  context: string;
+  dialogue: {
+    A: { english: string; korean?: string };
+    B: { english: string; korean?: string };
+  };
+}
 
 interface Message {
   id: string;
   type: "user" | "ai";
   content: string;
   timestamp: Date;
+  examples?: ExampleData[];
+  imageUrl?: string;
 }
 
 interface StageChatProps {
@@ -31,6 +42,42 @@ const StageChat = ({ onBack }: StageChatProps) => {
   const [cropStage, setCropStage] = useState<"chat" | "crop">("chat");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [isLargeTextMode] = useAtom(isLargeTextModeAtom);
+
+  // 대화 내역 저장/불러오기
+  const getStorageKey = () => {
+    const dateKey = getTodayStringBy4AM();
+    return `stage_chat_messages_${dateKey}`;
+  };
+
+  const saveMessages = (msgs: Message[]) => {
+    try {
+      const storageKey = getStorageKey();
+      const messagesToSave = msgs.map(msg => ({
+        ...msg,
+        timestamp: msg.timestamp ? msg.timestamp.toISOString() : new Date().toISOString()
+      }));
+      localStorage.setItem(storageKey, JSON.stringify(messagesToSave));
+    } catch (error) {
+      console.error("대화 내역 저장 실패:", error);
+    }
+  };
+
+  const loadMessages = (): Message[] | null => {
+    try {
+      const storageKey = getStorageKey();
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return parsed.map((msg: any) => ({
+          ...msg,
+          timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date()
+        }));
+      }
+    } catch (error) {
+      console.error("대화 내역 불러오기 실패:", error);
+    }
+    return null;
+  };
   
   // 큰글씨 모드에 따른 텍스트 크기
   const baseFontSize = isLargeTextMode ? 20 : 16;
@@ -43,16 +90,22 @@ const StageChat = ({ onBack }: StageChatProps) => {
   const cropperRef = useRef<any>(null);
   const { showError, showSuccess } = useErrorHandler();
 
-  // 초기 AI 메시지
+  // 초기 AI 메시지 및 저장된 대화 내역 불러오기
   useEffect(() => {
-    const initialMessage: Message = {
-      id: "1",
-      type: "ai",
-      content:
-        "안녕하세요! 영어 학습을 도와드릴 AI 튜터입니다. 궁금한 것이 있으시면 언제든지 질문해주세요!",
-      timestamp: new Date(),
-    };
-    setMessages([initialMessage]);
+    const savedMessages = loadMessages();
+    if (savedMessages && savedMessages.length > 0) {
+      setMessages(savedMessages);
+    } else {
+      const initialMessage: Message = {
+        id: "1",
+        type: "ai",
+        content:
+          "안녕하세요! 영어 학습을 도와드릴 AI 튜터입니다. 궁금한 것이 있으시면 언제든지 질문해주세요!",
+        timestamp: new Date(),
+      };
+      setMessages([initialMessage]);
+      saveMessages([initialMessage]);
+    }
   }, []);
 
   // 메시지 스크롤
@@ -70,7 +123,11 @@ const StageChat = ({ onBack }: StageChatProps) => {
       timestamp: new Date(),
     };
 
-    setMessages((prev) => [...prev, userMessage]);
+    setMessages((prev) => {
+      const updated = [...prev, userMessage];
+      saveMessages(updated);
+      return updated;
+    });
     setInputMessage("");
     setIsLoading(true);
 
@@ -113,7 +170,11 @@ const StageChat = ({ onBack }: StageChatProps) => {
         timestamp: new Date(),
       };
 
-      setMessages((prev) => [...prev, aiMessage]);
+      setMessages((prev) => {
+        const updated = [...prev, aiMessage];
+        saveMessages(updated);
+        return updated;
+      });
     } catch (error) {
       console.error("Error sending message:", error);
       showError("오류 발생", "메시지를 전송하는 중 오류가 발생했습니다.");
@@ -124,7 +185,11 @@ const StageChat = ({ onBack }: StageChatProps) => {
         content: "죄송합니다. 일시적인 오류가 발생했습니다. 다시 시도해주세요.",
         timestamp: new Date(),
       };
-      setMessages((prev) => [...prev, errorMessage]);
+      setMessages((prev) => {
+        const updated = [...prev, errorMessage];
+        saveMessages(updated);
+        return updated;
+      });
     } finally {
       setIsLoading(false);
     }
@@ -198,7 +263,11 @@ const StageChat = ({ onBack }: StageChatProps) => {
         content: `[이미지 업로드됨]`,
         timestamp: new Date(),
       };
-      setMessages((prev) => [...prev, imageMessage]);
+      setMessages((prev) => {
+        const updated = [...prev, imageMessage];
+        saveMessages(updated);
+        return updated;
+      });
 
       // AI에게 이미지 분석 요청
       handleImageAnalysis(croppedDataURL);
@@ -244,33 +313,51 @@ const StageChat = ({ onBack }: StageChatProps) => {
         const actualExample =
           generatedExample.generatedExample || generatedExample;
 
-        let analysisContent = "";
-        if (actualExample.description) {
-          analysisContent += `<strong>이미지 분석 결과:</strong><br/><br/>${actualExample.description}<br/><br/>`;
-        }
-
+        // 예문 데이터 추출
+        const examples: ExampleData[] = [];
         if (actualExample.examples && actualExample.examples.length > 0) {
-          analysisContent += `<strong>학습 예문:</strong><br/>`;
-          actualExample.examples.forEach((example: any, index: number) => {
+          actualExample.examples.forEach((example: any) => {
             if (example.dialogue) {
-              analysisContent += `<br/><strong>예문 ${
-                index + 1
-              }:</strong><br/>`;
-              analysisContent += `A: ${example.dialogue.A?.english || ""}<br/>`;
-              analysisContent += `B: ${example.dialogue.B?.english || ""}<br/>`;
+              examples.push({
+                context: example.context || "예문 상황",
+                dialogue: {
+                  A: {
+                    english: example.dialogue.A?.english || "",
+                    korean: example.dialogue.A?.korean,
+                  },
+                  B: {
+                    english: example.dialogue.B?.english || "",
+                    korean: example.dialogue.B?.korean,
+                  },
+                },
+              });
             }
           });
         }
 
-        const aiMessage: Message = {
+        // 요약 메시지
+        const summaryMessage: Message = {
           id: (Date.now() + 1).toString(),
           type: "ai",
-          content:
-            analysisContent ||
-            "이미지를 분석했습니다. 궁금한 점이 있으시면 질문해주세요!",
+          content: actualExample.description || "답변 요약 내용",
           timestamp: new Date(),
         };
-        setMessages((prev) => [...prev, aiMessage]);
+
+        // 예문 카드 메시지
+        const exampleMessage: Message = {
+          id: (Date.now() + 2).toString(),
+          type: "ai",
+          content: "",
+          examples: examples,
+          imageUrl: croppedImage || null,
+          timestamp: new Date(),
+        };
+
+        setMessages((prev) => {
+          const updated = [...prev, summaryMessage, exampleMessage];
+          saveMessages(updated);
+          return updated;
+        });
       } else {
         throw new Error("이미지 분석 결과를 받을 수 없습니다.");
       }
@@ -284,7 +371,11 @@ const StageChat = ({ onBack }: StageChatProps) => {
         content: "이미지 분석 중 오류가 발생했습니다. 다시 시도해주세요.",
         timestamp: new Date(),
       };
-      setMessages((prev) => [...prev, errorMessage]);
+      setMessages((prev) => {
+        const updated = [...prev, errorMessage];
+        saveMessages(updated);
+        return updated;
+      });
     } finally {
       setIsLoading(false);
     }
@@ -408,34 +499,143 @@ const StageChat = ({ onBack }: StageChatProps) => {
           {/* Messages */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {messages.map((message, index) => (
-              <div
-                key={message.id}
-                className={`flex ${
-                  message.type === "user" ? "justify-end" : "justify-start"
-                }`}
-              >
-                <div
-                  className={`max-w-[80%] px-4 py-3 rounded-2xl ${
-                    message.type === "user"
-                      ? "bg-[#00DAAA] text-white"
-                      : "bg-white text-gray-800 shadow-sm border border-gray-100"
-                  }`}
-                >
-                  {message.type === "ai" ? (
+              <React.Fragment key={message.id}>
+                {/* 일반 메시지 */}
+                {!message.examples && (
+                  <div
+                    className={`flex ${
+                      message.type === "user" ? "justify-end" : "justify-start"
+                    }`}
+                  >
                     <div
-                      className="leading-relaxed"
-                      style={baseTextStyle}
-                      dangerouslySetInnerHTML={{ __html: message.content }}
-                    />
-                  ) : (
-                    <p className="leading-relaxed whitespace-pre-wrap" style={baseTextStyle}>
-                      {message.content}
-                    </p>
-                  )}
-                </div>
+                      className={`max-w-[80%] px-4 py-3 rounded-2xl ${
+                        message.type === "user"
+                          ? "bg-gray-200 text-gray-800"
+                          : "bg-gray-200 text-gray-800 shadow-sm border border-gray-100"
+                      }`}
+                    >
+                      {message.type === "ai" ? (
+                        <div
+                          className="leading-relaxed"
+                          style={baseTextStyle}
+                          dangerouslySetInnerHTML={{ __html: message.content }}
+                        />
+                      ) : (
+                        <p className="leading-relaxed whitespace-pre-wrap" style={baseTextStyle}>
+                          {message.content}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* 예문 카드 */}
+                {message.examples && message.examples.length > 0 && (
+                  <div className="flex justify-start">
+                    {message.examples.map((example, exampleIndex) => (
+                      <div
+                        key={exampleIndex}
+                        className="max-w-[90%] w-full bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden mb-4"
+                        style={{ width: '343px', paddingLeft: '12px', paddingTop: '12px', paddingBottom: '16px', paddingRight: '16px' }}
+                      >
+                        {/* Context Badge and Dots */}
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="inline-block bg-[#B8E6D3] rounded-full px-2 py-0.5 border border-[#B8E6D3]" style={{ marginLeft: '-4px', marginTop: '-4px' }}>
+                            <span className="font-medium text-gray-900" style={{ fontSize: `${isLargeTextMode ? 16 : 12}px` }}>예문 상황</span>
+                          </div>
+                          <div className="flex items-center" style={{ gap: '4px' }}>
+                            <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#00DAAA' }} />
+                            <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#D1D5DB' }} />
+                            <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#D1D5DB' }} />
+                          </div>
+                        </div>
+
+                        {/* Dialogue */}
+                        <div className="space-y-2 mb-3" style={{ paddingLeft: '8px' }}>
+                          {/* A's dialogue */}
+                          <div className="flex items-start space-x-2">
+                            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0 bg-[#B8E6D3]`} style={{ fontSize: `${isLargeTextMode ? 16 : 12}px` }}>
+                              A
+                            </div>
+                            <div className="flex-1" style={{ paddingLeft: '4px', marginTop: '-2px' }}>
+                              <p className="font-medium text-gray-900 leading-relaxed" style={{ fontSize: `${isLargeTextMode ? 18 : 14}px` }}>
+                                {example.dialogue?.A?.english || "예문 내용"}
+                              </p>
+                              <p className="text-gray-600 leading-relaxed mt-1" style={{ fontSize: `${isLargeTextMode ? 18 : 14}px` }}>
+                                {example.dialogue?.A?.korean || "예문 한글버전"}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* B's dialogue */}
+                          <div className="flex items-start space-x-2">
+                            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0 bg-[#B8E6D3]`} style={{ fontSize: `${isLargeTextMode ? 16 : 12}px` }}>
+                              B
+                            </div>
+                            <div className="flex-1" style={{ paddingLeft: '4px', marginTop: '-2px' }}>
+                              <p className="font-medium text-gray-900 leading-relaxed" style={{ fontSize: `${isLargeTextMode ? 18 : 14}px` }}>
+                                {example.dialogue?.B?.english || "예문 내용"}
+                              </p>
+                              <p className="text-gray-600 leading-relaxed mt-1" style={{ fontSize: `${isLargeTextMode ? 18 : 14}px` }}>
+                                {example.dialogue?.B?.korean || "예문 한글버전"}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Controls */}
+                        <div className="flex justify-center items-center gap-2 pt-4 border-t border-gray-200">
+                          <button className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                            </svg>
+                          </button>
+                          <button
+                            onClick={async () => {
+                              const dialogueA = example.dialogue.A.english;
+                              const dialogueB = example.dialogue.B.english;
+                              const textToRead = `${dialogueA}. ${dialogueB}`;
+                              
+                              try {
+                                const response = await fetch(API_ENDPOINTS.tts, {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({ text: textToRead }),
+                                  credentials: "include",
+                                });
+                                const { audioContent } = await response.json();
+                                const audio = new Audio(`data:audio/mp3;base64,${audioContent}`);
+                                audio.oncanplaythrough = async () => {
+                                  try {
+                                    await audio.play();
+                                  } catch (e) {
+                                    console.error("재생 실패:", e);
+                                  }
+                                };
+                                audio.load();
+                              } catch (error) {
+                                console.error("TTS 오류:", error);
+                              }
+                            }}
+                            className="w-10 h-10 rounded-full flex items-center justify-center transition-colors shadow-md bg-[#00DAAA] hover:bg-[#00C299]"
+                          >
+                            <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
+                            </svg>
+                          </button>
+                          <button className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
 
                 {/* 카메라 버튼 - AI 메시지 옆에 표시 */}
-                {message.type === "ai" && index === messages.length - 1 && (
+                {message.type === "ai" && index === messages.length - 1 && !message.examples && (
                   <button
                     onClick={() => setIsModalOpen(true)}
                     className="absolute bottom-26 right-4 w-10 h-10 bg-[#00DAAA] hover:bg-[#00C495] rounded-full flex items-center justify-center shadow-lg transition-colors z-30"
@@ -447,7 +647,7 @@ const StageChat = ({ onBack }: StageChatProps) => {
                     />
                   </button>
                 )}
-              </div>
+              </React.Fragment>
             ))}
 
             {/* Loading indicator */}

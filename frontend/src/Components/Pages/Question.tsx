@@ -10,10 +10,11 @@ import NavBar from "../Templates/Navbar";
 import Mike from "../../Images/mike.png";
 import Send from "../../Images/sendicon.png";
 import { useGenerateTTS } from "../../entities/tts/queries";
+import { getTodayStringBy4AM } from "../../utils/dateUtils";
 
 const ChatBot = () => {
   const [messages, setMessages] = useState<
-    { type: "user" | "bot"; content: string }[]
+    { type: "user" | "bot"; content: string; timestamp?: Date }[]
   >([]);
   const [userInput, setUserInput] = useState("");
   const [fontSize, setFontSize] = useState(18); // 기본 폰트 크기
@@ -24,6 +25,42 @@ const ChatBot = () => {
   const { showError, showWarning, showInfo } = useErrorHandler();
   const ttsMutation = useGenerateTTS();
   const [isLargeTextMode] = useAtom(isLargeTextModeAtom);
+
+  // 대화 내역 저장/불러오기
+  const getStorageKey = () => {
+    const dateKey = getTodayStringBy4AM();
+    return `chat_messages_${dateKey}`;
+  };
+
+  const saveMessages = (msgs: typeof messages) => {
+    try {
+      const storageKey = getStorageKey();
+      const messagesToSave = msgs.map(msg => ({
+        ...msg,
+        timestamp: msg.timestamp ? msg.timestamp.toISOString() : new Date().toISOString()
+      }));
+      localStorage.setItem(storageKey, JSON.stringify(messagesToSave));
+    } catch (error) {
+      console.error("대화 내역 저장 실패:", error);
+    }
+  };
+
+  const loadMessages = () => {
+    try {
+      const storageKey = getStorageKey();
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return parsed.map((msg: any) => ({
+          ...msg,
+          timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date()
+        }));
+      }
+    } catch (error) {
+      console.error("대화 내역 불러오기 실패:", error);
+    }
+    return null;
+  };
   
   // 큰글씨 모드에 따른 텍스트 크기
   const baseFontSize = isLargeTextMode ? 20 : 16;
@@ -38,6 +75,14 @@ const ChatBot = () => {
     const fetchUserData = async () => {
       setLoading(true);
       try {
+        // 저장된 대화 내역 불러오기
+        const savedMessages = loadMessages();
+        if (savedMessages && savedMessages.length > 0) {
+          setMessages(savedMessages);
+          setLoading(false);
+          return;
+        }
+
         // Home 페이지와 동일한 API 요청 (http 유틸리티 사용)
         const response = await http.get<{
           result: boolean;
@@ -57,12 +102,15 @@ const ChatBot = () => {
           setUserName(fetchedUserName);
 
           // 초기 메시지 설정
-          setMessages([
+          const initialMessages = [
             {
-              type: "bot",
+              type: "bot" as const,
               content: `안녕하세요, ${fetchedUserName}님! 학습 관련 도움이 필요하신가요?😊`,
+              timestamp: new Date(),
             },
-          ]);
+          ];
+          setMessages(initialMessages);
+          saveMessages(initialMessages);
         } else {
           throw new Error("서버에서 올바르지 않은 응답을 받았습니다.");
         }
@@ -77,12 +125,15 @@ const ChatBot = () => {
           showError("서버 오류", "서버에서 오류가 발생했습니다.");
         }
 
-        setMessages([
+        const initialMessages = [
           {
-            type: "bot",
+            type: "bot" as const,
             content: "안녕하세요! 학습 관련 도움이 필요하신가요?",
+            timestamp: new Date(),
           },
-        ]);
+        ];
+        setMessages(initialMessages);
+        saveMessages(initialMessages);
       } finally {
         setLoading(false);
       }
@@ -102,7 +153,12 @@ const ChatBot = () => {
     const currentInput = userInput.trim();
     setUserInput("");
     setSendingMessage(true);
-    setMessages((prev) => [...prev, { type: "user", content: currentInput }]);
+    const userMessage = { type: "user" as const, content: currentInput, timestamp: new Date() };
+    setMessages((prev) => {
+      const updated = [...prev, userMessage];
+      saveMessages(updated);
+      return updated;
+    });
 
     try {
       const timeoutId = setTimeout(() => {
@@ -132,7 +188,12 @@ const ChatBot = () => {
         throw new Error("AI 응답이 올바르지 않습니다.");
       }
 
-      setMessages((prev) => [...prev, { type: "bot", content: botResponse }]);
+      const botMessage = { type: "bot" as const, content: botResponse, timestamp: new Date() };
+      setMessages((prev) => {
+        const updated = [...prev, botMessage];
+        saveMessages(updated);
+        return updated;
+      });
     } catch (error: any) {
       console.error("Error during request:", error);
 
@@ -168,7 +229,12 @@ const ChatBot = () => {
         );
       }
 
-      setMessages((prev) => [...prev, { type: "bot", content: errorMessage }]);
+      const errorBotMessage = { type: "bot" as const, content: errorMessage, timestamp: new Date() };
+      setMessages((prev) => {
+        const updated = [...prev, errorBotMessage];
+        saveMessages(updated);
+        return updated;
+      });
     } finally {
       setSendingMessage(false);
     }

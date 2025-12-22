@@ -1,8 +1,42 @@
 @import "tailwindcss";
 @plugin "daisyui";
 
+/* KoPubWorldDotum_Pro 글꼴 선언 */
+@font-face {
+  font-family: 'KoPubWorldDotum_Pro';
+  src: url('/fonts/KoPubWorld Dotum_Pro Light.otf') format('opentype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'KoPubWorldDotum_Pro';
+  src: url('/fonts/KoPubWorld Dotum_Pro Medium.otf') format('opentype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'KoPubWorldDotum_Pro';
+  src: url('/fonts/KoPubWorld Dotum_Pro Bold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* 기본 weight는 Medium(500) 사용 */
+@font-face {
+  font-family: 'KoPubWorldDotum_Pro';
+  src: url('/fonts/KoPubWorld Dotum_Pro Medium.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 @theme {
-  --font-family-base: KoPubWorldDotum_Pro;
+  --font-family-base: 'KoPubWorldDotum_Pro', 'KoPub Dotum', 'Apple SD Gothic Neo', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-weight-medium: 500;
   --spacing-7_5: 1.875rem; /* 30px */
   --spacing-12_5: 3.125rem; /* 50px */
@@ -42,13 +76,14 @@
 }
 
 * {
-  font-family: var(--font-family-base);
+  font-family: var(--font-family-base) !important;
   font-style: normal;
   font-weight: var(--font-weight-medium);
 }
 
 html,
 body {
+  font-family: var(--font-family-base) !important;
   overflow-x: hidden;
   width: 100%;
   max-width: 100%;

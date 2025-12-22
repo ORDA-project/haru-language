@@ -1,9 +1,12 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useAtom } from "jotai";
 import { Example } from "../../types";
-import { API_ENDPOINTS } from "../../config/api";
+import { API_ENDPOINTS, API_BASE_URL } from "../../config/api";
 import { isLargeTextModeAtom } from "../../store/dataStore";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import axios from "axios";
+import { useErrorHandler } from "../../hooks/useErrorHandler";
+import ImageUploadModal from "./ImageUploadModal";
 
 interface StageResultProps {
   description: string;
@@ -23,8 +26,14 @@ const StageResult = ({
   setStage,
 }: StageResultProps) => {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [allExamples, setAllExamples] = useState<Example[]>(examples);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [isPlayingTTS, setIsPlayingTTS] = useState(false);
+  const [playingExampleId, setPlayingExampleId] = useState<string | null>(null);
   const [isLargeTextMode] = useAtom(isLargeTextModeAtom);
+  const { showError, showSuccess } = useErrorHandler();
   
   // 큰글씨 모드에 따른 텍스트 크기 (px 단위로 명시적 설정)
   const baseFontSize = isLargeTextMode ? 20 : 16;
@@ -67,7 +76,7 @@ const StageResult = ({
   }, []);
 
   const handleNextCard = () => {
-    if (currentIndex < examples.length - 1) {
+    if (currentIndex < allExamples.length - 1) {
       setCurrentIndex(currentIndex + 1);
     }
   };
@@ -83,12 +92,21 @@ const StageResult = ({
   };
 
   const handleTTS = async () => {
-    const dialogueA = examples[currentIndex].dialogue.A.english;
-    const dialogueB = examples[currentIndex].dialogue.B.english;
+    if (isPlayingTTS) {
+      stopCurrentAudio();
+      setIsPlayingTTS(false);
+      return;
+    }
+
+    if (!allExamples[currentIndex]) return;
+
+    const dialogueA = allExamples[currentIndex].dialogue.A.english;
+    const dialogueB = allExamples[currentIndex].dialogue.B.english;
 
     stopCurrentAudio();
+    setIsPlayingTTS(true);
 
-    const textToRead = `${dialogueA}\n${dialogueB}`;
+    const textToRead = `${dialogueA}. ${dialogueB}`;
 
     try {
       const response = await fetch(API_ENDPOINTS.tts, {
@@ -109,26 +127,162 @@ const StageResult = ({
 
       audioRef.current = audio;
       audio.onended = () => {
+        setIsPlayingTTS(false);
         if (audioRef.current === audio) {
           audioRef.current = null;
         }
       };
       audio.onerror = () => {
+        setIsPlayingTTS(false);
         if (audioRef.current === audio) {
           audioRef.current = null;
         }
       };
 
-      await audio.play();
+      // 오디오 로드 대기 후 즉시 재생
+      audio.oncanplaythrough = async () => {
+        try {
+          await audio.play();
+        } catch (playError) {
+          console.error("오디오 재생 실패:", playError);
+          setIsPlayingTTS(false);
+        }
+      };
+      audio.load();
     } catch (error) {
       if (import.meta.env.DEV) {
         console.error("TTS 오류:", error);
       }
       stopCurrentAudio();
+      setIsPlayingTTS(false);
     }
   };
 
-  if (examples.length === 0) {
+  const handleAddMoreExamples = async () => {
+    if (isLoadingMore) return;
+
+    // 이미지가 있으면 이미지로 다시 생성, 없으면 extractedText 사용
+    if (!uploadedImage && !extractedText) {
+      showError("예문 추가 실패", "예문을 생성할 수 있는 데이터가 없습니다.");
+      return;
+    }
+
+    setIsLoadingMore(true);
+    try {
+      // 이미지가 있으면 이미지로 다시 생성
+      if (uploadedImage) {
+        const blob = dataURItoBlob(uploadedImage);
+        const formData = new FormData();
+        formData.append("image", blob, "cropped-image.png");
+
+        const token = localStorage.getItem("accessToken");
+        const headers: Record<string, string> = {};
+        if (token) {
+          headers["Authorization"] = `Bearer ${token}`;
+        }
+
+        const response = await axios.post("/example", formData, {
+          baseURL: API_BASE_URL,
+          headers,
+          withCredentials: true,
+          timeout: 30000,
+        });
+
+        if (response.data?.generatedExample?.examples) {
+          const newExamples = response.data.generatedExample.examples.map(
+            (ex: any) => ({
+              id: `${Date.now()}-${Math.random()}`,
+              context: ex.context || "",
+              dialogue: {
+                A: {
+                  english: ex.dialogue?.A?.english || "",
+                  korean: ex.dialogue?.A?.korean || "",
+                },
+                B: {
+                  english: ex.dialogue?.B?.english || "",
+                  korean: ex.dialogue?.B?.korean || "",
+                },
+              },
+            })
+          );
+          setAllExamples((prev) => [...prev, ...newExamples]);
+          showSuccess("예문 추가 완료", "새로운 예문 3개가 추가되었습니다!");
+        } else {
+          throw new Error("예문 생성에 실패했습니다.");
+        }
+      } else {
+        // extractedText만 있는 경우는 이미지 업로드 모달 열기
+        setIsModalOpen(true);
+        setIsLoadingMore(false);
+      }
+    } catch (error: any) {
+      console.error("예문 추가 오류:", error);
+      showError("예문 추가 실패", "예문을 추가하는 중 오류가 발생했습니다.");
+      setIsLoadingMore(false);
+    }
+  };
+
+  const dataURItoBlob = (dataURI: string): Blob => {
+    const byteString = atob(dataURI.split(",")[1]);
+    const mimeString = dataURI.split(",")[0].split(":")[1].split(";")[0];
+    const ab = new ArrayBuffer(byteString.length);
+    const ia = new Uint8Array(ab);
+    for (let i = 0; i < byteString.length; i++) {
+      ia[i] = byteString.charCodeAt(i);
+    }
+    return new Blob([ab], { type: mimeString });
+  };
+
+  const handleImageSelect = async (file: File) => {
+    setIsModalOpen(false);
+    setIsLoadingMore(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("image", file);
+
+      const token = localStorage.getItem("accessToken");
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
+      const response = await axios.post("/example", formData, {
+        baseURL: API_BASE_URL,
+        headers,
+        withCredentials: true,
+        timeout: 30000,
+      });
+
+      if (response.data?.generatedExample?.examples) {
+        const newExamples = response.data.generatedExample.examples.map(
+          (ex: any) => ({
+            id: `${Date.now()}-${Math.random()}`,
+            context: ex.context || "",
+            dialogue: {
+              A: {
+                english: ex.dialogue?.A?.english || "",
+                korean: ex.dialogue?.A?.korean || "",
+              },
+              B: {
+                english: ex.dialogue?.B?.english || "",
+                korean: ex.dialogue?.B?.korean || "",
+              },
+            },
+          })
+        );
+        setAllExamples((prev) => [...prev, ...newExamples]);
+        showSuccess("예문 추가 완료", "새로운 예문 3개가 추가되었습니다!");
+      }
+    } catch (error) {
+      console.error("이미지 예문 생성 오류:", error);
+      showError("예문 생성 실패", "이미지에서 예문을 생성하는 중 오류가 발생했습니다.");
+    } finally {
+      setIsLoadingMore(false);
+    }
+  };
+
+  if (allExamples.length === 0) {
     return (
       <div className="w-full h-[calc(100vh-100px)] flex flex-col items-center justify-center">
         <div className="text-center p-8">
@@ -165,18 +319,6 @@ const StageResult = ({
 
       {/* Chat Messages */}
       <div className={`flex-1 overflow-y-auto ${isLargeTextMode ? "p-5" : "p-4"} ${isLargeTextMode ? "space-y-5" : "space-y-4"}`}>
-        {/* AI message: 챕터 명, 예문문장이 잘 보이게 찍어주세요! */}
-        <div className="flex justify-start">
-          <div className={`max-w-[80%] ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-2xl bg-[#00DAAA] text-gray-900`}>
-            <p 
-              className="leading-relaxed"
-              style={baseTextStyle}
-            >
-              챕터 명, 예문문장이 잘 보이게 찍어주세요!
-            </p>
-          </div>
-        </div>
-
         {/* User message: Image and Extracted text */}
         {(uploadedImage || extractedText) && (
           <div className="flex justify-end">
@@ -202,131 +344,198 @@ const StageResult = ({
           </div>
         )}
 
-        {/* Bot message: Example carousel */}
+        {/* AI Response Summary */}
         <div className="flex justify-start">
-          <div className="max-w-[90%] w-full bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-            {/* Pagination Dots */}
-            {examples.length > 1 && (
-              <div className={`flex justify-center ${isLargeTextMode ? "py-2" : "py-1.5"} border-b border-gray-100`}>
-                {examples.map((_, index) => (
-                  <button
-                    key={index}
-                    className={`w-1.5 h-1.5 mx-0.5 rounded-full transition-colors ${
-                      index === currentIndex ? "bg-[#00DAAA]" : "bg-gray-300"
-                    }`}
-                    onClick={() => handleDotClick(index)}
-                  />
-                ))}
-              </div>
-            )}
-
-            {/* Context Badge */}
-            <div className={`${isLargeTextMode ? "p-5" : "p-4"} text-left border-b border-gray-100`}>
-              <span 
-                className={`inline-block ${isLargeTextMode ? "px-6 py-3" : "px-5 py-2.5"} bg-[#00DAAA] text-gray-900 rounded-full font-medium`}
-                style={baseTextStyle}
-              >
-                {examples[currentIndex]?.context}
-              </span>
-            </div>
-
-            {/* Dialogue */}
-            <div className={`${isLargeTextMode ? "p-5" : "p-4"} ${isLargeTextMode ? "space-y-5" : "space-y-4"}`}>
-              {/* A's dialogue */}
-              <div className={`flex items-start ${isLargeTextMode ? "space-x-3" : "space-x-2"}`}>
-                <div className={`${isLargeTextMode ? "w-8 h-8" : "w-7 h-7"} bg-[#00DAAA] rounded-full flex items-center justify-center flex-shrink-0`}>
-                  <span className="text-white font-bold" style={xSmallTextStyle}>A</span>
-                </div>
-                <div className="flex-1">
-                  <p 
-                    className="text-gray-900 font-medium leading-relaxed"
-                    style={baseTextStyle}
-                  >
-                    {examples[currentIndex]?.dialogue?.A?.english}
-                  </p>
-                  <p 
-                    className={`text-gray-600 ${isLargeTextMode ? "mt-2" : "mt-1"}`}
-                    style={xSmallTextStyle}
-                  >
-                    {examples[currentIndex]?.dialogue?.A?.korean}
-                  </p>
-                </div>
-              </div>
-
-              {/* B's dialogue */}
-              <div className={`flex items-start ${isLargeTextMode ? "space-x-3" : "space-x-2"}`}>
-                <div className={`${isLargeTextMode ? "w-8 h-8" : "w-7 h-7"} bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0`}>
-                  <span className="text-white font-bold" style={xSmallTextStyle}>B</span>
-                </div>
-                <div className="flex-1">
-                  <p 
-                    className="text-gray-900 font-medium leading-relaxed"
-                    style={baseTextStyle}
-                  >
-                    {examples[currentIndex]?.dialogue?.B?.english}
-                  </p>
-                  <p 
-                    className={`text-gray-600 ${isLargeTextMode ? "mt-2" : "mt-1"}`}
-                    style={xSmallTextStyle}
-                  >
-                    {examples[currentIndex]?.dialogue?.B?.korean}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Controls */}
-            <div className={`flex justify-between items-center ${isLargeTextMode ? "p-5" : "p-4"} border-t border-gray-100`}>
-              {/* Previous Button */}
-              <button
-                onClick={handlePreviousCard}
-                disabled={currentIndex === 0}
-                className={`${isLargeTextMode ? "p-3" : "p-2"} rounded-full transition-colors ${
-                  currentIndex === 0
-                    ? "opacity-30 cursor-not-allowed"
-                    : "hover:bg-gray-100 active:bg-gray-200"
-                }`}
-              >
-                <ChevronLeft className={`${isLargeTextMode ? "w-6 h-6" : "w-5 h-5"} text-gray-600`} />
-              </button>
-
-              {/* TTS Button */}
-              <button
-                onClick={handleTTS}
-                className={`${isLargeTextMode ? "w-14 h-14" : "w-12 h-12"} bg-[#00DAAA] hover:bg-[#00C495] active:bg-[#00B085] rounded-full flex items-center justify-center transition-colors shadow-lg`}
-              >
-                <svg width={isLargeTextMode ? "24" : "20"} height={isLargeTextMode ? "24" : "20"} viewBox="0 0 24 24" fill="#1F2937">
-                  <path d="M3 9v6h4l5 5V4l-5 5H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
-                </svg>
-              </button>
-
-              {/* Next Button */}
-              <button
-                onClick={handleNextCard}
-                disabled={currentIndex === examples.length - 1}
-                className={`${isLargeTextMode ? "p-3" : "p-2"} rounded-full transition-colors ${
-                  currentIndex === examples.length - 1
-                    ? "opacity-30 cursor-not-allowed"
-                    : "hover:bg-gray-100 active:bg-gray-200"
-                }`}
-              >
-                <ChevronRight className={`${isLargeTextMode ? "w-6 h-6" : "w-5 h-5"} text-gray-600`} />
-              </button>
-            </div>
+          <div className={`max-w-[80%] ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-2xl bg-white text-gray-800 shadow-sm border border-gray-100`}>
+            <p className="leading-relaxed" style={baseTextStyle}>
+              답변 요약 내용
+            </p>
           </div>
         </div>
 
-        {/* Generate New Button */}
+        {/* Example Cards - 2번 이미지처럼 여러 개 표시 */}
+        {allExamples.map((example, exampleIndex) => {
+          const isCardPlaying = playingExampleId === example.id;
+          return (
+            <div key={example.id} className="flex justify-start">
+              <div className="max-w-[90%] w-full bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden" style={{ width: '343px', paddingLeft: '12px', paddingTop: '12px', paddingBottom: '16px', paddingRight: '16px' }}>
+                {/* Context Badge and Dots */}
+                <div className="flex items-center justify-between mb-3">
+                  <div className="inline-block bg-[#B8E6D3] rounded-full px-2 py-0.5 border border-[#B8E6D3]" style={{ marginLeft: '-4px', marginTop: '-4px' }}>
+                    <span className="font-medium text-gray-900" style={xSmallTextStyle}>예문 상황</span>
+                  </div>
+                  <div className="flex items-center" style={{ gap: '4px' }}>
+                    <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#00DAAA' }} />
+                    <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#D1D5DB' }} />
+                    <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#D1D5DB' }} />
+                  </div>
+                </div>
+
+                {/* Dialogue */}
+                <div className="space-y-2 mb-3" style={{ paddingLeft: '8px' }}>
+                  {/* A's dialogue */}
+                  <div className="flex items-start space-x-2">
+                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0 bg-[#B8E6D3]`} style={xSmallTextStyle}>
+                      A
+                    </div>
+                    <div className="flex-1" style={{ paddingLeft: '4px', marginTop: '-2px' }}>
+                      <p className="font-medium text-gray-900 leading-relaxed" style={smallTextStyle}>
+                        {example.dialogue?.A?.english || "예문 내용"}
+                      </p>
+                      <p className="text-gray-600 leading-relaxed mt-1" style={smallTextStyle}>
+                        {example.dialogue?.A?.korean || "예문 한글버전"}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* B's dialogue */}
+                  <div className="flex items-start space-x-2">
+                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0 bg-[#B8E6D3]`} style={xSmallTextStyle}>
+                      B
+                    </div>
+                    <div className="flex-1" style={{ paddingLeft: '4px', marginTop: '-2px' }}>
+                      <p className="font-medium text-gray-900 leading-relaxed" style={smallTextStyle}>
+                        {example.dialogue?.B?.english || "예문 내용"}
+                      </p>
+                      <p className="text-gray-600 leading-relaxed mt-1" style={smallTextStyle}>
+                        {example.dialogue?.B?.korean || "예문 한글버전"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Controls */}
+                <div className="flex justify-center items-center gap-2 pt-4 border-t border-gray-200">
+                  <button
+                    className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (isCardPlaying) {
+                        stopCurrentAudio();
+                        setPlayingExampleId(null);
+                        setIsPlayingTTS(false);
+                        return;
+                      }
+
+                      const dialogueA = example.dialogue.A.english;
+                      const dialogueB = example.dialogue.B.english;
+                      const textToRead = `${dialogueA}. ${dialogueB}`;
+                      
+                      stopCurrentAudio();
+                      setPlayingExampleId(example.id);
+                      setIsPlayingTTS(true);
+
+                      fetch(API_ENDPOINTS.tts, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ text: textToRead }),
+                        credentials: "include",
+                      })
+                        .then((res) => res.json())
+                        .then(({ audioContent }) => {
+                          const audio = new Audio(`data:audio/mp3;base64,${audioContent}`);
+                          audioRef.current = audio;
+                          audio.onended = () => {
+                            setPlayingExampleId(null);
+                            setIsPlayingTTS(false);
+                            if (audioRef.current === audio) audioRef.current = null;
+                          };
+                          audio.onerror = () => {
+                            setPlayingExampleId(null);
+                            setIsPlayingTTS(false);
+                            if (audioRef.current === audio) audioRef.current = null;
+                          };
+                          audio.oncanplaythrough = async () => {
+                            try {
+                              await audio.play();
+                            } catch {
+                              setPlayingExampleId(null);
+                              setIsPlayingTTS(false);
+                            }
+                          };
+                          audio.load();
+                        })
+                        .catch(() => {
+                          setPlayingExampleId(null);
+                          setIsPlayingTTS(false);
+                        });
+                    }}
+                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors shadow-md ${
+                      isCardPlaying
+                        ? "bg-[#FF6B35] hover:bg-[#E55A2B]"
+                        : "bg-[#00DAAA] hover:bg-[#00C299]"
+                    }`}
+                  >
+                    {isCardPlaying ? (
+                      <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
+                      </svg>
+                    ) : (
+                      <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
+                      </svg>
+                    )}
+                  </button>
+                  <button
+                    className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+
+        {/* Add Example Button */}
         <div className={`flex justify-center ${isLargeTextMode ? "mt-4" : "mt-2"}`}>
           <button
-            onClick={() => setStage(1)}
-            className={`${isLargeTextMode ? "px-8 py-3" : "px-6 py-2.5"} bg-[#00DAAA] hover:bg-[#00C495] active:bg-[#00B085] text-gray-900 font-semibold rounded-full transition-colors shadow-lg`}
+            onClick={handleAddMoreExamples}
+            disabled={isLoadingMore}
+            className={`${isLargeTextMode ? "px-8 py-3" : "px-6 py-2.5"} bg-[#00DAAA] hover:bg-[#00C495] active:bg-[#00B085] text-gray-900 font-semibold rounded-full transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2`}
             style={baseTextStyle}
           >
-            다른 예문 생성하기
+            {isLoadingMore ? (
+              <>
+                <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                생성 중...
+              </>
+            ) : (
+              <>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
+                예문추가
+              </>
+            )}
           </button>
         </div>
       </div>
+
+      {/* Floating Camera Button */}
+      <button
+        onClick={() => setIsModalOpen(true)}
+        className="fixed bottom-24 right-4 w-14 h-14 bg-[#00DAAA] hover:bg-[#00C495] rounded-full flex items-center justify-center shadow-lg transition-colors z-30"
+      >
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+          <circle cx="12" cy="13" r="4" />
+        </svg>
+      </button>
+
+      {/* Image Upload Modal */}
+      <ImageUploadModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onImageSelect={handleImageSelect}
+        title="새로운 사진으로 예문 생성"
+      />
     </div>
   );
 };
