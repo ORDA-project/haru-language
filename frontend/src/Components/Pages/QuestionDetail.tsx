@@ -33,6 +33,10 @@ const QuestionDetail = () => {
   const [currentItemIndex, setCurrentItemIndex] = useState<Record<number, number>>({});
   const [isDeleteMode, setIsDeleteMode] = useState(false);
   const [selectedExampleIds, setSelectedExampleIds] = useState<Set<number>>(new Set());
+  const [isDeleteModeWriting, setIsDeleteModeWriting] = useState(false);
+  const [selectedWritingIds, setSelectedWritingIds] = useState<Set<number>>(new Set());
+  const [isDeleteModeQuestion, setIsDeleteModeQuestion] = useState(false);
+  const [selectedQuestionIds, setSelectedQuestionIds] = useState<Set<number>>(new Set());
   const ttsMutation = useGenerateTTS();
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const { showWarning, showError, showSuccess } = useErrorHandler();
@@ -589,46 +593,93 @@ const QuestionDetail = () => {
       </div>
 
       {/* Chat Content */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+      <div className={`flex-1 overflow-y-auto ${isLargeTextMode ? "p-5" : "p-4"} ${isLargeTextMode ? "space-y-5" : "space-y-4"} bg-[#F7F8FB]`}>
         {/* 한줄영어 섹션 */}
         {writingRecords.length > 0 && (
           <>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="font-semibold text-gray-600" style={headerTextStyle}>하루한줄</div>
+                <button
+                  onClick={() => {
+                    setIsDeleteModeWriting(!isDeleteModeWriting);
+                    if (isDeleteModeWriting) {
+                      setSelectedWritingIds(new Set());
+                    }
+                  }}
+                  className="px-3 py-1.5 text-sm rounded-lg border transition-colors"
+                  style={{
+                    backgroundColor: isDeleteModeWriting ? '#EF4444' : 'white',
+                    color: isDeleteModeWriting ? 'white' : '#6B7280',
+                    borderColor: isDeleteModeWriting ? '#EF4444' : '#D1D5DB'
+                  }}
+                >
+                  {isDeleteModeWriting ? '취소' : '삭제'}
+                </button>
+              </div>
+              
+              {isDeleteModeWriting && selectedWritingIds.size > 0 && (
+                <div className="flex justify-end">
+                  <button
+                    onClick={async () => {
+                      if (window.confirm(`선택한 ${selectedWritingIds.size}개의 하루한줄 기록을 삭제하시겠습니까?`)) {
+                        try {
+                          const deletePromises = Array.from(selectedWritingIds).map(id =>
+                            deleteWritingRecordMutation.mutateAsync(id)
+                          );
+                          await Promise.all(deletePromises);
+                          showSuccess("삭제 완료", `${selectedWritingIds.size}개의 하루한줄 기록이 삭제되었습니다.`);
+                          setSelectedWritingIds(new Set());
+                          setIsDeleteModeWriting(false);
+                        } catch (error) {
+                          showError("삭제 실패", "하루한줄 기록 삭제에 실패했습니다.");
+                        }
+                      }
+                    }}
+                    disabled={deleteWritingRecordMutation.isPending}
+                    className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors disabled:opacity-50"
+                  >
+                    선택 삭제 ({selectedWritingIds.size})
+                  </button>
+                </div>
+              )}
+            </div>
+            
             {writingRecords.map((record: any) => {
               const question = writingQuestionMap.get(record.writing_question_id);
               const feedback = Array.isArray(record.feedback) 
                 ? record.feedback 
                 : (record.feedback ? [record.feedback] : []);
+              const isSelected = selectedWritingIds.has(record.id);
               
               return (
                 <div key={`writing-${record.id}`} className="space-y-4 relative">
-                  {/* 삭제 버튼 */}
-                  <button
-                    onClick={async () => {
-                      if (window.confirm("이 기록을 삭제하시겠습니까?")) {
-                        try {
-                          await deleteWritingRecordMutation.mutateAsync(record.id);
-                          showSuccess("삭제 완료", "기록이 삭제되었습니다.");
-                        } catch (error) {
-                          showError("삭제 실패", "기록 삭제에 실패했습니다.");
-                        }
-                      }
-                    }}
-                    disabled={deleteWritingRecordMutation.isPending}
-                    className="absolute top-0 right-0 w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors disabled:opacity-50 z-10"
-                    aria-label="기록 삭제"
-                  >
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                    </svg>
-                  </button>
+                  {/* 체크박스 (삭제 모드일 때만 표시) */}
+                  {isDeleteModeWriting && (
+                    <div className="flex items-center gap-2 mb-2">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={(e) => {
+                          const newSet = new Set(selectedWritingIds);
+                          if (e.target.checked) {
+                            newSet.add(record.id);
+                          } else {
+                            newSet.delete(record.id);
+                          }
+                          setSelectedWritingIds(newSet);
+                        }}
+                        className="w-5 h-5 rounded border-gray-300 text-[#00DAAA] focus:ring-[#00DAAA]"
+                      />
+                      <span style={smallTextStyle}>이 하루한줄 기록 삭제</span>
+                    </div>
+                  )}
                   
                   {/* 1. 하루한줄 블록 */}
-                  <div className="space-y-2" style={{ gap: '10px' }}>
-                    <div className="font-semibold text-gray-600" style={headerTextStyle}>하루한줄</div>
-                    <div className="flex justify-end">
-                      <div 
-                        className="max-w-[80%] px-4 py-3 rounded-2xl bg-white text-gray-800 shadow-sm border border-gray-100"
-                      >
+                  <div className="flex justify-end">
+                    <div 
+                      className={`max-w-[80%] ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-2xl bg-white text-gray-800 shadow-sm border border-gray-100`}
+                    >
                         <div className="space-y-2">
                           {/* 오늘의 주제 - 불릿 있음 */}
                           {question && (
@@ -649,13 +700,11 @@ const QuestionDetail = () => {
                         </div>
                       </div>
                     </div>
-                  </div>
 
                   {/* 2. 문장 첨삭 블록 */}
                   {record.processed_text && (
                     <>
-                      <div className="space-y-2" style={{ gap: '10px' }}>
-                        {/* 큰 흰색 칸 - 첨삭 버전 내용 */}
+                      <div className="flex justify-start">
                         <div 
                           className="bg-white shadow-sm border border-gray-100 rounded-lg"
                           style={{ 
@@ -666,7 +715,7 @@ const QuestionDetail = () => {
                             paddingRight: '16px'
                           }}
                         >
-                          {/* 문장 첨삭 배지 - 흰색 칸 안으로 이동 */}
+                          {/* 문장 첨삭 배지 */}
                           <div
                             className="inline-block rounded-full px-2 py-0.5 mb-1"
                             style={{
@@ -682,17 +731,12 @@ const QuestionDetail = () => {
                             {record.processed_text}
                           </p>
                         </div>
-                        
-                        {/* 피드백 블록 - 항상 표시 */}
+                      </div>
+                      
+                      {/* 피드백 블록 */}
+                      <div className="flex justify-start">
                         <div 
-                          className="bg-white shadow-sm border border-gray-100 rounded-lg"
-                          style={{ 
-                            width: '343px',
-                            paddingRight: '40px',
-                            paddingTop: '16px',
-                            paddingBottom: '16px',
-                            paddingLeft: '16px'
-                          }}
+                          className={`max-w-[80%] ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-lg bg-gray-50 text-gray-800 border border-gray-200 shadow-sm`}
                         >
                           <div className="mb-2">
                             <span className="font-medium text-gray-800" style={smallTextStyle}>학습 피드백:</span>
@@ -723,7 +767,7 @@ const QuestionDetail = () => {
                       </div>
 
                       {/* 구분선 */}
-                      <div className="border-t border-gray-300"></div>
+                      <div className="border-t border-gray-300 my-4"></div>
                     </>
                   )}
                 </div>
@@ -736,43 +780,91 @@ const QuestionDetail = () => {
         {questions.length > 0 && (
           <>
             <div className="space-y-2">
-              <div className="font-semibold text-gray-600" style={headerTextStyle}>채팅기록</div>
-              {questions.map((question, index) => (
-                <div key={question.id} className="space-y-3 relative">
-                  {/* 삭제 버튼 */}
+              <div className="flex items-center justify-between">
+                <div className="font-semibold text-gray-600" style={headerTextStyle}>채팅기록</div>
+                <button
+                  onClick={() => {
+                    setIsDeleteModeQuestion(!isDeleteModeQuestion);
+                    if (isDeleteModeQuestion) {
+                      setSelectedQuestionIds(new Set());
+                    }
+                  }}
+                  className="px-3 py-1.5 text-sm rounded-lg border transition-colors"
+                  style={{
+                    backgroundColor: isDeleteModeQuestion ? '#EF4444' : 'white',
+                    color: isDeleteModeQuestion ? 'white' : '#6B7280',
+                    borderColor: isDeleteModeQuestion ? '#EF4444' : '#D1D5DB'
+                  }}
+                >
+                  {isDeleteModeQuestion ? '취소' : '삭제'}
+                </button>
+              </div>
+              
+              {isDeleteModeQuestion && selectedQuestionIds.size > 0 && (
+                <div className="flex justify-end">
                   <button
                     onClick={async () => {
-                      if (window.confirm("이 질문 기록을 삭제하시겠습니까?")) {
+                      if (window.confirm(`선택한 ${selectedQuestionIds.size}개의 채팅 기록을 삭제하시겠습니까?`)) {
                         try {
-                          await deleteQuestionMutation.mutateAsync(question.id);
-                          showSuccess("삭제 완료", "질문 기록이 삭제되었습니다.");
+                          const deletePromises = Array.from(selectedQuestionIds).map(id =>
+                            deleteQuestionMutation.mutateAsync(id)
+                          );
+                          await Promise.all(deletePromises);
+                          showSuccess("삭제 완료", `${selectedQuestionIds.size}개의 채팅 기록이 삭제되었습니다.`);
+                          setSelectedQuestionIds(new Set());
+                          setIsDeleteModeQuestion(false);
                         } catch (error) {
-                          showError("삭제 실패", "질문 기록 삭제에 실패했습니다.");
+                          showError("삭제 실패", "채팅 기록 삭제에 실패했습니다.");
                         }
                       }
                     }}
                     disabled={deleteQuestionMutation.isPending}
-                    className="absolute top-0 right-0 w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors disabled:opacity-50 z-10"
-                    aria-label="질문 기록 삭제"
+                    className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors disabled:opacity-50"
                   >
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                    </svg>
+                    선택 삭제 ({selectedQuestionIds.size})
                   </button>
+                </div>
+              )}
+              
+              {questions.map((question, index) => {
+                const isSelected = selectedQuestionIds.has(question.id);
+                
+                return (
+                  <div key={question.id} className="space-y-3 relative">
+                    {/* 체크박스 (삭제 모드일 때만 표시) */}
+                    {isDeleteModeQuestion && (
+                      <div className="flex items-center gap-2 mb-2">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={(e) => {
+                            const newSet = new Set(selectedQuestionIds);
+                            if (e.target.checked) {
+                              newSet.add(question.id);
+                            } else {
+                              newSet.delete(question.id);
+                            }
+                            setSelectedQuestionIds(newSet);
+                          }}
+                          className="w-5 h-5 rounded border-gray-300 text-[#00DAAA] focus:ring-[#00DAAA]"
+                        />
+                        <span style={smallTextStyle}>이 채팅 기록 삭제</span>
+                      </div>
+                    )}
                   
-                  {/* User Question */}
-                  <div className="flex justify-end">
-                    <div className="max-w-[80%] px-4 py-3 rounded-2xl bg-white text-gray-800 shadow-sm border border-gray-100">
-                      <p className="leading-relaxed whitespace-pre-wrap" style={baseTextStyle}>
-                        {question.content}
-                      </p>
+                    {/* User Question */}
+                    <div className="flex justify-end">
+                      <div className={`max-w-[80%] ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-2xl bg-white text-gray-800 shadow-sm border border-gray-100`}>
+                        <p className="leading-relaxed whitespace-pre-wrap" style={baseTextStyle}>
+                          {question.content}
+                        </p>
+                      </div>
                     </div>
-                  </div>
 
-                  {/* AI Response */}
-                  {question.Answers && question.Answers.length > 0 && (
-                    <div className="flex justify-start">
-                      <div className="max-w-[80%] px-4 py-3 rounded-2xl bg-white text-gray-800 shadow-sm border border-gray-100">
+                    {/* AI Response */}
+                    {question.Answers && question.Answers.length > 0 && (
+                      <div className="flex justify-start">
+                        <div className={`max-w-[80%] ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-2xl bg-white text-gray-800 shadow-sm border border-gray-100`}>
                         <div className="leading-relaxed" style={baseTextStyle}>
                     {question.Answers[0].content.includes(
                       "회화, 독해, 문법분석"
@@ -869,13 +961,14 @@ const QuestionDetail = () => {
                         </div>
                       </div>
                     </div>
-                  )}
-                </div>
-              ))}
+                    )}
+                  </div>
+                );
+              })}
             </div>
 
             {/* 구분선 */}
-            <div className="border-t border-gray-300"></div>
+            <div className="border-t border-gray-300 my-4"></div>
           </>
         )}
 
