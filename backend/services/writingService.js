@@ -44,7 +44,7 @@ const handleServiceError = (error, defaultMessage) => {
 const saveWritingRecord = async (userId, writingQuestionId, originalText, processedText, feedback, type) => {
   await WritingRecord.create({
     user_id: userId,
-    writing_question_id: writingQuestionId,
+    writing_question_id: writingQuestionId || null,
     original_text: originalText,
     processed_text: processedText,
     feedback: JSON.stringify(feedback),

@@ -19,7 +19,8 @@ async function getAnswer(question, userId) {
       "You are an English teacher helping students improve their language skills. Provide clear and helpful explanations for their questions about grammar, vocabulary, and usage. Include explanations in Korean with examples in both English and Korean.";
     
     if (user) {
-      const interests = user.UserInterests?.map((i) => i.interest) || [];
+      // UserInterest 관계명 확인 (대소문자 주의)
+      const interests = (user.UserInterests || user.userInterests || []).map((i) => i.interest) || [];
       const goal = user.goal;
       
       if (interests.length > 0 || goal) {

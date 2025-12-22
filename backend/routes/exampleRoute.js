@@ -8,8 +8,6 @@ const { deleteExample } = require("../services/exampleService");
 const { getExamplesByUserId } = require("../services/historyService");
 const { User } = require("../models");
 
-require("dotenv").config({ path: "../.env" });
-
 const router = express.Router();
 
 // uploads 디렉토리 확인 및 생성

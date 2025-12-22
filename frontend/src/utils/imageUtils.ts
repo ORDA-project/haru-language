@@ -6,14 +6,34 @@
  * Data URI를 Blob으로 변환
  */
 export const dataURItoBlob = (dataURI: string): Blob => {
-  const byteString = atob(dataURI.split(",")[1]);
-  const mimeString = dataURI.split(",")[0].split(":")[1].split(";")[0];
-  const ab = new ArrayBuffer(byteString.length);
-  const ia = new Uint8Array(ab);
-  for (let i = 0; i < byteString.length; i++) {
-    ia[i] = byteString.charCodeAt(i);
+  if (!dataURI || typeof dataURI !== "string") {
+    throw new Error("유효하지 않은 dataURI입니다.");
   }
-  return new Blob([ab], { type: mimeString });
+
+  // dataURI 형식: data:[<mediatype>][;base64],<data>
+  const commaIndex = dataURI.indexOf(",");
+  if (commaIndex === -1) {
+    throw new Error("유효하지 않은 dataURI 형식입니다.");
+  }
+
+  const header = dataURI.substring(0, commaIndex);
+  const data = dataURI.substring(commaIndex + 1);
+  
+  // MIME 타입 추출
+  const mimeMatch = header.match(/data:([^;]+)/);
+  const mimeString = mimeMatch ? mimeMatch[1] : "image/png";
+
+  try {
+    const byteString = atob(data);
+    const ab = new ArrayBuffer(byteString.length);
+    const ia = new Uint8Array(ab);
+    for (let i = 0; i < byteString.length; i++) {
+      ia[i] = byteString.charCodeAt(i);
+    }
+    return new Blob([ab], { type: mimeString });
+  } catch (error) {
+    throw new Error("dataURI를 Blob으로 변환하는 중 오류가 발생했습니다.");
+  }
 };
 
 /**

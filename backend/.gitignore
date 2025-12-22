@@ -2,5 +2,7 @@
 .env.development
 config
 node_modules
+uploads/*
+!uploads/.gitkeep
 
 

@@ -174,6 +174,11 @@ async function generateExamples(inputSentence, userId) {
     if (!result) {
       throw new Error("GPT API가 빈 응답을 반환했습니다.");
     }
+    
+    // 개발 환경에서만 원본 응답 로깅
+    if (process.env.NODE_ENV !== "production") {
+      console.log("GPT 원본 응답 (처음 500자):", result.substring(0, 500));
+    }
   } catch (gptError) {
     // 에러 로그 출력 (서버 로그에만 기록)
     console.error("GPT API 호출 중 오류:", gptError.message);
@@ -183,19 +188,52 @@ async function generateExamples(inputSentence, userId) {
   let gptResponse;
   try {
     gptResponse = JSON.parse(result);
+    
+    // GPT 응답 구조 정규화: examples가 최상위에 있을 수 있음
+    if (gptResponse.examples && !gptResponse.generatedExample?.examples) {
+      // examples가 최상위에 있으면 generatedExample 안으로 이동
+      if (!gptResponse.generatedExample) {
+        gptResponse.generatedExample = {};
+      }
+      gptResponse.generatedExample.examples = gptResponse.examples;
+      delete gptResponse.examples;
+    }
+    
+    // 개발 환경에서만 파싱된 응답 로깅
+    if (process.env.NODE_ENV !== "production") {
+      console.log("GPT 파싱된 응답 구조:", {
+        hasGeneratedExample: !!gptResponse.generatedExample,
+        hasExtractedSentence: !!gptResponse.generatedExample?.extractedSentence,
+        examplesCount: gptResponse.generatedExample?.examples?.length || 0,
+        examplesIsArray: Array.isArray(gptResponse.generatedExample?.examples),
+      });
+    }
+    
     // 응답 구조 검증
     if (!gptResponse.generatedExample || !gptResponse.generatedExample.extractedSentence) {
+      if (process.env.NODE_ENV !== "production") {
+        console.error("GPT 응답 구조:", JSON.stringify(gptResponse, null, 2));
+      }
       throw new Error("GPT 응답 형식이 올바르지 않습니다");
     }
     
     // examples 배열 검증 (3개 필수)
     if (!gptResponse.generatedExample.examples || !Array.isArray(gptResponse.generatedExample.examples) || gptResponse.generatedExample.examples.length < 3) {
       console.error(`GPT 응답에 예문이 부족합니다. (요구: 3개, 실제: ${gptResponse.generatedExample.examples?.length || 0}개)`);
+      if (process.env.NODE_ENV !== "production") {
+        console.error("GPT 응답 전체:", JSON.stringify(gptResponse, null, 2));
+      }
       throw new Error("GPT 응답에 예문이 부족합니다");
     }
   } catch (parseError) {
     // 에러 로그 출력 (서버 로그에만 기록)
     console.error("GPT 응답 파싱 실패:", parseError.message);
+    if (process.env.NODE_ENV !== "production") {
+      console.error("파싱 시도한 원본 응답:", result);
+      if (parseError instanceof SyntaxError) {
+        console.error("JSON 파싱 에러 위치:", parseError.message);
+      }
+    }
     throw new Error("GPT 응답 처리 실패");
   }
 

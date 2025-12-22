@@ -208,7 +208,6 @@ const App = () => {
       const croppedCanvas = cropper.getCroppedCanvas({
         imageSmoothingEnabled: true,
         imageSmoothingQuality: "high",
-        fillColor: "#ffffff",
         maxWidth: 1920,
         maxHeight: 1920,
       });
@@ -218,7 +217,24 @@ const App = () => {
         return;
       }
 
-      const croppedDataURL = croppedCanvas.toDataURL("image/jpeg", 0.8);
+      // 흰색 배경이 있는 새 canvas 생성
+      const finalCanvas = document.createElement("canvas");
+      finalCanvas.width = croppedCanvas.width;
+      finalCanvas.height = croppedCanvas.height;
+      const ctx = finalCanvas.getContext("2d");
+      if (!ctx) {
+        showError("자르기 오류", "이미지를 처리할 수 없습니다.");
+        return;
+      }
+      
+      // 흰색 배경 채우기
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
+      
+      // 크롭된 이미지 그리기
+      ctx.drawImage(croppedCanvas, 0, 0);
+
+      const croppedDataURL = finalCanvas.toDataURL("image/jpeg", 0.8);
       setCroppedImage(croppedDataURL);
       setStage(3);
       handleGenerateExamples(croppedDataURL);
