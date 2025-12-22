@@ -38,11 +38,15 @@ async function generateExamples(inputSentence, userId) {
     "3. 'examples': an array of exactly 3 examples. " +
     "Each example must have: " +
     "- 'id': an integer (1, 2, 3), " +
-    "- 'context': a detailed situation description in Korean (1-2 sentences) that includes (DO NOT use ** or any markdown formatting in context): " +
+    "- 'context': a detailed situation description in Korean (2-3 sentences) that includes (DO NOT use ** or any markdown formatting in context): " +
     "   - Specific time, place, and setting (e.g., '아침에 친구와 함께 카페에 있을 때', '회의실에서 동료에게 말할 때'), " +
     "   - The relationship between speakers (friends, colleagues, family, etc.), " +
     "   - The emotional tone or atmosphere (casual, formal, concerned, etc.), " +
     "   - Why this conversation is happening in this context. " +
+    "   - IMPORTANT: Explain BOTH Speaker A's question/statement AND Speaker B's response. " +
+    "     Describe what A is asking/saying and why, AND what B is responding and why. " +
+    "     For example: 'A가 ~라고 물어보는 이유는 ~이고, B가 ~라고 답하는 이유는 ~입니다.' " +
+    "     Make sure to provide feedback on both sides of the conversation. " +
     "- 'dialogue': an object with 'A' and 'B' properties. " +
     "Each dialogue speaker (A and B) must be an object with 'english' and 'korean' string properties. " +
     "Example dialogue format: { 'A': { 'english': 'Hello', 'korean': '안녕' }, 'B': { 'english': 'Hi', 'korean': '안녕' } } " +
