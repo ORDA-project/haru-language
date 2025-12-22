@@ -50,11 +50,13 @@ const FriendNotificationListener = () => {
     setCurrentNotification(null);
     isShowingNotificationRef.current = false;
     
-    // 다음 알림 표시 (requestAnimationFrame 사용)
+    // 다음 알림 표시 (requestAnimationFrame으로 분할하여 성능 최적화)
     requestAnimationFrame(() => {
-      setTimeout(() => {
-        showNextNotification();
-      }, 300); // 페이드아웃 애니메이션 시간
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          showNextNotification();
+        }, 300); // 페이드아웃 애니메이션 시간
+      });
     });
   }, [showNextNotification]);
 
@@ -101,19 +103,23 @@ const FriendNotificationListener = () => {
         });
       }
 
-      // 모든 알림을 표시한 후 읽음 처리 (비동기로 처리)
+      // 모든 알림을 표시한 후 읽음 처리 (비동기로 처리, requestAnimationFrame으로 분할)
       if (notificationIds.length > 0) {
-        setTimeout(async () => {
-          try {
-            await http.post("/friends/notifications/read", {
-              json: { notificationIds },
-            });
-          } catch (error) {
-            if (import.meta.env.DEV) {
-              console.error("알림 읽음 처리 실패:", error);
+        const delay = notificationIds.length * NOTIFICATION_DISPLAY_DELAY + READ_NOTIFICATION_DELAY;
+        setTimeout(() => {
+          // API 호출을 requestAnimationFrame으로 감싸서 메인 스레드 블로킹 방지
+          requestAnimationFrame(async () => {
+            try {
+              await http.post("/friends/notifications/read", {
+                json: { notificationIds },
+              });
+            } catch (error) {
+              if (import.meta.env.DEV) {
+                console.error("알림 읽음 처리 실패:", error);
+              }
             }
-          }
-        }, notificationIds.length * NOTIFICATION_DISPLAY_DELAY + READ_NOTIFICATION_DELAY);
+          });
+        }, delay);
       }
     } catch (error) {
       if (import.meta.env.DEV) {

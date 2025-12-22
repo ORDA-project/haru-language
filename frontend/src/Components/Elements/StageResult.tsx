@@ -137,27 +137,39 @@ const StageResult = ({
   const { showError, showSuccess } = useErrorHandler();
   const isInitializedRef = useRef(false);
 
-  // 화면 크기 감지 (throttling 적용)
+  // 화면 크기 감지 (throttling + requestAnimationFrame으로 성능 최적화)
   useEffect(() => {
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    let rafId: number | null = null;
     
     const updateWidth = () => {
       if (timeoutId) {
         clearTimeout(timeoutId);
       }
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+      }
+      
       timeoutId = setTimeout(() => {
-        setWindowWidth(window.innerWidth);
+        // 상태 업데이트를 requestAnimationFrame으로 감싸서 메인 스레드 블로킹 방지
+        rafId = requestAnimationFrame(() => {
+          setWindowWidth(window.innerWidth);
+          rafId = null;
+        });
         timeoutId = null;
       }, 150); // 150ms throttling
     };
     
     updateWidth();
-    window.addEventListener('resize', updateWidth);
+    window.addEventListener('resize', updateWidth, { passive: true });
     
     return () => {
       window.removeEventListener('resize', updateWidth);
       if (timeoutId) {
         clearTimeout(timeoutId);
+      }
+      if (rafId) {
+        cancelAnimationFrame(rafId);
       }
     };
   }, []);
@@ -368,41 +380,53 @@ const StageResult = ({
       if (uploadedImage) {
         const { examples: newExamples } = await generateExamplesFromImage(uploadedImage);
         
-        setExampleGroups((prev) => {
-          const newGroups = [...prev, newExamples];
-          const newGroupIndex = prev.length;
-          setGroupCurrentIndices((indices) => ({
-            ...indices,
-            [newGroupIndex]: 0,
-          }));
-          
-          if (import.meta.env.DEV) {
-            console.log("예문 추가 완료:", {
-              newGroupIndex,
-              totalGroups: newGroups.length,
-              newExamplesCount: newExamples.length,
-            });
-          }
-          
-          // 부모 컴포넌트에 업데이트 알림 (새로운 예문 추가 시)
-          if (onExamplesUpdate) {
-            const allExamples = newGroups.flat();
-            onExamplesUpdate(allExamples);
-          }
-          return newGroups;
-        });
-        
-        // 스크롤을 새로 추가된 예문으로 이동 (requestAnimationFrame 사용)
+        // 상태 업데이트를 requestAnimationFrame으로 분할하여 성능 최적화
         requestAnimationFrame(() => {
-          setTimeout(() => {
-            const chatContainer = document.querySelector('.overflow-y-auto');
-            if (chatContainer) {
-              chatContainer.scrollTo({
-                top: chatContainer.scrollHeight,
-                behavior: 'smooth'
+          setExampleGroups((prev) => {
+            const newGroups = [...prev, newExamples];
+            const newGroupIndex = prev.length;
+            
+            // groupCurrentIndices 업데이트를 별도 프레임에서 처리
+            requestAnimationFrame(() => {
+              setGroupCurrentIndices((indices) => ({
+                ...indices,
+                [newGroupIndex]: 0,
+              }));
+            });
+            
+            if (import.meta.env.DEV) {
+              console.log("예문 추가 완료:", {
+                newGroupIndex,
+                totalGroups: newGroups.length,
+                newExamplesCount: newExamples.length,
               });
             }
-          }, 100);
+            
+            // 부모 컴포넌트에 업데이트 알림 (새로운 예문 추가 시) - 별도 프레임에서 처리
+            if (onExamplesUpdate) {
+              requestAnimationFrame(() => {
+                const allExamples = newGroups.flat();
+                onExamplesUpdate(allExamples);
+              });
+            }
+            return newGroups;
+          });
+        });
+        
+        // 스크롤을 새로 추가된 예문으로 이동 (requestAnimationFrame으로 분할하여 성능 최적화)
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            const chatContainer = document.querySelector('.overflow-y-auto');
+            if (chatContainer) {
+              // scrollTo를 별도 프레임에서 실행하여 블로킹 방지
+              requestAnimationFrame(() => {
+                chatContainer.scrollTo({
+                  top: chatContainer.scrollHeight,
+                  behavior: 'smooth'
+                });
+              });
+            }
+          });
         });
         
         showSuccess("예문 추가 완료", "새로운 예문 3개가 추가되었습니다!");
@@ -482,28 +506,39 @@ const StageResult = ({
       setIsLoadingMore(true);
       const { examples: newExamples, description: newDescription } = await generateExamplesFromImage(croppedDataURL);
       
-      setExampleGroups((prev) => {
-        const newGroups = [...prev, newExamples];
-        const newGroupIndex = prev.length;
-        setGroupCurrentIndices((indices) => ({
-          ...indices,
-          [newGroupIndex]: 0,
-        }));
-        
-        // 새로운 이미지 세트 추가 (이미지, 설명, 예문 그룹 인덱스)
-        setNewImageSets((prevSets) => [...prevSets, {
-          image: croppedDataURL,
-          description: newDescription,
-          exampleGroupIndex: newGroupIndex,
-          timestamp: Date.now(),
-        }]);
-        
-        // 부모 컴포넌트에 업데이트 알림 (새로운 예문 추가 시)
-        if (onExamplesUpdate) {
-          const allExamples = newGroups.flat();
-          onExamplesUpdate(allExamples);
-        }
-        return newGroups;
+      // 상태 업데이트를 requestAnimationFrame으로 분할하여 성능 최적화
+      requestAnimationFrame(() => {
+        setExampleGroups((prev) => {
+          const newGroups = [...prev, newExamples];
+          const newGroupIndex = prev.length;
+          
+          // groupCurrentIndices 업데이트를 별도 프레임에서 처리
+          requestAnimationFrame(() => {
+            setGroupCurrentIndices((indices) => ({
+              ...indices,
+              [newGroupIndex]: 0,
+            }));
+          });
+          
+          // newImageSets 업데이트를 별도 프레임에서 처리
+          requestAnimationFrame(() => {
+            setNewImageSets((prevSets) => [...prevSets, {
+              image: croppedDataURL,
+              description: newDescription,
+              exampleGroupIndex: newGroupIndex,
+              timestamp: Date.now(),
+            }]);
+          });
+          
+          // 부모 컴포넌트에 업데이트 알림 (새로운 예문 추가 시) - 별도 프레임에서 처리
+          if (onExamplesUpdate) {
+            requestAnimationFrame(() => {
+              const allExamples = newGroups.flat();
+              onExamplesUpdate(allExamples);
+            });
+          }
+          return newGroups;
+        });
       });
       showSuccess("예문 추가 완료", "새로운 예문 3개가 추가되었습니다!");
     } catch (error) {
@@ -1003,6 +1038,40 @@ const StageResult = ({
                       </div>
                     </div>
                   )}
+                  
+                  {/* 예문 추가 버튼 - 각 세트의 마지막에 배치 */}
+                  <div className="flex justify-start mt-4">
+                    <button
+                      onClick={handleAddMoreExamples}
+                      disabled={isLoadingMore}
+                      className="bg-[#00DAAA] hover:bg-[#00C495] active:bg-[#00B085] text-gray-900 font-semibold rounded-full transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+                      style={{
+                        minWidth: `${ADD_BUTTON_WIDTH}px`,
+                        height: isLargeTextMode ? '42px' : '32px',
+                        fontSize: isLargeTextMode ? '18px' : '14px',
+                        padding: isLargeTextMode ? '0 14px' : '0 12px',
+                        whiteSpace: 'nowrap'
+                      }}
+                      aria-label="예문 추가"
+                    >
+                      {isLoadingMore ? (
+                        <>
+                          <svg className="animate-spin flex-shrink-0" width={isLargeTextMode ? "16" : "14"} height={isLargeTextMode ? "16" : "14"} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          <span>생성 중...</span>
+                        </>
+                      ) : (
+                        <>
+                          <svg width={isLargeTextMode ? "16" : "14"} height={isLargeTextMode ? "16" : "14"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M12 5v14M5 12h14" />
+                          </svg>
+                          <span>예문추가</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </React.Fragment>
               )}
             </React.Fragment>
@@ -1011,56 +1080,22 @@ const StageResult = ({
 
       </div>
 
-      {/* Add Example Button - 고정 위치 (항상 보이도록) */}
-      <div className="fixed bottom-20 left-4 z-20">
-        <button
-          onClick={handleAddMoreExamples}
-          disabled={isLoadingMore}
-          className="bg-[#00DAAA] hover:bg-[#00C495] active:bg-[#00B085] text-gray-900 font-semibold rounded-full transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
-          style={{
-            minWidth: `${ADD_BUTTON_WIDTH}px`,
-            height: isLargeTextMode ? '42px' : '32px',
-            fontSize: isLargeTextMode ? '18px' : '14px',
-            padding: isLargeTextMode ? '0 14px' : '0 12px',
-            whiteSpace: 'nowrap'
-          }}
-          aria-label="예문 추가"
-        >
-          {isLoadingMore ? (
-            <>
-              <svg className="animate-spin flex-shrink-0" width={isLargeTextMode ? "16" : "14"} height={isLargeTextMode ? "16" : "14"} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              <span>생성 중...</span>
-            </>
-          ) : (
-            <>
-              <svg width={isLargeTextMode ? "16" : "14"} height={isLargeTextMode ? "16" : "14"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 5v14M5 12h14" />
-              </svg>
-              <span>예문추가</span>
-            </>
-          )}
-        </button>
+      {/* 카메라 버튼 - 모바일 창 안에 배치 (스크롤 영역 내부, 마지막에) */}
+      <div className={`${isLargeTextMode ? "p-5" : "p-4"} pb-20`}>
+        <div className="flex justify-end">
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="w-10 h-10 bg-[#00DAAA] hover:bg-[#00C495] rounded-full flex items-center justify-center shadow-lg transition-colors"
+            aria-label="카메라 열기"
+          >
+            <Icons.camera
+              className="w-5 h-5"
+              stroke="white"
+              strokeOpacity="1"
+            />
+          </button>
+        </div>
       </div>
-
-      {/* Floating Camera Button - 네비게이션 바 위에 배치 (72px + 16px = 88px) */}
-      <button
-        onClick={() => setIsModalOpen(true)}
-        className="fixed w-10 h-10 bg-[#00DAAA] hover:bg-[#00C495] rounded-full flex items-center justify-center shadow-lg transition-colors z-30"
-        style={{ 
-          bottom: '88px',
-          right: windowWidth <= 440 ? '16px' : `calc((100% - 440px) / 2 + 16px)`
-        }}
-        aria-label="카메라 열기"
-      >
-        <Icons.camera
-          className="w-5 h-5"
-          stroke="white"
-          strokeOpacity="1"
-        />
-      </button>
 
       {/* Image Upload Modal */}
       <ImageUploadModal
