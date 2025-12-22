@@ -29,7 +29,7 @@ const FriendNotificationListener = () => {
   const notificationQueueRef = useRef<NotificationDisplay[]>([]);
   const lastUserIdRef = useRef<number | undefined>(undefined);
   const processedNotificationIdsRef = useRef<Set<number>>(new Set());
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isShowingNotificationRef = useRef(false);
 
   // 알림 표시 함수
@@ -56,11 +56,12 @@ const FriendNotificationListener = () => {
     }, 300); // 페이드아웃 애니메이션 시간
   }, [showNextNotification]);
 
-  // 알림 조회 및 표시 함수
+  // 알림 조회 및 표시 함수 (비동기 처리로 성능 개선)
   const fetchAndDisplayNotifications = useCallback(async () => {
     if (!user?.userId) return;
 
     try {
+      // API 호출을 비동기로 처리하여 메인 스레드 블로킹 방지
       const response = await http.get<{
         notifications?: FriendNotification[];
       }>("/friends/notifications/unread");
@@ -68,9 +69,12 @@ const FriendNotificationListener = () => {
       const notifications = response.notifications || [];
       if (notifications.length === 0) return;
 
+      // 상태 업데이트를 다음 프레임으로 지연시켜 메인 스레드 부하 감소
+      await new Promise(resolve => setTimeout(resolve, 0));
+
       const notificationIds: number[] = [];
 
-      // 각 알림을 큐에 추가
+      // 각 알림을 큐에 추가 (배치 처리)
       notifications.forEach((notification) => {
         // 이미 처리한 알림은 건너뛰기
         if (processedNotificationIdsRef.current.has(notification.id)) {
@@ -88,12 +92,14 @@ const FriendNotificationListener = () => {
         });
       });
 
-      // 알림 표시 시작
+      // 알림 표시 시작 (다음 프레임에서 실행)
       if (notificationQueueRef.current.length > 0 && !isShowingNotificationRef.current) {
-        showNextNotification();
+        setTimeout(() => {
+          showNextNotification();
+        }, 0);
       }
 
-      // 모든 알림을 표시한 후 읽음 처리 (실무 표준)
+      // 모든 알림을 표시한 후 읽음 처리 (비동기로 처리)
       if (notificationIds.length > 0) {
         setTimeout(async () => {
           try {
@@ -120,7 +126,7 @@ const FriendNotificationListener = () => {
       lastUserIdRef.current = undefined;
       processedNotificationIdsRef.current.clear();
       if (intervalRef.current) {
-        clearInterval(intervalRef.current);
+        clearTimeout(intervalRef.current);
         intervalRef.current = null;
       }
       return;
@@ -133,22 +139,29 @@ const FriendNotificationListener = () => {
       
       // 기존 인터벌 정리
       if (intervalRef.current) {
-        clearInterval(intervalRef.current);
+        clearTimeout(intervalRef.current);
       }
       
-      // 즉시 한 번 체크
-      fetchAndDisplayNotifications();
-      
-      // 주기적으로 알림 체크 (실무 표준: polling 방식)
-      intervalRef.current = setInterval(() => {
+      // 즉시 한 번 체크 (비동기로 처리)
+      setTimeout(() => {
         fetchAndDisplayNotifications();
-      }, NOTIFICATION_CHECK_INTERVAL);
+      }, 0);
+      
+      // 주기적으로 알림 체크 (재귀적 setTimeout 사용으로 이전 작업 완료 후 실행)
+      const scheduleNextCheck = () => {
+        intervalRef.current = setTimeout(async () => {
+          await fetchAndDisplayNotifications();
+          scheduleNextCheck(); // 다음 체크 예약
+        }, NOTIFICATION_CHECK_INTERVAL);
+      };
+      
+      scheduleNextCheck();
     }
 
     // cleanup
     return () => {
       if (intervalRef.current) {
-        clearInterval(intervalRef.current);
+        clearTimeout(intervalRef.current);
         intervalRef.current = null;
       }
     };

@@ -7,6 +7,8 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import axios, { AxiosError } from "axios";
 import { useErrorHandler } from "../../hooks/useErrorHandler";
 import ImageUploadModal from "./ImageUploadModal";
+import Cropper from "react-cropper";
+import "cropperjs/dist/cropper.css";
 import { dataURItoBlob, MAX_IMAGE_SIZE } from "../../utils/imageUtils";
 import { createTextStyles } from "../../utils/styleUtils";
 import { groupExamples, formatContextText, EXAMPLES_PER_GROUP } from "../../utils/exampleUtils";
@@ -118,12 +120,17 @@ const StageResult = ({
   const [groupCurrentIndices, setGroupCurrentIndices] = useState<GroupCurrentIndices>({});
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showCropStage, setShowCropStage] = useState(false);
+  const [selectedImageForCrop, setSelectedImageForCrop] = useState<string | null>(null);
+  const [newImageMessages, setNewImageMessages] = useState<Array<{ image: string; timestamp: number }>>([]);
+  const cropperRef = useRef<any>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isPlayingTTS, setIsPlayingTTS] = useState(false);
   const [playingExampleId, setPlayingExampleId] = useState<string | null>(null);
   const [isLargeTextMode] = useAtom(isLargeTextModeAtom);
   const [windowWidth, setWindowWidth] = useState(() => typeof window !== 'undefined' ? window.innerWidth : 440);
   const { showError, showSuccess } = useErrorHandler();
+  const isInitializedRef = useRef(false);
 
   // 화면 크기 감지
   useEffect(() => {
@@ -139,20 +146,17 @@ const StageResult = ({
     };
   }, []);
 
-  // 초기 예문이 변경되면 그룹 재생성
+  // 초기 예문이 변경되면 그룹 재생성 (초기 마운트 시에만)
   useEffect(() => {
-    if (examples.length > 0) {
+    if (!isInitializedRef.current && examples.length > 0) {
       setExampleGroups(groupExamples(examples));
+      isInitializedRef.current = true;
     }
   }, [examples]);
 
-  // exampleGroups가 변경되면 부모 컴포넌트에 알림
-  useEffect(() => {
-    if (onExamplesUpdate && exampleGroups.length > 0) {
-      const allExamples = exampleGroups.flat();
-      onExamplesUpdate(allExamples);
-    }
-  }, [exampleGroups, onExamplesUpdate]);
+  // exampleGroups가 변경되면 부모 컴포넌트에 알림 (초기 로드 시에만, 수동 업데이트는 각 핸들러에서 처리)
+  // 주의: 이 useEffect는 초기 로드 시에만 실행되도록 제한하여 무한 루프 방지
+  // 새로운 예문 추가는 handleAddMoreExamples와 handleCropComplete에서 직접 onExamplesUpdate 호출
 
   // 스타일 계산 (메모이제이션)
   const textStyles = useMemo(() => createTextStyles(isLargeTextMode), [isLargeTextMode]);
@@ -309,12 +313,20 @@ const StageResult = ({
       if (uploadedImage) {
         const newExamples = await generateExamplesFromImage(uploadedImage);
         
-        setExampleGroups((prev) => [...prev, newExamples]);
-        const newGroupIndex = exampleGroups.length;
-        setGroupCurrentIndices((prev) => ({
-          ...prev,
-          [newGroupIndex]: 0,
-        }));
+        setExampleGroups((prev) => {
+          const newGroups = [...prev, newExamples];
+          const newGroupIndex = prev.length;
+          setGroupCurrentIndices((indices) => ({
+            ...indices,
+            [newGroupIndex]: 0,
+          }));
+          // 부모 컴포넌트에 업데이트 알림 (새로운 예문 추가 시)
+          if (onExamplesUpdate) {
+            const allExamples = newGroups.flat();
+            onExamplesUpdate(allExamples);
+          }
+          return newGroups;
+        });
         showSuccess("예문 추가 완료", "새로운 예문 3개가 추가되었습니다!");
       } else {
         setIsModalOpen(true);
@@ -329,22 +341,85 @@ const StageResult = ({
     } finally {
       setIsLoadingMore(false);
     }
-  }, [isLoadingMore, uploadedImage, extractedText, exampleGroups.length, generateExamplesFromImage, showError, showSuccess]);
+  }, [isLoadingMore, uploadedImage, extractedText, generateExamplesFromImage, showError, showSuccess]);
 
-  // 이미지 선택 핸들러
-  const handleImageSelect = useCallback(async (file: File) => {
+  // 이미지 선택 핸들러 - 크롭 단계로 이동
+  const handleImageSelect = useCallback((file: File) => {
     setIsModalOpen(false);
-    setIsLoadingMore(true);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const imageDataUrl = e.target?.result as string;
+      setSelectedImageForCrop(imageDataUrl);
+      setShowCropStage(true);
+    };
+    reader.readAsDataURL(file);
+  }, []);
+
+  // 크롭 완료 핸들러
+  const handleCropComplete = useCallback(async () => {
+    if (!cropperRef.current?.cropper || !selectedImageForCrop) {
+      showError("크롭 오류", "이미지를 자를 수 없습니다.");
+      return;
+    }
 
     try {
-      const newExamples = await generateExamplesFromImage(file);
+      const cropper = cropperRef.current.cropper;
+      const croppedCanvas = cropper.getCroppedCanvas({
+        imageSmoothingEnabled: true,
+        imageSmoothingQuality: "high",
+        maxWidth: 1920,
+        maxHeight: 1920,
+      });
+
+      if (!croppedCanvas) {
+        showError("크롭 오류", "이미지를 자를 수 없습니다.");
+        return;
+      }
+
+      // 흰색 배경이 있는 새 canvas 생성
+      const finalCanvas = document.createElement("canvas");
+      finalCanvas.width = croppedCanvas.width;
+      finalCanvas.height = croppedCanvas.height;
+      const ctx = finalCanvas.getContext("2d");
+      if (!ctx) {
+        showError("크롭 오류", "이미지를 처리할 수 없습니다.");
+        return;
+      }
       
-      setExampleGroups((prev) => [...prev, newExamples]);
-      const newGroupIndex = exampleGroups.length;
-      setGroupCurrentIndices((prev) => ({
-        ...prev,
-        [newGroupIndex]: 0,
-      }));
+      // 흰색 배경 채우기
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
+      
+      // 크롭된 이미지 그리기
+      ctx.drawImage(croppedCanvas, 0, 0);
+
+      const croppedDataURL = finalCanvas.toDataURL("image/jpeg", 0.8);
+      
+      // 사용자 메시지로 이미지 추가
+      setNewImageMessages((prev) => [...prev, { image: croppedDataURL, timestamp: Date.now() }]);
+      
+      // 크롭 단계 닫기
+      setShowCropStage(false);
+      setSelectedImageForCrop(null);
+      
+      // 예문 생성
+      setIsLoadingMore(true);
+      const newExamples = await generateExamplesFromImage(croppedDataURL);
+      
+      setExampleGroups((prev) => {
+        const newGroups = [...prev, newExamples];
+        const newGroupIndex = prev.length;
+        setGroupCurrentIndices((indices) => ({
+          ...indices,
+          [newGroupIndex]: 0,
+        }));
+        // 부모 컴포넌트에 업데이트 알림 (새로운 예문 추가 시)
+        if (onExamplesUpdate) {
+          const allExamples = newGroups.flat();
+          onExamplesUpdate(allExamples);
+        }
+        return newGroups;
+      });
       showSuccess("예문 추가 완료", "새로운 예문 3개가 추가되었습니다!");
     } catch (error) {
       const errorMessage = getErrorMessage(error);
@@ -356,7 +431,13 @@ const StageResult = ({
     } finally {
       setIsLoadingMore(false);
     }
-  }, [exampleGroups.length, generateExamplesFromImage, showError, showSuccess]);
+  }, [selectedImageForCrop, generateExamplesFromImage, showError, showSuccess]);
+
+  // 크롭 취소 핸들러
+  const handleCropCancel = useCallback(() => {
+    setShowCropStage(false);
+    setSelectedImageForCrop(null);
+  }, []);
 
   // 에러 메시지 추출
   const getErrorMessage = (error: unknown): string => {
@@ -433,7 +514,7 @@ const StageResult = ({
 
       {/* Chat Messages */}
       <div className={`flex-1 overflow-y-auto ${isLargeTextMode ? "p-5" : "p-4"} ${isLargeTextMode ? "space-y-5" : "space-y-4"}`}>
-        {/* User message: Image */}
+        {/* User message: Original Image */}
         {uploadedImage && (
           <div className="flex justify-end">
             <div className={`max-w-[80%] ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-2xl bg-white text-gray-800 shadow-sm border border-gray-100`}>
@@ -447,6 +528,21 @@ const StageResult = ({
             </div>
           </div>
         )}
+
+        {/* User messages: New cropped images */}
+        {newImageMessages.map((msg) => (
+          <div key={msg.timestamp} className="flex justify-end">
+            <div className={`max-w-[80%] ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-2xl bg-white text-gray-800 shadow-sm border border-gray-100`}>
+              <div className={isLargeTextMode ? "mb-4" : "mb-3"}>
+                <img
+                  src={msg.image}
+                  alt="크롭된 이미지"
+                  className="w-full rounded-lg object-contain max-h-64"
+                />
+              </div>
+            </div>
+          </div>
+        ))}
 
         {/* 사진에 대한 설명 */}
         {description && (
@@ -612,15 +708,15 @@ const StageResult = ({
             className="bg-[#00DAAA] hover:bg-[#00C495] active:bg-[#00B085] text-gray-900 font-semibold rounded-full transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
             style={{
               width: `${ADD_BUTTON_WIDTH}px`,
-              height: isLargeTextMode ? '36px' : '32px',
-              fontSize: isLargeTextMode ? '16px' : '14px',
-              padding: '0 12px'
+              height: isLargeTextMode ? '42px' : '32px',
+              fontSize: isLargeTextMode ? '18px' : '14px',
+              padding: isLargeTextMode ? '0 14px' : '0 12px'
             }}
             aria-label="예문 추가"
           >
             {isLoadingMore ? (
               <>
-                <svg className="animate-spin" width="14" height="14" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <svg className="animate-spin" width={isLargeTextMode ? "16" : "14"} height={isLargeTextMode ? "16" : "14"} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
@@ -628,7 +724,7 @@ const StageResult = ({
               </>
             ) : (
               <>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg width={isLargeTextMode ? "16" : "14"} height={isLargeTextMode ? "16" : "14"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M12 5v14M5 12h14" />
                 </svg>
                 <span>예문추가</span>
@@ -662,6 +758,107 @@ const StageResult = ({
         onImageSelect={handleImageSelect}
         title="새로운 사진으로 예문 생성"
       />
+
+      {/* Crop Stage */}
+      {showCropStage && selectedImageForCrop && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+          <div className="w-full h-full flex flex-col bg-[#F7F8FB] max-w-[440px] mx-auto">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 bg-white border-b border-gray-200">
+              <button
+                onClick={handleCropCancel}
+                className="w-8 h-8 flex items-center justify-center"
+              >
+                <svg
+                  className="w-5 h-5 text-gray-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 19l-7-7 7-7"
+                  />
+                </svg>
+              </button>
+              <div className="text-center">
+                <h1 className="font-semibold text-gray-800" style={textStyles.header}>이미지 자르기</h1>
+              </div>
+              <div className="w-8"></div>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 flex flex-col p-4">
+              <div className="mb-4">
+                <p className="font-medium text-gray-800 text-center" style={textStyles.base}>
+                  어떤 문장을 기반으로 예문을 생성하고 싶으신가요?
+                </p>
+              </div>
+
+              <div className="flex-1 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden relative">
+                <style>{`
+                  .cropper-container {
+                    overflow: hidden !important;
+                  }
+                  .cropper-view-box {
+                    outline: 2px solid #00DAAA !important;
+                    outline-offset: -2px;
+                  }
+                  .cropper-face {
+                    background-color: transparent !important;
+                  }
+                  .cropper-modal {
+                    background-color: rgba(0, 0, 0, 0.5) !important;
+                  }
+                `}</style>
+                <Cropper
+                  src={selectedImageForCrop}
+                  style={{ height: "100%", width: "100%", maxHeight: "100%", objectFit: "contain" }}
+                  initialAspectRatio={16 / 9}
+                  guides={true}
+                  ref={cropperRef}
+                  viewMode={3}
+                  dragMode="move"
+                  autoCropArea={0.8}
+                  restore={false}
+                  modal={true}
+                  highlight={true}
+                  cropBoxMovable={true}
+                  cropBoxResizable={true}
+                  toggleDragModeOnDblclick={false}
+                  background={true}
+                  responsive={true}
+                  checkOrientation={false}
+                  zoomable={false}
+                  scalable={false}
+                  rotatable={false}
+                />
+              </div>
+
+              {/* Buttons */}
+              <div className="mt-6 space-y-3">
+                <button
+                  onClick={handleCropComplete}
+                  disabled={isLoadingMore}
+                  className="w-full py-4 bg-[#00DAAA] hover:bg-[#00C495] active:bg-[#00B085] text-white font-semibold rounded-full transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={textStyles.base}
+                >
+                  {isLoadingMore ? "생성 중..." : "선택 영역 예문 생성"}
+                </button>
+                <button
+                  onClick={handleCropCancel}
+                  className="w-full py-3 bg-white hover:bg-gray-50 active:bg-gray-100 text-gray-700 font-medium rounded-full border border-gray-300 transition-colors"
+                  style={textStyles.base}
+                >
+                  다른 사진 선택하기
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -2,9 +2,7 @@ import { usePostMutation } from "../../hooks/useQuery";
 import { TTSParams, TTSResponse } from "./types";
 
 export const useGenerateTTS = () => {
-  const mutation = usePostMutation<TTSResponse, TTSParams>("/api/tts", {
-    showSuccessMessage: "Generating TTS successfully",
-  });
+  const mutation = usePostMutation<TTSResponse, TTSParams>("/api/tts", {});
 
   // 개발 환경에서만 더미 데이터 처리
   if (import.meta.env.DEV) {
