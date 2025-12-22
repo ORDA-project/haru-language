@@ -25,8 +25,17 @@ const StageResult = ({
   errorMessage,
   setStage,
 }: StageResultProps) => {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [allExamples, setAllExamples] = useState<Example[]>(examples);
+  // 예문을 3개씩 그룹화하여 관리
+  const [exampleGroups, setExampleGroups] = useState<Example[][]>(() => {
+    // 초기 예문을 3개씩 그룹화
+    const groups: Example[][] = [];
+    for (let i = 0; i < examples.length; i += 3) {
+      groups.push(examples.slice(i, i + 3));
+    }
+    return groups;
+  });
+  // 각 그룹의 현재 인덱스 (그룹 인덱스 -> 예문 인덱스)
+  const [groupCurrentIndices, setGroupCurrentIndices] = useState<{ [key: number]: number }>({});
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -75,86 +84,94 @@ const StageResult = ({
     };
   }, []);
 
-  const handleNextCard = () => {
-    if (currentIndex < allExamples.length - 1) {
-      setCurrentIndex(currentIndex + 1);
+  // 그룹 내에서 다음 예문으로 이동
+  const handleNextInGroup = (groupIndex: number) => {
+    const group = exampleGroups[groupIndex];
+    if (!group) return;
+    const currentIdx = groupCurrentIndices[groupIndex] || 0;
+    if (currentIdx < group.length - 1) {
+      setGroupCurrentIndices((prev) => ({
+        ...prev,
+        [groupIndex]: currentIdx + 1,
+      }));
     }
   };
 
-  const handlePreviousCard = () => {
-    if (currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1);
+  // 그룹 내에서 이전 예문으로 이동
+  const handlePreviousInGroup = (groupIndex: number) => {
+    const currentIdx = groupCurrentIndices[groupIndex] || 0;
+    if (currentIdx > 0) {
+      setGroupCurrentIndices((prev) => ({
+        ...prev,
+        [groupIndex]: currentIdx - 1,
+      }));
     }
   };
 
-  const handleDotClick = (index: number) => {
-    setCurrentIndex(index);
+  // 그룹 내에서 특정 인덱스로 이동
+  const handleDotClick = (groupIndex: number, index: number) => {
+    setGroupCurrentIndices((prev) => ({
+      ...prev,
+      [groupIndex]: index,
+    }));
   };
 
-  const handleTTS = async () => {
-    if (isPlayingTTS) {
-      stopCurrentAudio();
-      setIsPlayingTTS(false);
-      return;
-    }
-
-    if (!allExamples[currentIndex]) return;
-
-    const dialogueA = allExamples[currentIndex].dialogue.A.english;
-    const dialogueB = allExamples[currentIndex].dialogue.B.english;
-
-    stopCurrentAudio();
-    setIsPlayingTTS(true);
-
-    const textToRead = `${dialogueA}. ${dialogueB}`;
+  // A와 B를 순차적으로 재생하는 함수
+  const playDialogueSequence = async (dialogueA: string, dialogueB: string, exampleId: string) => {
+    const playSingleDialogue = async (text: string): Promise<void> => {
+      return new Promise((resolve, reject) => {
+        fetch(API_ENDPOINTS.tts, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text }),
+          credentials: "include",
+        })
+          .then((res) => {
+            if (!res.ok) throw new Error("TTS 요청에 실패했습니다.");
+            return res.json();
+          })
+          .then(({ audioContent }) => {
+            const audio = new Audio(`data:audio/mp3;base64,${audioContent}`);
+            audioRef.current = audio;
+            audio.onended = () => {
+              resolve();
+              if (audioRef.current === audio) {
+                audioRef.current = null;
+              }
+            };
+            audio.onerror = () => {
+              reject(new Error("오디오 재생 실패"));
+              if (audioRef.current === audio) {
+                audioRef.current = null;
+              }
+            };
+            audio.oncanplaythrough = async () => {
+              try {
+                await audio.play();
+              } catch (playError) {
+                reject(playError);
+              }
+            };
+            audio.load();
+          })
+          .catch(reject);
+      });
+    };
 
     try {
-      const response = await fetch(API_ENDPOINTS.tts, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ text: textToRead }),
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        throw new Error("TTS 요청에 실패했습니다.");
-      }
-
-      const { audioContent } = await response.json();
-      const audio = new Audio(`data:audio/mp3;base64,${audioContent}`);
-
-      audioRef.current = audio;
-      audio.onended = () => {
-        setIsPlayingTTS(false);
-        if (audioRef.current === audio) {
-          audioRef.current = null;
-        }
-      };
-      audio.onerror = () => {
-        setIsPlayingTTS(false);
-        if (audioRef.current === audio) {
-          audioRef.current = null;
-        }
-      };
-
-      // 오디오 로드 대기 후 즉시 재생
-      audio.oncanplaythrough = async () => {
-        try {
-          await audio.play();
-        } catch (playError) {
-          console.error("오디오 재생 실패:", playError);
-          setIsPlayingTTS(false);
-        }
-      };
-      audio.load();
+      // A 재생
+      await playSingleDialogue(dialogueA);
+      // B 재생
+      await playSingleDialogue(dialogueB);
+      setIsPlayingTTS(false);
+      setPlayingExampleId(null);
     } catch (error) {
       if (import.meta.env.DEV) {
         console.error("TTS 오류:", error);
       }
       stopCurrentAudio();
       setIsPlayingTTS(false);
+      setPlayingExampleId(null);
     }
   };
 
@@ -205,7 +222,14 @@ const StageResult = ({
               },
             })
           );
-          setAllExamples((prev) => [...prev, ...newExamples]);
+          // 새로운 그룹으로 추가
+          setExampleGroups((prev) => [...prev, newExamples]);
+          // 새 그룹의 첫 번째 예문으로 설정
+          const newGroupIndex = exampleGroups.length;
+          setGroupCurrentIndices((prev) => ({
+            ...prev,
+            [newGroupIndex]: 0,
+          }));
           showSuccess("예문 추가 완료", "새로운 예문 3개가 추가되었습니다!");
         } else {
           throw new Error("예문 생성에 실패했습니다.");
@@ -271,7 +295,14 @@ const StageResult = ({
             },
           })
         );
-        setAllExamples((prev) => [...prev, ...newExamples]);
+        // 새로운 그룹으로 추가
+        setExampleGroups((prev) => [...prev, newExamples]);
+        // 새 그룹의 첫 번째 예문으로 설정
+        const newGroupIndex = exampleGroups.length;
+        setGroupCurrentIndices((prev) => ({
+          ...prev,
+          [newGroupIndex]: 0,
+        }));
         showSuccess("예문 추가 완료", "새로운 예문 3개가 추가되었습니다!");
       }
     } catch (error) {
@@ -282,7 +313,7 @@ const StageResult = ({
     }
   };
 
-  if (allExamples.length === 0) {
+  if (exampleGroups.length === 0) {
     return (
       <div className="w-full h-[calc(100vh-100px)] flex flex-col items-center justify-center">
         <div className="text-center p-8">
@@ -319,183 +350,160 @@ const StageResult = ({
 
       {/* Chat Messages */}
       <div className={`flex-1 overflow-y-auto ${isLargeTextMode ? "p-5" : "p-4"} ${isLargeTextMode ? "space-y-5" : "space-y-4"}`}>
-        {/* User message: Image and Extracted text */}
-        {(uploadedImage || extractedText) && (
+        {/* User message: Image only */}
+        {uploadedImage && (
           <div className="flex justify-end">
             <div className={`max-w-[80%] ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-2xl bg-white text-gray-800 shadow-sm border border-gray-100`}>
-              {uploadedImage && (
-                <div className={isLargeTextMode ? "mb-4" : "mb-3"}>
-                  <img
-                    src={uploadedImage}
-                    alt="Uploaded"
-                    className="w-full rounded-lg object-contain max-h-64"
-                  />
-                </div>
-              )}
-              {extractedText && (
-                <p 
-                  className="leading-relaxed whitespace-pre-wrap"
-                  style={baseTextStyle}
-                >
-                  {extractedText}
-                </p>
-              )}
+              <div className={isLargeTextMode ? "mb-4" : "mb-3"}>
+                <img
+                  src={uploadedImage}
+                  alt="Uploaded"
+                  className="w-full rounded-lg object-contain max-h-64"
+                />
+              </div>
             </div>
           </div>
         )}
 
-        {/* AI Response Summary */}
-        <div className="flex justify-start">
-          <div className={`max-w-[80%] ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-2xl bg-white text-gray-800 shadow-sm border border-gray-100`}>
-            <p className="leading-relaxed" style={baseTextStyle}>
-              답변 요약 내용
-            </p>
-          </div>
-        </div>
-
-        {/* Example Cards - 2번 이미지처럼 여러 개 표시 */}
-        {allExamples.map((example, exampleIndex) => {
+        {/* Example Groups - 각 그룹을 세로로 표시 */}
+        {exampleGroups.map((group, groupIndex) => {
+          const currentIdx = groupCurrentIndices[groupIndex] || 0;
+          const example = group[currentIdx];
+          if (!example) return null;
+          
           const isCardPlaying = playingExampleId === example.id;
+          
           return (
-            <div key={example.id} className="flex justify-start">
-              <div className="max-w-[90%] w-full bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden" style={{ width: '343px', paddingLeft: '12px', paddingTop: '12px', paddingBottom: '16px', paddingRight: '16px' }}>
-                {/* Context Badge and Dots */}
-                <div className="flex items-center justify-between mb-3">
-                  <div className="inline-block bg-[#B8E6D3] rounded-full px-2 py-0.5 border border-[#B8E6D3]" style={{ marginLeft: '-4px', marginTop: '-4px' }}>
-                    <span className="font-medium text-gray-900" style={xSmallTextStyle}>예문 상황</span>
-                  </div>
-                  <div className="flex items-center" style={{ gap: '4px' }}>
-                    <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#00DAAA' }} />
-                    <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#D1D5DB' }} />
-                    <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#D1D5DB' }} />
-                  </div>
-                </div>
-
-                {/* Dialogue */}
-                <div className="space-y-2 mb-3" style={{ paddingLeft: '8px' }}>
-                  {/* A's dialogue */}
-                  <div className="flex items-start space-x-2">
-                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0 bg-[#B8E6D3]`} style={xSmallTextStyle}>
-                      A
-                    </div>
-                    <div className="flex-1" style={{ paddingLeft: '4px', marginTop: '-2px' }}>
-                      <p className="font-medium text-gray-900 leading-relaxed" style={smallTextStyle}>
-                        {example.dialogue?.A?.english || "예문 내용"}
-                      </p>
-                      <p className="text-gray-600 leading-relaxed mt-1" style={smallTextStyle}>
-                        {example.dialogue?.A?.korean || "예문 한글버전"}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* B's dialogue */}
-                  <div className="flex items-start space-x-2">
-                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0 bg-[#B8E6D3]`} style={xSmallTextStyle}>
-                      B
-                    </div>
-                    <div className="flex-1" style={{ paddingLeft: '4px', marginTop: '-2px' }}>
-                      <p className="font-medium text-gray-900 leading-relaxed" style={smallTextStyle}>
-                        {example.dialogue?.B?.english || "예문 내용"}
-                      </p>
-                      <p className="text-gray-600 leading-relaxed mt-1" style={smallTextStyle}>
-                        {example.dialogue?.B?.korean || "예문 한글버전"}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Controls */}
-                <div className="flex justify-center items-center gap-2 pt-4 border-t border-gray-200">
-                  <button
-                    className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors"
-                  >
-                    <ChevronLeft className="w-5 h-5" />
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (isCardPlaying) {
-                        stopCurrentAudio();
-                        setPlayingExampleId(null);
-                        setIsPlayingTTS(false);
-                        return;
-                      }
-
-                      const dialogueA = example.dialogue.A.english;
-                      const dialogueB = example.dialogue.B.english;
-                      const textToRead = `${dialogueA}. ${dialogueB}`;
-                      
-                      stopCurrentAudio();
-                      setPlayingExampleId(example.id);
-                      setIsPlayingTTS(true);
-
-                      fetch(API_ENDPOINTS.tts, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ text: textToRead }),
-                        credentials: "include",
-                      })
-                        .then((res) => res.json())
-                        .then(({ audioContent }) => {
-                          const audio = new Audio(`data:audio/mp3;base64,${audioContent}`);
-                          audioRef.current = audio;
-                          audio.onended = () => {
-                            setPlayingExampleId(null);
-                            setIsPlayingTTS(false);
-                            if (audioRef.current === audio) audioRef.current = null;
-                          };
-                          audio.onerror = () => {
-                            setPlayingExampleId(null);
-                            setIsPlayingTTS(false);
-                            if (audioRef.current === audio) audioRef.current = null;
-                          };
-                          audio.oncanplaythrough = async () => {
-                            try {
-                              await audio.play();
-                            } catch {
-                              setPlayingExampleId(null);
-                              setIsPlayingTTS(false);
-                            }
-                          };
-                          audio.load();
-                        })
-                        .catch(() => {
-                          setPlayingExampleId(null);
-                          setIsPlayingTTS(false);
-                        });
-                    }}
-                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors shadow-md ${
-                      isCardPlaying
-                        ? "bg-[#FF6B35] hover:bg-[#E55A2B]"
-                        : "bg-[#00DAAA] hover:bg-[#00C299]"
-                    }`}
-                  >
-                    {isCardPlaying ? (
-                      <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
-                      </svg>
-                    ) : (
-                      <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
-                      </svg>
-                    )}
-                  </button>
-                  <button
-                    className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors"
-                  >
-                    <ChevronRight className="w-5 h-5" />
-                  </button>
+            <React.Fragment key={`group-${groupIndex}`}>
+              {/* 상황 설명 - AI 메시지 형태로 각 예문 위에 표시 */}
+              <div className="flex justify-start">
+                <div className={`max-w-[80%] ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-2xl bg-white text-gray-800 shadow-sm border border-gray-100`}>
+                  <p className="leading-relaxed" style={baseTextStyle}>
+                    {example.context || "이 상황에서 사용하는 대화입니다."}
+                  </p>
                 </div>
               </div>
-            </div>
+
+              {/* Example Card */}
+              <div className="flex justify-start">
+                <div className="max-w-[90%] w-full bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden" style={{ width: '343px', paddingLeft: '12px', paddingTop: '12px', paddingBottom: '16px', paddingRight: '16px' }}>
+                  {/* Context Badge and Dots */}
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="inline-block bg-[#B8E6D3] rounded-full px-2 py-0.5 border border-[#B8E6D3]" style={{ marginLeft: '-4px', marginTop: '-4px' }}>
+                      <span className="font-medium text-gray-900" style={xSmallTextStyle}>예문 상황</span>
+                    </div>
+                    <div className="flex items-center" style={{ gap: '4px' }}>
+                      {[0, 1, 2].map((dotIdx) => (
+                        <div
+                          key={dotIdx}
+                          onClick={() => dotIdx < group.length && handleDotClick(groupIndex, dotIdx)}
+                          style={{
+                            width: '6px',
+                            height: '6px',
+                            borderRadius: '50%',
+                            backgroundColor: dotIdx === currentIdx && dotIdx < group.length ? '#00DAAA' : '#D1D5DB',
+                            cursor: dotIdx < group.length ? 'pointer' : 'default'
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Dialogue */}
+                  <div className="space-y-2 mb-3" style={{ paddingLeft: '8px' }}>
+                    {/* A's dialogue */}
+                    <div className="flex items-start space-x-2">
+                      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0 bg-[#B8E6D3]`} style={xSmallTextStyle}>
+                        A
+                      </div>
+                      <div className="flex-1" style={{ paddingLeft: '4px', marginTop: '-2px' }}>
+                        <p className="font-medium text-gray-900 leading-relaxed" style={smallTextStyle}>
+                          {example.dialogue?.A?.english || "예문 내용"}
+                        </p>
+                        <p className="text-gray-600 leading-relaxed mt-1" style={smallTextStyle}>
+                          {example.dialogue?.A?.korean || "예문 한글버전"}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* B's dialogue */}
+                    <div className="flex items-start space-x-2">
+                      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0 bg-[#B8E6D3]`} style={xSmallTextStyle}>
+                        B
+                      </div>
+                      <div className="flex-1" style={{ paddingLeft: '4px', marginTop: '-2px' }}>
+                        <p className="font-medium text-gray-900 leading-relaxed" style={smallTextStyle}>
+                          {example.dialogue?.B?.english || "예문 내용"}
+                        </p>
+                        <p className="text-gray-600 leading-relaxed mt-1" style={smallTextStyle}>
+                          {example.dialogue?.B?.korean || "예문 한글버전"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Controls */}
+                  <div className="flex justify-center items-center gap-2 pt-4 border-t border-gray-200">
+                    <button
+                      onClick={() => handlePreviousInGroup(groupIndex)}
+                      disabled={currentIdx === 0}
+                      className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (isCardPlaying) {
+                          stopCurrentAudio();
+                          setPlayingExampleId(null);
+                          setIsPlayingTTS(false);
+                          return;
+                        }
+
+                        const dialogueA = example.dialogue.A.english;
+                        const dialogueB = example.dialogue.B.english;
+                        
+                        stopCurrentAudio();
+                        setPlayingExampleId(example.id);
+                        setIsPlayingTTS(true);
+                        playDialogueSequence(dialogueA, dialogueB, example.id);
+                      }}
+                      className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors shadow-md ${
+                        isCardPlaying
+                          ? "bg-[#FF6B35] hover:bg-[#E55A2B]"
+                          : "bg-[#00DAAA] hover:bg-[#00C299]"
+                      }`}
+                    >
+                      {isCardPlaying ? (
+                        <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
+                        </svg>
+                      ) : (
+                        <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
+                        </svg>
+                      )}
+                    </button>
+                    <button
+                      onClick={() => handleNextInGroup(groupIndex)}
+                      disabled={currentIdx >= group.length - 1}
+                      className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </React.Fragment>
           );
         })}
 
-        {/* Add Example Button */}
-        <div className={`flex justify-center ${isLargeTextMode ? "mt-4" : "mt-2"}`}>
+        {/* Add Example Button - 왼쪽 하단에 위치 */}
+        <div className={`flex justify-start ${isLargeTextMode ? "mt-4" : "mt-2"}`}>
           <button
             onClick={handleAddMoreExamples}
             disabled={isLoadingMore}
-            className={`${isLargeTextMode ? "px-8 py-3" : "px-6 py-2.5"} bg-[#00DAAA] hover:bg-[#00C495] active:bg-[#00B085] text-gray-900 font-semibold rounded-full transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2`}
+            className={`${isLargeTextMode ? "px-6 py-2.5" : "px-5 py-2"} bg-[#00DAAA] hover:bg-[#00C495] active:bg-[#00B085] text-gray-900 font-semibold rounded-full transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2`}
             style={baseTextStyle}
           >
             {isLoadingMore ? (
@@ -518,10 +526,10 @@ const StageResult = ({
         </div>
       </div>
 
-      {/* Floating Camera Button */}
+      {/* Floating Camera Button - 오른쪽 하단에 위치 (모바일 웹에 맞게) */}
       <button
         onClick={() => setIsModalOpen(true)}
-        className="fixed bottom-24 right-4 w-14 h-14 bg-[#00DAAA] hover:bg-[#00C495] rounded-full flex items-center justify-center shadow-lg transition-colors z-30"
+        className="fixed bottom-6 right-4 w-14 h-14 bg-[#00DAAA] hover:bg-[#00C495] rounded-full flex items-center justify-center shadow-lg transition-colors z-30"
       >
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
           <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />

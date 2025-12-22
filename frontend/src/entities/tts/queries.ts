@@ -2,7 +2,7 @@ import { usePostMutation } from "../../hooks/useQuery";
 import { TTSParams, TTSResponse } from "./types";
 
 export const useGenerateTTS = () => {
-  const mutation = usePostMutation<TTSResponse, TTSParams>("/tts", {
+  const mutation = usePostMutation<TTSResponse, TTSParams>("/api/tts", {
     showSuccessMessage: "Generating TTS successfully",
   });
 

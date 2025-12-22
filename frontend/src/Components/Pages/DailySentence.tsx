@@ -250,9 +250,9 @@ const DailySentence = () => {
   );
 
   // 단어를 선택된 영역에 추가
-  const handleWordSelect = useCallback((word: string) => {
+  const handleWordSelect = useCallback((word: string, wordIndex: number) => {
     setSelectedWords((prev) => [...prev, word]);
-    setAvailableWords((prev) => prev.filter((w) => w !== word));
+    setAvailableWords((prev) => prev.filter((_, i) => i !== wordIndex));
   }, []);
 
   // 단어를 선택된 영역에서 제거
@@ -699,8 +699,8 @@ const DailySentence = () => {
                     <div className="flex flex-wrap gap-2 justify-center">
                       {availableWords.map((word, index) => (
                         <span
-                          key={`available-${index}`}
-                          onClick={() => handleWordSelect(word)}
+                          key={`available-${index}-${word}`}
+                          onClick={() => handleWordSelect(word, index)}
                           className="bg-[#FF6B35] text-white px-4 py-2 rounded-full text-sm font-medium shadow-md cursor-pointer hover:bg-[#E55A2B] transition-colors"
                         >
                           {word}

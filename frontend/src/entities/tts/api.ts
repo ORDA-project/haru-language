@@ -3,6 +3,6 @@ import { TTSParams, TTSResponse } from './types';
 
 export const ttsApi = {
   generateTTS: (params: TTSParams): Promise<TTSResponse> => {
-    return http.post('/tts', { json: params });
+    return http.post('/api/tts', { json: params });
   },
 };
