@@ -10,6 +10,7 @@ import ImageUploadModal from "./ImageUploadModal";
 import { dataURItoBlob, MAX_IMAGE_SIZE } from "../../utils/imageUtils";
 import { createTextStyles } from "../../utils/styleUtils";
 import { groupExamples, formatContextText, EXAMPLES_PER_GROUP } from "../../utils/exampleUtils";
+import { Icons } from "./Icons";
 
 interface StageResultProps {
   description: string;
@@ -434,10 +435,17 @@ const StageResult = ({
         {/* 사진에 대한 설명 */}
         {description && (
           <div className="flex justify-start">
-            <div className={`max-w-[80%] ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-lg bg-blue-50 text-gray-800 border border-blue-100`}>
-              <p className="leading-relaxed whitespace-pre-wrap" style={{ ...textStyles.base, color: '#1e40af', lineHeight: '1.6' }}>
-                {description}
-              </p>
+            <div className={`max-w-[80%] ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-lg bg-white text-gray-900 border border-gray-200`}>
+              <p 
+                className="leading-relaxed whitespace-pre-wrap" 
+                style={{ ...textStyles.base, color: '#111827', lineHeight: '1.6' }}
+                dangerouslySetInnerHTML={{
+                  __html: description
+                    .replace(/\*\*(.*?)\*\*/g, '<u>$1</u>') // **텍스트** → 밑줄
+                    .replace(/__(.*?)__/g, '<u>$1</u>') // __텍스트__ → 밑줄
+                    .replace(/\*(.*?)\*/g, '<u>$1</u>') // *텍스트* → 밑줄
+                }}
+              />
             </div>
           </div>
         )}
@@ -452,22 +460,6 @@ const StageResult = ({
           
           return (
             <React.Fragment key={`group-${groupIndex}`}>
-              {/* 상황 설명 */}
-              {example.context && (
-                <div className="flex justify-start">
-                  <div 
-                    className={`max-w-[80%] ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-lg bg-gray-50 text-gray-700 border border-gray-200`}
-                    style={{
-                      boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
-                    }}
-                  >
-                    <p className="leading-relaxed whitespace-pre-wrap" style={{ ...textStyles.base, color: '#374151', lineHeight: '1.6' }}>
-                      {formatContextText(example.context)}
-                    </p>
-                  </div>
-                </div>
-              )}
-
               {/* Example Card */}
               <div className="flex justify-start">
                 <div 
@@ -576,6 +568,22 @@ const StageResult = ({
                   </div>
                 </div>
               </div>
+
+              {/* 상황 설명 - 예문 카드 아래에 표시 */}
+              {example.context && (
+                <div className="flex justify-start">
+                  <div 
+                    className={`max-w-[80%] ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-lg bg-gray-50 text-gray-700 border border-gray-200`}
+                    style={{
+                      boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
+                    }}
+                  >
+                    <p className="leading-relaxed whitespace-pre-wrap" style={{ ...textStyles.base, color: '#374151', lineHeight: '1.6' }}>
+                      {formatContextText(example.context)}
+                    </p>
+                  </div>
+                </div>
+              )}
             </React.Fragment>
           );
         })}
@@ -614,17 +622,17 @@ const StageResult = ({
         </div>
       </div>
 
-      {/* Floating Camera Button - 2번 이미지처럼 하단 네비게이션 바로 위 */}
+      {/* Floating Camera Button - AI 대화와 동일한 배치 */}
       <button
         onClick={() => setIsModalOpen(true)}
-        className="fixed bottom-20 right-4 w-14 h-14 bg-[#00DAAA] hover:bg-[#00C495] rounded-full flex items-center justify-center shadow-lg transition-colors z-30"
-        style={{ bottom: '88px' }}
+        className="fixed bottom-26 right-4 w-10 h-10 bg-[#00DAAA] hover:bg-[#00C495] rounded-full flex items-center justify-center shadow-lg transition-colors z-30"
         aria-label="카메라 열기"
       >
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
-          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-          <circle cx="12" cy="13" r="4" />
-        </svg>
+        <Icons.camera
+          className="w-5 h-5"
+          stroke="white"
+          strokeOpacity="1"
+        />
       </button>
 
       {/* Image Upload Modal */}

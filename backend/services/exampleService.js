@@ -34,10 +34,11 @@ async function generateExamples(inputSentence, userId) {
     "   - How native speakers typically use it, " +
     "   - Why someone would say this (the purpose or intent behind it). " +
     "   Make it practical and relatable, like '이 표현은 ~할 때 쓰는 거예요' or '현지에서는 ~한 상황에서 자주 사용해요'. " +
+    "   IMPORTANT: Wrap key phrases (like specific situations, times, places, or important concepts) with double asterisks **like this** to indicate they should be underlined. " +
     "3. 'examples': an array of exactly 3 examples. " +
     "Each example must have: " +
     "- 'id': an integer (1, 2, 3), " +
-    "- 'context': a detailed situation description in Korean (1-2 sentences) that includes: " +
+    "- 'context': a detailed situation description in Korean (1-2 sentences) that includes (DO NOT use ** or any markdown formatting in context): " +
     "   - Specific time, place, and setting (e.g., '아침에 친구와 함께 카페에 있을 때', '회의실에서 동료에게 말할 때'), " +
     "   - The relationship between speakers (friends, colleagues, family, etc.), " +
     "   - The emotional tone or atmosphere (casual, formal, concerned, etc.), " +
