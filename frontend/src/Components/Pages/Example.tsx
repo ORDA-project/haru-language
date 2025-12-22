@@ -123,7 +123,8 @@ const App = () => {
       }
 
       const formData = new FormData();
-      formData.append("image", blob, "cropped-image.png");
+      const fileName = blob.type === "image/jpeg" ? "cropped-image.jpg" : "cropped-image.png";
+      formData.append("image", blob, fileName);
 
       // 타임아웃 경고 메시지
       const timeoutId = setTimeout(() => {
@@ -203,11 +204,13 @@ const App = () => {
         return;
       }
 
+      // 사용자가 선택한 영역을 그대로 가져오되, 너무 크면 리사이즈
       const croppedCanvas = cropper.getCroppedCanvas({
-        width: 800,
-        height: 600,
         imageSmoothingEnabled: true,
         imageSmoothingQuality: "high",
+        fillColor: "#ffffff",
+        maxWidth: 1920,
+        maxHeight: 1920,
       });
 
       if (!croppedCanvas) {

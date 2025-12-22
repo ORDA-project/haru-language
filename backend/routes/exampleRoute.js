@@ -1,6 +1,7 @@
 const express = require("express");
 const multer = require("multer");
 const fs = require("fs").promises;
+const path = require("path");
 const { detectText } = require("../services/ocrService");
 const generateExamples = require("../services/exampleService");
 const { deleteExample } = require("../services/exampleService");
@@ -11,8 +12,22 @@ require("dotenv").config({ path: "../.env" });
 
 const router = express.Router();
 
+// uploads 디렉토리 확인 및 생성
+const uploadsDir = path.join(__dirname, "..", "uploads");
+(async () => {
+  try {
+    await fs.access(uploadsDir);
+  } catch {
+    try {
+      await fs.mkdir(uploadsDir, { recursive: true });
+    } catch (error) {
+      console.error("uploads 디렉토리 생성 실패:", error.message);
+    }
+  }
+})();
+
 const upload = multer({
-  dest: "uploads/",
+  dest: uploadsDir,
   limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     if (file.mimetype.startsWith("image/")) {
@@ -103,21 +118,24 @@ router.post("/", upload.single("image"), async (req, res) => {
       generatedExample: gptResponse,
     });
   } catch (error) {
-    if (process.env.NODE_ENV !== "production") {
-      console.error("Error generating examples:", error.message);
-    }
+    // 에러 로그 출력 (서버 로그에만 기록)
+    console.error("예문 생성 에러 상세:", {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+      code: error.code,
+      userId: req.user?.userId,
+      hasFile: !!req.file,
+      filePath: filePath,
+      fileSize: req.file?.size,
+      fileMimetype: req.file?.mimetype,
+    });
 
-    let errorMessage = "예문 생성 중 오류가 발생했습니다.";
-
-    if (error.message?.includes("OCR")) {
-      errorMessage = "이미지 텍스트 인식에 실패했습니다.";
-    } else if (error.message?.includes("GPT") || error.message?.includes("API") || error.message?.includes("GPT 응답")) {
-      errorMessage = "예문 생성 서비스에 일시적인 문제가 있습니다.";
-    }
+    // 프로덕션에서는 일반적인 에러 메시지만 반환
+    const errorMessage = "예문 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.";
 
     res.status(500).json({
       message: errorMessage,
-      ...(process.env.NODE_ENV === "development" && { error: error.message }),
     });
   } finally {
     await cleanupFile(filePath);

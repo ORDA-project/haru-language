@@ -10,6 +10,7 @@ import { http } from "../../utils/http";
 import ImageUploadModal from "./ImageUploadModal";
 import { Icons } from "./Icons";
 import { getTodayStringBy4AM } from "../../utils/dateUtils";
+import { dataURItoBlob } from "../../utils/imageUtils";
 
 interface ExampleData {
   context: string;
@@ -240,11 +241,13 @@ const StageChat = ({ onBack }: StageChatProps) => {
         return;
       }
 
+      // 사용자가 선택한 영역을 그대로 가져오되, 너무 크면 리사이즈
       const croppedCanvas = cropper.getCroppedCanvas({
-        width: 800, // 최대 폭 제한
-        height: 600, // 최대 높이 제한
         imageSmoothingEnabled: true,
         imageSmoothingQuality: "high",
+        fillColor: "#ffffff",
+        maxWidth: 1920,
+        maxHeight: 1920,
       });
 
       if (!croppedCanvas) {
@@ -298,7 +301,8 @@ const StageChat = ({ onBack }: StageChatProps) => {
       // 이미지를 Blob으로 변환
       const blob = dataURItoBlob(imageData);
       const formData = new FormData();
-      formData.append("image", blob, "cropped-image.png");
+      const fileName = blob.type === "image/jpeg" ? "cropped-image.jpg" : "cropped-image.png";
+      formData.append("image", blob, fileName);
 
       // AI에게 이미지 분석 요청 (예문 생성 API 사용)
       // http 유틸리티 사용 - JWT 토큰 자동 포함
@@ -381,16 +385,6 @@ const StageChat = ({ onBack }: StageChatProps) => {
     }
   };
 
-  const dataURItoBlob = (dataURI: string): Blob => {
-    const byteString = atob(dataURI.split(",")[1]);
-    const mimeString = dataURI.split(",")[0].split(":")[1].split(";")[0];
-    const ab = new ArrayBuffer(byteString.length);
-    const ia = new Uint8Array(ab);
-    for (let i = 0; i < byteString.length; i++) {
-      ia[i] = byteString.charCodeAt(i);
-    }
-    return new Blob([ab], { type: mimeString });
-  };
 
   return (
     <div className="w-full h-full flex flex-col bg-[#F7F8FB] relative">

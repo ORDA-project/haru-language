@@ -175,9 +175,8 @@ async function generateExamples(inputSentence, userId) {
       throw new Error("GPT API가 빈 응답을 반환했습니다.");
     }
   } catch (gptError) {
-    if (process.env.NODE_ENV !== "production") {
-      console.error("GPT API 호출 중 오류:", gptError.message);
-    }
+    // 에러 로그 출력 (서버 로그에만 기록)
+    console.error("GPT API 호출 중 오류:", gptError.message);
     throw gptError;
   }
 
@@ -191,16 +190,13 @@ async function generateExamples(inputSentence, userId) {
     
     // examples 배열 검증 (3개 필수)
     if (!gptResponse.generatedExample.examples || !Array.isArray(gptResponse.generatedExample.examples) || gptResponse.generatedExample.examples.length < 3) {
-      if (process.env.NODE_ENV !== "production") {
-        console.error(`GPT 응답에 예문이 부족합니다. (요구: 3개, 실제: ${gptResponse.generatedExample.examples?.length || 0}개)`);
-      }
-      throw new Error("GPT 응답에 예문이 3개 생성되지 않았습니다");
+      console.error(`GPT 응답에 예문이 부족합니다. (요구: 3개, 실제: ${gptResponse.generatedExample.examples?.length || 0}개)`);
+      throw new Error("GPT 응답에 예문이 부족합니다");
     }
   } catch (parseError) {
-    if (process.env.NODE_ENV !== "production") {
-      console.error("GPT 응답 파싱 실패:", parseError.message);
-    }
-    throw new Error(`GPT 응답 처리 실패: ${parseError.message}`);
+    // 에러 로그 출력 (서버 로그에만 기록)
+    console.error("GPT 응답 파싱 실패:", parseError.message);
+    throw new Error("GPT 응답 처리 실패");
   }
 
   // DB에 저장 (추가)
@@ -263,7 +259,7 @@ async function generateExamples(inputSentence, userId) {
 
   // 최종 응답 검증 (3개 필수)
   if (!gptResponse.generatedExample?.examples || gptResponse.generatedExample.examples.length < 3) {
-    throw new Error("GPT 응답에 예문이 3개 생성되지 않았습니다");
+    throw new Error("GPT 응답에 예문이 부족합니다");
   }
   
   // 예문이 3개보다 많으면 처음 3개만 사용

@@ -8,7 +8,8 @@ const openai = new OpenAI({
 async function callGPT(prompt, userInput, maxTokens = 600, options = {}) {
   // API 키 확인
   if (!process.env.OPENAI_API_KEY) {
-    throw new Error("GPT API 키가 설정되지 않았습니다. 환경 변수를 확인해주세요.");
+    console.error("GPT API 키가 설정되지 않았습니다.");
+    throw new Error("GPT API 설정 오류");
   }
 
   try {
@@ -40,25 +41,25 @@ async function callGPT(prompt, userInput, maxTokens = 600, options = {}) {
 
     return result;
   } catch (error) {
-    const isProduction = process.env.NODE_ENV === "production";
+    // 에러 로그 출력 (서버 로그에만 기록)
+    console.error("GPT API 호출 실패:", {
+      message: error.message,
+      code: error.code,
+      status: error.status,
+    });
     
-    if (!isProduction) {
-      console.error("GPT API 호출 실패:", error.message);
-      if (error.code) console.error("에러 코드:", error.code);
-      if (error.status) console.error("에러 상태:", error.status);
-    }
-    
+    // 프로덕션에서는 일반적인 에러 메시지만 반환
     if (error.status === 429) {
-      throw new Error("GPT API 요청 한도 초과. 잠시 후 다시 시도해주세요.");
+      throw new Error("GPT API 요청 한도 초과");
     }
     if (error.status === 401) {
-      throw new Error("GPT API 인증 실패. API 키를 확인해주세요.");
+      throw new Error("GPT API 인증 실패");
     }
     if (error.code === 'insufficient_quota') {
-      throw new Error("GPT API 사용량 한도를 초과했습니다. 결제 정보를 확인해주세요.");
+      throw new Error("GPT API 사용량 한도 초과");
     }
 
-    throw new Error(`GPT API 호출 실패: ${error.message}`);
+    throw new Error("GPT API 호출 실패");
   }
 }
 

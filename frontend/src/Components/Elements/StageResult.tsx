@@ -96,7 +96,8 @@ const createFormDataFromImage = (image: string | File): FormData => {
     if (blob.size > MAX_IMAGE_SIZE) {
       throw new Error("이미지 파일이 너무 큽니다. (5MB 이하로 해주세요)");
     }
-    formData.append("image", blob, "cropped-image.png");
+    const fileName = blob.type === "image/jpeg" ? "cropped-image.jpg" : "cropped-image.png";
+    formData.append("image", blob, fileName);
   } else {
     formData.append("image", image);
   }
