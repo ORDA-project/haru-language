@@ -48,13 +48,21 @@ async function generateExamples(inputSentence, userId) {
     "Example dialogue format: { 'A': { 'english': 'Hello', 'korean': '안녕' }, 'B': { 'english': 'Hi', 'korean': '안녕' } } " +
     "\n\nCRITICAL REQUIREMENTS FOR DIVERSITY: " +
     "You must create exactly 3 COMPLETELY DIFFERENT examples. Each example MUST vary significantly: " +
+    "- Different questions/expressions (Speaker A): For each example, use DIFFERENT but related expressions to the input sentence. " +
+    "  For example, if the input is 'How do you feel today?', create variations like: " +
+    "  Example 1: 'How are you feeling today?' " +
+    "  Example 2: 'What's your mood like?' " +
+    "  Example 3: 'How's your day going?' " +
+    "  Each question should be semantically related but use different wording and structure. " +
+    "- Different responses (Speaker B): Each response should be unique and appropriate to its specific question. " +
     "- Different subjects (different people, characters, or entities) " +
     "- Different time settings (morning, afternoon, evening, different days, seasons, etc.) " +
     "- Different vocabulary and expressions (use different words, phrases, and sentence structures) " +
     "- Different contexts and situations (completely different scenarios, locations, or circumstances) " +
     "- Different dialogue patterns (vary the conversation flow, question types, response styles) " +
-    "Do NOT simply rephrase the same content. Each example should feel like a unique, independent conversation. " +
-    "The three examples should cover different aspects, perspectives, or variations of the input sentence's meaning. ";
+    "Do NOT use the same question/expression for all examples. Do NOT simply rephrase the same content. " +
+    "Each example should feel like a unique, independent conversation with its own question and response. " +
+    "The three examples should cover different ways to express similar meanings, showing various natural ways to ask and respond. ";
 
   // 사용자 맞춤 프롬프트 추가
   if (user) {
