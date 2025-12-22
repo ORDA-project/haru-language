@@ -349,7 +349,7 @@ const StageChat = ({ onBack }: StageChatProps) => {
           type: "ai",
           content: "",
           examples: examples,
-          imageUrl: croppedImage || null,
+          imageUrl: croppedImage || undefined,
           timestamp: new Date(),
         };
 
