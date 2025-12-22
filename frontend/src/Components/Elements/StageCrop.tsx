@@ -64,22 +64,43 @@ const StageCrop = ({
         </p>
       </div>
 
-      <div className="flex-1 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="flex-1 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden relative" style={{ position: 'relative' }}>
+        <style>{`
+          .cropper-container {
+            overflow: hidden !important;
+          }
+          .cropper-view-box {
+            outline: 2px solid #00DAAA !important;
+            outline-offset: -2px;
+          }
+          .cropper-face {
+            background-color: transparent !important;
+          }
+          .cropper-modal {
+            background-color: rgba(0, 0, 0, 0.5) !important;
+          }
+        `}</style>
         <Cropper
           src={uploadedImage}
-          style={{ height: "100%", width: "100%" }}
+          style={{ height: "100%", width: "100%", maxHeight: "100%", objectFit: "contain" }}
           initialAspectRatio={16 / 9}
           guides={true}
           ref={cropperRef}
-          viewMode={1}
+          viewMode={3}
           dragMode="move"
           autoCropArea={0.8}
           restore={false}
-          modal={false}
-          highlight={false}
+          modal={true}
+          highlight={true}
           cropBoxMovable={true}
           cropBoxResizable={true}
           toggleDragModeOnDblclick={false}
+          background={false}
+          responsive={true}
+          checkOrientation={false}
+          zoomable={false}
+          scalable={false}
+          rotatable={false}
         />
       </div>
 
