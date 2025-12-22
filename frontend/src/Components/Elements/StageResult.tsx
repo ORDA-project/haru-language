@@ -350,7 +350,7 @@ const StageResult = ({
 
       {/* Chat Messages */}
       <div className={`flex-1 overflow-y-auto ${isLargeTextMode ? "p-5" : "p-4"} ${isLargeTextMode ? "space-y-5" : "space-y-4"}`}>
-        {/* User message: Image only */}
+        {/* User message: Image */}
         {uploadedImage && (
           <div className="flex justify-end">
             <div className={`max-w-[80%] ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-2xl bg-white text-gray-800 shadow-sm border border-gray-100`}>
@@ -361,6 +361,17 @@ const StageResult = ({
                   className="w-full rounded-lg object-contain max-h-64"
                 />
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* 사진에 대한 설명 - AI 메시지 형태로 표시 */}
+        {description && (
+          <div className="flex justify-start">
+            <div className={`max-w-[80%] ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-2xl bg-white text-gray-800 shadow-sm border border-gray-100`}>
+              <p className="leading-relaxed" style={baseTextStyle}>
+                {description}
+              </p>
             </div>
           </div>
         )}
@@ -379,7 +390,7 @@ const StageResult = ({
               <div className="flex justify-start">
                 <div className={`max-w-[80%] ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-2xl bg-white text-gray-800 shadow-sm border border-gray-100`}>
                   <p className="leading-relaxed" style={baseTextStyle}>
-                    {example.context || "이 상황에서 사용하는 대화입니다."}
+                    {example.context || "이런 상황에서 사용할 수 있는 대화예요!"}
                   </p>
                 </div>
               </div>
@@ -526,10 +537,10 @@ const StageResult = ({
         </div>
       </div>
 
-      {/* Floating Camera Button - 오른쪽 하단에 위치 (모바일 웹에 맞게) */}
+      {/* Floating Camera Button - 오른쪽 하단에 위치 (하단 네비게이션 바로 위) */}
       <button
         onClick={() => setIsModalOpen(true)}
-        className="fixed bottom-6 right-4 w-14 h-14 bg-[#00DAAA] hover:bg-[#00C495] rounded-full flex items-center justify-center shadow-lg transition-colors z-30"
+        className="fixed bottom-20 right-4 w-14 h-14 bg-[#00DAAA] hover:bg-[#00C495] rounded-full flex items-center justify-center shadow-lg transition-colors z-30"
       >
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
           <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
