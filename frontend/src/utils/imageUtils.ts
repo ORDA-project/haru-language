@@ -48,7 +48,7 @@ export const validateImageFile = (file: File): ImageValidationResult => {
  * Data URI 유효성 검사
  */
 export const validateDataURI = (dataURI: string): boolean => {
-  return dataURI && dataURI.startsWith("data:image/");
+  return Boolean(dataURI && dataURI.startsWith("data:image/"));
 };
 
 /**

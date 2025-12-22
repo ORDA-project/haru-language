@@ -21,7 +21,7 @@ const FriendNotificationListener = () => {
   const { showInfo } = useErrorHandler();
   const lastUserIdRef = useRef<number | undefined>(undefined);
   const processedNotificationIdsRef = useRef<Set<number>>(new Set());
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // 알림 조회 및 표시 함수
   const fetchAndDisplayNotifications = useCallback(async () => {

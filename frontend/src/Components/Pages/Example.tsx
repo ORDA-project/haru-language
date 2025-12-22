@@ -103,51 +103,6 @@ const App = () => {
     }
   }, [showError]);
 
-  const handleCrop = useCallback(() => {
-    try {
-      const cropper = cropperRef.current?.cropper;
-      if (!cropper) {
-        showError("자르기 오류", "이미지를 자를 수 없습니다. 다시 시도해주세요.");
-        return;
-      }
-
-      const croppedCanvas = cropper.getCroppedCanvas({
-        width: 800,
-        height: 600,
-        imageSmoothingEnabled: true,
-        imageSmoothingQuality: "high",
-      });
-
-      if (!croppedCanvas) {
-        showError("자르기 오류", "이미지를 자를 수 없습니다.");
-        return;
-      }
-
-      const croppedDataURL = croppedCanvas.toDataURL("image/jpeg", 0.8);
-      setCroppedImage(croppedDataURL);
-      setStage(3);
-      handleGenerateExamples(croppedDataURL);
-    } catch (error) {
-      showError("이미지 처리 오류", "이미지를 처리하는 중 오류가 발생했습니다.");
-      if (import.meta.env.DEV) {
-        console.error("Crop error:", error);
-      }
-    }
-  }, [showError, handleGenerateExamples]);
-
-  const handleBackToUpload = useCallback(() => {
-    setUploadedImage(null);
-    setStage(1);
-  }, []);
-
-  const handleAIChat = useCallback(() => {
-    setStage(5);
-  }, []);
-
-  const handleBackFromChat = useCallback(() => {
-    setStage(1);
-  }, []);
-
   const handleGenerateExamples = useCallback(async (imageData: string) => {
     setLoading(true);
     setErrorMessage("");
@@ -238,7 +193,52 @@ const App = () => {
     } finally {
       setLoading(false);
     }
-  }, [showError, showSuccess, showWarning]);
+  }, [showError, showSuccess, showWarning, loading]);
+
+  const handleCrop = useCallback(() => {
+    try {
+      const cropper = cropperRef.current?.cropper;
+      if (!cropper) {
+        showError("자르기 오류", "이미지를 자를 수 없습니다. 다시 시도해주세요.");
+        return;
+      }
+
+      const croppedCanvas = cropper.getCroppedCanvas({
+        width: 800,
+        height: 600,
+        imageSmoothingEnabled: true,
+        imageSmoothingQuality: "high",
+      });
+
+      if (!croppedCanvas) {
+        showError("자르기 오류", "이미지를 자를 수 없습니다.");
+        return;
+      }
+
+      const croppedDataURL = croppedCanvas.toDataURL("image/jpeg", 0.8);
+      setCroppedImage(croppedDataURL);
+      setStage(3);
+      handleGenerateExamples(croppedDataURL);
+    } catch (error) {
+      showError("이미지 처리 오류", "이미지를 처리하는 중 오류가 발생했습니다.");
+      if (import.meta.env.DEV) {
+        console.error("Crop error:", error);
+      }
+    }
+  }, [showError, handleGenerateExamples]);
+
+  const handleBackToUpload = useCallback(() => {
+    setUploadedImage(null);
+    setStage(1);
+  }, []);
+
+  const handleAIChat = useCallback(() => {
+    setStage(5);
+  }, []);
+
+  const handleBackFromChat = useCallback(() => {
+    setStage(1);
+  }, []);
 
   return (
     <div className="w-full h-[calc(100vh-72px)] flex flex-col max-w-[440px] mx-auto bg-[#F7F8FB] shadow-[0_0_10px_0_rgba(0,0,0,0.1)]">
