@@ -25,6 +25,7 @@ import FriendNotificationListener from "./Components/Elements/FriendNotification
 import FriendInvite from "./Components/Pages/FriendInvite";
 import Season from "./Components/Pages/Season";
 import DeleteAccount from "./Components/Pages/DeleteAccount";
+import NotificationHistory from "./Components/Pages/NotificationHistory";
 
 const router = createBrowserRouter([
   {
@@ -106,6 +107,10 @@ const router = createBrowserRouter([
   {
     path: "/delete-account",
     element: <DeleteAccount />,
+  },
+  {
+    path: "/notification-history",
+    element: <NotificationHistory />,
   },
 ]);
 

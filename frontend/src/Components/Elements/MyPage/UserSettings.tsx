@@ -160,6 +160,13 @@ const UserSettings = React.memo(function UserSettings({
               <span style={baseTextStyle}>서비스 이용약관</span>
             </button>
             <button
+              onClick={() => navigate("/notification-history")}
+              className="flex items-center hover:bg-gray-50 p-2 rounded-lg transition-colors"
+            >
+              <Icons.notification className="w-6 h-6 mr-3" />
+              <span style={baseTextStyle}>알림 기록</span>
+            </button>
+            <button
               onClick={() => navigate("/version-info")}
               className="flex items-center hover:bg-gray-50 p-2 rounded-lg transition-colors"
             >

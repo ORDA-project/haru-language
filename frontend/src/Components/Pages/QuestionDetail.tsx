@@ -929,7 +929,7 @@ const QuestionDetail = () => {
                 </div>
               )}
 
-              {exampleRecords.map((example) => {
+              {exampleRecords.map((example, exampleIndex) => {
                 if (!example.exampleItems || example.exampleItems.length === 0) return null;
                 
                 const currentIndex = getCurrentItemIndex(example.id, example.exampleItems.length);
@@ -1159,6 +1159,11 @@ const QuestionDetail = () => {
                         </div>
                       )}
                     </div>
+                    
+                    {/* 세트 구분선 */}
+                    {exampleIndex < exampleRecords.length - 1 && (
+                      <div className="border-t border-gray-300 my-4"></div>
+                    )}
                   </div>
                 );
               })}

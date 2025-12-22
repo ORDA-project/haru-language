@@ -121,7 +121,22 @@ const StageResult = ({
   const [isPlayingTTS, setIsPlayingTTS] = useState(false);
   const [playingExampleId, setPlayingExampleId] = useState<string | null>(null);
   const [isLargeTextMode] = useAtom(isLargeTextModeAtom);
+  const [windowWidth, setWindowWidth] = useState(() => typeof window !== 'undefined' ? window.innerWidth : 440);
   const { showError, showSuccess } = useErrorHandler();
+
+  // 화면 크기 감지
+  useEffect(() => {
+    const updateWidth = () => {
+      setWindowWidth(window.innerWidth);
+    };
+    
+    updateWidth();
+    window.addEventListener('resize', updateWidth);
+    
+    return () => {
+      window.removeEventListener('resize', updateWidth);
+    };
+  }, []);
 
   // 초기 예문이 변경되면 그룹 재생성
   useEffect(() => {
@@ -625,8 +640,11 @@ const StageResult = ({
       {/* Floating Camera Button - 네비게이션 바 위에 배치 (72px + 16px = 88px) */}
       <button
         onClick={() => setIsModalOpen(true)}
-        className="fixed right-4 w-10 h-10 bg-[#00DAAA] hover:bg-[#00C495] rounded-full flex items-center justify-center shadow-lg transition-colors z-30"
-        style={{ bottom: '88px' }}
+        className="fixed w-10 h-10 bg-[#00DAAA] hover:bg-[#00C495] rounded-full flex items-center justify-center shadow-lg transition-colors z-30"
+        style={{ 
+          bottom: '88px',
+          right: windowWidth <= 440 ? '16px' : `calc((100% - 440px) / 2 + 16px)`
+        }}
         aria-label="카메라 열기"
       >
         <Icons.camera

@@ -71,8 +71,29 @@
   }
 }
 
+@keyframes bounceIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-30px) scale(0.8);
+  }
+  50% {
+    transform: translateY(5px) scale(1.05);
+  }
+  70% {
+    transform: translateY(-2px) scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 .animate-slide-in-right {
   animation: slide-in-right 0.3s ease-out;
+}
+
+.animate-bounceIn {
+  animation: bounceIn 0.5s ease-out;
 }
 
 * {

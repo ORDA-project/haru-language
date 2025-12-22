@@ -1,8 +1,8 @@
 import { useAtom } from "jotai";
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import { userAtom } from "../../store/authStore";
-import { useErrorHandler } from "../../hooks/useErrorHandler";
 import { http } from "../../utils/http";
+import GameStyleNotification from "./GameStyleNotification";
 
 interface FriendNotification {
   id: number;
@@ -12,16 +12,49 @@ interface FriendNotification {
 }
 
 // 상수
-const NOTIFICATION_CHECK_INTERVAL = 10000; // 10초마다 체크
-const NOTIFICATION_DISPLAY_DELAY = 500; // 알림 표시 간격 (ms)
-const READ_NOTIFICATION_DELAY = 1000; // 읽음 처리 딜레이 (ms)
+const NOTIFICATION_CHECK_INTERVAL = 10000; // 10초마다 새 알림 체크
+const NOTIFICATION_DISPLAY_DELAY = 500; // 알림 표시 간격 (ms) - 여러 알림이 있을 때 순차적으로 표시
+const READ_NOTIFICATION_DELAY = 1000; // 읽음 처리 딜레이 (ms) - 알림 표시 후 읽음 처리까지 대기 시간
+const NOTIFICATION_DURATION = 5000; // 알림 표시 시간 (ms) - 각 알림이 화면에 머무는 시간: 5초
+
+interface NotificationDisplay {
+  id: number;
+  title: string;
+  message: string;
+}
 
 const FriendNotificationListener = () => {
   const [user] = useAtom(userAtom);
-  const { showInfo } = useErrorHandler();
+  const [currentNotification, setCurrentNotification] = useState<NotificationDisplay | null>(null);
+  const notificationQueueRef = useRef<NotificationDisplay[]>([]);
   const lastUserIdRef = useRef<number | undefined>(undefined);
   const processedNotificationIdsRef = useRef<Set<number>>(new Set());
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const isShowingNotificationRef = useRef(false);
+
+  // 알림 표시 함수
+  const showNextNotification = useCallback(() => {
+    if (isShowingNotificationRef.current || notificationQueueRef.current.length === 0) {
+      return;
+    }
+
+    const notification = notificationQueueRef.current.shift();
+    if (notification) {
+      isShowingNotificationRef.current = true;
+      setCurrentNotification(notification);
+    }
+  }, []);
+
+  // 알림 닫기 함수
+  const handleNotificationClose = useCallback(() => {
+    setCurrentNotification(null);
+    isShowingNotificationRef.current = false;
+    
+    // 다음 알림 표시
+    setTimeout(() => {
+      showNextNotification();
+    }, 300); // 페이드아웃 애니메이션 시간
+  }, [showNextNotification]);
 
   // 알림 조회 및 표시 함수
   const fetchAndDisplayNotifications = useCallback(async () => {
@@ -37,8 +70,8 @@ const FriendNotificationListener = () => {
 
       const notificationIds: number[] = [];
 
-      // 각 알림을 약간의 딜레이를 두고 표시 (동시에 여러 개가 뜨지 않도록)
-      notifications.forEach((notification, index) => {
+      // 각 알림을 큐에 추가
+      notifications.forEach((notification) => {
         // 이미 처리한 알림은 건너뛰기
         if (processedNotificationIdsRef.current.has(notification.id)) {
           return;
@@ -47,11 +80,18 @@ const FriendNotificationListener = () => {
         notificationIds.push(notification.id);
         processedNotificationIdsRef.current.add(notification.id);
 
-        setTimeout(() => {
-          const senderName = notification.senderName || "친구";
-          showInfo("콕 찌르기 알림", `${senderName}님이 콕 찔렀습니다.`);
-        }, index * NOTIFICATION_DISPLAY_DELAY);
+        const senderName = notification.senderName || "친구";
+        notificationQueueRef.current.push({
+          id: notification.id,
+          title: "콕 찌르기 알림",
+          message: `${senderName}님이 콕 찔렀습니다.`,
+        });
       });
+
+      // 알림 표시 시작
+      if (notificationQueueRef.current.length > 0 && !isShowingNotificationRef.current) {
+        showNextNotification();
+      }
 
       // 모든 알림을 표시한 후 읽음 처리 (실무 표준)
       if (notificationIds.length > 0) {
@@ -65,14 +105,14 @@ const FriendNotificationListener = () => {
               console.error("알림 읽음 처리 실패:", error);
             }
           }
-        }, notifications.length * NOTIFICATION_DISPLAY_DELAY + READ_NOTIFICATION_DELAY);
+        }, notificationIds.length * NOTIFICATION_DISPLAY_DELAY + READ_NOTIFICATION_DELAY);
       }
     } catch (error) {
       if (import.meta.env.DEV) {
         console.error("친구 알림 조회 실패:", error);
       }
     }
-  }, [user?.userId, showInfo]);
+  }, [user?.userId, showNextNotification]);
 
   useEffect(() => {
     // 사용자가 없으면 정리
@@ -114,7 +154,18 @@ const FriendNotificationListener = () => {
     };
   }, [user?.userId, fetchAndDisplayNotifications]);
 
-  return null;
+  return (
+    <>
+      {currentNotification && (
+        <GameStyleNotification
+          title={currentNotification.title}
+          message={currentNotification.message}
+          duration={NOTIFICATION_DURATION}
+          onClose={handleNotificationClose}
+        />
+      )}
+    </>
+  );
 };
 
 export default FriendNotificationListener;

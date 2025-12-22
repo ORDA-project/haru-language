@@ -263,6 +263,28 @@ const friendService = {
     };
   },
 
+  // 읽은 알림 조회 (알림 기록)
+  getReadNotifications: async (userId, limit = 50) => {
+    if (!userId) throw new Error("BAD_REQUEST: userId가 필요합니다.");
+
+    const notifications = await Notification.findAll({
+      where: { user_id: userId, is_read: true },
+      attributes: ["id", "message", "createdAt"],
+      include: [
+        {
+          model: User,
+          as: "NotificationSender",
+          attributes: ["name"],
+          required: false,
+        },
+      ],
+      order: [["createdAt", "DESC"]], // 최신 알림부터
+      limit: Math.min(limit, 100), // 최대 100개까지
+    });
+
+    return notifications;
+  },
+
   // 읽음 처리된 알림 삭제
   deleteReadNotifications: async (userId) => {
     if (!userId) throw new Error("BAD_REQUEST: user_id가 필요합니다.");

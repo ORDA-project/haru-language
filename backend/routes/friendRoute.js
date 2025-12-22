@@ -400,6 +400,50 @@ router.post("/notifications/read", async (req, res) => {
 
 /**
  * @openapi
+ * /friends/notifications/read-list:
+ *   get:
+ *     summary: 읽은 알림 조회 (알림 기록)
+ *     description: 읽음 처리된 알림 기록을 조회합니다.
+ *     tags:
+ *       - Friend
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 50
+ *         description: 조회할 알림 개수 (최대 100)
+ *     responses:
+ *       200:
+ *         description: 알림 기록 조회 성공
+ *       401:
+ *         description: 인증되지 않은 요청
+ *       500:
+ *         description: 서버 오류
+ */
+router.get("/notifications/read-list", async (req, res) => {
+  try {
+    const userId = await getSessionUserId(req);
+    if (!userId) return res.status(401).json({ message: "로그인이 필요합니다." });
+
+    const limit = parseInt(req.query.limit) || 50;
+    const notifications = await friendService.getReadNotifications(userId, limit);
+    return res.status(200).json({
+      message: "알림 기록 조회 성공",
+      notifications: (notifications || []).map((notification) => ({
+        id: notification.id,
+        message: notification.message,
+        senderName: notification.NotificationSender?.name || "익명",
+        createdAt: notification.createdAt,
+      })),
+    });
+  } catch (error) {
+    return handleError(error, res);
+  }
+});
+
+/**
+ * @openapi
  * /friends/notifications/delete:
  *   post:
  *     summary: 읽은 알림 삭제
