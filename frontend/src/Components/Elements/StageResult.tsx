@@ -594,7 +594,7 @@ const StageResult = ({
       </div>
 
       {/* Chat Messages */}
-      <div className={`flex-1 overflow-y-auto ${isLargeTextMode ? "p-5" : "p-4"} ${isLargeTextMode ? "space-y-5" : "space-y-4"}`}>
+      <div className={`flex-1 overflow-y-auto ${isLargeTextMode ? "p-5" : "p-4"} ${isLargeTextMode ? "space-y-5" : "space-y-4"} pb-20`}>
         {/* User message: Original Image */}
         {uploadedImage && (
           <div className="flex justify-end">
@@ -636,7 +636,25 @@ const StageResult = ({
           
           const currentIdx = groupCurrentIndices[groupIndex] || 0;
           const example = group[currentIdx];
-          if (!example) return null;
+          if (!example) {
+            if (import.meta.env.DEV) {
+              console.warn(`예문 그룹 ${groupIndex}의 인덱스 ${currentIdx}에 예문이 없습니다.`, {
+                groupLength: group.length,
+                currentIdx,
+                groupCurrentIndices,
+              });
+            }
+            return null;
+          }
+          
+          if (import.meta.env.DEV) {
+            console.log(`원본 예문 그룹 ${groupIndex} 렌더링:`, {
+              groupIndex,
+              currentIdx,
+              exampleId: example.id,
+              groupLength: group.length,
+            });
+          }
           
           const isCardPlaying = playingExampleId === example.id;
           
@@ -957,39 +975,40 @@ const StageResult = ({
           );
         })}
 
-        {/* Add Example Button */}
-        <div className={`flex justify-start ${isLargeTextMode ? "mt-4" : "mt-2"}`}>
-          <button
-            onClick={handleAddMoreExamples}
-            disabled={isLoadingMore}
-            className="bg-[#00DAAA] hover:bg-[#00C495] active:bg-[#00B085] text-gray-900 font-semibold rounded-full transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
-            style={{
-              minWidth: `${ADD_BUTTON_WIDTH}px`,
-              height: isLargeTextMode ? '42px' : '32px',
-              fontSize: isLargeTextMode ? '18px' : '14px',
-              padding: isLargeTextMode ? '0 14px' : '0 12px',
-              whiteSpace: 'nowrap'
-            }}
-            aria-label="예문 추가"
-          >
-            {isLoadingMore ? (
-              <>
-                <svg className="animate-spin flex-shrink-0" width={isLargeTextMode ? "16" : "14"} height={isLargeTextMode ? "16" : "14"} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <span>생성 중...</span>
-              </>
-            ) : (
-              <>
-                <svg width={isLargeTextMode ? "16" : "14"} height={isLargeTextMode ? "16" : "14"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M12 5v14M5 12h14" />
-                </svg>
-                <span>예문추가</span>
-              </>
-            )}
-          </button>
-        </div>
+      </div>
+
+      {/* Add Example Button - 고정 위치 (항상 보이도록) */}
+      <div className="fixed bottom-20 left-4 z-20">
+        <button
+          onClick={handleAddMoreExamples}
+          disabled={isLoadingMore}
+          className="bg-[#00DAAA] hover:bg-[#00C495] active:bg-[#00B085] text-gray-900 font-semibold rounded-full transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+          style={{
+            minWidth: `${ADD_BUTTON_WIDTH}px`,
+            height: isLargeTextMode ? '42px' : '32px',
+            fontSize: isLargeTextMode ? '18px' : '14px',
+            padding: isLargeTextMode ? '0 14px' : '0 12px',
+            whiteSpace: 'nowrap'
+          }}
+          aria-label="예문 추가"
+        >
+          {isLoadingMore ? (
+            <>
+              <svg className="animate-spin flex-shrink-0" width={isLargeTextMode ? "16" : "14"} height={isLargeTextMode ? "16" : "14"} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span>생성 중...</span>
+            </>
+          ) : (
+            <>
+              <svg width={isLargeTextMode ? "16" : "14"} height={isLargeTextMode ? "16" : "14"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+              <span>예문추가</span>
+            </>
+          )}
+        </button>
       </div>
 
       {/* Floating Camera Button - 네비게이션 바 위에 배치 (72px + 16px = 88px) */}
