@@ -1,6 +1,21 @@
 const callGPT = require("./gptService");
 const { Example, ExampleItem, Dialogue, User, UserInterest } = require("../models");
 
+const GOAL_MAP = {
+  hobby: "hobby/leisure learning",
+  exam: "exam preparation",
+  business: "business English",
+  travel: "travel English"
+};
+
+const INTEREST_MAP = {
+  conversation: "conversation",
+  reading: "reading comprehension",
+  grammar: "grammar analysis",
+  business: "business English",
+  vocabulary: "vocabulary"
+};
+
 async function generateExamples(inputSentence, userId) {
   // 사용자 정보 가져오기 (목표, 관심사)
   let user = null;
@@ -8,17 +23,10 @@ async function generateExamples(inputSentence, userId) {
     try {
       user = await User.findOne({
         where: { id: userId },
-        include: [
-          {
-            model: UserInterest,
-            attributes: ["interest"],
-          },
-        ],
+        include: [{ model: UserInterest, attributes: ["interest"] }],
       });
     } catch (userError) {
-      if (process.env.NODE_ENV !== "production") {
-        console.error("사용자 정보 조회 중 오류:", userError.message);
-      }
+      console.error("사용자 정보 조회 중 오류:", userError.message);
       // 사용자 정보 조회 실패해도 예문 생성은 계속 진행
     }
   }
@@ -75,34 +83,23 @@ async function generateExamples(inputSentence, userId) {
     
     if (interests.length > 0 || goal) {
       prompt += "\n\nStudent's learning context:";
-      
       if (goal) {
-        const goalMap = {
-          hobby: "hobby/leisure learning",
-          exam: "exam preparation",
-          business: "business English",
-          travel: "travel English"
-        };
-        prompt += `\n- Learning goal: ${goalMap[goal] || goal}`;
+        prompt += `\n- Learning goal: ${GOAL_MAP[goal] || goal}`;
       }
-      
       if (interests.length > 0) {
-        const interestMap = {
-          conversation: "conversation",
-          reading: "reading comprehension",
-          grammar: "grammar analysis",
-          business: "business English",
-          vocabulary: "vocabulary"
-        };
-        const interestText = interests.map(i => interestMap[i] || i).join(", ");
+        const interestText = interests.map(i => INTEREST_MAP[i] || i).join(", ");
         prompt += `\n- Interests: ${interestText}`;
       }
-      
       prompt += "\n\nPlease tailor the example contexts and dialogues to match the student's learning goals and interests. Create situations that are relevant to their interests when possible.";
     }
   }
 
-  prompt += "\nReturn ONLY valid JSON matching the schema. Do not include explanations or markdown.";
+  prompt += "\n\nMANDATORY: The 'examples' array MUST contain EXACTLY 3 items. " +
+    "DO NOT return an empty array. DO NOT return fewer than 3 examples. " +
+    "DO NOT return more than 3 examples. " +
+    "If you cannot create 3 examples, you must still return 3 examples even if they are variations. " +
+    "The JSON schema requires exactly 3 examples, and your response will be rejected if this requirement is not met. " +
+    "\n\nReturn ONLY valid JSON matching the schema. Do not include explanations or markdown.";
 
   const responseFormat = {
     type: "json_schema",
@@ -110,11 +107,9 @@ async function generateExamples(inputSentence, userId) {
       name: "generated_example_response",
       schema: {
         type: "object",
-        additionalProperties: false,
         properties: {
           generatedExample: {
             type: "object",
-            additionalProperties: false,
             properties: {
               extractedSentence: { type: "string" },
               description: { type: "string" },
@@ -124,17 +119,14 @@ async function generateExamples(inputSentence, userId) {
                 maxItems: 3,
                 items: {
                   type: "object",
-                  additionalProperties: false,
                   properties: {
                     id: { type: "integer" },
                     context: { type: "string" },
                     dialogue: {
                       type: "object",
-                      additionalProperties: false,
                       properties: {
                         A: {
                           type: "object",
-                          additionalProperties: false,
                           properties: {
                             english: { type: "string" },
                             korean: { type: "string" },
@@ -143,7 +135,6 @@ async function generateExamples(inputSentence, userId) {
                         },
                         B: {
                           type: "object",
-                          additionalProperties: false,
                           properties: {
                             english: { type: "string" },
                             korean: { type: "string" },
@@ -166,79 +157,91 @@ async function generateExamples(inputSentence, userId) {
     },
   };
 
-  let result;
-  try {
-    result = (await callGPT(
+  // GPT API 호출 (재시도 로직은 파싱 단계에서 통합 처리)
+  const callGPTWithRetry = async () => {
+    return (await callGPT(
       prompt,
       `Make exactly 3 examples from: "${inputSentence}"`,
-      1200, // 3개 예문 생성에 충분한 토큰
+      2000,
       { responseFormat }
     ))?.trim();
-    
-    if (!result) {
-      throw new Error("GPT API가 빈 응답을 반환했습니다.");
-    }
-    
-    // 개발 환경에서만 원본 응답 로깅
-    if (process.env.NODE_ENV !== "production") {
-      console.log("GPT 원본 응답 (처음 500자):", result.substring(0, 500));
-    }
-  } catch (gptError) {
-    // 에러 로그 출력 (서버 로그에만 기록)
-    console.error("GPT API 호출 중 오류:", gptError.message);
-    throw gptError;
-  }
+  };
 
+  let result = await callGPTWithRetry();
+  if (!result) {
+    throw new Error("GPT API가 빈 응답을 반환했습니다.");
+  }
+  console.log("GPT 원본 응답 (처음 1000자):", result.substring(0, 1000));
+
+  // JSON 파싱 및 검증 (재시도 포함)
+  const maxRetries = 3;
   let gptResponse;
-  try {
-    gptResponse = JSON.parse(result);
-    
-    // GPT 응답 구조 정규화: examples가 최상위에 있을 수 있음
-    if (gptResponse.examples && !gptResponse.generatedExample?.examples) {
-      // examples가 최상위에 있으면 generatedExample 안으로 이동
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      gptResponse = JSON.parse(result);
+      
+      // GPT 응답 구조 정규화
+      if (gptResponse.examples && !gptResponse.generatedExample?.examples) {
+        if (!gptResponse.generatedExample) {
+          gptResponse.generatedExample = {};
+        }
+        gptResponse.generatedExample.examples = gptResponse.examples;
+        delete gptResponse.examples;
+      }
+      
       if (!gptResponse.generatedExample) {
-        gptResponse.generatedExample = {};
+        if (gptResponse.extractedSentence || gptResponse.description || gptResponse.examples) {
+          gptResponse.generatedExample = {
+            extractedSentence: gptResponse.extractedSentence || inputSentence,
+            description: gptResponse.description || "",
+            examples: gptResponse.examples || [],
+          };
+          delete gptResponse.extractedSentence;
+          delete gptResponse.description;
+          delete gptResponse.examples;
+        }
       }
-      gptResponse.generatedExample.examples = gptResponse.examples;
-      delete gptResponse.examples;
-    }
-    
-    // 개발 환경에서만 파싱된 응답 로깅
-    if (process.env.NODE_ENV !== "production") {
-      console.log("GPT 파싱된 응답 구조:", {
-        hasGeneratedExample: !!gptResponse.generatedExample,
-        hasExtractedSentence: !!gptResponse.generatedExample?.extractedSentence,
-        examplesCount: gptResponse.generatedExample?.examples?.length || 0,
-        examplesIsArray: Array.isArray(gptResponse.generatedExample?.examples),
-      });
-    }
-    
-    // 응답 구조 검증
-    if (!gptResponse.generatedExample || !gptResponse.generatedExample.extractedSentence) {
-      if (process.env.NODE_ENV !== "production") {
-        console.error("GPT 응답 구조:", JSON.stringify(gptResponse, null, 2));
+      
+      // 응답 구조 검증 및 정규화
+      if (!gptResponse.generatedExample) {
+        throw new Error("GPT 응답에 generatedExample이 없습니다");
       }
-      throw new Error("GPT 응답 형식이 올바르지 않습니다");
-    }
-    
-    // examples 배열 검증 (3개 필수)
-    if (!gptResponse.generatedExample.examples || !Array.isArray(gptResponse.generatedExample.examples) || gptResponse.generatedExample.examples.length < 3) {
-      console.error(`GPT 응답에 예문이 부족합니다. (요구: 3개, 실제: ${gptResponse.generatedExample.examples?.length || 0}개)`);
-      if (process.env.NODE_ENV !== "production") {
-        console.error("GPT 응답 전체:", JSON.stringify(gptResponse, null, 2));
+      
+      gptResponse.generatedExample.extractedSentence = gptResponse.generatedExample.extractedSentence || inputSentence;
+      gptResponse.generatedExample.description = gptResponse.generatedExample.description || "";
+      
+      if (!Array.isArray(gptResponse.generatedExample.examples)) {
+        gptResponse.generatedExample.examples = [];
       }
-      throw new Error("GPT 응답에 예문이 부족합니다");
-    }
-  } catch (parseError) {
-    // 에러 로그 출력 (서버 로그에만 기록)
-    console.error("GPT 응답 파싱 실패:", parseError.message);
-    if (process.env.NODE_ENV !== "production") {
-      console.error("파싱 시도한 원본 응답:", result);
-      if (parseError instanceof SyntaxError) {
-        console.error("JSON 파싱 에러 위치:", parseError.message);
+      
+      // 예문 개수 검증
+      if (gptResponse.generatedExample.examples.length < 3) {
+        if (attempt < maxRetries) {
+          console.warn(`예문 부족 (${gptResponse.generatedExample.examples.length}개). 재시도 ${attempt + 1}/${maxRetries}...`);
+          result = await callGPTWithRetry();
+          if (!result) {
+            throw new Error("GPT API가 빈 응답을 반환했습니다.");
+          }
+          continue;
+        }
+        console.error("GPT 응답:", JSON.stringify(gptResponse, null, 2));
+        throw new Error(`예문 부족 (요구: 3개, 실제: ${gptResponse.generatedExample.examples.length}개)`);
       }
+      
+      // 성공
+      break;
+    } catch (error) {
+      if (error instanceof SyntaxError && attempt < maxRetries) {
+        console.error(`JSON 파싱 실패 (시도 ${attempt}/${maxRetries}):`, error.message);
+        result = await callGPTWithRetry();
+        if (!result) {
+          throw new Error("GPT API가 빈 응답을 반환했습니다.");
+        }
+        continue;
+      }
+      throw error;
     }
-    throw new Error("GPT 응답 처리 실패");
   }
 
   // DB에 저장 (추가)
@@ -254,56 +257,43 @@ async function generateExamples(inputSentence, userId) {
       });
 
       // 2. ExampleItem과 Dialogue 저장
-      if (examples && Array.isArray(examples) && examples.length > 0) {
+      if (Array.isArray(examples) && examples.length > 0) {
         for (const exampleData of examples) {
-          if (!exampleData || !exampleData.context) {
-            continue; // 유효하지 않은 데이터는 건너뛰기
-          }
+          if (!exampleData?.context) continue;
 
-          // ExampleItem 저장
           const exampleItem = await ExampleItem.create({
             example_id: example.id,
-            context: exampleData.context || ""
+            context: exampleData.context
           });
 
-          // Dialogue 저장
-          if (exampleData.dialogue && typeof exampleData.dialogue === "object") {
-            const { A, B } = exampleData.dialogue;
-            
-            if (A && typeof A === "object" && A.english && A.korean) {
-              await Dialogue.create({
-                example_item_id: exampleItem.id,
-                speaker: 'A',
-                english: String(A.english || ""),
-                korean: String(A.korean || "")
-              });
-            }
+          const { A, B } = exampleData.dialogue || {};
+          
+          if (A?.english && A?.korean) {
+            await Dialogue.create({
+              example_item_id: exampleItem.id,
+              speaker: 'A',
+              english: String(A.english),
+              korean: String(A.korean)
+            });
+          }
 
-            if (B && typeof B === "object" && B.english && B.korean) {
-              await Dialogue.create({
-                example_item_id: exampleItem.id,
-                speaker: 'B',
-                english: String(B.english || ""),
-                korean: String(B.korean || "")
-              });
-            }
+          if (B?.english && B?.korean) {
+            await Dialogue.create({
+              example_item_id: exampleItem.id,
+              speaker: 'B',
+              english: String(B.english),
+              korean: String(B.korean)
+            });
           }
         }
       }
 
     }
   } catch (dbError) {
-    if (process.env.NODE_ENV !== "production") {
-      console.error("DB 저장 중 오류:", dbError.message);
-    }
+    console.error("DB 저장 중 오류:", dbError.message);
     // DB 저장 실패해도 GPT 응답은 반환
   }
 
-  // 최종 응답 검증 (3개 필수)
-  if (!gptResponse.generatedExample?.examples || gptResponse.generatedExample.examples.length < 3) {
-    throw new Error("GPT 응답에 예문이 부족합니다");
-  }
-  
   // 예문이 3개보다 많으면 처음 3개만 사용
   if (gptResponse.generatedExample.examples.length > 3) {
     gptResponse.generatedExample.examples = gptResponse.generatedExample.examples.slice(0, 3);

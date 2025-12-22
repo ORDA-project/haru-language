@@ -575,21 +575,6 @@ const StageResult = ({
           </div>
         )}
 
-        {/* User messages: New cropped images */}
-        {newImageMessages.map((msg) => (
-          <div key={msg.timestamp} className="flex justify-end">
-            <div className={`max-w-[80%] ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-2xl bg-white text-gray-800 shadow-sm border border-gray-100`}>
-              <div className={isLargeTextMode ? "mb-4" : "mb-3"}>
-                <img
-                  src={msg.image}
-                  alt="크롭된 이미지"
-                  className="w-full rounded-lg object-contain max-h-64"
-                />
-              </div>
-            </div>
-          </div>
-        ))}
-
         {/* 사진에 대한 설명 */}
         {description && (
           <div className="flex justify-start">
@@ -747,18 +732,27 @@ const StageResult = ({
         })}
 
         {/* User messages: New cropped images - 예문 그룹들 아래에 표시 */}
-        {newImageMessages.map((msg) => (
-          <div key={msg.timestamp} className="flex justify-end">
-            <div className={`max-w-[80%] ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-2xl bg-white text-gray-800 shadow-sm border border-gray-100`}>
-              <div className={isLargeTextMode ? "mb-4" : "mb-3"}>
-                <img
-                  src={msg.image}
-                  alt="크롭된 이미지"
-                  className="w-full rounded-lg object-contain max-h-64"
-                />
+        {newImageMessages.map((msg, msgIndex) => (
+          <React.Fragment key={msg.timestamp}>
+            {/* 새로운 사진 구분선 */}
+            {msgIndex === 0 && exampleGroups.length > 0 && (
+              <div className="border-t border-gray-300 my-4"></div>
+            )}
+            {msgIndex > 0 && (
+              <div className="border-t border-gray-300 my-4"></div>
+            )}
+            <div className="flex justify-end">
+              <div className={`max-w-[80%] ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-2xl bg-white text-gray-800 shadow-sm border border-gray-100`}>
+                <div className={isLargeTextMode ? "mb-4" : "mb-3"}>
+                  <img
+                    src={msg.image}
+                    alt="크롭된 이미지"
+                    className="w-full rounded-lg object-contain max-h-64"
+                  />
+                </div>
               </div>
             </div>
-          </div>
+          </React.Fragment>
         ))}
 
         {/* Add Example Button */}
