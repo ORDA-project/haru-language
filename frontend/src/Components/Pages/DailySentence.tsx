@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAtom } from "jotai";
 import { isLoggedInAtom } from "../../store/authStore";
@@ -33,6 +33,9 @@ const DailySentence = () => {
   const [availableWords, setAvailableWords] = useState<string[]>([]);
   const [completedSentences, setCompletedSentences] = useState<boolean[]>([]);
   const [showConfirmPopup, setShowConfirmPopup] = useState<boolean>(false);
+  const [englishQuestionFontSize, setEnglishQuestionFontSize] = useState<number | null>(null);
+  const englishQuestionRef = useRef<HTMLDivElement>(null);
+  const englishQuestionContainerRef = useRef<HTMLDivElement>(null);
 
   // 큰글씨 모드에 따른 텍스트 크기 (중년층용)
   const baseFontSize = isLargeTextMode ? 18 : 16;
@@ -110,6 +113,89 @@ const DailySentence = () => {
       setCurrentQuestion(questionsData.data[questionIndex]);
     }
   }, [questionsData?.data, currentQuestion]);
+
+  // 영어 문장 자동 폰트 크기 조절
+  useEffect(() => {
+    if (!currentQuestion || !englishQuestionRef.current || !englishQuestionContainerRef.current || currentStep !== "question") {
+      setEnglishQuestionFontSize(null);
+      return;
+    }
+
+    const adjustFontSize = () => {
+      const container = englishQuestionContainerRef.current;
+      const textElement = englishQuestionRef.current;
+      
+      if (!container || !textElement) return;
+
+      const englishText = languageMode === "korean" 
+        ? currentQuestion.englishQuestion 
+        : currentQuestion.koreanQuestion;
+      
+      if (!englishText) return;
+
+      // 문장 개수 계산 (., !, ?로 끝나는 문장)
+      const sentenceCount = (englishText.match(/[.!?]+/g) || []).length || 1;
+      const targetLines = sentenceCount;
+
+      // 초기 폰트 크기 설정
+      const baseSize = isLargeTextMode ? 18 : 16;
+      let fontSize = baseSize;
+      const minFontSize = 12;
+      const maxFontSize = baseSize;
+
+      // 컨테이너 너비 가져오기
+      const containerWidth = container.offsetWidth - 32; // padding 고려
+
+      // 임시 요소로 텍스트 너비 측정
+      const measureElement = document.createElement('div');
+      measureElement.style.position = 'absolute';
+      measureElement.style.visibility = 'hidden';
+      measureElement.style.whiteSpace = 'nowrap';
+      measureElement.style.fontFamily = window.getComputedStyle(textElement).fontFamily;
+      measureElement.style.fontWeight = window.getComputedStyle(textElement).fontWeight;
+      document.body.appendChild(measureElement);
+
+      // 이진 탐색으로 적절한 폰트 크기 찾기
+      let low = minFontSize;
+      let high = maxFontSize;
+      let bestSize = baseSize;
+
+      while (low <= high) {
+        const mid = Math.floor((low + high) / 2);
+        measureElement.style.fontSize = `${mid}px`;
+        measureElement.textContent = englishText;
+        
+        const textWidth = measureElement.offsetWidth;
+        const estimatedLines = Math.ceil(textWidth / containerWidth);
+        
+        if (estimatedLines <= targetLines) {
+          bestSize = mid;
+          low = mid + 1;
+        } else {
+          high = mid - 1;
+        }
+      }
+
+      document.body.removeChild(measureElement);
+      setEnglishQuestionFontSize(bestSize);
+    };
+
+    // 초기 조정
+    adjustFontSize();
+
+    // 리사이즈 이벤트 리스너
+    const resizeObserver = new ResizeObserver(() => {
+      adjustFontSize();
+    });
+
+    if (englishQuestionContainerRef.current) {
+      resizeObserver.observe(englishQuestionContainerRef.current);
+    }
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [currentQuestion, languageMode, currentStep, isLargeTextMode]);
 
   // 완료 버튼 클릭 시 팝업 표시
   const handleCompleteClick = useCallback(() => {
@@ -478,8 +564,16 @@ const DailySentence = () => {
                   {currentQuestion && (
                     <>
                       {/* 첫 번째 질문 */}
-                      <div className="bg-gray-50 rounded-2xl p-4 w-full overflow-hidden box-border min-w-0">
-                        <div className="font-bold text-gray-900 leading-relaxed mb-2 w-full min-w-0" style={baseTextStyle}>
+                      <div className="bg-gray-50 rounded-2xl p-4 w-full overflow-hidden box-border min-w-0" ref={englishQuestionContainerRef}>
+                        <div 
+                          ref={englishQuestionRef}
+                          className="font-bold text-gray-900 leading-relaxed mb-2 w-full min-w-0 whitespace-normal" 
+                          style={{
+                            ...baseTextStyle,
+                            fontSize: englishQuestionFontSize ? `${englishQuestionFontSize}px` : baseTextStyle.fontSize,
+                            lineHeight: '1.4'
+                          }}
+                        >
                           {languageMode === "korean"
                             ? currentQuestion.englishQuestion
                             : currentQuestion.koreanQuestion}
