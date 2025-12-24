@@ -69,15 +69,41 @@ async function correctWriting(text, userId, writingQuestionId = null) {
   validateWritingQuestionId(writingQuestionId, false);
 
   try {
+    let questionContext = "";
+    if (writingQuestionId) {
+      try {
+        const question = await WritingQuestion.findOne({ where: { id: writingQuestionId } });
+        if (question) {
+          questionContext = `\n\n**Question:**\n"${question.question_text}"\n\n**User's Answer:**\n"${trimmedText}"\n\n` +
+            "Please check if the answer's tense, context, and meaning are appropriate for the question. " +
+            "For example, if the question asks about future plans, the answer should use future tense, not present continuous tense. " +
+            "Correct any tense mismatches, contextual errors, or logical inconsistencies between the question and answer.\n\n";
+        }
+      } catch (error) {
+        console.warn("질문 정보를 가져오는 중 오류:", error.message);
+      }
+    }
+
     const prompt = "You are an AI English tutor that provides grammar correction and writing feedback. " +
-      "When given a text, return a JSON object with the following:\n\n" +
-      "- 'correctedText': The grammatically corrected version of the input text.\n" +
-      "- 'hasErrors': Whether the original text contains grammatical errors (true or false).\n" +
-      "- 'feedback': A JSON array of explanations in Korean about corrections made, where each item is a separate explanation sentence.\n\n" +
-      "If there are no errors, return 'hasErrors': false and an empty 'feedback' array.\n" +
+      "When given a text" + (questionContext ? " and a question" : "") + ", return a JSON object with the following:\n\n" +
+      "- 'correctedText': The grammatically corrected version of the input text. " +
+      "If the answer doesn't match the question's context (e.g., tense mismatch, logical inconsistency), correct it appropriately.\n" +
+      "- 'hasErrors': Whether the original text contains grammatical errors, tense mismatches, or contextual errors (true or false).\n" +
+      "- 'feedback': A JSON array of explanations in Korean about the text. " +
+      "The feedback should include:\n" +
+      "  1. If there are errors (grammar, tense mismatch with question, context issues), explain what was corrected and why.\n" +
+      "  2. Always include at least one tip about how native speakers would naturally express this idea, even if the grammar is correct. " +
+      "For example: '원어민들은 보통 이렇게 표현합니다', '현지에서는 이렇게 쓰는 경우가 많습니다', '자연스러운 표현 팁' 등.\n" +
+      "  3. If there are no errors, provide learning feedback about grammar points, vocabulary usage, tense usage, or writing style.\n" +
+      "Each item should be a separate explanation sentence.\n\n" +
+      "Always provide at least 2-3 feedback items, including native speaker tips.\n" +
       "Provide only the JSON output.";
 
-    const response = await callGPT(prompt, `Please correct and provide feedback for: "${trimmedText}"`, 500);
+    const userInput = questionContext 
+      ? questionContext + "Please correct and provide feedback for the user's answer."
+      : `Please correct and provide feedback for: "${trimmedText}"`;
+
+    const response = await callGPT(prompt, userInput, 500);
     const fallbackData = { correctedText: trimmedText, hasErrors: false, feedback: ["첨삭 처리 중 오류가 발생했습니다."] };
     const correctionData = parseGPTResponse(response, fallbackData);
 

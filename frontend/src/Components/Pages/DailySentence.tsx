@@ -847,19 +847,25 @@ const DailySentence = () => {
                     <p className="text-gray-600 mb-3 font-medium" style={smallTextStyle}>
                       학습 피드백:
                     </p>
-                    <ul className="space-y-3">
-                      {translationResult.feedback?.map(
-                        (feedback: string, index: number) => (
-                          <li
-                            key={index}
-                            className="text-gray-700 bg-green-50 p-4 rounded-xl border border-green-200"
-                            style={feedbackTextStyle}
-                          >
-                            • {feedback}
-                          </li>
-                        )
-                      )}
-                    </ul>
+                    {translationResult.feedback && translationResult.feedback.length > 0 ? (
+                      <ul className="space-y-3">
+                        {translationResult.feedback.map(
+                          (feedback: string, index: number) => (
+                            <li
+                              key={index}
+                              className="text-gray-700 bg-green-50 p-4 rounded-xl border border-green-200"
+                              style={feedbackTextStyle}
+                            >
+                              • {feedback}
+                            </li>
+                          )
+                        )}
+                      </ul>
+                    ) : (
+                      <div className="text-gray-500 bg-gray-50 p-4 rounded-xl border border-gray-200" style={feedbackTextStyle}>
+                        피드백을 준비하고 있습니다...
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
