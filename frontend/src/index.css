@@ -141,12 +141,33 @@ button, a, [role="button"] {
   }
 }
 
-/* 스크롤바 숨기기 */
+/* 미니멀한 스크롤바 스타일 */
 * {
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: thin; /* Firefox - 얇은 스크롤바 */
+  scrollbar-color: rgba(156, 163, 175, 0.5) transparent; /* Firefox - thumb 색상, track 색상 */
 }
 
+/* Chrome, Safari, Opera */
 *::-webkit-scrollbar {
-  display: none; /* Chrome, Safari, Opera */
+  width: 6px; /* 스크롤바 너비 */
+  height: 6px; /* 가로 스크롤바 높이 */
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent; /* 트랙 배경 투명 */
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 163, 175, 0.5); /* thumb 색상 - 연한 회색 */
+  border-radius: 3px; /* 둥근 모서리 */
+  transition: background-color 0.2s ease; /* 부드러운 전환 */
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(156, 163, 175, 0.7); /* 호버 시 약간 진하게 */
+}
+
+/* IE and Edge */
+* {
+  -ms-overflow-style: -ms-autohiding-scrollbar; /* 자동 숨김 스크롤바 */
 }
