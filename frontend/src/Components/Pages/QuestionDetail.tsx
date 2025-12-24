@@ -540,11 +540,11 @@ const QuestionDetail = () => {
   return (
     <div className="w-full h-[calc(100vh-72px)] flex flex-col max-w-[440px] mx-auto bg-[#F7F8FB] shadow-[0_0_10px_0_rgba(0,0,0,0.1)] relative">
       {/* Header */}
-      <div className="p-3 sm:p-4 bg-white border-b border-gray-200 space-y-3">
-        <div className="flex items-center justify-between">
+      <div className="p-3 sm:p-4 bg-white border-b border-gray-200 space-y-3 w-full max-w-full overflow-hidden box-border">
+        <div className="flex items-center justify-between w-full min-w-0 gap-2">
           <button
             onClick={handleBack}
-            className="w-8 h-8 flex items-center justify-center"
+            className="w-8 h-8 flex items-center justify-center flex-shrink-0"
           >
             <svg
               className="w-5 h-5 text-gray-600"
@@ -560,23 +560,23 @@ const QuestionDetail = () => {
               />
             </svg>
           </button>
-          <div className="text-center">
-            <h1 className="font-semibold text-gray-800" style={headerTextStyle}>
+          <div className="text-center flex-1 min-w-0 overflow-hidden">
+            <h1 className="font-semibold text-gray-800 break-words" style={{...headerTextStyle, wordBreak: 'break-word', overflowWrap: 'break-word'}}>
               {formatDisplayDate(selectedDate || date)}
             </h1>
             {availableDates.length > 0 && (
-              <p className="text-gray-500 mt-1" style={xSmallTextStyle}>
+              <p className="text-gray-500 mt-1 break-words" style={{...xSmallTextStyle, wordBreak: 'break-word', overflowWrap: 'break-word'}}>
                 총 {availableDates.length}일의 기록
               </p>
             )}
           </div>
-          <div className="w-8" />
+          <div className="w-8 flex-shrink-0" />
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 w-full min-w-0">
           <button
             onClick={() => previousDate && handleNavigateToDate(previousDate)}
             disabled={!previousDate}
-            className={`px-2 py-2 rounded-lg font-medium transition-colors flex-shrink-0 ${
+            className={`px-2 py-2 rounded-lg font-medium transition-colors flex-shrink-0 whitespace-nowrap ${
               previousDate
                 ? "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 : "bg-gray-100 text-gray-400 cursor-not-allowed"
@@ -589,13 +589,13 @@ const QuestionDetail = () => {
             type="date"
             value={selectedDate || ""}
             onChange={handleDateInputChange}
-            className="flex-1 min-w-0 px-2 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00DAAA] text-sm"
-            style={smallTextStyle}
+            className="flex-1 min-w-0 px-2 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00DAAA] text-sm box-border"
+            style={{...smallTextStyle, width: '100%', maxWidth: '100%'}}
           />
           <button
             onClick={() => nextDate && handleNavigateToDate(nextDate)}
             disabled={!nextDate}
-            className={`px-2 py-2 rounded-lg font-medium transition-colors flex-shrink-0 ${
+            className={`px-2 py-2 rounded-lg font-medium transition-colors flex-shrink-0 whitespace-nowrap ${
               nextDate
                 ? "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 : "bg-gray-100 text-gray-400 cursor-not-allowed"
@@ -617,9 +617,9 @@ const QuestionDetail = () => {
         {/* 한줄영어 섹션 */}
         {writingRecords.length > 0 && (
           <>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="font-semibold text-gray-600" style={headerTextStyle}>하루한줄</div>
+            <div className="space-y-2 w-full max-w-full overflow-hidden">
+              <div className="flex items-center justify-between w-full min-w-0 gap-2">
+                <div className="font-semibold text-gray-600 flex-shrink-0" style={headerTextStyle}>하루한줄</div>
                 <button
                   onClick={() => {
                     setIsDeleteModeWriting(!isDeleteModeWriting);
@@ -627,7 +627,7 @@ const QuestionDetail = () => {
                       setSelectedWritingIds(new Set());
                     }
                   }}
-                  className={`px-3 py-2 rounded-lg text-base font-semibold transition-colors flex items-center gap-1.5 shadow-md flex-shrink-0 ${
+                  className={`px-3 py-2 rounded-lg text-base font-semibold transition-colors flex items-center gap-1.5 shadow-md flex-shrink-0 whitespace-nowrap ${
                     isDeleteModeWriting
                       ? 'bg-red-500 hover:bg-red-600 active:bg-red-700 text-white'
                       : 'bg-white hover:bg-gray-50 text-gray-700 border-2 border-gray-300'
@@ -654,37 +654,37 @@ const QuestionDetail = () => {
               
               {isDeleteModeWriting && (
                 <>
-                  <div className="flex items-center justify-between mb-3">
-                    <button
-                      onClick={() => {
-                        if (selectedWritingIds.size === writingRecords.length && writingRecords.length > 0) {
-                          setSelectedWritingIds(new Set());
-                        } else {
-                          setSelectedWritingIds(new Set(writingRecords.map((r: any) => r.id)));
-                        }
-                      }}
-                      className="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors"
-                    >
-                      <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
-                        selectedWritingIds.size === writingRecords.length && writingRecords.length > 0
-                          ? 'bg-red-500 border-red-500' 
-                          : 'bg-white border-gray-300'
-                      }`}>
-                        {selectedWritingIds.size === writingRecords.length && writingRecords.length > 0 && (
-                          <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                          </svg>
-                        )}
-                      </div>
-                      <span style={smallTextStyle} className="text-gray-700">전체 선택</span>
-                    </button>
-                  </div>
+                   <div className="flex items-center justify-between mb-3 w-full max-w-full overflow-hidden">
+                     <button
+                       onClick={() => {
+                         if (selectedWritingIds.size === writingRecords.length && writingRecords.length > 0) {
+                           setSelectedWritingIds(new Set());
+                         } else {
+                           setSelectedWritingIds(new Set(writingRecords.map((r: any) => r.id)));
+                         }
+                       }}
+                       className="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors flex-shrink-0"
+                     >
+                       <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${
+                         selectedWritingIds.size === writingRecords.length && writingRecords.length > 0
+                           ? 'bg-red-500 border-red-500' 
+                           : 'bg-white border-gray-300'
+                       }`}>
+                         {selectedWritingIds.size === writingRecords.length && writingRecords.length > 0 && (
+                           <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                           </svg>
+                         )}
+                       </div>
+                       <span style={smallTextStyle} className="text-gray-700 whitespace-nowrap">전체 선택</span>
+                     </button>
+                   </div>
                   
                   {/* 하단 고정 삭제 액션 바 */}
                   {selectedWritingIds.size > 0 && (
-                    <div className="absolute bottom-20 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
-                      <div className="flex items-center justify-between px-3 py-2.5 gap-2">
-                        <span style={smallTextStyle} className="text-gray-700 font-medium flex-shrink-0">
+                    <div className="absolute bottom-20 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50 w-full max-w-full overflow-hidden box-border">
+                      <div className="flex items-center justify-between px-3 py-2.5 gap-2 w-full min-w-0">
+                        <span style={smallTextStyle} className="text-gray-700 font-medium flex-shrink-0 whitespace-nowrap">
                           {selectedWritingIds.size}개 선택
                         </span>
                         <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -715,10 +715,10 @@ const QuestionDetail = () => {
                             className="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors disabled:opacity-50 font-medium flex items-center gap-1 whitespace-nowrap"
                             style={smallTextStyle}
                           >
-                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                             </svg>
-                            삭제
+                            <span className="whitespace-nowrap">삭제</span>
                           </button>
                         </div>
                       </div>
@@ -772,30 +772,31 @@ const QuestionDetail = () => {
                         </button>
                       </div>
                     )}
-                    <div 
-                      className={`max-w-[80%] ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-2xl bg-white text-gray-800 shadow-sm border border-gray-100 transition-all ${
-                        isDeleteModeWriting && isSelected ? 'bg-red-50 border-red-200' : ''
-                      }`}
-                    >
-                        <div className="space-y-2">
-                          {/* 오늘의 주제 - 불릿 있음 */}
-                          {question && (
-                            <div className="flex items-start">
-                              <span className="text-gray-800 mr-2" style={baseTextStyle}>•</span>
-                              <p className="text-gray-800 leading-relaxed flex-1" style={baseTextStyle}>
-                                {question.koreanQuestion || question.englishQuestion}
-                              </p>
-                            </div>
-                          )}
-                          
-                          {/* 내가 입력한 문장 - 불릿 없음 */}
-                          <div>
-                            <p className="text-gray-800 leading-relaxed" style={baseTextStyle}>
-                              {record.original_text}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
+                     <div 
+                       className={`max-w-[80%] min-w-0 ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-2xl bg-white text-gray-800 shadow-sm border border-gray-100 transition-all ${
+                         isDeleteModeWriting && isSelected ? 'bg-red-50 border-red-200' : ''
+                       }`}
+                       style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}
+                     >
+                         <div className="space-y-2 w-full min-w-0">
+                           {/* 오늘의 주제 - 불릿 있음 */}
+                           {question && (
+                             <div className="flex items-start min-w-0">
+                               <span className="text-gray-800 mr-2 flex-shrink-0" style={baseTextStyle}>•</span>
+                               <p className="text-gray-800 leading-relaxed flex-1 min-w-0 break-words" style={{...baseTextStyle, wordBreak: 'break-word', overflowWrap: 'break-word'}}>
+                                 {question.koreanQuestion || question.englishQuestion}
+                               </p>
+                             </div>
+                           )}
+                           
+                           {/* 내가 입력한 문장 - 불릿 없음 */}
+                           <div className="min-w-0">
+                             <p className="text-gray-800 leading-relaxed break-words" style={{...baseTextStyle, wordBreak: 'break-word', overflowWrap: 'break-word'}}>
+                               {record.original_text}
+                             </p>
+                           </div>
+                         </div>
+                       </div>
                     </div>
 
                   {/* 2. 문장 첨삭 블록 */}
@@ -875,9 +876,9 @@ const QuestionDetail = () => {
         {/* 채팅기록 섹션 */}
         {questions.length > 0 && (
           <>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="font-semibold text-gray-600" style={headerTextStyle}>채팅기록</div>
+            <div className="space-y-2 w-full max-w-full overflow-hidden">
+              <div className="flex items-center justify-between w-full min-w-0 gap-2">
+                <div className="font-semibold text-gray-600 flex-shrink-0" style={headerTextStyle}>채팅기록</div>
                 <button
                   onClick={() => {
                     setIsDeleteModeQuestion(!isDeleteModeQuestion);
@@ -885,7 +886,7 @@ const QuestionDetail = () => {
                       setSelectedQuestionIds(new Set());
                     }
                   }}
-                  className={`px-3 py-2 rounded-lg text-base font-semibold transition-colors flex items-center gap-1.5 shadow-md flex-shrink-0 ${
+                  className={`px-3 py-2 rounded-lg text-base font-semibold transition-colors flex items-center gap-1.5 shadow-md flex-shrink-0 whitespace-nowrap ${
                     isDeleteModeQuestion
                       ? 'bg-red-500 hover:bg-red-600 active:bg-red-700 text-white'
                       : 'bg-white hover:bg-gray-50 text-gray-700 border-2 border-gray-300'
@@ -912,37 +913,37 @@ const QuestionDetail = () => {
               
               {isDeleteModeQuestion && (
                 <>
-                  <div className="flex items-center justify-between mb-3">
-                    <button
-                      onClick={() => {
-                        if (selectedQuestionIds.size === questions.length && questions.length > 0) {
-                          setSelectedQuestionIds(new Set());
-                        } else {
-                          setSelectedQuestionIds(new Set(questions.map((q: any) => q.id)));
-                        }
-                      }}
-                      className="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors"
-                    >
-                      <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
-                        selectedQuestionIds.size === questions.length && questions.length > 0
-                          ? 'bg-red-500 border-red-500' 
-                          : 'bg-white border-gray-300'
-                      }`}>
-                        {selectedQuestionIds.size === questions.length && questions.length > 0 && (
-                          <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                          </svg>
-                        )}
-                      </div>
-                      <span style={smallTextStyle} className="text-gray-700">전체 선택</span>
-                    </button>
-                  </div>
+                   <div className="flex items-center justify-between mb-3 w-full max-w-full overflow-hidden">
+                     <button
+                       onClick={() => {
+                         if (selectedQuestionIds.size === questions.length && questions.length > 0) {
+                           setSelectedQuestionIds(new Set());
+                         } else {
+                           setSelectedQuestionIds(new Set(questions.map((q: any) => q.id)));
+                         }
+                       }}
+                       className="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors flex-shrink-0"
+                     >
+                       <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${
+                         selectedQuestionIds.size === questions.length && questions.length > 0
+                           ? 'bg-red-500 border-red-500' 
+                           : 'bg-white border-gray-300'
+                       }`}>
+                         {selectedQuestionIds.size === questions.length && questions.length > 0 && (
+                           <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                           </svg>
+                         )}
+                       </div>
+                       <span style={smallTextStyle} className="text-gray-700 whitespace-nowrap">전체 선택</span>
+                     </button>
+                   </div>
                   
                   {/* 하단 고정 삭제 액션 바 */}
                   {selectedQuestionIds.size > 0 && (
-                    <div className="absolute bottom-20 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
-                      <div className="flex items-center justify-between px-3 py-2.5 gap-2">
-                        <span style={smallTextStyle} className="text-gray-700 font-medium flex-shrink-0">
+                    <div className="absolute bottom-20 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50 w-full max-w-full overflow-hidden box-border">
+                      <div className="flex items-center justify-between px-3 py-2.5 gap-2 w-full min-w-0">
+                        <span style={smallTextStyle} className="text-gray-700 font-medium flex-shrink-0 whitespace-nowrap">
                           {selectedQuestionIds.size}개 선택
                         </span>
                         <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -978,10 +979,10 @@ const QuestionDetail = () => {
                             className="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors disabled:opacity-50 font-medium flex items-center gap-1 whitespace-nowrap"
                             style={smallTextStyle}
                           >
-                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                             </svg>
-                            삭제
+                            <span className="whitespace-nowrap">삭제</span>
                           </button>
                         </div>
                       </div>
@@ -1030,13 +1031,15 @@ const QuestionDetail = () => {
                           </button>
                         </div>
                       )}
-                      <div className={`max-w-[80%] ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-2xl bg-white text-gray-800 shadow-sm border border-gray-100 transition-all ${
-                        isDeleteModeQuestion && isSelected ? 'bg-red-50 border-red-200' : ''
-                      }`}>
-                        <p className="leading-relaxed whitespace-pre-wrap" style={baseTextStyle}>
-                          {question.content}
-                        </p>
-                      </div>
+                       <div className={`max-w-[80%] min-w-0 ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-2xl bg-white text-gray-800 shadow-sm border border-gray-100 transition-all ${
+                         isDeleteModeQuestion && isSelected ? 'bg-red-50 border-red-200' : ''
+                       }`}
+                       style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}
+                       >
+                         <p className="leading-relaxed whitespace-pre-wrap break-words" style={{...baseTextStyle, wordBreak: 'break-word', overflowWrap: 'break-word'}}>
+                           {question.content}
+                         </p>
+                       </div>
                     </div>
 
                     {/* AI Response */}
@@ -1153,9 +1156,9 @@ const QuestionDetail = () => {
         {/* 예문기록 섹션 */}
         {exampleRecords.length > 0 && (
           <>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="font-semibold text-gray-600" style={headerTextStyle}>예문기록</div>
+            <div className="space-y-2 w-full max-w-full overflow-hidden">
+              <div className="flex items-center justify-between w-full min-w-0 gap-2">
+                <div className="font-semibold text-gray-600 flex-shrink-0" style={headerTextStyle}>예문기록</div>
                 <button
                   onClick={() => {
                     setIsDeleteMode(!isDeleteMode);
@@ -1163,7 +1166,7 @@ const QuestionDetail = () => {
                       setSelectedExampleIds(new Set());
                     }
                   }}
-                  className="px-3 py-1.5 text-sm rounded-lg border transition-colors"
+                  className="px-3 py-1.5 text-sm rounded-lg border transition-colors flex-shrink-0 whitespace-nowrap"
                   style={{
                     backgroundColor: isDeleteMode ? '#EF4444' : 'white',
                     color: isDeleteMode ? 'white' : '#6B7280',

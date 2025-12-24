@@ -1239,10 +1239,10 @@ const StageResult = ({
                 <Cropper
                   src={selectedImageForCrop}
                   style={{ height: "100%", width: "100%", maxHeight: "100%", objectFit: "contain" }}
-                  initialAspectRatio={16 / 9}
+                  aspectRatio={NaN}
                   guides={true}
                   ref={cropperRef}
-                  viewMode={3}
+                  viewMode={1}
                   dragMode="move"
                   autoCropArea={0.8}
                   restore={false}
@@ -1254,9 +1254,19 @@ const StageResult = ({
                   background={true}
                   responsive={true}
                   checkOrientation={false}
-                  zoomable={false}
-                  scalable={false}
+                  zoomable={true}
+                  zoomOnTouch={true}
+                  zoomOnWheel={true}
+                  scalable={true}
                   rotatable={false}
+                  minCropBoxWidth={50}
+                  minCropBoxHeight={50}
+                  ready={() => {
+                    if (cropperRef.current?.cropper) {
+                      const cropper = cropperRef.current.cropper;
+                      cropper.setAspectRatio(NaN);
+                    }
+                  }}
                 />
               </div>
 

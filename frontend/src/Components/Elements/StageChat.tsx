@@ -449,7 +449,7 @@ const StageChat = ({ onBack }: StageChatProps) => {
             <Cropper
               src={uploadedImage}
               style={{ height: "320px", width: "100%" }}
-              initialAspectRatio={16 / 9}
+              aspectRatio={NaN}
               guides={true}
               ref={cropperRef}
               viewMode={1}
@@ -461,6 +461,18 @@ const StageChat = ({ onBack }: StageChatProps) => {
               cropBoxMovable={true}
               cropBoxResizable={true}
               toggleDragModeOnDblclick={false}
+              zoomable={true}
+              zoomOnTouch={true}
+              zoomOnWheel={true}
+              scalable={true}
+              minCropBoxWidth={50}
+              minCropBoxHeight={50}
+              ready={() => {
+                if (cropperRef.current?.cropper) {
+                  const cropper = cropperRef.current.cropper;
+                  cropper.setAspectRatio(NaN);
+                }
+              }}
             />
           </div>
 
