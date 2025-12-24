@@ -12,6 +12,7 @@ import StageChat from "../Elements/StageChat";
 import { Example } from "../types";
 import NavBar from "../Templates/Navbar";
 import { createStorageKey, safeSetItem, safeGetItem, isTodayData } from "../../utils/storageUtils";
+import { getTodayStringBy4AM } from "../../utils/dateUtils";
 import { dataURItoBlob, validateImageFile, validateDataURI, MAX_IMAGE_SIZE } from "../../utils/imageUtils";
 import { getAxiosErrorMessage, ERROR_MESSAGES } from "../../utils/errorMessages";
 
@@ -64,16 +65,43 @@ const App = () => {
     return null;
   }, []);
 
+  // AI 대화 상태 확인
+  const hasChatMessages = useCallback((): boolean => {
+    try {
+      const dateKey = getTodayStringBy4AM();
+      const storageKey = `stage_chat_messages_${dateKey}`;
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        const messages = JSON.parse(saved);
+        // 초기 메시지만 있으면 false (실제 대화가 없음)
+        return Array.isArray(messages) && messages.length > 1;
+      }
+    } catch (error) {
+      if (import.meta.env.DEV) {
+        console.error("AI 대화 상태 확인 실패:", error);
+      }
+    }
+    return false;
+  }, []);
+
   // 컴포넌트 마운트 시 저장된 상태 복원
   useEffect(() => {
-    const savedState = loadExampleState();
-    if (savedState && savedState.stage === 4 && savedState.examples.length > 0) {
+    const savedExampleState = loadExampleState();
+    const hasExample = savedExampleState && savedExampleState.stage === 4 && savedExampleState.examples.length > 0;
+    const hasChat = hasChatMessages();
+
+    if (hasExample && !hasChat) {
+      // 예문만 있으면 예문 페이지로
       setStage(4);
-      setCroppedImage(savedState.croppedImage);
-      setExamples(savedState.examples);
-      setDescription(savedState.description);
-      setExtractedText(savedState.extractedText);
+      setCroppedImage(savedExampleState.croppedImage);
+      setExamples(savedExampleState.examples);
+      setDescription(savedExampleState.description);
+      setExtractedText(savedExampleState.extractedText);
+    } else if (hasChat && !hasExample) {
+      // AI 대화만 있으면 대화 페이지로
+      setStage(5);
     }
+    // 둘 다 있거나 둘 다 없으면 stage 1 (업로드 페이지) 유지
   }, []);
 
   // stage, examples, description, croppedImage 변경 시 저장
@@ -262,12 +290,29 @@ const App = () => {
     setStage(1);
   }, []);
 
+  const handleRestoreExample = useCallback(() => {
+    const savedExampleState = loadExampleState();
+    if (savedExampleState && savedExampleState.stage === 4 && savedExampleState.examples.length > 0) {
+      setStage(4);
+      setCroppedImage(savedExampleState.croppedImage);
+      setExamples(savedExampleState.examples);
+      setDescription(savedExampleState.description);
+      setExtractedText(savedExampleState.extractedText);
+    }
+  }, [loadExampleState]);
+
   return (
     <div className="w-full h-[calc(100vh-72px)] flex flex-col max-w-[440px] mx-auto bg-[#F7F8FB] shadow-[0_0_10px_0_rgba(0,0,0,0.1)]">
       {stage === 1 && (
         <StageUpload
           handleFileUpload={handleFileUpload}
           handleAIChat={handleAIChat}
+          hasSavedExample={(() => {
+            const saved = loadExampleState();
+            return !!(saved && saved.stage === 4 && saved.examples.length > 0);
+          })()}
+          hasSavedChat={hasChatMessages()}
+          onRestoreExample={handleRestoreExample}
         />
       )}
       {stage === 2 && uploadedImage && (

@@ -367,9 +367,12 @@ const StageResult = ({
   }, []);
 
   // 예문 추가 핸들러
-  const handleAddMoreExamples = useCallback(async () => {
-    if (isLoadingMore || (!uploadedImage && !extractedText)) {
-      if (!uploadedImage && !extractedText) {
+  const handleAddMoreExamples = useCallback(async (imageToUse?: string) => {
+    // 사용할 이미지 결정: 파라미터로 전달된 이미지가 있으면 그것을 사용, 없으면 원본 uploadedImage 사용
+    const targetImage = imageToUse || uploadedImage;
+    
+    if (isLoadingMore || (!targetImage && !extractedText)) {
+      if (!targetImage && !extractedText) {
         showError("예문 추가 실패", "예문을 생성할 수 있는 데이터가 없습니다.");
       }
       return;
@@ -377,8 +380,8 @@ const StageResult = ({
 
     setIsLoadingMore(true);
     try {
-      if (uploadedImage) {
-        const { examples: newExamples } = await generateExamplesFromImage(uploadedImage);
+      if (targetImage) {
+        const { examples: newExamples, description: newDescription } = await generateExamplesFromImage(targetImage);
         
         // 상태 업데이트를 requestAnimationFrame으로 분할하여 성능 최적화
         requestAnimationFrame(() => {
@@ -394,11 +397,25 @@ const StageResult = ({
               }));
             });
             
+            // 추가 사진으로 생성된 경우 newImageSets에도 추가
+            if (imageToUse && imageToUse !== uploadedImage) {
+              requestAnimationFrame(() => {
+                // 새로운 이미지 세트 추가 (같은 이미지로 여러 번 생성해도 각각 별도 세트로 추가)
+                setNewImageSets((prevSets) => [...prevSets, {
+                  image: imageToUse,
+                  description: newDescription, // 새로 생성된 설명 사용
+                  exampleGroupIndex: newGroupIndex,
+                  timestamp: Date.now(),
+                }]);
+              });
+            }
+            
             if (import.meta.env.DEV) {
               console.log("예문 추가 완료:", {
                 newGroupIndex,
                 totalGroups: newGroups.length,
                 newExamplesCount: newExamples.length,
+                usedImage: imageToUse ? (imageToUse !== uploadedImage ? "추가 사진" : "원본 사진") : "없음",
               });
             }
             
@@ -443,7 +460,7 @@ const StageResult = ({
     } finally {
       setIsLoadingMore(false);
     }
-  }, [isLoadingMore, uploadedImage, extractedText, generateExamplesFromImage, showError, showSuccess]);
+  }, [isLoadingMore, uploadedImage, extractedText, generateExamplesFromImage, showError, showSuccess, newImageSets]);
 
   // 이미지 선택 핸들러 - 크롭 단계로 이동
   const handleImageSelect = useCallback((file: File) => {
@@ -848,6 +865,42 @@ const StageResult = ({
                   </div>
                 </div>
               )}
+              
+              {/* 예문 추가 버튼 - 원본 예문 그룹의 마지막 그룹 아래에만 표시 */}
+              {groupIndex === exampleGroups.length - 1 && !newImageSetGroupIndices.has(groupIndex) && (
+                <div className="flex justify-start mt-4">
+                  <button
+                    onClick={() => handleAddMoreExamples()}
+                    disabled={isLoadingMore}
+                    className="bg-[#00DAAA] hover:bg-[#00C495] active:bg-[#00B085] text-gray-900 font-semibold rounded-full transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+                    style={{
+                      minWidth: `${ADD_BUTTON_WIDTH}px`,
+                      height: isLargeTextMode ? '42px' : '32px',
+                      fontSize: isLargeTextMode ? '18px' : '14px',
+                      padding: isLargeTextMode ? '0 14px' : '0 12px',
+                      whiteSpace: 'nowrap'
+                    }}
+                    aria-label="예문 추가"
+                  >
+                    {isLoadingMore ? (
+                      <>
+                        <svg className="animate-spin flex-shrink-0" width={isLargeTextMode ? "16" : "14"} height={isLargeTextMode ? "16" : "14"} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span>생성 중...</span>
+                      </>
+                    ) : (
+                      <>
+                        <svg width={isLargeTextMode ? "16" : "14"} height={isLargeTextMode ? "16" : "14"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M12 5v14M5 12h14" />
+                        </svg>
+                        <span>예문추가</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
             </React.Fragment>
           );
         })}
@@ -1042,7 +1095,7 @@ const StageResult = ({
                   {/* 예문 추가 버튼 - 각 세트의 마지막에 배치 */}
                   <div className="flex justify-start mt-4">
                     <button
-                      onClick={handleAddMoreExamples}
+                      onClick={() => handleAddMoreExamples(imageSet.image)}
                       disabled={isLoadingMore}
                       className="bg-[#00DAAA] hover:bg-[#00C495] active:bg-[#00B085] text-gray-900 font-semibold rounded-full transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
                       style={{
@@ -1077,6 +1130,30 @@ const StageResult = ({
             </React.Fragment>
           );
         })}
+
+        {/* 로딩 상태 표시 - 추가 예문 생성 중일 때 */}
+        {isLoadingMore && !showCropStage && (
+          <div className="flex justify-center items-center py-8">
+            <div className="flex flex-col items-center gap-4">
+              <div className="flex items-center space-x-2">
+                <div className="flex space-x-1">
+                  <div className="w-3 h-3 bg-[#00DAAA] rounded-full animate-bounce"></div>
+                  <div
+                    className="w-3 h-3 bg-[#00DAAA] rounded-full animate-bounce"
+                    style={{ animationDelay: "0.1s" }}
+                  ></div>
+                  <div
+                    className="w-3 h-3 bg-[#00DAAA] rounded-full animate-bounce"
+                    style={{ animationDelay: "0.2s" }}
+                  ></div>
+                </div>
+              </div>
+              <p className="text-gray-600 font-medium" style={textStyles.base}>
+                예문을 준비하고 있습니다...
+              </p>
+            </div>
+          </div>
+        )}
 
       </div>
 

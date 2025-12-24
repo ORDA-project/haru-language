@@ -6,9 +6,12 @@ import ImageUploadModal from "./ImageUploadModal";
 interface StageUploadProps {
   handleFileUpload: (file: File) => void;
   handleAIChat: () => void;
+  hasSavedExample?: boolean;
+  hasSavedChat?: boolean;
+  onRestoreExample?: () => void;
 }
 
-const StageUpload = ({ handleFileUpload, handleAIChat }: StageUploadProps) => {
+const StageUpload = ({ handleFileUpload, handleAIChat, hasSavedExample = false, hasSavedChat = false, onRestoreExample }: StageUploadProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLargeTextMode] = useAtom(isLargeTextModeAtom);
   
@@ -43,7 +46,13 @@ const StageUpload = ({ handleFileUpload, handleAIChat }: StageUploadProps) => {
         <div className="w-full max-w-sm space-y-4">
           {/* 이미지 업로드 옵션 */}
           <button
-            onClick={() => setIsModalOpen(true)}
+            onClick={() => {
+              if (hasSavedExample && onRestoreExample) {
+                onRestoreExample();
+              } else {
+                setIsModalOpen(true);
+              }
+            }}
             className="w-full flex flex-col items-center bg-white py-12 px-6 border-2 border-dashed border-[#00DAAA] rounded-2xl cursor-pointer hover:bg-gray-50 transition-colors shadow-sm"
           >
             <div className="w-16 h-16 bg-[#00DAAA] rounded-full flex items-center justify-center mb-4">
@@ -98,10 +107,12 @@ const StageUpload = ({ handleFileUpload, handleAIChat }: StageUploadProps) => {
               </svg>
             </div>
             <p className="font-medium text-gray-800 mb-2" style={largeTextStyle}>
-              교재의 사진을 올려주세요
+              {hasSavedExample ? "예문 생성 이어서 보기" : "교재의 사진을 올려주세요"}
             </p>
             <p className="text-gray-500 text-center" style={smallTextStyle}>
-              이미지를 업로드하면 AI가 학습 예문을 생성해드립니다
+              {hasSavedExample 
+                ? "저장된 예문을 확인하거나 새로운 사진을 업로드하세요"
+                : "이미지를 업로드하면 AI가 학습 예문을 생성해드립니다"}
             </p>
           </button>
 
@@ -135,10 +146,12 @@ const StageUpload = ({ handleFileUpload, handleAIChat }: StageUploadProps) => {
               </svg>
             </div>
             <p className="font-medium text-gray-800 mb-2" style={largeTextStyle}>
-              AI 대화로 공부하기
+              {hasSavedChat ? "AI 대화 이어서 보기" : "AI 대화로 공부하기"}
             </p>
             <p className="text-gray-500 text-center" style={smallTextStyle}>
-              AI와 대화하며 영어를 학습해보세요
+              {hasSavedChat
+                ? "저장된 대화를 확인하거나 새로운 대화를 시작하세요"
+                : "AI와 대화하며 영어를 학습해보세요"}
             </p>
           </button>
         </div>
