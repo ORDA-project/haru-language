@@ -12,6 +12,7 @@ const router = express.Router();
 
 // uploads 디렉토리 확인 및 생성
 const uploadsDir = path.join(__dirname, "..", "uploads");
+const exampleImagesDir = path.join(__dirname, "..", "uploads", "examples");
 (async () => {
   try {
     await fs.access(uploadsDir);
@@ -20,6 +21,16 @@ const uploadsDir = path.join(__dirname, "..", "uploads");
       await fs.mkdir(uploadsDir, { recursive: true });
     } catch (error) {
       console.error("uploads 디렉토리 생성 실패:", error.message);
+    }
+  }
+  // 예문 이미지 저장 디렉토리 생성
+  try {
+    await fs.access(exampleImagesDir);
+  } catch {
+    try {
+      await fs.mkdir(exampleImagesDir, { recursive: true });
+    } catch (error) {
+      console.error("exampleImages 디렉토리 생성 실패:", error.message);
     }
   }
 })();
@@ -48,6 +59,27 @@ const cleanupFile = async (filePath) => {
     if (process.env.NODE_ENV !== "production") {
       console.error(`Failed to delete temp file: ${filePath}`, error.message);
     }
+  }
+};
+
+// 이미지를 영구 저장하고 URL 반환
+const saveImagePermanently = async (tempFilePath, userId, exampleId) => {
+  try {
+    const fileExt = path.extname(tempFilePath);
+    const fileName = `example_${userId}_${exampleId}_${Date.now()}${fileExt}`;
+    const permanentPath = path.join(exampleImagesDir, fileName);
+    
+    // 임시 파일을 영구 저장소로 이동
+    await fs.copyFile(tempFilePath, permanentPath);
+    
+    // URL 생성 (프로덕션에서는 실제 도메인 사용)
+    const baseUrl = process.env.API_BASE_URL || 'http://localhost:3000';
+    const imageUrl = `${baseUrl}/uploads/examples/${fileName}`;
+    
+    return imageUrl;
+  } catch (error) {
+    console.error("이미지 영구 저장 실패:", error.message);
+    throw error;
   }
 };
 
@@ -102,7 +134,38 @@ router.post("/", upload.single("image"), async (req, res) => {
       return res.status(400).json({ message: "이미지에서 텍스트를 추출할 수 없습니다." });
     }
 
+    // 먼저 예문 생성 (이미지 URL은 나중에 추가)
     const gptResponse = await generateExamples(extractedText, userId);
+    
+    // 예문이 생성되었고 DB에 저장되었다면, 이미지를 영구 저장하고 URL 업데이트
+    let savedImageUrl = null;
+    if (gptResponse?.generatedExample && userId) {
+      try {
+        // 가장 최근에 생성된 예문 찾기 (같은 userId, 같은 extractedSentence)
+        const Example = require("../models/Example");
+        const recentExample = await Example.findOne({
+          where: {
+            user_id: userId,
+            extracted_sentence: gptResponse.generatedExample.extractedSentence
+          },
+          order: [['created_at', 'DESC']]
+        });
+        
+        if (recentExample) {
+          // 이미지를 영구 저장하고 URL 생성
+          savedImageUrl = await saveImagePermanently(filePath, userId, recentExample.id);
+          
+          // 예문에 이미지 URL 업데이트
+          const currentImages = recentExample.images || [];
+          await recentExample.update({
+            images: [...currentImages, savedImageUrl]
+          });
+        }
+      } catch (imageError) {
+        console.error("이미지 저장 중 오류 (예문은 저장됨):", imageError.message);
+        // 이미지 저장 실패해도 예문은 이미 저장되었으므로 계속 진행
+      }
+    }
 
     // 응답 검증 (generateExamples에서 이미 검증했지만 이중 체크)
     if (!gptResponse?.generatedExample?.examples || gptResponse.generatedExample.examples.length === 0) {
@@ -156,6 +219,66 @@ router.post("/", upload.single("image"), async (req, res) => {
 
     res.status(statusCode).json({
       message: errorMessage,
+    });
+  } finally {
+    // 이미 영구 저장되었으면 임시 파일 삭제
+    await cleanupFile(filePath);
+  }
+});
+
+// 예문에 추가 이미지 추가 API
+router.post("/:exampleId/image", upload.single("image"), async (req, res) => {
+  let filePath;
+  
+  try {
+    const exampleId = parseInt(req.params.exampleId);
+    if (!exampleId || isNaN(exampleId)) {
+      return res.status(400).json({ message: "올바른 예문 ID가 필요합니다." });
+    }
+    
+    if (!req.file) {
+      return res.status(400).json({ message: "이미지 파일이 필요합니다." });
+    }
+    
+    filePath = req.file.path;
+    
+    const authenticatedUser = req.user || req.session?.user;
+    const userId = authenticatedUser?.userId;
+    
+    if (!userId) {
+      return res.status(401).json({ message: "로그인이 필요합니다." });
+    }
+    
+    const Example = require("../models/Example");
+    const example = await Example.findOne({
+      where: {
+        id: exampleId,
+        user_id: userId // 본인의 예문만 수정 가능
+      }
+    });
+    
+    if (!example) {
+      return res.status(404).json({ message: "예문을 찾을 수 없습니다." });
+    }
+    
+    // 이미지를 영구 저장하고 URL 생성
+    const savedImageUrl = await saveImagePermanently(filePath, userId, exampleId);
+    
+    // 예문에 이미지 URL 추가
+    const currentImages = example.images || [];
+    await example.update({
+      images: [...currentImages, savedImageUrl]
+    });
+    
+    res.status(200).json({
+      message: "이미지가 추가되었습니다.",
+      imageUrl: savedImageUrl,
+      images: [...currentImages, savedImageUrl]
+    });
+  } catch (error) {
+    console.error("추가 이미지 저장 오류:", error.message);
+    res.status(500).json({
+      message: "이미지 추가 중 오류가 발생했습니다.",
     });
   } finally {
     await cleanupFile(filePath);

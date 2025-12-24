@@ -153,6 +153,7 @@ const ExampleHistory = ({ onBack }: ExampleHistoryProps) => {
         examples={convertedExamples}
         errorMessage=""
         setStage={() => handleBackFromDetail()}
+        uploadedImage={selectedExample.images && selectedExample.images.length > 0 ? selectedExample.images[0] : null}
       />
     );
   }
@@ -232,6 +233,20 @@ const ExampleHistory = ({ onBack }: ExampleHistoryProps) => {
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex-1 min-w-0">
+                          {/* Images */}
+                          {example.images && example.images.length > 0 && (
+                            <div className="mb-2 flex gap-2 overflow-x-auto">
+                              {example.images.map((imageUrl, imgIndex) => (
+                                <img
+                                  key={imgIndex}
+                                  src={imageUrl}
+                                  alt={`예문 이미지 ${imgIndex + 1}`}
+                                  className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
+                                />
+                              ))}
+                            </div>
+                          )}
+                          
                           {/* Main sentence */}
                           <h3 className="font-medium text-gray-900 mb-2 line-clamp-2">
                             {example.extracted_sentence}

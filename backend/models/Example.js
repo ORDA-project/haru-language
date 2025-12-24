@@ -12,6 +12,12 @@ const Example = sequelize.define('Example', {
   },
   extracted_sentence: { type: DataTypes.TEXT, allowNull: false },
   description: { type: DataTypes.TEXT, allowNull: true },
+  images: { 
+    type: DataTypes.JSON, 
+    allowNull: true,
+    defaultValue: null,
+    comment: '예문 생성에 사용된 이미지 URL 배열 (원본 + 추가 이미지들)'
+  },
   created_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
 }, {
   timestamps: false,

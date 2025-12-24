@@ -14,6 +14,7 @@ export type ExampleRecord = {
   description: string;
   exampleItems: ExampleItem[];
   extractedSentence?: string;
+  images?: string[]; // 예문 생성에 사용된 이미지 URL 배열
 };
 
 export type WritingRecord = {

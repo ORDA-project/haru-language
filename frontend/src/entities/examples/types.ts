@@ -25,6 +25,7 @@ export interface Example {
   updatedAt: string;
   extracted_sentence?: string;
   description?: string;
+  images?: string[]; // 예문 생성에 사용된 이미지 URL 배열
   ExampleItems?: ExampleItem[];
   created_at?: string;
 }

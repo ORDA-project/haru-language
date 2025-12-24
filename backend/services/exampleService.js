@@ -16,7 +16,7 @@ const INTEREST_MAP = {
   vocabulary: "vocabulary"
 };
 
-async function generateExamples(inputSentence, userId) {
+async function generateExamples(inputSentence, userId, imageUrl = null) {
   // 사용자 정보 가져오기 (목표, 관심사)
   let user = null;
   if (userId) {
@@ -249,11 +249,13 @@ async function generateExamples(inputSentence, userId) {
     if (gptResponse.generatedExample && userId) {
       const { extractedSentence, description, examples } = gptResponse.generatedExample;
 
-      // 1. Example 테이블에 저장
+      // 1. Example 테이블에 저장 (이미지 URL 포함)
+      const images = imageUrl ? [imageUrl] : [];
       const example = await Example.create({
         user_id: userId,
         extracted_sentence: extractedSentence,
-        description: description
+        description: description,
+        images: images.length > 0 ? images : null
       });
 
       // 2. ExampleItem과 Dialogue 저장

@@ -166,6 +166,9 @@ const QuestionDetail = () => {
           (typeof (example as any).generatedExample === "string"
             ? parseGeneratedExample((example as any).generatedExample)
             : (example as any).generatedExample);
+        
+        // images 필드 포함
+        const images = (example as any).images || null;
 
         let description =
           generated?.description ||
@@ -228,7 +231,8 @@ const QuestionDetail = () => {
           id: example.id,
           description,
           exampleItems, // 모든 예문 항목들을 배열로 반환
-          extractedSentence: example.extracted_sentence, // 이미지에서 추출한 텍스트
+          extractedSentence: example.extracted_sentence || example.extractedSentence, // 이미지에서 추출한 텍스트
+          images: images, // 예문 생성에 사용된 이미지 URL 배열
         };
       });
   }, [exampleHistory?.data, targetDate]);
@@ -1260,8 +1264,14 @@ const QuestionDetail = () => {
                 const currentItem = example.exampleItems[currentIndex];
                 const isSelected = selectedExampleIds.has(example.id);
                 
-                // localStorage에서 이미지 가져오기 시도
-                const getImageFromStorage = () => {
+                // 이미지 가져오기: DB에서 가져온 이미지 우선, 없으면 localStorage에서 시도
+                const getExampleImage = () => {
+                  // DB에서 가져온 이미지가 있으면 사용
+                  if (example.images && example.images.length > 0) {
+                    return example.images[0];
+                  }
+                  
+                  // localStorage에서 이미지 가져오기 시도 (하위 호환성)
                   try {
                     const dateKey = getTodayStringBy4AM();
                     const storageKey = `example_generation_state_${dateKey}`;
@@ -1278,7 +1288,8 @@ const QuestionDetail = () => {
                   return null;
                 };
                 
-                const exampleImage = getImageFromStorage();
+                const exampleImage = getExampleImage();
+                const exampleImages = example.images || (exampleImage ? [exampleImage] : []);
                 
                 return (
                   <div 
@@ -1485,14 +1496,18 @@ const QuestionDetail = () => {
                       </div>
                       
                       {/* 오른쪽: 사진 */}
-                      {exampleImage && (
+                      {exampleImages.length > 0 && (
                         <div className="flex-shrink-0">
-                          <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-lg overflow-hidden border border-gray-200 shadow-sm">
-                            <img
-                              src={exampleImage}
-                              alt="예문 생성 이미지"
-                              className="w-full h-full object-cover"
-                            />
+                          <div className="flex flex-col gap-2">
+                            {exampleImages.map((imgUrl: string, imgIndex: number) => (
+                              <div key={imgIndex} className="w-24 h-24 sm:w-32 sm:h-32 rounded-lg overflow-hidden border border-gray-200 shadow-sm">
+                                <img
+                                  src={imgUrl}
+                                  alt={`예문 생성 이미지 ${imgIndex + 1}`}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                            ))}
                           </div>
                         </div>
                       )}
