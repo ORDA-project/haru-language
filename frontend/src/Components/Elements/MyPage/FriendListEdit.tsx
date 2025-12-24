@@ -82,13 +82,18 @@ const FriendListEdit = React.memo(function FriendListEdit({
           <button
             onClick={handleDelete}
             disabled={selectedFriends.size === 0}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+            className={`px-5 py-2.5 rounded-lg text-base font-semibold shadow-md transition-colors flex items-center gap-2 ${
               selectedFriends.size > 0
-                ? "bg-red-500 text-white hover:bg-red-600"
+                ? "bg-red-500 text-white hover:bg-red-600 active:bg-red-700"
                 : "bg-gray-300 text-gray-500 cursor-not-allowed"
             }`}
           >
-            삭제
+            {selectedFriends.size > 0 && (
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            )}
+            {selectedFriends.size > 0 ? `삭제 (${selectedFriends.size})` : '삭제'}
           </button>
         </div>
         <div className="space-y-3">
@@ -103,13 +108,41 @@ const FriendListEdit = React.memo(function FriendListEdit({
               return (
                 <div
                   key={friend.id || index}
-                  className={`rounded-[16px] p-4 shadow-md border transition-colors ${
+                  className={`rounded-lg p-4 shadow-sm border transition-all duration-200 ${
                     isSelected
-                      ? "bg-gray-700 border-gray-600"
-                      : "bg-white border-gray-100"
+                      ? "bg-red-50 border-red-200 ring-2 ring-red-500 ring-offset-2"
+                      : "bg-white border-gray-200"
                   }`}
                 >
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-3">
+                    {/* 체크박스 (왼쪽에 배치) */}
+                    <div className="flex-shrink-0">
+                      <button
+                        onClick={() => toggleFriendSelection(friend.id!)}
+                        className={`w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all ${
+                          isSelected
+                            ? "bg-red-500 border-red-500"
+                            : "bg-white border-gray-300 hover:border-red-400"
+                        }`}
+                        aria-label={isSelected ? "선택 해제" : "선택"}
+                      >
+                        {isSelected && (
+                          <svg
+                            className="w-4 h-4 text-white"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={3}
+                              d="M5 13l4 4L19 7"
+                            />
+                          </svg>
+                        )}
+                      </button>
+                    </div>
                     <div className="flex items-center gap-4 flex-1 min-w-0">
                       <div className="w-12 h-12 rounded-full flex-shrink-0 flex items-center justify-center shadow-sm overflow-hidden">
                         <div className="w-full h-full bg-gradient-to-br from-[#00DAAA] to-[#00D999] rounded-full flex items-center justify-center text-white font-bold text-sm">
@@ -119,46 +152,19 @@ const FriendListEdit = React.memo(function FriendListEdit({
                       <div className="min-w-0">
                         <div
                           className={`font-semibold text-lg mb-1 truncate ${
-                            isSelected ? "text-white" : "text-gray-900"
+                            isSelected ? "text-gray-900" : "text-gray-900"
                           }`}
                         >
                           {friend.userName}
                         </div>
                         <div
                           className={`text-sm truncate ${
-                            isSelected ? "text-gray-300" : "text-gray-500"
+                            isSelected ? "text-gray-600" : "text-gray-500"
                           }`}
                         >
                           {friend.stats}
                         </div>
                       </div>
-                    </div>
-                    <div
-                      className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 cursor-pointer transition-colors ${
-                        isSelected
-                          ? "bg-[#00DAAA]"
-                          : "bg-gray-200 border-2 border-gray-300"
-                      }`}
-                      onClick={() => toggleFriendSelection(friend.id!)}
-                    >
-                      {isSelected && (
-                        <svg
-                          className="w-4 h-4 text-white"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={3}
-                            d="M5 13l4 4L19 7"
-                          />
-                        </svg>
-                      )}
-                      {!isSelected && (
-                        <div className="w-2 h-2 rounded-full bg-gray-400"></div>
-                      )}
                     </div>
                   </div>
                 </div>

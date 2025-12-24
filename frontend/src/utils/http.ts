@@ -94,7 +94,7 @@ export class Http {
     const requestInit: RequestInit = {
       method: method.toUpperCase(),
       credentials: "include",
-      redirect: "error" as RequestRedirect, // 실무 패턴: 리다이렉트를 오류로 처리하여 절대 따라가지 않음
+      redirect: "error" as RequestRedirect,
       headers: requestHeaders,
     };
 

@@ -318,20 +318,34 @@ const QuestionDetail = () => {
   // 스피커 버튼 클릭 핸들러 - 현재 화면에 보이는 예문 항목의 A와 B만 TTS로 읽기
   const handleSpeakerClick = async (example: any) => {
     // 이미 재생 중이면 중지
+    if (isPlayingTTS && currentPlayingExampleId === example.id) {
+      // 오디오 재생 중지
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0; // 재생 위치 초기화
+        audioRef.current = null;
+      }
+      
+      // 브라우저 TTS도 중지
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+      
+      setIsPlayingTTS(false);
+      setCurrentPlayingExampleId(null);
+      return;
+    }
+    
+    // 다른 예문이 재생 중이면 먼저 중지
     if (audioRef.current) {
       audioRef.current.pause();
+      audioRef.current.currentTime = 0;
       audioRef.current = null;
     }
     
     // 브라우저 TTS도 중지
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
-    }
-
-    if (isPlayingTTS && currentPlayingExampleId === example.id) {
-      setIsPlayingTTS(false);
-      setCurrentPlayingExampleId(null);
-      return;
     }
 
     try {
@@ -608,14 +622,28 @@ const QuestionDetail = () => {
                       setSelectedWritingIds(new Set());
                     }
                   }}
-                  className="px-3 py-1.5 text-sm rounded-lg border transition-colors"
-                  style={{
-                    backgroundColor: isDeleteModeWriting ? '#EF4444' : 'white',
-                    color: isDeleteModeWriting ? 'white' : '#6B7280',
-                    borderColor: isDeleteModeWriting ? '#EF4444' : '#D1D5DB'
-                  }}
+                  className={`px-5 py-2.5 rounded-lg text-base font-semibold transition-colors flex items-center gap-2 shadow-md ${
+                    isDeleteModeWriting
+                      ? 'bg-red-500 hover:bg-red-600 active:bg-red-700 text-white'
+                      : 'bg-white hover:bg-gray-50 text-gray-700 border-2 border-gray-300'
+                  }`}
+                  style={smallTextStyle}
                 >
-                  {isDeleteModeWriting ? '취소' : '삭제'}
+                  {isDeleteModeWriting ? (
+                    <>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                      취소
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      삭제
+                    </>
+                  )}
                 </button>
               </div>
               
@@ -853,14 +881,28 @@ const QuestionDetail = () => {
                       setSelectedQuestionIds(new Set());
                     }
                   }}
-                  className="px-3 py-1.5 text-sm rounded-lg border transition-colors"
-                  style={{
-                    backgroundColor: isDeleteModeQuestion ? '#EF4444' : 'white',
-                    color: isDeleteModeQuestion ? 'white' : '#6B7280',
-                    borderColor: isDeleteModeQuestion ? '#EF4444' : '#D1D5DB'
-                  }}
+                  className={`px-5 py-2.5 rounded-lg text-base font-semibold transition-colors flex items-center gap-2 shadow-md ${
+                    isDeleteModeQuestion
+                      ? 'bg-red-500 hover:bg-red-600 active:bg-red-700 text-white'
+                      : 'bg-white hover:bg-gray-50 text-gray-700 border-2 border-gray-300'
+                  }`}
+                  style={smallTextStyle}
                 >
-                  {isDeleteModeQuestion ? '취소' : '삭제'}
+                  {isDeleteModeQuestion ? (
+                    <>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                      취소
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      삭제
+                    </>
+                  )}
                 </button>
               </div>
               
