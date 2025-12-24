@@ -18,6 +18,21 @@ export default function UserProfileEdit({}: UserProfileEditProps) {
   const { showSuccess, showError, handleError } = useErrorHandler();
   const queryClient = useQueryClient();
 
+  // 큰글씨 모드에 따른 텍스트 크기 (다른 페이지와 동일하게)
+  const baseFontSize = isLargeTextMode ? 18 : 16;
+  const headerFontSize = isLargeTextMode ? 22 : 18;
+  
+  const baseTextStyle: React.CSSProperties = {
+    fontSize: `${baseFontSize}px`,
+    wordBreak: 'keep-all',
+    overflowWrap: 'break-word' as const
+  };
+  const headerTextStyle: React.CSSProperties = {
+    fontSize: `${headerFontSize}px`,
+    wordBreak: 'keep-all',
+    overflowWrap: 'break-word' as const
+  };
+
   const [formData, setFormData] = useState({
     gender: "",
     goal: "",
@@ -180,7 +195,6 @@ export default function UserProfileEdit({}: UserProfileEditProps) {
       },
     ];
 
-    const textSizeClass = isLargeTextMode ? "text-xl" : "text-base";
     const messagePadding = isLargeTextMode ? "px-5 py-4" : "px-4 py-3";
     const buttonPadding = isLargeTextMode ? "px-5 py-3" : "px-4 py-2.5";
     const spacing = isLargeTextMode ? "space-y-4" : "space-y-3";
@@ -195,8 +209,8 @@ export default function UserProfileEdit({}: UserProfileEditProps) {
               <div className="flex justify-start mb-3">
                 <div className={`max-w-[75%] ${messagePadding} rounded-2xl bg-gray-100 text-gray-800`}>
                   <p 
-                    className={`${textSizeClass} leading-relaxed`}
-                    style={{ wordBreak: 'keep-all', overflowWrap: 'break-word' }}
+                    className="leading-relaxed"
+                    style={baseTextStyle}
                   >
                     {question.systemMessage}
                   </p>
@@ -208,8 +222,8 @@ export default function UserProfileEdit({}: UserProfileEditProps) {
                 <div className="flex justify-end mb-3">
                   <div className={`max-w-[75%] ${messagePadding} rounded-2xl bg-white text-gray-800 shadow-sm border border-gray-100`}>
                     <p 
-                      className={`${textSizeClass} leading-relaxed`}
-                      style={{ wordBreak: 'keep-all', overflowWrap: 'break-word' }}
+                      className="leading-relaxed"
+                      style={baseTextStyle}
                     >
                     {question.userResponse}
                     </p>
@@ -237,11 +251,12 @@ export default function UserProfileEdit({}: UserProfileEditProps) {
                         onClick={() =>
                           handleSelect(question.field, option.value, option.label)
                         }
-                        className={`${buttonPadding} rounded-full ${textSizeClass} font-medium transition-all duration-200 whitespace-nowrap ${
+                        className={`${buttonPadding} rounded-full font-medium transition-all duration-200 whitespace-nowrap ${
                           isSelected
                             ? "bg-[#00DAAA] text-white"
                             : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
                         }`}
+                        style={baseTextStyle}
                       >
                         {option.label}
                       </button>
@@ -258,8 +273,8 @@ export default function UserProfileEdit({}: UserProfileEditProps) {
               <div className="flex justify-start mb-3">
                 <div className={`max-w-[75%] ${messagePadding} rounded-2xl bg-gray-100 text-gray-800`}>
                   <p 
-                    className={`${textSizeClass} leading-relaxed`}
-                    style={{ wordBreak: 'keep-all', overflowWrap: 'break-word' }}
+                    className="leading-relaxed"
+                    style={baseTextStyle}
                   >
                     말씀해주신 걸 바탕으로 예문생성을 도와드릴게요!
                   </p>
@@ -275,7 +290,8 @@ export default function UserProfileEdit({}: UserProfileEditProps) {
             <div className="flex justify-center">
               <button
                 onClick={handleSubmit}
-                className={`${isLargeTextMode ? "px-10 py-4 text-xl" : "px-8 py-3 text-base"} bg-[#00DAAA] text-white rounded-full hover:bg-[#00C495] transition-colors font-medium shadow-sm`}
+                className={`${isLargeTextMode ? "px-10 py-4" : "px-8 py-3"} bg-[#00DAAA] text-white rounded-full hover:bg-[#00C495] transition-colors font-medium shadow-sm`}
+                style={baseTextStyle}
               >
                 저장하기
               </button>
@@ -319,7 +335,7 @@ export default function UserProfileEdit({}: UserProfileEditProps) {
             </svg>
           </button>
           <div className="text-center">
-            <h1 className={`${isLargeTextMode ? "text-2xl" : "text-xl"} font-semibold text-gray-800`}>프로필 설정</h1>
+            <h1 className="font-semibold text-gray-800" style={headerTextStyle}>프로필 설정</h1>
           </div>
           <div className="w-8"></div>
         </div>
@@ -328,7 +344,7 @@ export default function UserProfileEdit({}: UserProfileEditProps) {
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#00DAAA] mx-auto mb-4"></div>
-            <p className={`${isLargeTextMode ? "text-xl" : "text-base"} text-gray-600`}>프로필 정보를 불러오는 중...</p>
+            <p className="text-gray-600" style={baseTextStyle}>프로필 정보를 불러오는 중...</p>
           </div>
         </div>
 
@@ -361,7 +377,7 @@ export default function UserProfileEdit({}: UserProfileEditProps) {
           </svg>
         </button>
         <div className="text-center">
-          <h1 className={`${isLargeTextMode ? "text-xl" : "text-lg"} font-semibold text-gray-800`}>프로필 설정</h1>
+          <h1 className="font-semibold text-gray-800" style={headerTextStyle}>프로필 설정</h1>
         </div>
         <div className="w-8"></div>
       </div>
