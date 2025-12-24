@@ -127,9 +127,8 @@ const DailySentence = () => {
       
       if (!container || !textElement) return;
 
-      const englishText = languageMode === "korean" 
-        ? currentQuestion.englishQuestion 
-        : currentQuestion.koreanQuestion;
+      // 영어 모드일 때와 동일하게 항상 영어 질문을 기준으로 측정
+      const englishText = currentQuestion.englishQuestion;
       
       if (!englishText) return;
 
@@ -137,7 +136,7 @@ const DailySentence = () => {
       const sentenceCount = (englishText.match(/[.!?]+/g) || []).length || 1;
       const targetLines = sentenceCount;
 
-      // 초기 폰트 크기 설정
+      // 초기 폰트 크기 설정 (영어 모드와 동일)
       const baseSize = isLargeTextMode ? 18 : 16;
       let fontSize = baseSize;
       const minFontSize = 12;
