@@ -561,11 +561,11 @@ const QuestionDetail = () => {
             </svg>
           </button>
           <div className="text-center flex-1 min-w-0 overflow-hidden">
-            <h1 className="font-semibold text-gray-800 break-words" style={{...headerTextStyle, wordBreak: 'break-word', overflowWrap: 'break-word'}}>
+            <h1 className="font-semibold text-gray-800 break-words text-lg" style={{wordBreak: 'break-word', overflowWrap: 'break-word'}}>
               {formatDisplayDate(selectedDate || date)}
             </h1>
             {availableDates.length > 0 && (
-              <p className="text-gray-500 mt-1 break-words" style={{...xSmallTextStyle, wordBreak: 'break-word', overflowWrap: 'break-word'}}>
+              <p className="text-gray-500 mt-1 break-words text-xs" style={{wordBreak: 'break-word', overflowWrap: 'break-word'}}>
                 총 {availableDates.length}일의 기록
               </p>
             )}
@@ -576,12 +576,11 @@ const QuestionDetail = () => {
           <button
             onClick={() => previousDate && handleNavigateToDate(previousDate)}
             disabled={!previousDate}
-            className={`px-2 py-2 rounded-lg font-medium transition-colors flex-shrink-0 whitespace-nowrap ${
+            className={`px-2 py-2 rounded-lg font-medium transition-colors flex-shrink-0 whitespace-nowrap text-sm ${
               previousDate
                 ? "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 : "bg-gray-100 text-gray-400 cursor-not-allowed"
             }`}
-            style={smallTextStyle}
           >
             이전
           </button>
@@ -590,17 +589,16 @@ const QuestionDetail = () => {
             value={selectedDate || ""}
             onChange={handleDateInputChange}
             className="flex-1 min-w-0 px-2 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00DAAA] text-sm box-border"
-            style={{...smallTextStyle, width: '100%', maxWidth: '100%'}}
+            style={{width: '100%', maxWidth: '100%'}}
           />
           <button
             onClick={() => nextDate && handleNavigateToDate(nextDate)}
             disabled={!nextDate}
-            className={`px-2 py-2 rounded-lg font-medium transition-colors flex-shrink-0 whitespace-nowrap ${
+            className={`px-2 py-2 rounded-lg font-medium transition-colors flex-shrink-0 whitespace-nowrap text-sm ${
               nextDate
                 ? "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 : "bg-gray-100 text-gray-400 cursor-not-allowed"
             }`}
-            style={smallTextStyle}
           >
             다음
           </button>
@@ -619,7 +617,7 @@ const QuestionDetail = () => {
           <>
             <div className="space-y-2 w-full max-w-full overflow-hidden">
               <div className="flex items-center justify-between w-full min-w-0 gap-2">
-                <div className="font-semibold text-gray-600 flex-shrink-0" style={headerTextStyle}>하루한줄</div>
+                <div className="font-semibold text-gray-600 flex-shrink-0 text-lg">하루한줄</div>
                 <button
                   onClick={() => {
                     setIsDeleteModeWriting(!isDeleteModeWriting);
@@ -627,12 +625,11 @@ const QuestionDetail = () => {
                       setSelectedWritingIds(new Set());
                     }
                   }}
-                  className={`px-3 py-2 rounded-lg text-base font-semibold transition-colors flex items-center gap-1.5 shadow-md flex-shrink-0 whitespace-nowrap ${
+                  className={`px-3 py-2 rounded-lg text-sm font-semibold transition-colors flex items-center gap-1.5 shadow-md flex-shrink-0 whitespace-nowrap ${
                     isDeleteModeWriting
                       ? 'bg-red-500 hover:bg-red-600 active:bg-red-700 text-white'
                       : 'bg-white hover:bg-gray-50 text-gray-700 border-2 border-gray-300'
                   }`}
-                  style={smallTextStyle}
                 >
                   {isDeleteModeWriting ? (
                     <>
@@ -676,22 +673,21 @@ const QuestionDetail = () => {
                            </svg>
                          )}
                        </div>
-                       <span style={smallTextStyle} className="text-gray-700 whitespace-nowrap">전체 선택</span>
+                       <span className="text-gray-700 whitespace-nowrap text-sm">전체 선택</span>
                      </button>
                    </div>
-                  
-                  {/* 하단 고정 삭제 액션 바 */}
+                   
+                   {/* 하단 고정 삭제 액션 바 */}
                   {selectedWritingIds.size > 0 && (
                     <div className="absolute bottom-20 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50 w-full max-w-full overflow-hidden box-border">
                       <div className="flex items-center justify-between px-3 py-2.5 gap-2 w-full min-w-0">
-                        <span style={smallTextStyle} className="text-gray-700 font-medium flex-shrink-0 whitespace-nowrap">
+                        <span className="text-gray-700 font-medium flex-shrink-0 whitespace-nowrap text-sm">
                           {selectedWritingIds.size}개 선택
                         </span>
                         <div className="flex items-center gap-1.5 flex-shrink-0">
                           <button
                             onClick={() => setSelectedWritingIds(new Set())}
                             className="px-3 py-1.5 text-gray-600 hover:text-gray-800 transition-colors text-sm whitespace-nowrap"
-                            style={smallTextStyle}
                           >
                             취소
                           </button>
@@ -712,8 +708,7 @@ const QuestionDetail = () => {
                               }
                             }}
                             disabled={deleteWritingRecordMutation.isPending}
-                            className="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors disabled:opacity-50 font-medium flex items-center gap-1 whitespace-nowrap"
-                            style={smallTextStyle}
+                            className="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors disabled:opacity-50 font-medium flex items-center gap-1 whitespace-nowrap text-sm"
                           >
                             <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -878,7 +873,7 @@ const QuestionDetail = () => {
           <>
             <div className="space-y-2 w-full max-w-full overflow-hidden">
               <div className="flex items-center justify-between w-full min-w-0 gap-2">
-                <div className="font-semibold text-gray-600 flex-shrink-0" style={headerTextStyle}>채팅기록</div>
+                <div className="font-semibold text-gray-600 flex-shrink-0 text-lg">채팅기록</div>
                 <button
                   onClick={() => {
                     setIsDeleteModeQuestion(!isDeleteModeQuestion);
@@ -886,12 +881,11 @@ const QuestionDetail = () => {
                       setSelectedQuestionIds(new Set());
                     }
                   }}
-                  className={`px-3 py-2 rounded-lg text-base font-semibold transition-colors flex items-center gap-1.5 shadow-md flex-shrink-0 whitespace-nowrap ${
+                  className={`px-3 py-2 rounded-lg text-sm font-semibold transition-colors flex items-center gap-1.5 shadow-md flex-shrink-0 whitespace-nowrap ${
                     isDeleteModeQuestion
                       ? 'bg-red-500 hover:bg-red-600 active:bg-red-700 text-white'
                       : 'bg-white hover:bg-gray-50 text-gray-700 border-2 border-gray-300'
                   }`}
-                  style={smallTextStyle}
                 >
                   {isDeleteModeQuestion ? (
                     <>
@@ -935,50 +929,48 @@ const QuestionDetail = () => {
                            </svg>
                          )}
                        </div>
-                       <span style={smallTextStyle} className="text-gray-700 whitespace-nowrap">전체 선택</span>
+                       <span className="text-gray-700 whitespace-nowrap text-sm">전체 선택</span>
                      </button>
                    </div>
-                  
-                  {/* 하단 고정 삭제 액션 바 */}
-                  {selectedQuestionIds.size > 0 && (
-                    <div className="absolute bottom-20 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50 w-full max-w-full overflow-hidden box-border">
-                      <div className="flex items-center justify-between px-3 py-2.5 gap-2 w-full min-w-0">
-                        <span style={smallTextStyle} className="text-gray-700 font-medium flex-shrink-0 whitespace-nowrap">
-                          {selectedQuestionIds.size}개 선택
-                        </span>
-                        <div className="flex items-center gap-1.5 flex-shrink-0">
-                          <button
-                            onClick={() => setSelectedQuestionIds(new Set())}
-                            className="px-3 py-1.5 text-gray-600 hover:text-gray-800 transition-colors text-sm whitespace-nowrap"
-                            style={smallTextStyle}
-                          >
-                            취소
-                          </button>
-                          <button
-                            onClick={async () => {
-                              if (window.confirm(`선택한 ${selectedQuestionIds.size}개의 채팅 기록을 삭제하시겠습니까?`)) {
-                                try {
-                                  const selectedQuestions = questions.filter((q: any) => selectedQuestionIds.has(q.id));
-                                  const deletePromises = Array.from(selectedQuestionIds).map(id =>
-                                    deleteQuestionMutation.mutateAsync(id)
-                                  );
-                                  await Promise.all(deletePromises);
-                                  // localStorage에서도 채팅 메시지 제거
-                                  const questionContents = selectedQuestions.map((q: any) => q.content || "");
-                                  removeChatMessagesFromStorage(Array.from(selectedQuestionIds), questionContents, "stage_chat_messages");
-                                  removeChatMessagesFromStorage(Array.from(selectedQuestionIds), questionContents, "chat_messages");
-                                  showSuccess("삭제 완료", `${selectedQuestionIds.size}개의 채팅 기록이 삭제되었습니다.`);
-                                  setSelectedQuestionIds(new Set());
-                                  setIsDeleteModeQuestion(false);
-                                } catch (error) {
-                                  showError("삭제 실패", "채팅 기록 삭제에 실패했습니다.");
-                                }
-                              }
-                            }}
-                            disabled={deleteQuestionMutation.isPending}
-                            className="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors disabled:opacity-50 font-medium flex items-center gap-1 whitespace-nowrap"
-                            style={smallTextStyle}
-                          >
+                   
+                   {/* 하단 고정 삭제 액션 바 */}
+                   {selectedQuestionIds.size > 0 && (
+                     <div className="absolute bottom-20 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50 w-full max-w-full overflow-hidden box-border">
+                       <div className="flex items-center justify-between px-3 py-2.5 gap-2 w-full min-w-0">
+                         <span className="text-gray-700 font-medium flex-shrink-0 whitespace-nowrap text-sm">
+                           {selectedQuestionIds.size}개 선택
+                         </span>
+                         <div className="flex items-center gap-1.5 flex-shrink-0">
+                           <button
+                             onClick={() => setSelectedQuestionIds(new Set())}
+                             className="px-3 py-1.5 text-gray-600 hover:text-gray-800 transition-colors text-sm whitespace-nowrap"
+                           >
+                             취소
+                           </button>
+                           <button
+                             onClick={async () => {
+                               if (window.confirm(`선택한 ${selectedQuestionIds.size}개의 채팅 기록을 삭제하시겠습니까?`)) {
+                                 try {
+                                   const selectedQuestions = questions.filter((q: any) => selectedQuestionIds.has(q.id));
+                                   const deletePromises = Array.from(selectedQuestionIds).map(id =>
+                                     deleteQuestionMutation.mutateAsync(id)
+                                   );
+                                   await Promise.all(deletePromises);
+                                   // localStorage에서도 채팅 메시지 제거
+                                   const questionContents = selectedQuestions.map((q: any) => q.content || "");
+                                   removeChatMessagesFromStorage(Array.from(selectedQuestionIds), questionContents, "stage_chat_messages");
+                                   removeChatMessagesFromStorage(Array.from(selectedQuestionIds), questionContents, "chat_messages");
+                                   showSuccess("삭제 완료", `${selectedQuestionIds.size}개의 채팅 기록이 삭제되었습니다.`);
+                                   setSelectedQuestionIds(new Set());
+                                   setIsDeleteModeQuestion(false);
+                                 } catch (error) {
+                                   showError("삭제 실패", "채팅 기록 삭제에 실패했습니다.");
+                                 }
+                               }
+                             }}
+                             disabled={deleteQuestionMutation.isPending}
+                             className="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors disabled:opacity-50 font-medium flex items-center gap-1 whitespace-nowrap text-sm"
+                           >
                             <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                             </svg>
@@ -1158,7 +1150,7 @@ const QuestionDetail = () => {
           <>
             <div className="space-y-2 w-full max-w-full overflow-hidden">
               <div className="flex items-center justify-between w-full min-w-0 gap-2">
-                <div className="font-semibold text-gray-600 flex-shrink-0" style={headerTextStyle}>예문기록</div>
+                <div className="font-semibold text-gray-600 flex-shrink-0 text-lg">예문기록</div>
                 <button
                   onClick={() => {
                     setIsDeleteMode(!isDeleteMode);
@@ -1192,7 +1184,7 @@ const QuestionDetail = () => {
                       }}
                       className="w-5 h-5 rounded border-gray-300 text-[#00DAAA] focus:ring-[#00DAAA]"
                     />
-                    <span style={smallTextStyle}>전체 선택</span>
+                    <span className="text-sm">전체 선택</span>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
                     {selectedExampleIds.size > 0 && (
