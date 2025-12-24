@@ -23,6 +23,12 @@ interface SavedExampleState {
   description: string;
   extractedText: string;
   timestamp: string;
+  newImageSets?: Array<{
+    image: string;
+    description: string;
+    exampleGroupIndex: number;
+    timestamp: number;
+  }>;
 }
 
 const App = () => {
@@ -33,6 +39,12 @@ const App = () => {
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [description, setDescription] = useState<string>("");
   const [extractedText, setExtractedText] = useState<string>("");
+  const [newImageSets, setNewImageSets] = useState<Array<{
+    image: string;
+    description: string;
+    exampleGroupIndex: number;
+    timestamp: number;
+  }>>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const { showError, showSuccess, showWarning } = useErrorHandler();
   const cropperRef = useRef<any>(null);
@@ -47,11 +59,12 @@ const App = () => {
         description,
         extractedText,
         timestamp: new Date().toISOString(),
+        newImageSets: newImageSets.length > 0 ? newImageSets : undefined,
       };
       const storageKey = createStorageKey("example_generation_state");
       safeSetItem(storageKey, state);
     }
-  }, [stage, examples, croppedImage, description, extractedText]);
+  }, [stage, examples, croppedImage, description, extractedText, newImageSets]);
 
   // 예문 생성 상태 불러오기
   const loadExampleState = useCallback((): SavedExampleState | null => {
@@ -97,6 +110,9 @@ const App = () => {
       setExamples(savedExampleState.examples);
       setDescription(savedExampleState.description);
       setExtractedText(savedExampleState.extractedText);
+      if (savedExampleState.newImageSets && savedExampleState.newImageSets.length > 0) {
+        setNewImageSets(savedExampleState.newImageSets);
+      }
     } else if (hasChat && !hasExample) {
       // AI 대화만 있으면 대화 페이지로
       setStage(5);
@@ -104,12 +120,12 @@ const App = () => {
     // 둘 다 있거나 둘 다 없으면 stage 1 (업로드 페이지) 유지
   }, []);
 
-  // stage, examples, description, croppedImage 변경 시 저장
+  // stage, examples, description, croppedImage, newImageSets 변경 시 저장
   useEffect(() => {
     if (stage === 4 && examples.length > 0) {
       saveExampleState();
     }
-  }, [stage, examples, description, croppedImage, extractedText]);
+  }, [stage, examples, description, croppedImage, extractedText, newImageSets, saveExampleState]);
 
   const handleFileUpload = useCallback((file: File) => {
     const validation = validateImageFile(file);
@@ -332,6 +348,8 @@ const App = () => {
           uploadedImage={croppedImage}
           errorMessage={errorMessage}
           setStage={setStage}
+          newImageSets={newImageSets}
+          setNewImageSets={setNewImageSets}
           onExamplesUpdate={(newExamples) => {
             setExamples(newExamples);
           }}

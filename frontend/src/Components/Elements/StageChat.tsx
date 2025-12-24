@@ -531,8 +531,8 @@ const StageChat = ({ onBack }: StageChatProps) => {
       {/* Chat Stage */}
       {cropStage === "chat" && (
         <>
-          {/* Date Separator */}
-          <div className="px-4 py-1">
+          {/* Date Separator - 고정 */}
+          <div className="px-4 py-1 bg-white border-b border-gray-200">
             <div className="flex items-center">
               <div className="flex-1 h-px bg-gray-300"></div>
               <div className="px-4">
@@ -544,9 +544,6 @@ const StageChat = ({ onBack }: StageChatProps) => {
                       day: "2-digit",
                       weekday: "short",
                     })
-                    //.replace(".", "")
-                    //.replace(".", "")
-                    //.replace(".", "")
                   }
                 </span>
               </div>
@@ -554,8 +551,8 @@ const StageChat = ({ onBack }: StageChatProps) => {
             </div>
           </div>
 
-          {/* Messages */}
-          <div className="flex-1 overflow-y-auto px-4 pt-2 space-y-3 pb-4">
+          {/* Messages - 스크롤 가능 */}
+          <div className="flex-1 overflow-y-auto px-4 pt-2 space-y-3" style={{ paddingBottom: 'calc(72px + 5rem)' }}>
             {messages.map((message, index) => (
               <React.Fragment key={message.id}>
                 {/* 일반 메시지 */}
@@ -719,19 +716,6 @@ const StageChat = ({ onBack }: StageChatProps) => {
                   </div>
                 )}
 
-                {/* 카메라 버튼 - AI 메시지 옆에 표시 */}
-                {message.type === "ai" && index === messages.length - 1 && !message.examples && (
-                  <button
-                    onClick={() => setIsModalOpen(true)}
-                    className="absolute bottom-26 right-2 w-10 h-10 bg-[#00DAAA] hover:bg-[#00C495] rounded-full flex items-center justify-center shadow-lg transition-colors z-30"
-                  >
-                    <Icons.camera
-                      className="w-5 h-5"
-                      stroke="white"
-                      strokeOpacity="1"
-                    />
-                  </button>
-                )}
               </React.Fragment>
             ))}
 
@@ -762,9 +746,19 @@ const StageChat = ({ onBack }: StageChatProps) => {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Input */}
-          <div className="p-4 bg-white border-t border-gray-200 pb-20">
+          {/* Input - 고정 */}
+          <div className="p-4 bg-white border-t border-gray-200 fixed bottom-0 left-0 right-0 max-w-[440px] mx-auto" style={{ paddingBottom: 'calc(72px + 1rem)' }}>
             <div className="flex items-end space-x-3">
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="w-12 h-12 bg-[#00DAAA] hover:bg-[#00C495] rounded-full flex items-center justify-center shadow-lg transition-colors flex-shrink-0"
+              >
+                <Icons.camera
+                  className="w-5 h-5"
+                  stroke="white"
+                  strokeOpacity="1"
+                />
+              </button>
               <div className="flex-1">
                 <textarea
                   value={inputMessage}
@@ -779,7 +773,7 @@ const StageChat = ({ onBack }: StageChatProps) => {
               <button
                 onClick={handleSendMessage}
                 disabled={!inputMessage.trim() || isLoading}
-                className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${
+                className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors flex-shrink-0 ${
                   inputMessage.trim() && !isLoading
                     ? "bg-[#00DAAA] hover:bg-[#00C495] cursor-pointer"
                     : "bg-gray-300 cursor-not-allowed"

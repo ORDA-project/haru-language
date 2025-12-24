@@ -13,6 +13,8 @@ import { dataURItoBlob, MAX_IMAGE_SIZE } from "../../utils/imageUtils";
 import { createTextStyles } from "../../utils/styleUtils";
 import { groupExamples, formatContextText, EXAMPLES_PER_GROUP } from "../../utils/exampleUtils";
 import { Icons } from "./Icons";
+import { createStorageKey, safeSetItem, safeGetItem, isTodayData } from "../../utils/storageUtils";
+import { getTodayStringBy4AM } from "../../utils/dateUtils";
 
 interface StageResultProps {
   description: string;
@@ -21,6 +23,18 @@ interface StageResultProps {
   uploadedImage?: string | null;
   errorMessage: string;
   setStage: React.Dispatch<React.SetStateAction<number>>;
+  newImageSets?: Array<{
+    image: string;
+    description: string;
+    exampleGroupIndex: number;
+    timestamp: number;
+  }>;
+  setNewImageSets?: React.Dispatch<React.SetStateAction<Array<{
+    image: string;
+    description: string;
+    exampleGroupIndex: number;
+    timestamp: number;
+  }>>>;
   onExamplesUpdate?: (newExamples: Example[]) => void;
 }
 
@@ -113,6 +127,8 @@ const StageResult = ({
   uploadedImage,
   errorMessage,
   setStage,
+  newImageSets: propNewImageSets,
+  setNewImageSets: propSetNewImageSets,
   onExamplesUpdate,
 }: StageResultProps) => {
   // State
@@ -122,12 +138,17 @@ const StageResult = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showCropStage, setShowCropStage] = useState(false);
   const [selectedImageForCrop, setSelectedImageForCrop] = useState<string | null>(null);
-  const [newImageSets, setNewImageSets] = useState<Array<{ 
+  
+  // newImageSets는 props로 받거나 내부 상태로 관리
+  const [internalNewImageSets, setInternalNewImageSets] = useState<Array<{ 
     image: string; 
     description: string; 
     exampleGroupIndex: number;
     timestamp: number;
   }>>([]);
+  
+  const newImageSets = propNewImageSets ?? internalNewImageSets;
+  const setNewImageSets = propSetNewImageSets ?? setInternalNewImageSets;
   const cropperRef = useRef<any>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isPlayingTTS, setIsPlayingTTS] = useState(false);
@@ -173,6 +194,71 @@ const StageResult = ({
       }
     };
   }, []);
+
+  // newImageSets 저장/복원
+  const getNewImageSetsStorageKey = useCallback(() => {
+    const dateKey = getTodayStringBy4AM();
+    return `example_new_image_sets_${dateKey}`;
+  }, []);
+
+  // 저장된 newImageSets 불러오기 (props가 없을 때만)
+  useEffect(() => {
+    if (propNewImageSets !== undefined) {
+      // props로 관리되면 복원하지 않음
+      return;
+    }
+    
+    try {
+      const storageKey = getNewImageSetsStorageKey();
+      const saved = safeGetItem<Array<{ 
+        image: string; 
+        description: string; 
+        exampleGroupIndex: number;
+        timestamp: number;
+      }>>(storageKey);
+      
+      if (saved && Array.isArray(saved) && saved.length > 0) {
+        // 저장된 이미지 세트가 오늘 날짜인지 확인
+        const firstSet = saved[0];
+        if (firstSet && firstSet.timestamp) {
+          const savedDate = new Date(firstSet.timestamp);
+          const today = new Date();
+          const today4AM = new Date(today);
+          today4AM.setHours(4, 0, 0, 0);
+          if (today < today4AM) {
+            today4AM.setDate(today4AM.getDate() - 1);
+          }
+          
+          if (savedDate >= today4AM) {
+            setInternalNewImageSets(saved);
+          }
+        }
+      }
+    } catch (error) {
+      if (import.meta.env.DEV) {
+        console.error("newImageSets 복원 실패:", error);
+      }
+    }
+  }, [getNewImageSetsStorageKey, propNewImageSets]);
+
+  // newImageSets 변경 시 저장 (props가 없을 때만)
+  useEffect(() => {
+    if (propSetNewImageSets !== undefined) {
+      // props로 관리되면 저장하지 않음 (부모에서 처리)
+      return;
+    }
+    
+    if (internalNewImageSets.length > 0) {
+      try {
+        const storageKey = getNewImageSetsStorageKey();
+        safeSetItem(storageKey, internalNewImageSets);
+      } catch (error) {
+        if (import.meta.env.DEV) {
+          console.error("newImageSets 저장 실패:", error);
+        }
+      }
+    }
+  }, [internalNewImageSets, getNewImageSetsStorageKey, propSetNewImageSets]);
 
   // 초기 예문이 변경되면 그룹 재생성 (초기 마운트 시에만)
   useEffect(() => {
