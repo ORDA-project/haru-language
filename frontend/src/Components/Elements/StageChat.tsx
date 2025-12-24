@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useAtom } from "jotai";
 import { isLargeTextModeAtom } from "../../store/dataStore";
 import axios from "axios";
