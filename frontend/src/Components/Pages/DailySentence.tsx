@@ -520,13 +520,14 @@ const DailySentence = () => {
                         onClick={() =>
                           isClickable && handleStepNavigation(step as Step)
                         }
-                        className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-200 ${
+                        className={`w-8 h-8 rounded-full flex items-center justify-center font-medium transition-all duration-200 ${
                           isCurrent
                             ? "bg-[#00DAAA] text-white"
                             : isCompleted
                             ? "bg-[#00DAAA] text-white cursor-pointer hover:bg-[#00C299]"
                             : "bg-gray-200 text-gray-500"
                         } ${isClickable ? "cursor-pointer" : "cursor-default"}`}
+                        style={xSmallTextStyle}
                       >
                         {index + 1}
                       </div>
@@ -550,11 +551,11 @@ const DailySentence = () => {
               <div className="bg-white rounded-3xl p-6 shadow-lg border-4 border-[#00DAAA] w-full max-w-full overflow-hidden box-border min-w-0">
                 <div className="flex items-center justify-between mb-6 flex-wrap gap-2 min-w-0">
                   <div className="bg-[#00E8B6] px-4 py-2 rounded-full flex-shrink-0">
-                    <span className="text-sm font-bold text-gray-800 whitespace-nowrap">
+                    <span className="font-bold text-gray-800 whitespace-nowrap" style={smallTextStyle}>
                       오늘의 한줄 영어
                     </span>
                   </div>
-                  <span className="text-sm text-gray-500 font-medium flex-shrink-0 whitespace-nowrap">
+                  <span className="text-gray-500 font-medium flex-shrink-0 whitespace-nowrap" style={smallTextStyle}>
                     {formatDate()}
                   </span>
                 </div>
@@ -588,7 +589,7 @@ const DailySentence = () => {
                       {/* 두 번째 질문 (선택사항) */}
                       {currentQuestion.secondQuestion && (
                         <div className="bg-gray-50 rounded-2xl p-4 w-full overflow-hidden box-border min-w-0">
-                          <div className="text-sm text-gray-500 mb-1 whitespace-nowrap">
+                          <div className="text-gray-500 mb-1 whitespace-nowrap" style={xSmallTextStyle}>
                             (선택)
                           </div>
                           <div className="font-bold text-gray-900 leading-relaxed mb-2 w-full min-w-0" style={baseTextStyle}>
@@ -607,7 +608,7 @@ const DailySentence = () => {
                       {/* 세 번째 질문 (선택사항) */}
                       {currentQuestion.thirdQuestion && (
                         <div className="bg-gray-50 rounded-2xl p-4 w-full overflow-hidden box-border min-w-0">
-                          <div className="text-sm text-gray-500 mb-1 whitespace-nowrap">
+                          <div className="text-gray-500 mb-1 whitespace-nowrap" style={xSmallTextStyle}>
                             (선택)
                           </div>
                           <div className="font-bold text-gray-900 leading-relaxed mb-2 w-full min-w-0" style={baseTextStyle}>
@@ -677,7 +678,7 @@ const DailySentence = () => {
                     className="flex items-center space-x-2 text-gray-600 hover:text-[#00DAAA] transition-colors"
                   >
                     <Icons.arrowLeft />
-                    <span className="text-sm font-medium">이전 단계</span>
+                    <span className="font-medium" style={smallTextStyle}>이전 단계</span>
                   </button>
                 </div>
                 <h2 className="font-bold mb-2 text-gray-900" style={headerTextStyle}>
@@ -694,13 +695,14 @@ const DailySentence = () => {
                       return (
                         <div key={index} className="flex items-center">
                           <div
-                            className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-200 ${
+                            className={`w-8 h-8 rounded-full flex items-center justify-center font-medium transition-all duration-200 ${
                               isCurrent
                                 ? "bg-[#FF6B35] text-white"
                                 : isCompleted
                                 ? "bg-green-500 text-white"
                                 : "bg-gray-200 text-gray-500"
                             }`}
+                            style={xSmallTextStyle}
                           >
                             {isCompleted ? "✓" : index + 1}
                           </div>
@@ -720,17 +722,17 @@ const DailySentence = () => {
 
                 {/* 현재 문장 정보 */}
                 <div className="text-center mb-6">
-                  <p className="text-sm text-gray-600 mb-2">
+                  <p className="text-gray-600 mb-2" style={smallTextStyle}>
                     문장 {currentSentenceIndex + 1} /{" "}
                     {translationResult.sentencePairs.length}
                   </p>
 
                   {/* 사용자 입력 원본 문장 표시 */}
                   <div className="bg-blue-50 rounded-xl p-4 border border-blue-200 mb-4">
-                    <p className="text-sm text-gray-600 mb-1">
+                    <p className="text-gray-600 mb-1" style={smallTextStyle}>
                       사용자 입력 (한국어)
                     </p>
-                    <p className="text-base text-gray-800 font-medium leading-relaxed">
+                    <p className="text-gray-800 font-medium leading-relaxed" style={baseTextStyle}>
                       {translationResult.sentencePairs[currentSentenceIndex]
                         ?.koreanSentence || translationResult.originalText}
                     </p>
@@ -738,10 +740,10 @@ const DailySentence = () => {
 
                   {/* 번역된 문장 표시 (재조합할 문장) */}
                   <div className="bg-green-50 rounded-xl p-4 border border-green-200">
-                    <p className="text-sm text-gray-600 mb-1">
+                    <p className="text-gray-600 mb-1" style={smallTextStyle}>
                       번역된 영어 문장 (재조합할 문장)
                     </p>
-                    <p className="text-base text-gray-800 font-medium leading-relaxed">
+                    <p className="text-gray-800 font-medium leading-relaxed" style={baseTextStyle}>
                       {(() => {
                         // 정답을 맞췄을 때만 번역된 문장을 보여줌
                         if (isCorrectAnswer()) {
@@ -781,7 +783,8 @@ const DailySentence = () => {
                             <span
                               key={`selected-${index}`}
                               onClick={() => handleWordRemove(word, index)}
-                              className="bg-[#00DAAA] text-white px-4 py-2 rounded-full text-sm font-medium shadow-md cursor-pointer hover:bg-[#00C299] transition-colors"
+                              className="bg-[#00DAAA] text-white px-4 py-2 rounded-full font-medium shadow-md cursor-pointer hover:bg-[#00C299] transition-colors"
+                              style={smallTextStyle}
                             >
                               {word}
                             </span>
@@ -796,7 +799,8 @@ const DailySentence = () => {
                         <span
                           key={`available-${index}-${word}`}
                           onClick={() => handleWordSelect(word, index)}
-                          className="bg-[#FF6B35] text-white px-4 py-2 rounded-full text-sm font-medium shadow-md cursor-pointer hover:bg-[#E55A2B] transition-colors"
+                          className="bg-[#FF6B35] text-white px-4 py-2 rounded-full font-medium shadow-md cursor-pointer hover:bg-[#E55A2B] transition-colors"
+                          style={smallTextStyle}
                         >
                           {word}
                         </span>
@@ -824,7 +828,8 @@ const DailySentence = () => {
                   <button
                     onClick={handleNextSentence}
                     disabled={!isCorrectAnswer()}
-                    className="w-full bg-[#FF6B35] text-white py-4 rounded-2xl font-bold text-lg shadow-lg hover:shadow-xl transition-shadow disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full bg-[#FF6B35] text-white py-4 rounded-2xl font-bold shadow-lg hover:shadow-xl transition-shadow disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={headerTextStyle}
                   >
                     {translationResult.sentencePairs &&
                     currentSentenceIndex <
@@ -843,7 +848,8 @@ const DailySentence = () => {
                       });
                       setCurrentStep("result");
                     }}
-                    className="w-full text-center text-gray-600 underline py-2 text-sm hover:text-gray-800 transition-colors"
+                    className="w-full text-center text-gray-600 underline py-2 hover:text-gray-800 transition-colors"
+                    style={smallTextStyle}
                   >
                     모르겠어요...
                   </button>
@@ -870,7 +876,7 @@ const DailySentence = () => {
                   className="flex items-center space-x-2 text-gray-600 hover:text-[#00DAAA] transition-colors"
                 >
                   <Icons.arrowLeft />
-                  <span className="text-sm font-medium">이전 단계</span>
+                  <span className="font-medium" style={smallTextStyle}>이전 단계</span>
                 </button>
               </div>
 

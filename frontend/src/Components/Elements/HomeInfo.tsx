@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAtom } from "jotai";
 import { isLargeTextModeAtom } from "../../store/dataStore";
@@ -39,6 +39,11 @@ const HomeInfo = ({
   const smallTextStyle: React.CSSProperties = { fontSize: `${smallFontSize}px`, wordBreak: 'keep-all', overflowWrap: 'break-word' as const };
   const headerTextStyle: React.CSSProperties = { fontSize: `${headerFontSize}px`, wordBreak: 'keep-all', overflowWrap: 'break-word' as const };
 
+  // 홈화면 "오늘의 한줄 영어" 박스 - 고정 크기 (큰글씨 모드 무관)
+  const [englishSentenceFontSize, setEnglishSentenceFontSize] = useState<number | null>(null);
+  const englishSentenceRef = useRef<HTMLDivElement>(null);
+  const englishSentenceContainerRef = useRef<HTMLDivElement>(null);
+
   const [isPopupVisible, setIsPopupVisible] = useState(false);
 
   // const openPopup = () => setIsPopupVisible(true);
@@ -62,6 +67,86 @@ const HomeInfo = ({
       document.body.style.overflow = "auto"; // 컴포넌트 언마운트 시 스크롤 복원
     };
   }, [isPopupVisible]);
+
+  // 홈화면 "오늘의 한줄 영어" 박스 - 영어 문장 자동 폰트 크기 조절 (고정 크기)
+  useEffect(() => {
+    if (!dailySentence || !englishSentenceRef.current || !englishSentenceContainerRef.current) {
+      setEnglishSentenceFontSize(null);
+      return;
+    }
+
+    const adjustFontSize = () => {
+      const container = englishSentenceContainerRef.current;
+      const textElement = englishSentenceRef.current;
+      
+      if (!container || !textElement) return;
+
+      const englishText = dailySentence.english;
+      
+      if (!englishText) return;
+
+      // 문장 개수 계산 (., !, ?로 끝나는 문장)
+      const sentenceCount = (englishText.match(/[.!?]+/g) || []).length || 1;
+      const targetLines = sentenceCount;
+
+      // 고정된 기본 폰트 크기 (큰글씨 모드 무관)
+      const baseSize = 16;
+      const minFontSize = 12;
+      const maxFontSize = baseSize;
+
+      // 컨테이너 너비 가져오기
+      const containerWidth = container.offsetWidth - 40; // padding 고려
+
+      // 임시 요소로 텍스트 너비 측정
+      const measureElement = document.createElement('div');
+      measureElement.style.position = 'absolute';
+      measureElement.style.visibility = 'hidden';
+      measureElement.style.whiteSpace = 'nowrap';
+      measureElement.style.fontFamily = window.getComputedStyle(textElement).fontFamily;
+      measureElement.style.fontWeight = window.getComputedStyle(textElement).fontWeight;
+      document.body.appendChild(measureElement);
+
+      // 이진 탐색으로 적절한 폰트 크기 찾기
+      let low = minFontSize;
+      let high = maxFontSize;
+      let bestSize = baseSize;
+
+      while (low <= high) {
+        const mid = Math.floor((low + high) / 2);
+        measureElement.style.fontSize = `${mid}px`;
+        measureElement.textContent = englishText;
+        
+        const textWidth = measureElement.offsetWidth;
+        const estimatedLines = Math.ceil(textWidth / containerWidth);
+        
+        if (estimatedLines <= targetLines) {
+          bestSize = mid;
+          low = mid + 1;
+        } else {
+          high = mid - 1;
+        }
+      }
+
+      document.body.removeChild(measureElement);
+      setEnglishSentenceFontSize(bestSize);
+    };
+
+    // 초기 조정
+    adjustFontSize();
+
+    // 리사이즈 이벤트 리스너
+    const resizeObserver = new ResizeObserver(() => {
+      adjustFontSize();
+    });
+
+    if (englishSentenceContainerRef.current) {
+      resizeObserver.observe(englishSentenceContainerRef.current);
+    }
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [dailySentence]);
 
   return (
     <>
@@ -89,7 +174,7 @@ const HomeInfo = ({
         </div>
       )}
       <div
-        className="h-[200px] flex flex-col justify-start items-start p-[20px] rounded-[20px] bg-white shadow-[0px_3px_7px_2px_rgba(0,0,0,0.05)] my-[20px] border-4 border-[#00DAAA] cursor-pointer select-none"
+        className="h-[200px] flex flex-col justify-start items-start p-[20px] rounded-[20px] bg-white shadow-[0px_3px_7px_2px_rgba(0,0,0,0.05)] my-[20px] border-4 border-[#00DAAA] cursor-pointer select-none w-full max-w-full overflow-hidden box-border"
         style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
         onTouchStart={(e) => {
           const touch = e.touches[0];
@@ -128,17 +213,28 @@ const HomeInfo = ({
           }
         }}
       >
-        <div className="font-bold leading-[150%] bg-[#00E8B6]" style={baseTextStyle}>
+        <div className="font-bold leading-[150%] bg-[#00E8B6] px-4 py-2 rounded-full" style={{ fontSize: '14px' }}>
           <span>오늘의 한줄 영어</span>
         </div>
-        <div className="font-bold leading-[150%] w-full my-[12px] flex flex-col" style={headerTextStyle}>
+        <div className="w-full my-[12px] flex flex-col min-w-0 overflow-hidden" ref={englishSentenceContainerRef}>
           {dailySentence ? (
             <>
-              <div className="break-words">{dailySentence.english}</div>
-              <div className="break-words">{dailySentence.korean}</div>
+              <div 
+                ref={englishSentenceRef}
+                className="font-bold leading-[150%] break-words w-full min-w-0"
+                style={{
+                  fontSize: englishSentenceFontSize ? `${englishSentenceFontSize}px` : '16px',
+                  lineHeight: '1.4'
+                }}
+              >
+                {dailySentence.english}
+              </div>
+              <div className="font-bold leading-[150%] break-words w-full min-w-0 mt-2" style={{ fontSize: '18px' }}>
+                {dailySentence.korean}
+              </div>
             </>
           ) : (
-            <div className="text-gray-400">오늘의 질문을 불러오는 중...</div>
+            <div className="text-gray-400" style={{ fontSize: '16px' }}>오늘의 질문을 불러오는 중...</div>
           )}
         </div>
 
