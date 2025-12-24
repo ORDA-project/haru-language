@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useCallback } from "react";
+import React, { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAtom } from "jotai";
 import { isLargeTextModeAtom } from "../../store/dataStore";
@@ -6,17 +6,23 @@ import { useGetQuestionsByUserId, useDeleteQuestion } from "../../entities/quest
 import { useGetExampleHistory, useDeleteExample } from "../../entities/examples/queries";
 import { useWritingRecords, useDeleteWritingRecord } from "../../entities/writing/queries";
 import { useWritingQuestions } from "../../entities/writing/queries";
+import { useGenerateTTS } from "../../entities/tts/queries";
 import { useErrorHandler } from "../../hooks/useErrorHandler";
 import NavBar from "../Templates/Navbar";
 import { createExtendedTextStyles } from "../../utils/styleUtils";
 import { getTodayStringBy4AM } from "../../utils/dateUtils";
 import { removeExamplesFromStorage, removeChatMessagesFromStorage } from "../../utils/storageUtils";
-import { getDateString, formatDisplayDate, parseGeneratedExample } from "./QuestionDetail/utils";
-import { useTTS } from "./QuestionDetail/hooks/useTTS";
-import { DeleteModeToggle } from "./QuestionDetail/components/DeleteModeToggle";
-import { CheckboxButton } from "./QuestionDetail/components/CheckboxButton";
-import { DeleteActionBar } from "./QuestionDetail/components/DeleteActionBar";
-import type { ExampleRecord, ExampleItem, ExampleDialogue, WritingRecord, Question } from "./QuestionDetail/types";
+
+type ExampleDialogue = {
+  speaker: string;
+  english: string;
+  korean?: string;
+};
+
+type ExampleItem = {
+  context: string;
+  dialogues: ExampleDialogue[];
+};
 
 const QuestionDetail = () => {
   const { date } = useParams<{ date: string }>();
@@ -32,7 +38,8 @@ const QuestionDetail = () => {
   const [selectedWritingIds, setSelectedWritingIds] = useState<Set<number>>(new Set());
   const [isDeleteModeQuestion, setIsDeleteModeQuestion] = useState(false);
   const [selectedQuestionIds, setSelectedQuestionIds] = useState<Set<number>>(new Set());
-  const { isPlayingTTS, currentPlayingExampleId, playTTS } = useTTS();
+  const ttsMutation = useGenerateTTS();
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const { showWarning, showError, showSuccess } = useErrorHandler();
   const deleteWritingRecordMutation = useDeleteWritingRecord();
   const deleteExampleMutation = useDeleteExample();
@@ -64,6 +71,16 @@ const QuestionDetail = () => {
     }
   }, [date]);
 
+  // 한국 시간 기준으로 날짜 문자열 추출 (YYYY-MM-DD)
+  const getDateString = (dateValue: string | Date): string => {
+    const date = typeof dateValue === 'string' ? new Date(dateValue) : dateValue;
+    // 한국 시간으로 변환
+    const koreaTime = new Date(date.toLocaleString("en-US", { timeZone: "Asia/Seoul" }));
+    const year = koreaTime.getFullYear();
+    const month = String(koreaTime.getMonth() + 1).padStart(2, '0');
+    const day = String(koreaTime.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
 
   const availableDates = useMemo(() => {
     const dates = new Set<string>();
@@ -100,9 +117,9 @@ const QuestionDetail = () => {
     return selectedDate; // 이미 YYYY-MM-DD 형식
   }, [selectedDate]);
 
-  const questions = useMemo((): Question[] => {
+  const questions = useMemo(() => {
     if (!questionsData?.data || !targetDate) return [];
-    return questionsData.data.filter((q): q is Question => {
+    return questionsData.data.filter((q) => {
       if (!q.created_at) return false;
       const questionDate = getDateString(q.created_at);
       return questionDate === targetDate;
@@ -110,6 +127,29 @@ const QuestionDetail = () => {
   }, [questionsData?.data, targetDate]);
 
   const exampleRecords = useMemo(() => {
+    const parseGeneratedExample = (rawDescription?: string) => {
+      if (!rawDescription) {
+        return null;
+      }
+
+      const firstBrace = rawDescription.indexOf("{");
+      const lastBrace = rawDescription.lastIndexOf("}");
+      if (firstBrace === -1 || lastBrace === -1) {
+        return null;
+      }
+
+      const candidate = rawDescription.slice(firstBrace, lastBrace + 1);
+
+      try {
+        const parsed = JSON.parse(candidate);
+        if (parsed?.generatedExample) {
+          return parsed.generatedExample;
+        }
+        return parsed;
+      } catch {
+        return null;
+      }
+    };
 
     if (!exampleHistory?.data || !targetDate) return [];
     return exampleHistory.data
@@ -119,7 +159,7 @@ const QuestionDetail = () => {
         const exampleDate = getDateString(createdAt);
         return exampleDate === targetDate;
       })
-      .map((example): ExampleRecord => {
+      .map((example) => {
         const rawDescription = example.description;
         let generated =
           parseGeneratedExample(rawDescription) ||
@@ -194,9 +234,9 @@ const QuestionDetail = () => {
   }, [exampleHistory?.data, targetDate]);
 
   // Writing 기록 필터링
-  const writingRecords = useMemo((): WritingRecord[] => {
+  const writingRecords = useMemo(() => {
     if (!writingRecordsData?.data || !targetDate) return [];
-    return writingRecordsData.data.filter((record: any): record is WritingRecord => {
+    return writingRecordsData.data.filter((record: any) => {
       if (!record.created_at) return false;
       const recordDate = getDateString(record.created_at);
       return recordDate === targetDate;
@@ -236,6 +276,16 @@ const QuestionDetail = () => {
     }
   };
 
+  const formatDisplayDate = (isoDate?: string) => {
+    if (!isoDate) return "날짜 선택";
+    const parsed = new Date(isoDate);
+    if (Number.isNaN(parsed.getTime())) return "날짜 선택";
+    return parsed.toLocaleDateString("ko-KR", {
+      month: "2-digit",
+      day: "2-digit",
+      weekday: "short",
+    });
+  };
 
   const handleBack = () => {
     navigate(-1);
@@ -265,11 +315,217 @@ const QuestionDetail = () => {
     }));
   };
 
-  // 스피커 버튼 클릭 핸들러
-  const handleSpeakerClick = useCallback((example: ExampleRecord) => {
-    const currentIndex = getCurrentItemIndex(example.id, example.exampleItems.length);
-    playTTS(example, currentIndex);
-  }, [playTTS]);
+  // 스피커 버튼 클릭 핸들러 - 현재 화면에 보이는 예문 항목의 A와 B만 TTS로 읽기
+  const handleSpeakerClick = async (example: any) => {
+    // 이미 재생 중이면 중지
+    if (isPlayingTTS && currentPlayingExampleId === example.id) {
+      // 오디오 재생 중지
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0; // 재생 위치 초기화
+        audioRef.current = null;
+      }
+      
+      // 브라우저 TTS도 중지
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+      
+      setIsPlayingTTS(false);
+      setCurrentPlayingExampleId(null);
+      return;
+    }
+    
+    // 다른 예문이 재생 중이면 먼저 중지
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      audioRef.current = null;
+    }
+    
+    // 브라우저 TTS도 중지
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+
+    try {
+      setIsPlayingTTS(true);
+      setCurrentPlayingExampleId(example.id);
+
+      // 현재 화면에 보이는 예문 항목의 A와 B만 수집
+      let textToRead = "";
+      if (example.exampleItems && example.exampleItems.length > 0) {
+        const currentIndex = getCurrentItemIndex(example.id, example.exampleItems.length);
+        const currentItem = example.exampleItems[currentIndex];
+        if (currentItem && currentItem.dialogues && currentItem.dialogues.length > 0) {
+          const englishTexts: string[] = [];
+          currentItem.dialogues.forEach((dialogue: ExampleDialogue) => {
+            if (dialogue && dialogue.english) {
+              englishTexts.push(dialogue.english);
+            }
+          });
+          textToRead = englishTexts.join(". ");
+        }
+      }
+
+      if (!textToRead || textToRead.trim() === "") {
+        setIsPlayingTTS(false);
+        setCurrentPlayingExampleId(null);
+        showWarning("재생할 예문이 없습니다", "예문을 불러올 수 없습니다.");
+        return;
+      }
+
+      console.log("TTS 재생할 텍스트:", textToRead);
+
+      // TTS API 호출 (최대 3번 재시도)
+      let response = null;
+      let retryCount = 0;
+      const maxRetries = 3;
+
+      while (retryCount < maxRetries && (!response || !response.audioContent)) {
+        try {
+          response = await ttsMutation.mutateAsync({
+            text: textToRead,
+            speed: 1.0,
+          });
+          console.log("TTS 응답:", response);
+          
+          if (response && response.audioContent) {
+            break; // 성공하면 루프 종료
+          }
+        } catch (error) {
+          console.error(`TTS API 호출 실패 (시도 ${retryCount + 1}/${maxRetries}):`, error);
+        }
+        
+        retryCount++;
+        if (retryCount < maxRetries) {
+          // 재시도 전 잠시 대기
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+      }
+
+      // TTS API가 실패하면 브라우저 내장 TTS 사용
+      if (!response || !response.audioContent) {
+        console.log("TTS API 실패, 브라우저 내장 TTS 사용");
+        
+        // Web Speech API 사용
+        if ('speechSynthesis' in window) {
+          // 기존 음성 중지
+          window.speechSynthesis.cancel();
+          
+          const utterance = new SpeechSynthesisUtterance(textToRead);
+          utterance.lang = 'en-US';
+          utterance.rate = 1.0;
+          utterance.pitch = 1.0;
+          utterance.volume = 1.0;
+
+          utterance.onend = () => {
+            setIsPlayingTTS(false);
+            setCurrentPlayingExampleId(null);
+          };
+
+          utterance.onerror = (error) => {
+            console.error("브라우저 TTS 오류:", error);
+            setIsPlayingTTS(false);
+            setCurrentPlayingExampleId(null);
+          };
+
+          window.speechSynthesis.speak(utterance);
+          return;
+        } else {
+          // Web Speech API도 없으면 에러
+          setIsPlayingTTS(false);
+          setCurrentPlayingExampleId(null);
+          showError("TTS 오류", "음성을 재생할 수 없습니다. 브라우저가 TTS를 지원하지 않습니다.");
+          return;
+        }
+      }
+
+      // Base64 오디오 데이터를 직접 Audio 객체로 재생
+      const audioUrl = `data:audio/mp3;base64,${response.audioContent}`;
+      const audio = new Audio(audioUrl);
+      
+      // 오디오 객체를 ref에 저장
+      audioRef.current = audio;
+
+      audio.onended = () => {
+        setIsPlayingTTS(false);
+        setCurrentPlayingExampleId(null);
+        if (audioRef.current === audio) {
+          audioRef.current = null;
+        }
+      };
+
+      audio.onerror = (error) => {
+        console.error("오디오 재생 실패:", error);
+        // 오디오 재생 실패 시 브라우저 TTS로 대체
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.cancel();
+          const utterance = new SpeechSynthesisUtterance(textToRead);
+          utterance.lang = 'en-US';
+          utterance.rate = 1.0;
+          utterance.onend = () => {
+            setIsPlayingTTS(false);
+            setCurrentPlayingExampleId(null);
+          };
+          utterance.onerror = () => {
+            setIsPlayingTTS(false);
+            setCurrentPlayingExampleId(null);
+          };
+          window.speechSynthesis.speak(utterance);
+        } else {
+          setIsPlayingTTS(false);
+          setCurrentPlayingExampleId(null);
+        }
+        if (audioRef.current === audio) {
+          audioRef.current = null;
+        }
+      };
+
+      // 오디오 로드 대기
+      audio.oncanplaythrough = async () => {
+        try {
+          await audio.play();
+          console.log("오디오 재생 시작");
+        } catch (playError) {
+          console.error("오디오 재생 시작 실패:", playError);
+          // 재생 실패 시 브라우저 TTS로 대체
+          if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(textToRead);
+            utterance.lang = 'en-US';
+            utterance.rate = 1.0;
+            utterance.onend = () => {
+              setIsPlayingTTS(false);
+              setCurrentPlayingExampleId(null);
+            };
+            utterance.onerror = () => {
+              setIsPlayingTTS(false);
+              setCurrentPlayingExampleId(null);
+            };
+            window.speechSynthesis.speak(utterance);
+          } else {
+            setIsPlayingTTS(false);
+            setCurrentPlayingExampleId(null);
+          }
+          if (audioRef.current === audio) {
+            audioRef.current = null;
+          }
+        }
+      };
+
+      // 오디오 로드 시작
+      audio.load();
+    } catch (error) {
+      console.error("TTS 재생 오류:", error);
+      setIsPlayingTTS(false);
+      setCurrentPlayingExampleId(null);
+      showError("TTS 오류", "음성 생성 중 오류가 발생했습니다. 다시 시도해주세요.");
+      if (audioRef.current) {
+        audioRef.current = null;
+      }
+    }
+  };
 
   if (isLoading) {
     return (
@@ -282,9 +538,9 @@ const QuestionDetail = () => {
   }
 
   return (
-    <div className="w-full h-[calc(100vh-72px)] flex flex-col max-w-[440px] mx-auto bg-[#F7F8FB] shadow-[0_0_10px_0_rgba(0,0,0,0.1)]">
+    <div className="w-full h-[calc(100vh-72px)] flex flex-col max-w-[440px] mx-auto bg-[#F7F8FB] shadow-[0_0_10px_0_rgba(0,0,0,0.1)] relative">
       {/* Header */}
-      <div className="p-4 bg-white border-b border-gray-200 space-y-3">
+      <div className="p-3 sm:p-4 bg-white border-b border-gray-200 space-y-3">
         <div className="flex items-center justify-between">
           <button
             onClick={handleBack}
@@ -316,11 +572,11 @@ const QuestionDetail = () => {
           </div>
           <div className="w-8" />
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <button
             onClick={() => previousDate && handleNavigateToDate(previousDate)}
             disabled={!previousDate}
-            className={`px-3 py-2 rounded-lg font-medium transition-colors ${
+            className={`px-2 py-2 rounded-lg font-medium transition-colors flex-shrink-0 ${
               previousDate
                 ? "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 : "bg-gray-100 text-gray-400 cursor-not-allowed"
@@ -333,13 +589,13 @@ const QuestionDetail = () => {
             type="date"
             value={selectedDate || ""}
             onChange={handleDateInputChange}
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00DAAA]"
+            className="flex-1 min-w-0 px-2 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00DAAA] text-sm"
             style={smallTextStyle}
           />
           <button
             onClick={() => nextDate && handleNavigateToDate(nextDate)}
             disabled={!nextDate}
-            className={`px-3 py-2 rounded-lg font-medium transition-colors ${
+            className={`px-2 py-2 rounded-lg font-medium transition-colors flex-shrink-0 ${
               nextDate
                 ? "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 : "bg-gray-100 text-gray-400 cursor-not-allowed"
@@ -364,16 +620,36 @@ const QuestionDetail = () => {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <div className="font-semibold text-gray-600" style={headerTextStyle}>하루한줄</div>
-                <DeleteModeToggle
-                  isDeleteMode={isDeleteModeWriting}
-                  onToggle={() => {
+                <button
+                  onClick={() => {
                     setIsDeleteModeWriting(!isDeleteModeWriting);
                     if (isDeleteModeWriting) {
                       setSelectedWritingIds(new Set());
                     }
                   }}
-                  textStyle={smallTextStyle}
-                />
+                  className={`px-3 py-2 rounded-lg text-base font-semibold transition-colors flex items-center gap-1.5 shadow-md flex-shrink-0 ${
+                    isDeleteModeWriting
+                      ? 'bg-red-500 hover:bg-red-600 active:bg-red-700 text-white'
+                      : 'bg-white hover:bg-gray-50 text-gray-700 border-2 border-gray-300'
+                  }`}
+                  style={smallTextStyle}
+                >
+                  {isDeleteModeWriting ? (
+                    <>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                      취소
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      삭제
+                    </>
+                  )}
+                </button>
               </div>
               
               {isDeleteModeWriting && (
@@ -404,29 +680,50 @@ const QuestionDetail = () => {
                     </button>
                   </div>
                   
-                  <DeleteActionBar
-                    selectedCount={selectedWritingIds.size}
-                    onCancel={() => setSelectedWritingIds(new Set())}
-                    onDelete={async () => {
-                      if (window.confirm(`선택한 ${selectedWritingIds.size}개의 하루한줄 기록을 삭제하시겠습니까?`)) {
-                        try {
-                          const deletePromises = Array.from(selectedWritingIds).map(id =>
-                            deleteWritingRecordMutation.mutateAsync(id)
-                          );
-                          await Promise.all(deletePromises);
-                          showSuccess("삭제 완료", `${selectedWritingIds.size}개의 하루한줄 기록이 삭제되었습니다.`);
-                          setSelectedWritingIds(new Set());
-                          setIsDeleteModeWriting(false);
-                        } catch (error) {
-                          showError("삭제 실패", "하루한줄 기록 삭제에 실패했습니다.");
-                        }
-                      }
-                    }}
-                    isDeleting={deleteWritingRecordMutation.isPending}
-                    deleteMessage="하루한줄 기록"
-                    baseTextStyle={baseTextStyle}
-                    smallTextStyle={smallTextStyle}
-                  />
+                  {/* 하단 고정 삭제 액션 바 */}
+                  {selectedWritingIds.size > 0 && (
+                    <div className="absolute bottom-20 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
+                      <div className="flex items-center justify-between px-3 py-2.5 gap-2">
+                        <span style={smallTextStyle} className="text-gray-700 font-medium flex-shrink-0">
+                          {selectedWritingIds.size}개 선택
+                        </span>
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                          <button
+                            onClick={() => setSelectedWritingIds(new Set())}
+                            className="px-3 py-1.5 text-gray-600 hover:text-gray-800 transition-colors text-sm whitespace-nowrap"
+                            style={smallTextStyle}
+                          >
+                            취소
+                          </button>
+                          <button
+                            onClick={async () => {
+                              if (window.confirm(`선택한 ${selectedWritingIds.size}개의 하루한줄 기록을 삭제하시겠습니까?`)) {
+                                try {
+                                  const deletePromises = Array.from(selectedWritingIds).map(id =>
+                                    deleteWritingRecordMutation.mutateAsync(id)
+                                  );
+                                  await Promise.all(deletePromises);
+                                  showSuccess("삭제 완료", `${selectedWritingIds.size}개의 하루한줄 기록이 삭제되었습니다.`);
+                                  setSelectedWritingIds(new Set());
+                                  setIsDeleteModeWriting(false);
+                                } catch (error) {
+                                  showError("삭제 실패", "하루한줄 기록 삭제에 실패했습니다.");
+                                }
+                              }
+                            }}
+                            disabled={deleteWritingRecordMutation.isPending}
+                            className="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors disabled:opacity-50 font-medium flex items-center gap-1 whitespace-nowrap"
+                            style={smallTextStyle}
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                            삭제
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </>
               )}
             </div>
@@ -447,11 +744,11 @@ const QuestionDetail = () => {
                 >
                   {/* 1. 하루한줄 블록 */}
                   <div className="flex justify-end items-start gap-3">
+                    {/* 체크박스 (삭제 모드일 때만 표시, 왼쪽에 배치) */}
                     {isDeleteModeWriting && (
                       <div className="flex-shrink-0 pt-1">
-                        <CheckboxButton
-                          isSelected={isSelected}
-                          onToggle={() => {
+                        <button
+                          onClick={() => {
                             const newSet = new Set(selectedWritingIds);
                             if (isSelected) {
                               newSet.delete(record.id);
@@ -460,8 +757,19 @@ const QuestionDetail = () => {
                             }
                             setSelectedWritingIds(newSet);
                           }}
-                          ariaLabel={isSelected ? "선택 해제" : "선택"}
-                        />
+                          className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
+                            isSelected 
+                              ? 'bg-red-500 border-red-500' 
+                              : 'bg-white border-gray-300 hover:border-red-400'
+                          }`}
+                          aria-label={isSelected ? "선택 해제" : "선택"}
+                        >
+                          {isSelected && (
+                            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                        </button>
                       </div>
                     )}
                     <div 
@@ -495,9 +803,8 @@ const QuestionDetail = () => {
                     <>
                       <div className="flex justify-start">
                         <div 
-                          className="bg-white shadow-sm border border-gray-100 rounded-lg"
+                          className="bg-white shadow-sm border border-gray-100 rounded-lg w-full max-w-[343px]"
                           style={{ 
-                            width: '343px',
                             paddingLeft: '12px',
                             paddingTop: '12px',
                             paddingBottom: '16px',
@@ -571,16 +878,36 @@ const QuestionDetail = () => {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <div className="font-semibold text-gray-600" style={headerTextStyle}>채팅기록</div>
-                <DeleteModeToggle
-                  isDeleteMode={isDeleteModeQuestion}
-                  onToggle={() => {
+                <button
+                  onClick={() => {
                     setIsDeleteModeQuestion(!isDeleteModeQuestion);
                     if (isDeleteModeQuestion) {
                       setSelectedQuestionIds(new Set());
                     }
                   }}
-                  textStyle={smallTextStyle}
-                />
+                  className={`px-3 py-2 rounded-lg text-base font-semibold transition-colors flex items-center gap-1.5 shadow-md flex-shrink-0 ${
+                    isDeleteModeQuestion
+                      ? 'bg-red-500 hover:bg-red-600 active:bg-red-700 text-white'
+                      : 'bg-white hover:bg-gray-50 text-gray-700 border-2 border-gray-300'
+                  }`}
+                  style={smallTextStyle}
+                >
+                  {isDeleteModeQuestion ? (
+                    <>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                      취소
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      삭제
+                    </>
+                  )}
+                </button>
               </div>
               
               {isDeleteModeQuestion && (
@@ -611,33 +938,55 @@ const QuestionDetail = () => {
                     </button>
                   </div>
                   
-                  <DeleteActionBar
-                    selectedCount={selectedQuestionIds.size}
-                    onCancel={() => setSelectedQuestionIds(new Set())}
-                    onDelete={async () => {
-                      if (window.confirm(`선택한 ${selectedQuestionIds.size}개의 채팅 기록을 삭제하시겠습니까?`)) {
-                        try {
-                          const selectedQuestions = questions.filter((q) => selectedQuestionIds.has(q.id));
-                          const deletePromises = Array.from(selectedQuestionIds).map(id =>
-                            deleteQuestionMutation.mutateAsync(id)
-                          );
-                          await Promise.all(deletePromises);
-                          const questionContents = selectedQuestions.map((q) => q.content || "");
-                          removeChatMessagesFromStorage(Array.from(selectedQuestionIds), questionContents, "stage_chat_messages");
-                          removeChatMessagesFromStorage(Array.from(selectedQuestionIds), questionContents, "chat_messages");
-                          showSuccess("삭제 완료", `${selectedQuestionIds.size}개의 채팅 기록이 삭제되었습니다.`);
-                          setSelectedQuestionIds(new Set());
-                          setIsDeleteModeQuestion(false);
-                        } catch (error) {
-                          showError("삭제 실패", "채팅 기록 삭제에 실패했습니다.");
-                        }
-                      }
-                    }}
-                    isDeleting={deleteQuestionMutation.isPending}
-                    deleteMessage="채팅 기록"
-                    baseTextStyle={baseTextStyle}
-                    smallTextStyle={smallTextStyle}
-                  />
+                  {/* 하단 고정 삭제 액션 바 */}
+                  {selectedQuestionIds.size > 0 && (
+                    <div className="absolute bottom-20 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
+                      <div className="flex items-center justify-between px-3 py-2.5 gap-2">
+                        <span style={smallTextStyle} className="text-gray-700 font-medium flex-shrink-0">
+                          {selectedQuestionIds.size}개 선택
+                        </span>
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                          <button
+                            onClick={() => setSelectedQuestionIds(new Set())}
+                            className="px-3 py-1.5 text-gray-600 hover:text-gray-800 transition-colors text-sm whitespace-nowrap"
+                            style={smallTextStyle}
+                          >
+                            취소
+                          </button>
+                          <button
+                            onClick={async () => {
+                              if (window.confirm(`선택한 ${selectedQuestionIds.size}개의 채팅 기록을 삭제하시겠습니까?`)) {
+                                try {
+                                  const selectedQuestions = questions.filter((q: any) => selectedQuestionIds.has(q.id));
+                                  const deletePromises = Array.from(selectedQuestionIds).map(id =>
+                                    deleteQuestionMutation.mutateAsync(id)
+                                  );
+                                  await Promise.all(deletePromises);
+                                  // localStorage에서도 채팅 메시지 제거
+                                  const questionContents = selectedQuestions.map((q: any) => q.content || "");
+                                  removeChatMessagesFromStorage(Array.from(selectedQuestionIds), questionContents, "stage_chat_messages");
+                                  removeChatMessagesFromStorage(Array.from(selectedQuestionIds), questionContents, "chat_messages");
+                                  showSuccess("삭제 완료", `${selectedQuestionIds.size}개의 채팅 기록이 삭제되었습니다.`);
+                                  setSelectedQuestionIds(new Set());
+                                  setIsDeleteModeQuestion(false);
+                                } catch (error) {
+                                  showError("삭제 실패", "채팅 기록 삭제에 실패했습니다.");
+                                }
+                              }
+                            }}
+                            disabled={deleteQuestionMutation.isPending}
+                            className="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors disabled:opacity-50 font-medium flex items-center gap-1 whitespace-nowrap"
+                            style={smallTextStyle}
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                            삭제
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </>
               )}
               
@@ -653,11 +1002,11 @@ const QuestionDetail = () => {
                   >
                     {/* User Question */}
                     <div className="flex justify-end items-start gap-3">
+                      {/* 체크박스 (삭제 모드일 때만 표시, 왼쪽에 배치) */}
                       {isDeleteModeQuestion && (
                         <div className="flex-shrink-0 pt-1">
-                          <CheckboxButton
-                            isSelected={isSelected}
-                            onToggle={() => {
+                          <button
+                            onClick={() => {
                               const newSet = new Set(selectedQuestionIds);
                               if (isSelected) {
                                 newSet.delete(question.id);
@@ -666,8 +1015,19 @@ const QuestionDetail = () => {
                               }
                               setSelectedQuestionIds(newSet);
                             }}
-                            ariaLabel={isSelected ? "선택 해제" : "선택"}
-                          />
+                            className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
+                              isSelected 
+                                ? 'bg-red-500 border-red-500' 
+                                : 'bg-white border-gray-300 hover:border-red-400'
+                            }`}
+                            aria-label={isSelected ? "선택 해제" : "선택"}
+                          >
+                            {isSelected && (
+                              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
+                          </button>
                         </div>
                       )}
                       <div className={`max-w-[80%] ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-2xl bg-white text-gray-800 shadow-sm border border-gray-100 transition-all ${
@@ -815,8 +1175,8 @@ const QuestionDetail = () => {
               </div>
               
               {isDeleteMode && (
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="flex items-center gap-2 flex-shrink-0">
                     <input
                       type="checkbox"
                       checked={selectedExampleIds.size === exampleRecords.length && exampleRecords.length > 0}
@@ -831,56 +1191,60 @@ const QuestionDetail = () => {
                     />
                     <span style={smallTextStyle}>전체 선택</span>
                   </div>
-                  {selectedExampleIds.size > 0 && (
-                    <button
-                      onClick={async () => {
-                        if (window.confirm(`선택한 ${selectedExampleIds.size}개의 예문 기록을 삭제하시겠습니까?`)) {
-                          try {
-                            const deletePromises = Array.from(selectedExampleIds).map(id =>
-                              deleteExampleMutation.mutateAsync(id)
-                            );
-                            await Promise.all(deletePromises);
-                            // localStorage에서도 예문 제거
-                            removeExamplesFromStorage(Array.from(selectedExampleIds));
-                            showSuccess("삭제 완료", `${selectedExampleIds.size}개의 예문 기록이 삭제되었습니다.`);
-                            setSelectedExampleIds(new Set());
-                            setIsDeleteMode(false);
-                          } catch (error) {
-                            showError("삭제 실패", "예문 기록 삭제에 실패했습니다.");
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {selectedExampleIds.size > 0 && (
+                      <button
+                        onClick={async () => {
+                          if (window.confirm(`선택한 ${selectedExampleIds.size}개의 예문 기록을 삭제하시겠습니까?`)) {
+                            try {
+                              const deletePromises = Array.from(selectedExampleIds).map(id =>
+                                deleteExampleMutation.mutateAsync(id)
+                              );
+                              await Promise.all(deletePromises);
+                              // localStorage에서도 예문 제거
+                              removeExamplesFromStorage(Array.from(selectedExampleIds));
+                              showSuccess("삭제 완료", `${selectedExampleIds.size}개의 예문 기록이 삭제되었습니다.`);
+                              setSelectedExampleIds(new Set());
+                              setIsDeleteMode(false);
+                            } catch (error) {
+                              showError("삭제 실패", "예문 기록 삭제에 실패했습니다.");
+                            }
                           }
-                        }
-                      }}
-                      disabled={deleteExampleMutation.isPending}
-                      className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors disabled:opacity-50"
-                    >
-                      선택 삭제 ({selectedExampleIds.size})
-                    </button>
-                  )}
-                  {selectedExampleIds.size === exampleRecords.length && exampleRecords.length > 0 && (
-                    <button
-                      onClick={async () => {
-                        if (window.confirm(`모든 예문 기록(${exampleRecords.length}개)을 삭제하시겠습니까?`)) {
-                          try {
-                            const deletePromises = exampleRecords.map((ex: any) =>
-                              deleteExampleMutation.mutateAsync(ex.id)
-                            );
-                            await Promise.all(deletePromises);
-                            // localStorage에서도 모든 예문 제거
-                            removeExamplesFromStorage(exampleRecords.map((ex: any) => ex.id));
-                            showSuccess("삭제 완료", `모든 예문 기록(${exampleRecords.length}개)이 삭제되었습니다.`);
-                            setSelectedExampleIds(new Set());
-                            setIsDeleteMode(false);
-                          } catch (error) {
-                            showError("삭제 실패", "예문 기록 삭제에 실패했습니다.");
+                        }}
+                        disabled={deleteExampleMutation.isPending}
+                        className="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors disabled:opacity-50 text-sm whitespace-nowrap"
+                        style={smallTextStyle}
+                      >
+                        선택 삭제 ({selectedExampleIds.size})
+                      </button>
+                    )}
+                    {selectedExampleIds.size === exampleRecords.length && exampleRecords.length > 0 && (
+                      <button
+                        onClick={async () => {
+                          if (window.confirm(`모든 예문 기록(${exampleRecords.length}개)을 삭제하시겠습니까?`)) {
+                            try {
+                              const deletePromises = exampleRecords.map((ex: any) =>
+                                deleteExampleMutation.mutateAsync(ex.id)
+                              );
+                              await Promise.all(deletePromises);
+                              // localStorage에서도 모든 예문 제거
+                              removeExamplesFromStorage(exampleRecords.map((ex: any) => ex.id));
+                              showSuccess("삭제 완료", `모든 예문 기록(${exampleRecords.length}개)이 삭제되었습니다.`);
+                              setSelectedExampleIds(new Set());
+                              setIsDeleteMode(false);
+                            } catch (error) {
+                              showError("삭제 실패", "예문 기록 삭제에 실패했습니다.");
+                            }
                           }
-                        }
-                      }}
-                      disabled={deleteExampleMutation.isPending}
-                      className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50"
-                    >
-                      전체 삭제
-                    </button>
-                  )}
+                        }}
+                        disabled={deleteExampleMutation.isPending}
+                        className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50 text-sm whitespace-nowrap"
+                        style={smallTextStyle}
+                      >
+                        전체 삭제
+                      </button>
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -920,12 +1284,12 @@ const QuestionDetail = () => {
                   >
                     
                     {/* 레이아웃: 왼쪽(설명+예문+예문설명), 오른쪽(사진) */}
-                    <div className="flex gap-4 items-start">
+                    <div className="flex gap-2 sm:gap-4 items-start">
+                      {/* 체크박스 (삭제 모드일 때만 표시, 왼쪽에 배치) */}
                       {isDeleteMode && (
                         <div className="flex-shrink-0 pt-1">
-                          <CheckboxButton
-                            isSelected={isSelected}
-                            onToggle={() => {
+                          <button
+                            onClick={() => {
                               const newSet = new Set(selectedExampleIds);
                               if (isSelected) {
                                 newSet.delete(example.id);
@@ -934,8 +1298,19 @@ const QuestionDetail = () => {
                               }
                               setSelectedExampleIds(newSet);
                             }}
-                            ariaLabel={isSelected ? "선택 해제" : "선택"}
-                          />
+                            className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
+                              isSelected 
+                                ? 'bg-red-500 border-red-500' 
+                                : 'bg-white border-gray-300 hover:border-red-400'
+                            }`}
+                            aria-label={isSelected ? "선택 해제" : "선택"}
+                          >
+                            {isSelected && (
+                              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
+                          </button>
                         </div>
                       )}
                       {/* 왼쪽: 설명, 예문, 예문 설명 */}
@@ -963,9 +1338,8 @@ const QuestionDetail = () => {
                         {/* 예문 카드 */}
                         <div className="flex justify-start">
                           <div 
-                            className="bg-white shadow-sm border border-gray-100 rounded-lg relative"
+                            className="bg-white shadow-sm border border-gray-100 rounded-lg relative w-full max-w-[343px]"
                             style={{ 
-                              width: '343px',
                               paddingLeft: '12px',
                               paddingTop: '12px',
                               paddingBottom: '16px',
@@ -1108,7 +1482,7 @@ const QuestionDetail = () => {
                       {/* 오른쪽: 사진 */}
                       {exampleImage && (
                         <div className="flex-shrink-0">
-                          <div className="w-32 h-32 rounded-lg overflow-hidden border border-gray-200 shadow-sm">
+                          <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-lg overflow-hidden border border-gray-200 shadow-sm">
                             <img
                               src={exampleImage}
                               alt="예문 생성 이미지"
