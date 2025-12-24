@@ -540,7 +540,7 @@ const QuestionDetail = () => {
   return (
     <div className="w-full h-[calc(100vh-72px)] flex flex-col max-w-[440px] mx-auto bg-[#F7F8FB] shadow-[0_0_10px_0_rgba(0,0,0,0.1)] relative">
       {/* Header */}
-      <div className="p-3 sm:p-4 bg-white border-b border-gray-200 space-y-3 w-full max-w-full overflow-hidden box-border">
+      <div className={`${isLargeTextMode ? "p-5" : "p-4"} bg-white border-b border-gray-200 space-y-3 w-full max-w-full overflow-hidden box-border`}>
         <div className="flex items-center justify-between w-full min-w-0 gap-2">
           <button
             onClick={handleBack}
@@ -561,11 +561,11 @@ const QuestionDetail = () => {
             </svg>
           </button>
           <div className="text-center flex-1 min-w-0 overflow-hidden">
-            <h1 className="font-semibold text-gray-800 break-words text-lg" style={{wordBreak: 'break-word', overflowWrap: 'break-word'}}>
+            <h1 className="font-semibold text-gray-800 break-words" style={{...headerTextStyle, wordBreak: 'break-word', overflowWrap: 'break-word'}}>
               {formatDisplayDate(selectedDate || date)}
             </h1>
             {availableDates.length > 0 && (
-              <p className="text-gray-500 mt-1 break-words text-xs" style={{wordBreak: 'break-word', overflowWrap: 'break-word'}}>
+              <p className="text-gray-500 mt-1 break-words" style={{...xSmallTextStyle, wordBreak: 'break-word', overflowWrap: 'break-word'}}>
                 총 {availableDates.length}일의 기록
               </p>
             )}
@@ -576,11 +576,12 @@ const QuestionDetail = () => {
           <button
             onClick={() => previousDate && handleNavigateToDate(previousDate)}
             disabled={!previousDate}
-            className={`px-2 py-2 rounded-lg font-medium transition-colors flex-shrink-0 whitespace-nowrap text-sm ${
+            className={`px-2 py-2 rounded-lg font-medium transition-colors flex-shrink-0 whitespace-nowrap ${
               previousDate
                 ? "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 : "bg-gray-100 text-gray-400 cursor-not-allowed"
             }`}
+            style={smallTextStyle}
           >
             이전
           </button>
@@ -588,17 +589,18 @@ const QuestionDetail = () => {
             type="date"
             value={selectedDate || ""}
             onChange={handleDateInputChange}
-            className="flex-1 min-w-0 px-2 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00DAAA] text-sm box-border"
-            style={{width: '100%', maxWidth: '100%'}}
+            className="flex-1 min-w-0 px-2 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00DAAA] box-border"
+            style={{...smallTextStyle, width: '100%', maxWidth: '100%'}}
           />
           <button
             onClick={() => nextDate && handleNavigateToDate(nextDate)}
             disabled={!nextDate}
-            className={`px-2 py-2 rounded-lg font-medium transition-colors flex-shrink-0 whitespace-nowrap text-sm ${
+            className={`px-2 py-2 rounded-lg font-medium transition-colors flex-shrink-0 whitespace-nowrap ${
               nextDate
                 ? "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 : "bg-gray-100 text-gray-400 cursor-not-allowed"
             }`}
+            style={smallTextStyle}
           >
             다음
           </button>
@@ -617,7 +619,7 @@ const QuestionDetail = () => {
           <>
             <div className="space-y-2 w-full max-w-full overflow-hidden">
               <div className="flex items-center justify-between w-full min-w-0 gap-2">
-                <div className="font-semibold text-gray-600 flex-shrink-0 text-lg">하루한줄</div>
+                <div className="font-semibold text-gray-600 flex-shrink-0" style={headerTextStyle}>하루한줄</div>
                 <button
                   onClick={() => {
                     setIsDeleteModeWriting(!isDeleteModeWriting);
@@ -625,11 +627,12 @@ const QuestionDetail = () => {
                       setSelectedWritingIds(new Set());
                     }
                   }}
-                  className={`px-3 py-2 rounded-lg text-sm font-semibold transition-colors flex items-center gap-1.5 shadow-md flex-shrink-0 whitespace-nowrap ${
+                  className={`px-3 py-2 rounded-lg font-semibold transition-colors flex items-center gap-1.5 shadow-md flex-shrink-0 whitespace-nowrap ${
                     isDeleteModeWriting
                       ? 'bg-red-500 hover:bg-red-600 active:bg-red-700 text-white'
                       : 'bg-white hover:bg-gray-50 text-gray-700 border-2 border-gray-300'
                   }`}
+                  style={smallTextStyle}
                 >
                   {isDeleteModeWriting ? (
                     <>
@@ -673,7 +676,7 @@ const QuestionDetail = () => {
                            </svg>
                          )}
                        </div>
-                       <span className="text-gray-700 whitespace-nowrap text-sm">전체 선택</span>
+                       <span className="text-gray-700 whitespace-nowrap" style={smallTextStyle}>전체 선택</span>
                      </button>
                    </div>
                    
@@ -681,13 +684,14 @@ const QuestionDetail = () => {
                   {selectedWritingIds.size > 0 && (
                     <div className="absolute bottom-20 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50 w-full max-w-full overflow-hidden box-border">
                       <div className="flex items-center justify-between px-3 py-2.5 gap-2 w-full min-w-0">
-                        <span className="text-gray-700 font-medium flex-shrink-0 whitespace-nowrap text-sm">
+                        <span className="text-gray-700 font-medium flex-shrink-0 whitespace-nowrap" style={baseTextStyle}>
                           {selectedWritingIds.size}개 선택
                         </span>
                         <div className="flex items-center gap-1.5 flex-shrink-0">
                           <button
                             onClick={() => setSelectedWritingIds(new Set())}
-                            className="px-3 py-1.5 text-gray-600 hover:text-gray-800 transition-colors text-sm whitespace-nowrap"
+                            className="px-3 py-1.5 text-gray-600 hover:text-gray-800 transition-colors whitespace-nowrap"
+                            style={smallTextStyle}
                           >
                             취소
                           </button>
@@ -708,7 +712,8 @@ const QuestionDetail = () => {
                               }
                             }}
                             disabled={deleteWritingRecordMutation.isPending}
-                            className="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors disabled:opacity-50 font-medium flex items-center gap-1 whitespace-nowrap text-sm"
+                            className="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors disabled:opacity-50 font-medium flex items-center gap-1 whitespace-nowrap"
+                            style={smallTextStyle}
                           >
                             <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -768,17 +773,19 @@ const QuestionDetail = () => {
                       </div>
                     )}
                      <div 
-                       className={`max-w-[80%] min-w-0 ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-2xl bg-white text-gray-800 shadow-sm border border-gray-100 transition-all ${
-                         isDeleteModeWriting && isSelected ? 'bg-red-50 border-red-200' : ''
-                       }`}
-                       style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}
+                       className="max-w-[80%] min-w-0 px-4 py-3 rounded-2xl bg-white text-gray-800 shadow-sm border border-gray-100 transition-all"
+                       style={{ 
+                         wordBreak: 'break-word', 
+                         overflowWrap: 'break-word',
+                         ...(isDeleteModeWriting && isSelected ? { backgroundColor: '#FEE2E2', borderColor: '#FECACA' } : {})
+                       }}
                      >
                          <div className="space-y-2 w-full min-w-0">
                            {/* 오늘의 주제 - 불릿 있음 */}
                            {question && (
                              <div className="flex items-start min-w-0">
-                               <span className="text-gray-800 mr-2 flex-shrink-0" style={baseTextStyle}>•</span>
-                               <p className="text-gray-800 leading-relaxed flex-1 min-w-0 break-words" style={{...baseTextStyle, wordBreak: 'break-word', overflowWrap: 'break-word'}}>
+                               <span className="text-gray-800 mr-2 flex-shrink-0 text-base">•</span>
+                               <p className="text-gray-800 leading-relaxed flex-1 min-w-0 break-words text-base" style={{wordBreak: 'break-word', overflowWrap: 'break-word'}}>
                                  {question.koreanQuestion || question.englishQuestion}
                                </p>
                              </div>
@@ -786,7 +793,7 @@ const QuestionDetail = () => {
                            
                            {/* 내가 입력한 문장 - 불릿 없음 */}
                            <div className="min-w-0">
-                             <p className="text-gray-800 leading-relaxed break-words" style={{...baseTextStyle, wordBreak: 'break-word', overflowWrap: 'break-word'}}>
+                             <p className="text-gray-800 leading-relaxed break-words text-base" style={{wordBreak: 'break-word', overflowWrap: 'break-word'}}>
                                {record.original_text}
                              </p>
                            </div>
@@ -816,10 +823,10 @@ const QuestionDetail = () => {
                               marginTop: '-4px'
                             }}
                           >
-                            <span className="font-medium text-gray-900" style={correctionTextStyle}>문장 첨삭</span>
+                            <span className="font-medium text-gray-900 text-xs">문장 첨삭</span>
                           </div>
                           
-                          <p className="text-gray-800 font-semibold leading-relaxed" style={{...smallTextStyle, paddingLeft: '16px'}}>
+                          <p className="text-gray-800 font-semibold leading-relaxed text-sm" style={{paddingLeft: '16px'}}>
                             {record.processed_text}
                           </p>
                         </div>
@@ -828,19 +835,18 @@ const QuestionDetail = () => {
                       {/* 피드백 블록 */}
                       <div className="flex justify-start">
                         <div 
-                          className={`max-w-[80%] ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-lg bg-gray-50 text-gray-800 border border-gray-200 shadow-sm`}
+                          className="max-w-[80%] px-4 py-3 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 shadow-sm"
                         >
                           <div className="mb-2">
-                            <span className="font-medium text-gray-800" style={smallTextStyle}>학습 피드백:</span>
+                            <span className="font-medium text-gray-800 text-sm">학습 피드백:</span>
                           </div>
                           {feedback.length > 0 ? (
                             <div className="space-y-3">
                               {feedback.map((fb: string, idx: number) => (
                                 <p 
                                   key={idx} 
-                                  className="text-gray-700 leading-relaxed" 
+                                  className="text-gray-700 leading-relaxed text-sm" 
                                   style={{
-                                    ...feedbackTextStyle,
                                     whiteSpace: 'pre-wrap',
                                     wordBreak: 'keep-all',
                                     overflowWrap: 'break-word'
@@ -851,7 +857,7 @@ const QuestionDetail = () => {
                               ))}
                             </div>
                           ) : (
-                            <p className="text-gray-400 italic" style={feedbackTextStyle}>
+                            <p className="text-gray-400 italic text-sm">
                               피드백이 없습니다. 완벽해요!!
                             </p>
                           )}
@@ -873,7 +879,7 @@ const QuestionDetail = () => {
           <>
             <div className="space-y-2 w-full max-w-full overflow-hidden">
               <div className="flex items-center justify-between w-full min-w-0 gap-2">
-                <div className="font-semibold text-gray-600 flex-shrink-0 text-lg">채팅기록</div>
+                <div className="font-semibold text-gray-600 flex-shrink-0" style={headerTextStyle}>채팅기록</div>
                 <button
                   onClick={() => {
                     setIsDeleteModeQuestion(!isDeleteModeQuestion);
@@ -881,11 +887,12 @@ const QuestionDetail = () => {
                       setSelectedQuestionIds(new Set());
                     }
                   }}
-                  className={`px-3 py-2 rounded-lg text-sm font-semibold transition-colors flex items-center gap-1.5 shadow-md flex-shrink-0 whitespace-nowrap ${
+                  className={`px-3 py-2 rounded-lg font-semibold transition-colors flex items-center gap-1.5 shadow-md flex-shrink-0 whitespace-nowrap ${
                     isDeleteModeQuestion
                       ? 'bg-red-500 hover:bg-red-600 active:bg-red-700 text-white'
                       : 'bg-white hover:bg-gray-50 text-gray-700 border-2 border-gray-300'
                   }`}
+                  style={smallTextStyle}
                 >
                   {isDeleteModeQuestion ? (
                     <>
@@ -929,48 +936,50 @@ const QuestionDetail = () => {
                            </svg>
                          )}
                        </div>
-                       <span className="text-gray-700 whitespace-nowrap text-sm">전체 선택</span>
+                       <span className="text-gray-700 whitespace-nowrap" style={smallTextStyle}>전체 선택</span>
                      </button>
                    </div>
                    
                    {/* 하단 고정 삭제 액션 바 */}
                    {selectedQuestionIds.size > 0 && (
-                     <div className="absolute bottom-20 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50 w-full max-w-full overflow-hidden box-border">
-                       <div className="flex items-center justify-between px-3 py-2.5 gap-2 w-full min-w-0">
-                         <span className="text-gray-700 font-medium flex-shrink-0 whitespace-nowrap text-sm">
-                           {selectedQuestionIds.size}개 선택
-                         </span>
-                         <div className="flex items-center gap-1.5 flex-shrink-0">
-                           <button
-                             onClick={() => setSelectedQuestionIds(new Set())}
-                             className="px-3 py-1.5 text-gray-600 hover:text-gray-800 transition-colors text-sm whitespace-nowrap"
-                           >
-                             취소
-                           </button>
-                           <button
-                             onClick={async () => {
-                               if (window.confirm(`선택한 ${selectedQuestionIds.size}개의 채팅 기록을 삭제하시겠습니까?`)) {
-                                 try {
-                                   const selectedQuestions = questions.filter((q: any) => selectedQuestionIds.has(q.id));
-                                   const deletePromises = Array.from(selectedQuestionIds).map(id =>
-                                     deleteQuestionMutation.mutateAsync(id)
-                                   );
-                                   await Promise.all(deletePromises);
-                                   // localStorage에서도 채팅 메시지 제거
-                                   const questionContents = selectedQuestions.map((q: any) => q.content || "");
-                                   removeChatMessagesFromStorage(Array.from(selectedQuestionIds), questionContents, "stage_chat_messages");
-                                   removeChatMessagesFromStorage(Array.from(selectedQuestionIds), questionContents, "chat_messages");
-                                   showSuccess("삭제 완료", `${selectedQuestionIds.size}개의 채팅 기록이 삭제되었습니다.`);
-                                   setSelectedQuestionIds(new Set());
-                                   setIsDeleteModeQuestion(false);
-                                 } catch (error) {
-                                   showError("삭제 실패", "채팅 기록 삭제에 실패했습니다.");
-                                 }
-                               }
-                             }}
-                             disabled={deleteQuestionMutation.isPending}
-                             className="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors disabled:opacity-50 font-medium flex items-center gap-1 whitespace-nowrap text-sm"
-                           >
+                    <div className="absolute bottom-20 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50 w-full max-w-full overflow-hidden box-border">
+                      <div className="flex items-center justify-between px-3 py-2.5 gap-2 w-full min-w-0">
+                        <span className="text-gray-700 font-medium flex-shrink-0 whitespace-nowrap" style={baseTextStyle}>
+                          {selectedQuestionIds.size}개 선택
+                        </span>
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                          <button
+                            onClick={() => setSelectedQuestionIds(new Set())}
+                            className="px-3 py-1.5 text-gray-600 hover:text-gray-800 transition-colors whitespace-nowrap"
+                            style={smallTextStyle}
+                          >
+                            취소
+                          </button>
+                          <button
+                            onClick={async () => {
+                              if (window.confirm(`선택한 ${selectedQuestionIds.size}개의 채팅 기록을 삭제하시겠습니까?`)) {
+                                try {
+                                  const selectedQuestions = questions.filter((q: any) => selectedQuestionIds.has(q.id));
+                                  const deletePromises = Array.from(selectedQuestionIds).map(id =>
+                                    deleteQuestionMutation.mutateAsync(id)
+                                  );
+                                  await Promise.all(deletePromises);
+                                  // localStorage에서도 채팅 메시지 제거
+                                  const questionContents = selectedQuestions.map((q: any) => q.content || "");
+                                  removeChatMessagesFromStorage(Array.from(selectedQuestionIds), questionContents, "stage_chat_messages");
+                                  removeChatMessagesFromStorage(Array.from(selectedQuestionIds), questionContents, "chat_messages");
+                                  showSuccess("삭제 완료", `${selectedQuestionIds.size}개의 채팅 기록이 삭제되었습니다.`);
+                                  setSelectedQuestionIds(new Set());
+                                  setIsDeleteModeQuestion(false);
+                                } catch (error) {
+                                  showError("삭제 실패", "채팅 기록 삭제에 실패했습니다.");
+                                }
+                              }
+                            }}
+                            disabled={deleteQuestionMutation.isPending}
+                            className="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors disabled:opacity-50 font-medium flex items-center gap-1 whitespace-nowrap"
+                            style={smallTextStyle}
+                          >
                             <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                             </svg>
@@ -1150,7 +1159,7 @@ const QuestionDetail = () => {
           <>
             <div className="space-y-2 w-full max-w-full overflow-hidden">
               <div className="flex items-center justify-between w-full min-w-0 gap-2">
-                <div className="font-semibold text-gray-600 flex-shrink-0 text-lg">예문기록</div>
+                <div className="font-semibold text-gray-600 flex-shrink-0" style={headerTextStyle}>예문기록</div>
                 <button
                   onClick={() => {
                     setIsDeleteMode(!isDeleteMode);
@@ -1158,8 +1167,9 @@ const QuestionDetail = () => {
                       setSelectedExampleIds(new Set());
                     }
                   }}
-                  className="px-3 py-1.5 text-sm rounded-lg border transition-colors flex-shrink-0 whitespace-nowrap"
+                  className="px-3 py-1.5 rounded-lg border transition-colors flex-shrink-0 whitespace-nowrap"
                   style={{
+                    ...smallTextStyle,
                     backgroundColor: isDeleteMode ? '#EF4444' : 'white',
                     color: isDeleteMode ? 'white' : '#6B7280',
                     borderColor: isDeleteMode ? '#EF4444' : '#D1D5DB'
@@ -1184,7 +1194,7 @@ const QuestionDetail = () => {
                       }}
                       className="w-5 h-5 rounded border-gray-300 text-[#00DAAA] focus:ring-[#00DAAA]"
                     />
-                    <span className="text-sm">전체 선택</span>
+                    <span style={smallTextStyle}>전체 선택</span>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
                     {selectedExampleIds.size > 0 && (
@@ -1207,7 +1217,7 @@ const QuestionDetail = () => {
                           }
                         }}
                         disabled={deleteExampleMutation.isPending}
-                        className="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors disabled:opacity-50 text-sm whitespace-nowrap"
+                        className="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors disabled:opacity-50 whitespace-nowrap"
                         style={smallTextStyle}
                       >
                         선택 삭제 ({selectedExampleIds.size})
@@ -1233,7 +1243,7 @@ const QuestionDetail = () => {
                           }
                         }}
                         disabled={deleteExampleMutation.isPending}
-                        className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50 text-sm whitespace-nowrap"
+                        className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50 whitespace-nowrap"
                         style={smallTextStyle}
                       >
                         전체 삭제
@@ -1315,7 +1325,7 @@ const QuestionDetail = () => {
                         {/* 사진 설명 */}
                         {example.description && example.description !== "이미지에서 예문을 생성했어요." && (
                           <div className="flex justify-start">
-                            <div className="max-w-[80%] px-4 py-3 rounded-lg bg-white text-gray-900 border border-gray-200">
+                            <div className={`max-w-[80%] ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-lg bg-white text-gray-900 border border-gray-200`}>
                               <p 
                                 className="leading-relaxed whitespace-pre-wrap" 
                                 style={{ ...baseTextStyle, color: '#111827', lineHeight: '1.6' }}
