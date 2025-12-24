@@ -45,6 +45,9 @@ const StageChat = ({ onBack }: StageChatProps) => {
   const [isLargeTextMode] = useAtom(isLargeTextModeAtom);
   const [exampleScrollIndices, setExampleScrollIndices] = useState<Record<string, number>>({});
   const exampleScrollRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const [isPlayingTTS, setIsPlayingTTS] = useState(false);
+  const [playingExampleId, setPlayingExampleId] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // 대화 내역 저장/불러오기
   const getStorageKey = () => {
@@ -92,6 +95,21 @@ const StageChat = ({ onBack }: StageChatProps) => {
   const headerTextStyle: React.CSSProperties = { fontSize: `${headerFontSize}px` };
   const cropperRef = useRef<any>(null);
   const { showError, showSuccess } = useErrorHandler();
+
+  // 오디오 정리
+  const stopCurrentAudio = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      audioRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      stopCurrentAudio();
+    };
+  }, [stopCurrentAudio]);
 
   // 초기 AI 메시지 및 저장된 대화 내역 불러오기
   useEffect(() => {
@@ -703,13 +721,38 @@ const StageChat = ({ onBack }: StageChatProps) => {
 
                         {/* Controls */}
                         <div className="flex justify-center items-center gap-2 pt-4 border-t border-gray-200">
-                          <button className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors">
+                          <button
+                            onClick={() => {
+                              const scrollContainer = exampleScrollRefs.current[message.id];
+                              if (scrollContainer && message.examples) {
+                                const currentIndex = exampleScrollIndices[message.id] ?? 0;
+                                const newIndex = Math.max(0, currentIndex - 1);
+                                const cardWidth = 343 + 16; // 카드 너비 + gap
+                                scrollContainer.scrollTo({
+                                  left: newIndex * cardWidth,
+                                  behavior: 'smooth'
+                                });
+                              }
+                            }}
+                            disabled={message.examples && (exampleScrollIndices[message.id] ?? 0) === 0}
+                            className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                            aria-label="이전 예문"
+                          >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                             </svg>
                           </button>
                           <button
                             onClick={async () => {
+                              // 재생 중이면 중지
+                              const exampleId = `${message.id}-${exampleIndex}`;
+                              if (playingExampleId === exampleId && isPlayingTTS) {
+                                stopCurrentAudio();
+                                setPlayingExampleId(null);
+                                setIsPlayingTTS(false);
+                                return;
+                              }
+
                               // 안전한 접근을 위한 null 체크
                               if (!example?.dialogue?.A?.english || !example?.dialogue?.B?.english) {
                                 showError("재생 오류", "예문 데이터가 올바르지 않습니다.");
@@ -720,6 +763,10 @@ const StageChat = ({ onBack }: StageChatProps) => {
                               const dialogueB = example.dialogue.B.english;
                               const textToRead = `${dialogueA}. ${dialogueB}`;
                               
+                              stopCurrentAudio();
+                              setPlayingExampleId(exampleId);
+                              setIsPlayingTTS(true);
+                              
                               try {
                                 const response = await fetch(API_ENDPOINTS.tts, {
                                   method: "POST",
@@ -729,25 +776,73 @@ const StageChat = ({ onBack }: StageChatProps) => {
                                 });
                                 const { audioContent } = await response.json();
                                 const audio = new Audio(`data:audio/mp3;base64,${audioContent}`);
+                                audioRef.current = audio;
+                                
+                                audio.onended = () => {
+                                  setPlayingExampleId(null);
+                                  setIsPlayingTTS(false);
+                                  audioRef.current = null;
+                                };
+                                
+                                audio.onerror = () => {
+                                  setPlayingExampleId(null);
+                                  setIsPlayingTTS(false);
+                                  audioRef.current = null;
+                                  showError("재생 오류", "오디오 재생 중 오류가 발생했습니다.");
+                                };
+                                
                                 audio.oncanplaythrough = async () => {
                                   try {
                                     await audio.play();
                                   } catch (e) {
                                     console.error("재생 실패:", e);
+                                    setPlayingExampleId(null);
+                                    setIsPlayingTTS(false);
+                                    audioRef.current = null;
                                   }
                                 };
                                 audio.load();
                               } catch (error) {
                                 console.error("TTS 오류:", error);
+                                setPlayingExampleId(null);
+                                setIsPlayingTTS(false);
+                                showError("TTS 오류", "음성 생성 중 오류가 발생했습니다.");
                               }
                             }}
-                            className="w-10 h-10 rounded-full flex items-center justify-center transition-colors shadow-md bg-[#00DAAA] hover:bg-[#00C299]"
+                            className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors shadow-md ${
+                              playingExampleId === `${message.id}-${exampleIndex}` && isPlayingTTS
+                                ? "bg-[#FF6B35] hover:bg-[#E55A2B]"
+                                : "bg-[#00DAAA] hover:bg-[#00C299]"
+                            }`}
+                            aria-label={playingExampleId === `${message.id}-${exampleIndex}` && isPlayingTTS ? "재생 중지" : "음성 재생"}
                           >
-                            <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                              <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
-                            </svg>
+                            {playingExampleId === `${message.id}-${exampleIndex}` && isPlayingTTS ? (
+                              <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
+                              </svg>
+                            ) : (
+                              <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
+                              </svg>
+                            )}
                           </button>
-                          <button className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors">
+                          <button
+                            onClick={() => {
+                              const scrollContainer = exampleScrollRefs.current[message.id];
+                              if (scrollContainer && message.examples) {
+                                const currentIndex = exampleScrollIndices[message.id] ?? 0;
+                                const newIndex = Math.min(message.examples.length - 1, currentIndex + 1);
+                                const cardWidth = 343 + 16; // 카드 너비 + gap
+                                scrollContainer.scrollTo({
+                                  left: newIndex * cardWidth,
+                                  behavior: 'smooth'
+                                });
+                              }
+                            }}
+                            disabled={message.examples && (exampleScrollIndices[message.id] ?? 0) >= message.examples.length - 1}
+                            className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                            aria-label="다음 예문"
+                          >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                             </svg>

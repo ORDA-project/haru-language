@@ -157,6 +157,8 @@ const StageResult = ({
   const [windowWidth, setWindowWidth] = useState(() => typeof window !== 'undefined' ? window.innerWidth : 440);
   const { showError, showSuccess } = useErrorHandler();
   const isInitializedRef = useRef(false);
+  const [groupScrollIndices, setGroupScrollIndices] = useState<Record<number, number>>({});
+  const groupScrollRefs = useRef<Record<number, HTMLDivElement | null>>({});
 
   // 화면 크기 감지 (throttling + requestAnimationFrame으로 성능 최적화)
   useEffect(() => {
@@ -825,119 +827,199 @@ const StageResult = ({
             <React.Fragment key={`group-${groupIndex}`}>
               {/* Example Card */}
               <div className="flex justify-start">
-                <div 
-                  className="max-w-[90%] w-full bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden" 
-                  style={{ 
-                    width: `${EXAMPLE_CARD_WIDTH}px`, 
-                    paddingLeft: '12px', 
-                    paddingTop: '12px', 
-                    paddingBottom: '16px', 
-                    paddingRight: '16px' 
-                  }}
-                >
-                  {/* Context Badge and Dots */}
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="inline-block bg-[#B8E6D3] rounded-full px-2 py-0.5 border border-[#B8E6D3]" style={{ marginLeft: '-4px', marginTop: '-4px' }}>
-                      <span className="font-medium text-gray-900" style={textStyles.xSmall}>예문 상황</span>
-                    </div>
-                    <div className="flex items-center" style={{ gap: '4px' }}>
-                      {[0, 1, 2].map((dotIdx) => (
+                <div className="flex flex-col justify-start w-full">
+                  {/* 스크롤 컨테이너 */}
+                  <div
+                    ref={(el) => {
+                      groupScrollRefs.current[groupIndex] = el;
+                    }}
+                    data-example-scroll-container
+                    className="flex flex-row overflow-x-auto gap-4 pb-2"
+                    style={{
+                      scrollSnapType: 'x mandatory',
+                      WebkitOverflowScrolling: 'touch',
+                      scrollbarWidth: 'none',
+                      msOverflowStyle: 'none',
+                    }}
+                    onScroll={(e) => {
+                      const container = e.currentTarget;
+                      const scrollLeft = container.scrollLeft;
+                      const cardWidth = EXAMPLE_CARD_WIDTH + 16; // 카드 너비 + gap
+                      const currentIndex = Math.round(scrollLeft / cardWidth);
+                      setGroupScrollIndices((prev) => ({
+                        ...prev,
+                        [groupIndex]: Math.min(currentIndex, group.length - 1),
+                      }));
+                      // groupCurrentIndices도 동기화
+                      setGroupCurrentIndices((prev) => ({
+                        ...prev,
+                        [groupIndex]: Math.min(currentIndex, group.length - 1),
+                      }));
+                    }}
+                  >
+                    <style>{`
+                      div[data-example-scroll-container]::-webkit-scrollbar {
+                        display: none;
+                      }
+                    `}</style>
+                    {group.map((groupExample, exampleIndex) => {
+                      const currentScrollIndex = groupScrollIndices[groupIndex] ?? currentIdx;
+                      return (
                         <div
-                          key={dotIdx}
-                          onClick={() => dotIdx < group.length && handleDotClick(groupIndex, dotIdx)}
+                          key={groupExample.id || exampleIndex}
+                          className="flex-shrink-0 bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden"
                           style={{
-                            width: '6px',
-                            height: '6px',
-                            borderRadius: '50%',
-                            backgroundColor: dotIdx === currentIdx && dotIdx < group.length ? '#00DAAA' : '#D1D5DB',
-                            cursor: dotIdx < group.length ? 'pointer' : 'default'
+                            width: `${EXAMPLE_CARD_WIDTH}px`,
+                            paddingLeft: '12px',
+                            paddingTop: '12px',
+                            paddingBottom: '16px',
+                            paddingRight: '16px',
+                            scrollSnapAlign: 'start',
                           }}
-                          aria-label={`예문 ${dotIdx + 1}`}
-                        />
-                      ))}
-                    </div>
-                  </div>
+                        >
+                          {/* Context Badge and Dots */}
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="inline-block bg-[#B8E6D3] rounded-full px-2 py-0.5 border border-[#B8E6D3]" style={{ marginLeft: '-4px', marginTop: '-4px' }}>
+                              <span className="font-medium text-gray-900" style={textStyles.xSmall}>예문 상황</span>
+                            </div>
+                            <div className="flex items-center" style={{ gap: '4px' }}>
+                              {[0, 1, 2].map((dotIdx) => (
+                                <div
+                                  key={dotIdx}
+                                  onClick={() => {
+                                    if (dotIdx < group.length) {
+                                      const scrollContainer = groupScrollRefs.current[groupIndex];
+                                      if (scrollContainer) {
+                                        const cardWidth = EXAMPLE_CARD_WIDTH + 16;
+                                        scrollContainer.scrollTo({
+                                          left: dotIdx * cardWidth,
+                                          behavior: 'smooth'
+                                        });
+                                      }
+                                      handleDotClick(groupIndex, dotIdx);
+                                    }
+                                  }}
+                                  style={{
+                                    width: '6px',
+                                    height: '6px',
+                                    borderRadius: '50%',
+                                    backgroundColor: dotIdx === currentScrollIndex && dotIdx < group.length ? '#00DAAA' : '#D1D5DB',
+                                    cursor: dotIdx < group.length ? 'pointer' : 'default'
+                                  }}
+                                  aria-label={`예문 ${dotIdx + 1}`}
+                                />
+                              ))}
+                            </div>
+                          </div>
 
-                  {/* Dialogue */}
-                  <div className="space-y-2 mb-3" style={{ paddingLeft: '8px' }}>
-                    {/* A's dialogue */}
-                    <div className="flex items-start space-x-2">
-                      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0 bg-[#B8E6D3]`} style={textStyles.xSmall}>
-                        A
-                      </div>
-                      <div className="flex-1" style={{ paddingLeft: '4px', marginTop: '-2px' }}>
-                        <p className="font-medium text-gray-900 leading-relaxed" style={textStyles.small}>
-                          {example.dialogue?.A?.english || "예문 내용"}
-                        </p>
-                        {example.dialogue?.A?.korean && (
-                          <p className="text-gray-600 leading-relaxed mt-1" style={textStyles.small}>
-                            {example.dialogue.A.korean}
-                          </p>
-                        )}
-                      </div>
-                    </div>
+                          {/* Dialogue */}
+                          <div className="space-y-2 mb-3" style={{ paddingLeft: '8px' }}>
+                            {/* A's dialogue */}
+                            <div className="flex items-start space-x-2">
+                              <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0 bg-[#B8E6D3]`} style={textStyles.xSmall}>
+                                A
+                              </div>
+                              <div className="flex-1" style={{ paddingLeft: '4px', marginTop: '-2px' }}>
+                                <p className="font-medium text-gray-900 leading-relaxed" style={textStyles.small}>
+                                  {groupExample.dialogue?.A?.english || "예문 내용"}
+                                </p>
+                                {groupExample.dialogue?.A?.korean && (
+                                  <p className="text-gray-600 leading-relaxed mt-1" style={textStyles.small}>
+                                    {groupExample.dialogue.A.korean}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
 
-                    {/* B's dialogue */}
-                    <div className="flex items-start space-x-2">
-                      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0 bg-[#B8E6D3]`} style={textStyles.xSmall}>
-                        B
-                      </div>
-                      <div className="flex-1" style={{ paddingLeft: '4px', marginTop: '-2px' }}>
-                        <p className="font-medium text-gray-900 leading-relaxed" style={textStyles.small}>
-                          {example.dialogue?.B?.english || "예문 내용"}
-                        </p>
-                        {example.dialogue?.B?.korean && (
-                          <p className="text-gray-600 leading-relaxed mt-1" style={textStyles.small}>
-                            {example.dialogue.B.korean}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
+                            {/* B's dialogue */}
+                            <div className="flex items-start space-x-2">
+                              <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0 bg-[#B8E6D3]`} style={textStyles.xSmall}>
+                                B
+                              </div>
+                              <div className="flex-1" style={{ paddingLeft: '4px', marginTop: '-2px' }}>
+                                <p className="font-medium text-gray-900 leading-relaxed" style={textStyles.small}>
+                                  {groupExample.dialogue?.B?.english || "예문 내용"}
+                                </p>
+                                {groupExample.dialogue?.B?.korean && (
+                                  <p className="text-gray-600 leading-relaxed mt-1" style={textStyles.small}>
+                                    {groupExample.dialogue.B.korean}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
 
-                  {/* Controls */}
-                  <div className="flex justify-center items-center gap-2 pt-4 border-t border-gray-200">
-                    <button
-                      onClick={() => handlePreviousInGroup(groupIndex)}
-                      disabled={currentIdx === 0}
-                      className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                      aria-label="이전 예문"
-                    >
-                      <ChevronLeft className="w-5 h-5" />
-                    </button>
-                    <button
-                      onClick={() => handlePlayExample(example)}
-                      className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors shadow-md ${
-                        isCardPlaying
-                          ? "bg-[#FF6B35] hover:bg-[#E55A2B]"
-                          : "bg-[#00DAAA] hover:bg-[#00C299]"
-                      }`}
-                      aria-label={isCardPlaying ? "재생 중지" : "음성 재생"}
-                    >
-                      {isCardPlaying ? (
-                        <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
-                        </svg>
-                      ) : (
-                        <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
-                        </svg>
-                      )}
-                    </button>
-                    <button
-                      onClick={() => handleNextInGroup(groupIndex)}
-                      disabled={currentIdx >= group.length - 1}
-                      className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                      aria-label="다음 예문"
-                    >
-                      <ChevronRight className="w-5 h-5" />
-                    </button>
+                          {/* Controls */}
+                          <div className="flex justify-center items-center gap-2 pt-4 border-t border-gray-200">
+                            <button
+                              onClick={() => {
+                                const scrollContainer = groupScrollRefs.current[groupIndex];
+                                if (scrollContainer) {
+                                  const currentScrollIndex = groupScrollIndices[groupIndex] ?? currentIdx;
+                                  const newIndex = Math.max(0, currentScrollIndex - 1);
+                                  const cardWidth = EXAMPLE_CARD_WIDTH + 16;
+                                  scrollContainer.scrollTo({
+                                    left: newIndex * cardWidth,
+                                    behavior: 'smooth'
+                                  });
+                                }
+                                handlePreviousInGroup(groupIndex);
+                              }}
+                              disabled={currentIdx === 0}
+                              className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                              aria-label="이전 예문"
+                            >
+                              <ChevronLeft className="w-5 h-5" />
+                            </button>
+                            <button
+                              onClick={() => handlePlayExample(groupExample)}
+                              className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors shadow-md ${
+                                playingExampleId === groupExample.id
+                                  ? "bg-[#FF6B35] hover:bg-[#E55A2B]"
+                                  : "bg-[#00DAAA] hover:bg-[#00C299]"
+                              }`}
+                              aria-label={playingExampleId === groupExample.id ? "재생 중지" : "음성 재생"}
+                            >
+                              {playingExampleId === groupExample.id ? (
+                                <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                  <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
+                                </svg>
+                              ) : (
+                                <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                  <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
+                                </svg>
+                              )}
+                            </button>
+                            <button
+                              onClick={() => {
+                                const scrollContainer = groupScrollRefs.current[groupIndex];
+                                if (scrollContainer) {
+                                  const currentScrollIndex = groupScrollIndices[groupIndex] ?? currentIdx;
+                                  const newIndex = Math.min(group.length - 1, currentScrollIndex + 1);
+                                  const cardWidth = EXAMPLE_CARD_WIDTH + 16;
+                                  scrollContainer.scrollTo({
+                                    left: newIndex * cardWidth,
+                                    behavior: 'smooth'
+                                  });
+                                }
+                                handleNextInGroup(groupIndex);
+                              }}
+                              disabled={currentIdx >= group.length - 1}
+                              className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                              aria-label="다음 예문"
+                            >
+                              <ChevronRight className="w-5 h-5" />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
 
               {/* 상황 설명 - 예문 카드 아래에 표시 */}
-              {example.context && (
+              {group[groupScrollIndices[groupIndex] ?? currentIdx]?.context && (
                 <div className="flex justify-start">
                   <div 
                     className={`max-w-[80%] ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-lg bg-gray-50 text-gray-700 border border-gray-200`}
@@ -946,7 +1028,7 @@ const StageResult = ({
                     }}
                   >
                     <p className="leading-relaxed whitespace-pre-wrap" style={{ ...textStyles.base, color: '#374151', lineHeight: '1.6' }}>
-                      {formatContextText(example.context)}
+                      {formatContextText(group[groupScrollIndices[groupIndex] ?? currentIdx].context)}
                     </p>
                   </div>
                 </div>
@@ -1049,117 +1131,193 @@ const StageResult = ({
                 <React.Fragment>
                   {/* Example Card */}
                   <div className="flex justify-start">
-                    <div 
-                      className="max-w-[90%] w-full bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden" 
-                      style={{ 
-                        width: `${EXAMPLE_CARD_WIDTH}px`, 
-                        paddingLeft: '12px', 
-                        paddingTop: '12px', 
-                        paddingBottom: '16px', 
-                        paddingRight: '16px' 
-                      }}
-                    >
-                      {/* Context Badge and Dots */}
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="inline-block bg-[#B8E6D3] rounded-full px-2 py-0.5 border border-[#B8E6D3]" style={{ marginLeft: '-4px', marginTop: '-4px' }}>
-                          <span className="font-medium text-gray-900" style={textStyles.xSmall}>예문 상황</span>
-                        </div>
-                        <div className="flex items-center" style={{ gap: '4px' }}>
-                          {[0, 1, 2].map((dotIdx) => (
+                    <div className="flex flex-col justify-start w-full">
+                      {/* 스크롤 컨테이너 */}
+                      <div
+                        ref={(el) => {
+                          groupScrollRefs.current[groupIndex] = el;
+                        }}
+                        data-example-scroll-container
+                        className="flex flex-row overflow-x-auto gap-4 pb-2"
+                        style={{
+                          scrollSnapType: 'x mandatory',
+                          WebkitOverflowScrolling: 'touch',
+                          scrollbarWidth: 'none',
+                          msOverflowStyle: 'none',
+                        }}
+                        onScroll={(e) => {
+                          const container = e.currentTarget;
+                          const scrollLeft = container.scrollLeft;
+                          const cardWidth = EXAMPLE_CARD_WIDTH + 16; // 카드 너비 + gap
+                          const currentIndex = Math.round(scrollLeft / cardWidth);
+                          setGroupScrollIndices((prev) => ({
+                            ...prev,
+                            [groupIndex]: Math.min(currentIndex, group.length - 1),
+                          }));
+                          // groupCurrentIndices도 동기화
+                          setGroupCurrentIndices((prev) => ({
+                            ...prev,
+                            [groupIndex]: Math.min(currentIndex, group.length - 1),
+                          }));
+                        }}
+                      >
+                        <style>{`
+                          div[data-example-scroll-container]::-webkit-scrollbar {
+                            display: none;
+                          }
+                        `}</style>
+                        {group.map((groupExample, exampleIndex) => {
+                          const currentScrollIndex = groupScrollIndices[groupIndex] ?? currentIdx;
+                          return (
                             <div
-                              key={dotIdx}
-                              onClick={() => dotIdx < group.length && handleDotClick(groupIndex, dotIdx)}
+                              key={groupExample.id || exampleIndex}
+                              className="flex-shrink-0 bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden"
                               style={{
-                                width: '6px',
-                                height: '6px',
-                                borderRadius: '50%',
-                                backgroundColor: dotIdx === currentIdx && dotIdx < group.length ? '#00DAAA' : '#D1D5DB',
-                                cursor: dotIdx < group.length ? 'pointer' : 'default'
+                                width: `${EXAMPLE_CARD_WIDTH}px`,
+                                paddingLeft: '12px',
+                                paddingTop: '12px',
+                                paddingBottom: '16px',
+                                paddingRight: '16px',
+                                scrollSnapAlign: 'start',
                               }}
-                              aria-label={`예문 ${dotIdx + 1}`}
-                            />
-                          ))}
-                        </div>
-                      </div>
+                            >
+                              {/* Context Badge and Dots */}
+                              <div className="flex items-center justify-between mb-3">
+                                <div className="inline-block bg-[#B8E6D3] rounded-full px-2 py-0.5 border border-[#B8E6D3]" style={{ marginLeft: '-4px', marginTop: '-4px' }}>
+                                  <span className="font-medium text-gray-900" style={textStyles.xSmall}>예문 상황</span>
+                                </div>
+                                <div className="flex items-center" style={{ gap: '4px' }}>
+                                  {[0, 1, 2].map((dotIdx) => (
+                                    <div
+                                      key={dotIdx}
+                                      onClick={() => {
+                                        if (dotIdx < group.length) {
+                                          const scrollContainer = groupScrollRefs.current[groupIndex];
+                                          if (scrollContainer) {
+                                            const cardWidth = EXAMPLE_CARD_WIDTH + 16;
+                                            scrollContainer.scrollTo({
+                                              left: dotIdx * cardWidth,
+                                              behavior: 'smooth'
+                                            });
+                                          }
+                                          handleDotClick(groupIndex, dotIdx);
+                                        }
+                                      }}
+                                      style={{
+                                        width: '6px',
+                                        height: '6px',
+                                        borderRadius: '50%',
+                                        backgroundColor: dotIdx === currentScrollIndex && dotIdx < group.length ? '#00DAAA' : '#D1D5DB',
+                                        cursor: dotIdx < group.length ? 'pointer' : 'default'
+                                      }}
+                                      aria-label={`예문 ${dotIdx + 1}`}
+                                    />
+                                  ))}
+                                </div>
+                              </div>
 
-                      {/* Dialogue */}
-                      <div className="space-y-2 mb-3" style={{ paddingLeft: '8px' }}>
-                        {/* A's dialogue */}
-                        <div className="flex items-start space-x-2">
-                          <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0 bg-[#B8E6D3]`} style={textStyles.xSmall}>
-                            A
-                          </div>
-                          <div className="flex-1" style={{ paddingLeft: '4px', marginTop: '-2px' }}>
-                            <p className="font-medium text-gray-900 leading-relaxed" style={textStyles.small}>
-                              {example.dialogue?.A?.english || "예문 내용"}
-                            </p>
-                            <p className="text-gray-600 leading-relaxed mt-1" style={textStyles.small}>
-                              {example.dialogue?.A?.korean || "예문 한글버전"}
-                            </p>
-                          </div>
-                        </div>
+                              {/* Dialogue */}
+                              <div className="space-y-2 mb-3" style={{ paddingLeft: '8px' }}>
+                                {/* A's dialogue */}
+                                <div className="flex items-start space-x-2">
+                                  <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0 bg-[#B8E6D3]`} style={textStyles.xSmall}>
+                                    A
+                                  </div>
+                                  <div className="flex-1" style={{ paddingLeft: '4px', marginTop: '-2px' }}>
+                                    <p className="font-medium text-gray-900 leading-relaxed" style={textStyles.small}>
+                                      {groupExample.dialogue?.A?.english || "예문 내용"}
+                                    </p>
+                                    {groupExample.dialogue?.A?.korean && (
+                                      <p className="text-gray-600 leading-relaxed mt-1" style={textStyles.small}>
+                                        {groupExample.dialogue.A.korean}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
 
-                        {/* B's dialogue */}
-                        <div className="flex items-start space-x-2">
-                          <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0 bg-[#00DAAA]`} style={textStyles.xSmall}>
-                            B
-                          </div>
-                          <div className="flex-1" style={{ paddingLeft: '4px', marginTop: '-2px' }}>
-                            <p className="font-medium text-gray-900 leading-relaxed" style={textStyles.small}>
-                              {example.dialogue?.B?.english || "예문 내용"}
-                            </p>
-                            <p className="text-gray-600 leading-relaxed mt-1" style={textStyles.small}>
-                              {example.dialogue?.B?.korean || "예문 한글버전"}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
+                                {/* B's dialogue */}
+                                <div className="flex items-start space-x-2">
+                                  <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0 bg-[#B8E6D3]`} style={textStyles.xSmall}>
+                                    B
+                                  </div>
+                                  <div className="flex-1" style={{ paddingLeft: '4px', marginTop: '-2px' }}>
+                                    <p className="font-medium text-gray-900 leading-relaxed" style={textStyles.small}>
+                                      {groupExample.dialogue?.B?.english || "예문 내용"}
+                                    </p>
+                                    {groupExample.dialogue?.B?.korean && (
+                                      <p className="text-gray-600 leading-relaxed mt-1" style={textStyles.small}>
+                                        {groupExample.dialogue.B.korean}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
 
-                      {/* Navigation and Play Button */}
-                      <div className="flex items-center justify-between">
-                        <button
-                          onClick={() => handlePreviousInGroup(groupIndex)}
-                          disabled={currentIdx === 0}
-                          className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
-                            currentIdx === 0
-                              ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                              : "bg-gray-100 hover:bg-gray-200 text-gray-600"
-                          }`}
-                          aria-label="이전 예문"
-                        >
-                          <ChevronLeft className="w-5 h-5" />
-                        </button>
-                        <button
-                          onClick={() => handlePlayExample(example)}
-                          className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors shadow-md ${
-                            playingExampleId === example.id
-                              ? "bg-[#FF6B35] hover:bg-[#E55A2B]"
-                              : "bg-[#00DAAA] hover:bg-[#00C299]"
-                          }`}
-                          aria-label={playingExampleId === example.id ? "재생 중지" : "음성 재생"}
-                        >
-                          {playingExampleId === example.id ? (
-                            <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                              <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
-                            </svg>
-                          ) : (
-                            <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                              <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
-                            </svg>
-                          )}
-                        </button>
-                        <button
-                          onClick={() => handleNextInGroup(groupIndex)}
-                          disabled={currentIdx >= group.length - 1}
-                          className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
-                            currentIdx >= group.length - 1
-                              ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                              : "bg-gray-100 hover:bg-gray-200 text-gray-600"
-                          }`}
-                          aria-label="다음 예문"
-                        >
-                          <ChevronRight className="w-5 h-5" />
-                        </button>
+                              {/* Controls */}
+                              <div className="flex justify-center items-center gap-2 pt-4 border-t border-gray-200">
+                                <button
+                                  onClick={() => {
+                                    const scrollContainer = groupScrollRefs.current[groupIndex];
+                                    if (scrollContainer) {
+                                      const currentScrollIndex = groupScrollIndices[groupIndex] ?? currentIdx;
+                                      const newIndex = Math.max(0, currentScrollIndex - 1);
+                                      const cardWidth = EXAMPLE_CARD_WIDTH + 16;
+                                      scrollContainer.scrollTo({
+                                        left: newIndex * cardWidth,
+                                        behavior: 'smooth'
+                                      });
+                                    }
+                                    handlePreviousInGroup(groupIndex);
+                                  }}
+                                  disabled={currentIdx === 0}
+                                  className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                                  aria-label="이전 예문"
+                                >
+                                  <ChevronLeft className="w-5 h-5" />
+                                </button>
+                                <button
+                                  onClick={() => handlePlayExample(groupExample)}
+                                  className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors shadow-md ${
+                                    playingExampleId === groupExample.id
+                                      ? "bg-[#FF6B35] hover:bg-[#E55A2B]"
+                                      : "bg-[#00DAAA] hover:bg-[#00C299]"
+                                  }`}
+                                  aria-label={playingExampleId === groupExample.id ? "재생 중지" : "음성 재생"}
+                                >
+                                  {playingExampleId === groupExample.id ? (
+                                    <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                      <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
+                                    </svg>
+                                  ) : (
+                                    <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                      <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
+                                    </svg>
+                                  )}
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    const scrollContainer = groupScrollRefs.current[groupIndex];
+                                    if (scrollContainer) {
+                                      const currentScrollIndex = groupScrollIndices[groupIndex] ?? currentIdx;
+                                      const newIndex = Math.min(group.length - 1, currentScrollIndex + 1);
+                                      const cardWidth = EXAMPLE_CARD_WIDTH + 16;
+                                      scrollContainer.scrollTo({
+                                        left: newIndex * cardWidth,
+                                        behavior: 'smooth'
+                                      });
+                                    }
+                                    handleNextInGroup(groupIndex);
+                                  }}
+                                  disabled={currentIdx >= group.length - 1}
+                                  className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                                  aria-label="다음 예문"
+                                >
+                                  <ChevronRight className="w-5 h-5" />
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   </div>
