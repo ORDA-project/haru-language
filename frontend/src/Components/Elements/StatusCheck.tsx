@@ -200,7 +200,7 @@ const StatusCheck = ({ userId: _userId }: StatusProps) => {
             </div>
           </div>
         ) : (
-          progressRecords.map((record, index) => (
+          progressRecords.slice(0, 3).map((record, index) => (
             <div
               key={record.id || index}
               onClick={() => handleRecordClick(record)}
