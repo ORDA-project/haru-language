@@ -1157,21 +1157,19 @@ const StageResult = ({
 
       </div>
 
-      {/* 카메라 버튼 - 모바일 창 안에 배치 (스크롤 영역 내부, 마지막에) */}
-      <div className={`${isLargeTextMode ? "p-5" : "p-4"} pb-20`}>
-        <div className="flex justify-end">
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="w-10 h-10 bg-[#00DAAA] hover:bg-[#00C495] rounded-full flex items-center justify-center shadow-lg transition-colors"
-            aria-label="카메라 열기"
-          >
-            <Icons.camera
-              className="w-5 h-5"
-              stroke="white"
-              strokeOpacity="1"
-            />
-          </button>
-        </div>
+      {/* 카메라 버튼 - 고정 위치 */}
+      <div className="fixed bottom-24 right-4 max-w-[440px] mx-auto w-full flex justify-end pr-4 z-40">
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="w-12 h-12 bg-[#00DAAA] hover:bg-[#00C495] rounded-full flex items-center justify-center shadow-lg transition-colors"
+          aria-label="카메라 열기"
+        >
+          <Icons.camera
+            className="w-6 h-6"
+            stroke="white"
+            strokeOpacity="1"
+          />
+        </button>
       </div>
 
       {/* Image Upload Modal */}
@@ -1213,17 +1211,18 @@ const StageResult = ({
             </div>
 
             {/* Content */}
-            <div className="flex-1 flex flex-col p-4">
+            <div className="flex-1 flex flex-col p-4 overflow-y-auto">
               <div className="mb-4">
                 <p className="font-medium text-gray-800 text-center" style={textStyles.base}>
                   어떤 문장을 기반으로 예문을 생성하고 싶으신가요?
                 </p>
               </div>
 
-              <div className="flex-1 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden relative">
+              <div className="flex-1 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden relative min-h-0" style={{ touchAction: 'none' }}>
                 <style>{`
                   .cropper-container {
                     overflow: hidden !important;
+                    touch-action: none !important;
                   }
                   .cropper-view-box {
                     outline: 2px solid #00DAAA !important;
@@ -1235,10 +1234,43 @@ const StageResult = ({
                   .cropper-modal {
                     background-color: rgba(0, 0, 0, 0.5) !important;
                   }
+                  .cropper-drag-box {
+                    cursor: move !important;
+                  }
+                  .cropper-crop-box {
+                    cursor: move !important;
+                  }
+                  .cropper-point {
+                    cursor: pointer !important;
+                  }
+                  .cropper-point.point-se {
+                    cursor: nwse-resize !important;
+                  }
+                  .cropper-point.point-sw {
+                    cursor: nesw-resize !important;
+                  }
+                  .cropper-point.point-nw {
+                    cursor: nwse-resize !important;
+                  }
+                  .cropper-point.point-ne {
+                    cursor: nesw-resize !important;
+                  }
+                  .cropper-point.point-n {
+                    cursor: ns-resize !important;
+                  }
+                  .cropper-point.point-s {
+                    cursor: ns-resize !important;
+                  }
+                  .cropper-point.point-w {
+                    cursor: ew-resize !important;
+                  }
+                  .cropper-point.point-e {
+                    cursor: ew-resize !important;
+                  }
                 `}</style>
                 <Cropper
                   src={selectedImageForCrop}
-                  style={{ height: "100%", width: "100%", maxHeight: "100%", objectFit: "contain" }}
+                  style={{ height: "100%", width: "100%", maxHeight: "100%", objectFit: "contain", touchAction: 'none' }}
                   aspectRatio={NaN}
                   guides={true}
                   ref={cropperRef}
@@ -1256,7 +1288,7 @@ const StageResult = ({
                   checkOrientation={false}
                   zoomable={true}
                   zoomOnTouch={true}
-                  zoomOnWheel={true}
+                  zoomOnWheel={false}
                   scalable={true}
                   rotatable={false}
                   minCropBoxWidth={50}

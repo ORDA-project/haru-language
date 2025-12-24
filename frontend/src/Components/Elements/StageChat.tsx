@@ -445,10 +445,42 @@ const StageChat = ({ onBack }: StageChatProps) => {
             </p>
           </div>
 
-          <div className="h-80 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="h-80 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden" style={{ touchAction: 'none' }}>
+            <style>{`
+              .cropper-container {
+                touch-action: none !important;
+              }
+              .cropper-point {
+                cursor: pointer !important;
+              }
+              .cropper-point.point-se {
+                cursor: nwse-resize !important;
+              }
+              .cropper-point.point-sw {
+                cursor: nesw-resize !important;
+              }
+              .cropper-point.point-nw {
+                cursor: nwse-resize !important;
+              }
+              .cropper-point.point-ne {
+                cursor: nesw-resize !important;
+              }
+              .cropper-point.point-n {
+                cursor: ns-resize !important;
+              }
+              .cropper-point.point-s {
+                cursor: ns-resize !important;
+              }
+              .cropper-point.point-w {
+                cursor: ew-resize !important;
+              }
+              .cropper-point.point-e {
+                cursor: ew-resize !important;
+              }
+            `}</style>
             <Cropper
               src={uploadedImage}
-              style={{ height: "320px", width: "100%" }}
+              style={{ height: "320px", width: "100%", touchAction: 'none' }}
               aspectRatio={NaN}
               guides={true}
               ref={cropperRef}
@@ -463,7 +495,7 @@ const StageChat = ({ onBack }: StageChatProps) => {
               toggleDragModeOnDblclick={false}
               zoomable={true}
               zoomOnTouch={true}
-              zoomOnWheel={true}
+              zoomOnWheel={false}
               scalable={true}
               minCropBoxWidth={50}
               minCropBoxHeight={50}
