@@ -43,6 +43,8 @@ const StageChat = ({ onBack }: StageChatProps) => {
   const [cropStage, setCropStage] = useState<"chat" | "crop">("chat");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [isLargeTextMode] = useAtom(isLargeTextModeAtom);
+  const [exampleScrollIndices, setExampleScrollIndices] = useState<Record<string, number>>({});
+  const exampleScrollRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   // 대화 내역 저장/불러오기
   const getStorageKey = () => {
@@ -599,32 +601,72 @@ const StageChat = ({ onBack }: StageChatProps) => {
 
                 {/* 예문 카드 */}
                 {message.examples && message.examples.length > 0 && (
-                  <div className="flex flex-col justify-start space-y-4">
-                    {message.examples.map((example, exampleIndex) => (
-                      <div
-                        key={exampleIndex}
-                        className="max-w-[90%] w-full bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden"
-                        style={{ width: '343px', paddingLeft: '12px', paddingTop: '12px', paddingBottom: '16px', paddingRight: '16px' }}
-                      >
-                        {/* Context Badge and Dots */}
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="inline-block bg-[#B8E6D3] rounded-full px-2 py-0.5 border border-[#B8E6D3]" style={{ marginLeft: '-4px', marginTop: '-4px' }}>
-                            <span className="font-medium text-gray-900" style={{ fontSize: `${isLargeTextMode ? 16 : 12}px` }}>예문 상황</span>
-                          </div>
-                          <div className="flex items-center" style={{ gap: '4px' }}>
-                            {message.examples && message.examples.length > 0 && [0, 1, 2].map((dotIdx) => (
-                              <div
-                                key={dotIdx}
-                                style={{
-                                  width: '6px',
-                                  height: '6px',
-                                  borderRadius: '50%',
-                                  backgroundColor: dotIdx === exampleIndex ? '#00DAAA' : '#D1D5DB',
-                                }}
-                              />
-                            ))}
-                          </div>
-                        </div>
+                  <div className="flex flex-col justify-start">
+                    {/* 스크롤 컨테이너 */}
+                    <div
+                      ref={(el) => {
+                        exampleScrollRefs.current[message.id] = el;
+                      }}
+                      data-example-scroll-container
+                      className="flex flex-row overflow-x-auto gap-4 pb-2"
+                      style={{
+                        scrollSnapType: 'x mandatory',
+                        WebkitOverflowScrolling: 'touch',
+                        scrollbarWidth: 'none',
+                        msOverflowStyle: 'none',
+                      }}
+                      onScroll={(e) => {
+                        const container = e.currentTarget;
+                        const scrollLeft = container.scrollLeft;
+                        const cardWidth = 343 + 16; // 카드 너비 + gap
+                        const currentIndex = Math.round(scrollLeft / cardWidth);
+                        if (message.examples && message.examples.length > 0) {
+                          setExampleScrollIndices((prev) => ({
+                            ...prev,
+                            [message.id]: Math.min(currentIndex, message.examples!.length - 1),
+                          }));
+                        }
+                      }}
+                    >
+                      <style>{`
+                        div[data-example-scroll-container]::-webkit-scrollbar {
+                          display: none;
+                        }
+                      `}</style>
+                      {message.examples.map((example, exampleIndex) => {
+                        const currentScrollIndex = exampleScrollIndices[message.id] ?? 0;
+                        return (
+                          <div
+                            key={exampleIndex}
+                            className="flex-shrink-0 bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden"
+                            style={{
+                              width: '343px',
+                              paddingLeft: '12px',
+                              paddingTop: '12px',
+                              paddingBottom: '16px',
+                              paddingRight: '16px',
+                              scrollSnapAlign: 'start',
+                            }}
+                          >
+                            {/* Context Badge and Dots */}
+                            <div className="flex items-center justify-between mb-3">
+                              <div className="inline-block bg-[#B8E6D3] rounded-full px-2 py-0.5 border border-[#B8E6D3]" style={{ marginLeft: '-4px', marginTop: '-4px' }}>
+                                <span className="font-medium text-gray-900" style={{ fontSize: `${isLargeTextMode ? 16 : 12}px` }}>예문 상황</span>
+                              </div>
+                              <div className="flex items-center" style={{ gap: '4px' }}>
+                                {message.examples && message.examples.length > 0 && [0, 1, 2].map((dotIdx) => (
+                                  <div
+                                    key={dotIdx}
+                                    style={{
+                                      width: '6px',
+                                      height: '6px',
+                                      borderRadius: '50%',
+                                      backgroundColor: dotIdx === currentScrollIndex ? '#00DAAA' : '#D1D5DB',
+                                    }}
+                                  />
+                                ))}
+                              </div>
+                            </div>
 
                         {/* Dialogue */}
                         <div className="space-y-2 mb-3" style={{ paddingLeft: '8px' }}>
@@ -711,8 +753,10 @@ const StageChat = ({ onBack }: StageChatProps) => {
                             </svg>
                           </button>
                         </div>
-                      </div>
-                    ))}
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
 
