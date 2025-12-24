@@ -723,7 +723,7 @@ const StageChat = ({ onBack }: StageChatProps) => {
                 {message.type === "ai" && index === messages.length - 1 && !message.examples && (
                   <button
                     onClick={() => setIsModalOpen(true)}
-                    className="absolute bottom-26 right-4 w-10 h-10 bg-[#00DAAA] hover:bg-[#00C495] rounded-full flex items-center justify-center shadow-lg transition-colors z-30"
+                    className="absolute bottom-26 right-2 w-10 h-10 bg-[#00DAAA] hover:bg-[#00C495] rounded-full flex items-center justify-center shadow-lg transition-colors z-30"
                   >
                     <Icons.camera
                       className="w-5 h-5"

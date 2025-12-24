@@ -1158,7 +1158,7 @@ const StageResult = ({
       </div>
 
       {/* 카메라 버튼 - 고정 위치 */}
-      <div className="fixed bottom-24 right-4 max-w-[440px] mx-auto w-full flex justify-end pr-4 z-40">
+      <div className="fixed bottom-24 right-2 max-w-[440px] mx-auto w-full flex justify-end pr-2 z-40">
         <button
           onClick={() => setIsModalOpen(true)}
           className="w-12 h-12 bg-[#00DAAA] hover:bg-[#00C495] rounded-full flex items-center justify-center shadow-lg transition-colors"
