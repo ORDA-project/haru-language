@@ -41,7 +41,9 @@ const HomeInfo = ({
 
   // 홈화면 "오늘의 한줄 영어" 박스 - 고정 크기 (큰글씨 모드 무관)
   const [englishSentenceFontSize, setEnglishSentenceFontSize] = useState<number | null>(null);
+  const [koreanSentenceFontSize, setKoreanSentenceFontSize] = useState<number | null>(null);
   const englishSentenceRef = useRef<HTMLDivElement>(null);
+  const koreanSentenceRef = useRef<HTMLDivElement>(null);
   const englishSentenceContainerRef = useRef<HTMLDivElement>(null);
 
   const [isPopupVisible, setIsPopupVisible] = useState(false);
@@ -148,6 +150,83 @@ const HomeInfo = ({
     };
   }, [dailySentence]);
 
+  // 홈화면 "오늘의 한줄 영어" 박스 - 한글 문장 자동 폰트 크기 조절 (고정 크기)
+  useEffect(() => {
+    if (!dailySentence || !koreanSentenceRef.current || !englishSentenceContainerRef.current) {
+      setKoreanSentenceFontSize(null);
+      return;
+    }
+
+    const adjustKoreanFontSize = () => {
+      const container = englishSentenceContainerRef.current;
+      const textElement = koreanSentenceRef.current;
+      
+      if (!container || !textElement) return;
+
+      const koreanText = dailySentence.korean;
+      
+      if (!koreanText) return;
+
+      // 고정된 기본 폰트 크기 (큰글씨 모드 무관)
+      const baseSize = 18;
+      const minFontSize = 12;
+      const maxFontSize = baseSize;
+
+      // 컨테이너 너비 가져오기
+      const containerWidth = container.offsetWidth - 40; // padding 고려
+
+      // 임시 요소로 텍스트 너비 측정
+      const measureElement = document.createElement('div');
+      measureElement.style.position = 'absolute';
+      measureElement.style.visibility = 'hidden';
+      measureElement.style.whiteSpace = 'nowrap';
+      measureElement.style.fontFamily = window.getComputedStyle(textElement).fontFamily;
+      measureElement.style.fontWeight = window.getComputedStyle(textElement).fontWeight;
+      document.body.appendChild(measureElement);
+
+      // 이진 탐색으로 적절한 폰트 크기 찾기
+      let low = minFontSize;
+      let high = maxFontSize;
+      let bestSize = baseSize;
+
+      while (low <= high) {
+        const mid = Math.floor((low + high) / 2);
+        measureElement.style.fontSize = `${mid}px`;
+        measureElement.textContent = koreanText;
+        
+        const textWidth = measureElement.offsetWidth;
+        const estimatedLines = Math.ceil(textWidth / containerWidth);
+        
+        // 한글은 최대 2줄까지 허용
+        if (estimatedLines <= 2) {
+          bestSize = mid;
+          low = mid + 1;
+        } else {
+          high = mid - 1;
+        }
+      }
+
+      document.body.removeChild(measureElement);
+      setKoreanSentenceFontSize(bestSize);
+    };
+
+    // 초기 조정
+    adjustKoreanFontSize();
+
+    // 리사이즈 이벤트 리스너
+    const resizeObserver = new ResizeObserver(() => {
+      adjustKoreanFontSize();
+    });
+
+    if (englishSentenceContainerRef.current) {
+      resizeObserver.observe(englishSentenceContainerRef.current);
+    }
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [dailySentence]);
+
   return (
     <>
       {isLoggedIn ? (
@@ -229,7 +308,16 @@ const HomeInfo = ({
               >
                 {dailySentence.english}
               </div>
-              <div className="font-bold leading-[150%] break-words w-full min-w-0 mt-2" style={{ fontSize: '18px' }}>
+              <div 
+                ref={koreanSentenceRef}
+                className="font-bold leading-[150%] break-words w-full min-w-0 mt-2"
+                style={{
+                  fontSize: koreanSentenceFontSize ? `${koreanSentenceFontSize}px` : '18px',
+                  lineHeight: '1.4',
+                  wordBreak: 'keep-all',
+                  overflowWrap: 'break-word'
+                }}
+              >
                 {dailySentence.korean}
               </div>
             </>

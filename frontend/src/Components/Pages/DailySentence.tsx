@@ -453,10 +453,8 @@ const DailySentence = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#F7F8FB] flex justify-center">
-      <div className="w-full max-w-[440px] bg-white shadow-lg relative">
-        <Navbar currentPage="daily-sentence" />
-
+    <div className="w-full h-full flex flex-col items-center max-w-[440px] mx-auto shadow-[0_0_10px_0_rgba(0,0,0,0.1)] bg-[#F7F8FB]">
+      <div className="w-full max-w-[440px] bg-white shadow-lg">
         {/* Header */}
         <div className="bg-white px-4 py-4 border-b border-gray-200">
           <div className="flex items-center justify-between">
@@ -498,7 +496,7 @@ const DailySentence = () => {
           </div>
         </div>
 
-        <div className="pb-20">
+        <div className="h-[calc(100vh-180px)] overflow-y-scroll pb-28">
           {/* Progress Indicator */}
           <div className="px-4 py-4">
             <div className="flex items-center justify-center space-x-2">
@@ -983,6 +981,7 @@ const DailySentence = () => {
           })()}
         </div>
       </div>
+      <Navbar currentPage="daily-sentence" />
 
       {/* 확인 팝업 */}
       {showConfirmPopup && (
