@@ -532,7 +532,7 @@ const StageChat = ({ onBack }: StageChatProps) => {
       {cropStage === "chat" && (
         <>
           {/* Date Separator */}
-          <div className="px-4 py-2">
+          <div className="px-4 py-1">
             <div className="flex items-center">
               <div className="flex-1 h-px bg-gray-300"></div>
               <div className="px-4">
@@ -555,7 +555,7 @@ const StageChat = ({ onBack }: StageChatProps) => {
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          <div className="flex-1 overflow-y-auto px-4 pt-2 space-y-3 pb-4">
             {messages.map((message, index) => (
               <React.Fragment key={message.id}>
                 {/* 일반 메시지 */}
@@ -763,7 +763,7 @@ const StageChat = ({ onBack }: StageChatProps) => {
           </div>
 
           {/* Input */}
-          <div className="p-4 bg-white border-t border-gray-200">
+          <div className="p-4 bg-white border-t border-gray-200 pb-20">
             <div className="flex items-end space-x-3">
               <div className="flex-1">
                 <textarea
