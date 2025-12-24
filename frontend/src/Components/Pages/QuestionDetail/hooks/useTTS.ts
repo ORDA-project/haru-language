@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from "react";
-import { useGenerateTTS } from "../../../entities/tts/queries";
-import { useErrorHandler } from "../../../hooks/useErrorHandler";
+import { useGenerateTTS } from "../../../../entities/tts/queries";
+import { useErrorHandler } from "../../../../hooks/useErrorHandler";
 import { MAX_RETRIES, RETRY_DELAY } from "../constants";
 import type { ExampleRecord, ExampleDialogue, ExampleItem } from "../types";
 
