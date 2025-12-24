@@ -14,13 +14,13 @@ const AccessibilityProvider = ({ children }: AccessibilityProviderProps) => {
     const root = document.documentElement;
 
     if (isLargeTextMode) {
-      // 큰 글씨 모드: 기본 16px → 20px (4px 증가)
-      root.style.setProperty("--text-base", "20px");
-      root.style.setProperty("--text-sm", "18px");
-      root.style.setProperty("--text-lg", "22px");
-      root.style.setProperty("--text-xl", "24px");
-      root.style.setProperty("--text-2xl", "28px");
-      root.style.setProperty("--text-3xl", "32px");
+      // 큰 글씨 모드 (중년층용): 기본 16px → 18px
+      root.style.setProperty("--text-base", "18px");
+      root.style.setProperty("--text-sm", "16px");
+      root.style.setProperty("--text-lg", "20px");
+      root.style.setProperty("--text-xl", "22px");
+      root.style.setProperty("--text-2xl", "24px");
+      root.style.setProperty("--text-3xl", "28px");
     } else {
       // 기본 모드: 표준 크기
       root.style.setProperty("--text-base", "16px");

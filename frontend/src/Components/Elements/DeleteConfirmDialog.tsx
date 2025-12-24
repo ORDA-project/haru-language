@@ -1,4 +1,6 @@
 import React from "react";
+import { useAtom } from "jotai";
+import { isLargeTextModeAtom } from "../../store/dataStore";
 
 interface DeleteConfirmDialogProps {
   isOpen: boolean;
@@ -17,6 +19,18 @@ const DeleteConfirmDialog = ({
   selectedCount = 1,
   isLoading = false,
 }: DeleteConfirmDialogProps) => {
+  const [isLargeTextMode] = useAtom(isLargeTextModeAtom);
+  
+  const baseFontSize = isLargeTextMode ? 18 : 16;
+  const smallFontSize = isLargeTextMode ? 16 : 14;
+  const headerFontSize = isLargeTextMode ? 22 : 20;
+  const xSmallFontSize = isLargeTextMode ? 14 : 12;
+  
+  const baseTextStyle: React.CSSProperties = { fontSize: `${baseFontSize}px` };
+  const smallTextStyle: React.CSSProperties = { fontSize: `${smallFontSize}px` };
+  const headerTextStyle: React.CSSProperties = { fontSize: `${headerFontSize}px` };
+  const xSmallTextStyle: React.CSSProperties = { fontSize: `${xSmallFontSize}px` };
+  
   if (!isOpen) return null;
 
   return (
@@ -39,13 +53,13 @@ const DeleteConfirmDialog = ({
               />
             </svg>
           </div>
-          <h2 className="text-xl font-bold text-gray-800 mb-2">친구 삭제</h2>
-          <p className="text-gray-600 text-sm">
+          <h2 className="font-bold text-gray-800 mb-2" style={headerTextStyle}>친구 삭제</h2>
+          <p className="text-gray-600" style={smallTextStyle}>
             {selectedCount === 1 && friendName
               ? `${friendName}님을 친구 목록에서 삭제하시겠습니까?`
               : `선택한 ${selectedCount}명의 친구를 삭제하시겠습니까?`}
           </p>
-          <p className="text-red-500 text-xs mt-2">
+          <p className="text-red-500 mt-2" style={xSmallTextStyle}>
             삭제된 친구는 복구할 수 없습니다.
           </p>
         </div>
@@ -55,14 +69,16 @@ const DeleteConfirmDialog = ({
           <button
             onClick={onClose}
             disabled={isLoading}
-            className="flex-1 py-3.5 bg-gray-100 hover:bg-gray-200 disabled:bg-gray-50 text-gray-700 font-semibold text-base rounded-lg transition-colors"
+            className="flex-1 py-3.5 bg-gray-100 hover:bg-gray-200 disabled:bg-gray-50 text-gray-700 font-semibold rounded-lg transition-colors"
+            style={baseTextStyle}
           >
             취소
           </button>
           <button
             onClick={onConfirm}
             disabled={isLoading}
-            className="flex-1 py-3.5 bg-red-500 hover:bg-red-600 active:bg-red-700 disabled:bg-red-300 text-white font-semibold text-base rounded-lg transition-colors flex items-center justify-center gap-2 shadow-md"
+            className="flex-1 py-3.5 bg-red-500 hover:bg-red-600 active:bg-red-700 disabled:bg-red-300 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2 shadow-md"
+            style={baseTextStyle}
           >
             {isLoading ? (
               <>

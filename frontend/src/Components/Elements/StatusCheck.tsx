@@ -24,11 +24,11 @@ const StatusCheck = ({ userId: _userId }: StatusProps) => {
   const { showError } = useErrorHandler();
   const [isLargeTextMode] = useAtom(isLargeTextModeAtom);
   
-  // 큰글씨 모드에 따른 텍스트 크기
-  const baseFontSize = isLargeTextMode ? 20 : 16;
-  const largeFontSize = isLargeTextMode ? 24 : 19;
-  const smallFontSize = isLargeTextMode ? 18 : 14;
-  const headerFontSize = isLargeTextMode ? 22 : 19; // 큰글씨 모드일 때 2px 작게 (24 -> 22)
+  // 큰글씨 모드에 따른 텍스트 크기 (중년층용)
+  const baseFontSize = isLargeTextMode ? 18 : 16;
+  const largeFontSize = isLargeTextMode ? 22 : 19;
+  const smallFontSize = isLargeTextMode ? 16 : 14;
+  const headerFontSize = isLargeTextMode ? 22 : 19;
   
   const baseTextStyle: React.CSSProperties = { fontSize: `${baseFontSize}px`, wordBreak: 'keep-all', overflowWrap: 'break-word' as const };
   const largeTextStyle: React.CSSProperties = { fontSize: `${largeFontSize}px`, wordBreak: 'keep-all', overflowWrap: 'break-word' as const };

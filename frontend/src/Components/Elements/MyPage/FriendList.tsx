@@ -38,9 +38,9 @@ const FriendList = React.memo(function FriendList({
   const [isLargeTextMode] = useAtom(isLargeTextModeAtom);
   
   // 큰글씨 모드에 따른 텍스트 크기
-  const baseFontSize = isLargeTextMode ? 20 : 16;
-  const largeFontSize = isLargeTextMode ? 24 : 20;
-  const xLargeFontSize = isLargeTextMode ? 28 : 24;
+  const baseFontSize = isLargeTextMode ? 18 : 16;
+  const largeFontSize = isLargeTextMode ? 22 : 20;
+  const xLargeFontSize = isLargeTextMode ? 26 : 24;
   const smallFontSize = isLargeTextMode ? 18 : 14;
   const xSmallFontSize = isLargeTextMode ? 16 : 12;
   

@@ -20,10 +20,10 @@ export interface ExtendedTextStyles extends TextStyles {
  * 큰글씨 모드에 따른 텍스트 스타일 생성
  */
 export const createTextStyles = (isLargeTextMode: boolean): TextStyles => {
-  const baseFontSize = isLargeTextMode ? 20 : 16;
-  const smallFontSize = isLargeTextMode ? 18 : 14;
-  const xSmallFontSize = isLargeTextMode ? 16 : 12;
-  const headerFontSize = isLargeTextMode ? 24 : 20;
+  const baseFontSize = isLargeTextMode ? 18 : 16;
+  const smallFontSize = isLargeTextMode ? 16 : 14;
+  const xSmallFontSize = isLargeTextMode ? 14 : 12;
+  const headerFontSize = isLargeTextMode ? 22 : 20;
 
   const commonStyle: Pick<React.CSSProperties, 'wordBreak' | 'overflowWrap'> = {
     wordBreak: 'keep-all' as const,
@@ -55,8 +55,8 @@ export const createTextStyles = (isLargeTextMode: boolean): TextStyles => {
  */
 export const createExtendedTextStyles = (isLargeTextMode: boolean): ExtendedTextStyles => {
   const baseStyles = createTextStyles(isLargeTextMode);
-  const correctionTextSize = isLargeTextMode ? 16 : 12;
-  const feedbackTextSize = isLargeTextMode ? 18 : 14;
+  const correctionTextSize = isLargeTextMode ? 14 : 12;
+  const feedbackTextSize = isLargeTextMode ? 16 : 14;
 
   const commonStyle: Pick<React.CSSProperties, 'wordBreak' | 'overflowWrap'> = {
     wordBreak: 'keep-all' as const,

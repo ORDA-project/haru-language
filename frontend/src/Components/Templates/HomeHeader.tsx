@@ -13,8 +13,8 @@ const HomeHeader = (props: HomeHeaderProps) => {
   const { showSuccess, showError, showInfo, handleError } = useErrorHandler();
   const [isLargeTextMode] = useAtom(isLargeTextModeAtom);
   
-  // 큰글씨 모드에 따른 텍스트 크기
-  const baseFontSize = isLargeTextMode ? 20 : 16;
+  // 큰글씨 모드에 따른 텍스트 크기 (중년층용)
+  const baseFontSize = isLargeTextMode ? 18 : 16;
   
   const baseTextStyle: React.CSSProperties = { fontSize: `${baseFontSize}px` };
 

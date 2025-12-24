@@ -34,15 +34,15 @@ const DailySentence = () => {
   const [completedSentences, setCompletedSentences] = useState<boolean[]>([]);
   const [showConfirmPopup, setShowConfirmPopup] = useState<boolean>(false);
 
-  // 큰글씨 모드에 따른 텍스트 크기
-  const baseFontSize = isLargeTextMode ? 20 : 16;
-  const smallFontSize = isLargeTextMode ? 18 : 14;
-  const xSmallFontSize = isLargeTextMode ? 16 : 12;
+  // 큰글씨 모드에 따른 텍스트 크기 (중년층용)
+  const baseFontSize = isLargeTextMode ? 18 : 16;
+  const smallFontSize = isLargeTextMode ? 16 : 14;
+  const xSmallFontSize = isLargeTextMode ? 14 : 12;
   const headerFontSize = isLargeTextMode ? 22 : 18;
-  // 문장 첨삭/예문 생성 텍스트: 큰글씨 모드일 때 16px, 아닐 때 12px
-  const correctionTextSize = isLargeTextMode ? 16 : 12;
-  // 피드백 텍스트: 큰글씨 모드일 때 18px, 아닐 때 14px
-  const feedbackTextSize = isLargeTextMode ? 18 : 14;
+  // 문장 첨삭/예문 생성 텍스트: 큰글씨 모드일 때 14px, 아닐 때 12px
+  const correctionTextSize = isLargeTextMode ? 14 : 12;
+  // 피드백 텍스트: 큰글씨 모드일 때 16px, 아닐 때 14px
+  const feedbackTextSize = isLargeTextMode ? 16 : 14;
   
   const baseTextStyle: React.CSSProperties = { 
     fontSize: `${baseFontSize}px`, 

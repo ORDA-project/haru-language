@@ -1,4 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
+import { useAtom } from "jotai";
+import { isLargeTextModeAtom } from "../../store/dataStore";
 
 interface FriendInvitePopupProps {
   isVisible: boolean;
@@ -14,6 +16,17 @@ const FriendInvitePopup = React.memo(function FriendInvitePopup({
   const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "error">(
     "idle"
   );
+  const [isLargeTextMode] = useAtom(isLargeTextModeAtom);
+  
+  const baseFontSize = isLargeTextMode ? 18 : 16;
+  const smallFontSize = isLargeTextMode ? 16 : 14;
+  const headerFontSize = isLargeTextMode ? 22 : 20;
+  const xSmallFontSize = isLargeTextMode ? 14 : 12;
+  
+  const baseTextStyle: React.CSSProperties = { fontSize: `${baseFontSize}px` };
+  const smallTextStyle: React.CSSProperties = { fontSize: `${smallFontSize}px` };
+  const headerTextStyle: React.CSSProperties = { fontSize: `${headerFontSize}px` };
+  const xSmallTextStyle: React.CSSProperties = { fontSize: `${xSmallFontSize}px` };
 
   useEffect(() => {
     if (!isVisible) {
@@ -112,34 +125,35 @@ const FriendInvitePopup = React.memo(function FriendInvitePopup({
           </div>
 
           {/* 성공 메시지 */}
-          <h3 className="text-xl font-bold text-gray-800 mb-2">
+          <h3 className="font-bold text-gray-800 mb-2" style={headerTextStyle}>
             나의 친구링크가 복사되었어요.
           </h3>
-          <p className="text-gray-600 text-sm leading-relaxed mb-4">
+          <p className="text-gray-600 leading-relaxed mb-4" style={smallTextStyle}>
             친구에게 링크를 공유해서 함께 학습해보세요
           </p>
 
           {/* 복사된 링크 미리보기 */}
           {inviteLink && (
             <div className="mt-4 text-left">
-              <p className="text-sm text-gray-800 mb-2 font-medium">복사된 링크</p>
+              <p className="text-gray-800 mb-2 font-medium" style={smallTextStyle}>복사된 링크</p>
               <div className="bg-gray-100 rounded-lg p-3 mb-4">
-                <p className="text-xs text-gray-700 break-all">{inviteLink}</p>
+                <p className="text-gray-700 break-all" style={xSmallTextStyle}>{inviteLink}</p>
               </div>
               <div className="flex items-center justify-end gap-2">
                 {copyStatus === "copied" && (
-                  <span className="text-[11px] text-[#00B085]">
+                  <span className="text-[#00B085]" style={xSmallTextStyle}>
                     링크가 복사되었습니다.
                   </span>
                 )}
                 {copyStatus === "error" && (
-                  <span className="text-[11px] text-red-500">
+                  <span className="text-red-500" style={xSmallTextStyle}>
                     복사에 실패했습니다. 다시 시도해주세요.
                   </span>
                 )}
                 <button
                   onClick={handleCopyLink}
-                  className="px-4 py-2 text-sm font-medium text-white bg-[#00DAAA] hover:bg-[#00C495] rounded-lg transition-colors"
+                  className="px-4 py-2 font-medium text-white bg-[#00DAAA] hover:bg-[#00C495] rounded-lg transition-colors"
+                  style={smallTextStyle}
                 >
                   다시 복사
                 </button>

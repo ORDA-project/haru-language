@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { useAtom, useAtomValue } from 'jotai';
+import { isLargeTextModeAtom } from '../../store/dataStore';
 import { toastMessagesAtom, removeToastAtom, ToastMessage } from '../../store/errorStore';
 import { X, CheckCircle, XCircle, AlertTriangle, Info } from 'lucide-react';
 
@@ -61,6 +62,14 @@ interface ToastItemProps {
 }
 
 const ToastItem: React.FC<ToastItemProps> = ({ toast, onRemove, getIcon, getClasses }) => {
+  const [isLargeTextMode] = useAtom(isLargeTextModeAtom);
+  
+  const smallFontSize = isLargeTextMode ? 16 : 14;
+  const xSmallFontSize = isLargeTextMode ? 14 : 12;
+  
+  const smallTextStyle: React.CSSProperties = { fontSize: `${smallFontSize}px` };
+  const xSmallTextStyle: React.CSSProperties = { fontSize: `${xSmallFontSize}px` };
+  
   useEffect(() => {
     if (toast.duration) {
       const timer = setTimeout(() => {
@@ -78,9 +87,9 @@ const ToastItem: React.FC<ToastItemProps> = ({ toast, onRemove, getIcon, getClas
           {getIcon(toast.type)}
         </div>
         <div className="flex-1 min-w-0">
-          <div className="font-semibold text-sm">{toast.title}</div>
+          <div className="font-semibold" style={smallTextStyle}>{toast.title}</div>
           {toast.message && (
-            <div className="text-xs opacity-90 mt-1">{toast.message}</div>
+            <div className="opacity-90 mt-1" style={xSmallTextStyle}>{toast.message}</div>
           )}
         </div>
         <button

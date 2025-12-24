@@ -6,6 +6,7 @@ import { API_ENDPOINTS } from "../../config/api";
 import { Spinner } from "basic-loading";
 import { useErrorHandler } from "../../hooks/useErrorHandler";
 import { useAtom } from "jotai";
+import { isLargeTextModeAtom } from "../../store/dataStore";
 import {
   QuizQuestion,
   setCurrentQuizAtom,
@@ -27,6 +28,7 @@ const Quiz = (props: QuizProps) => {
   const [, setCurrentQuizData] = useAtom(setCurrentQuizAtom);
   const [, setQuizLoading] = useAtom(setQuizLoadingAtom);
   const [, addQuizResult] = useAtom(addQuizResultAtom);
+  const [isLargeTextMode] = useAtom(isLargeTextModeAtom);
 
   // 로컬 상태
   const [isSuccess, setSuccess] = useState<boolean>(true);
@@ -39,6 +41,12 @@ const Quiz = (props: QuizProps) => {
 
   const navigate = useNavigate(); // 페이지 이동을 위한 네비게이트
   const { showError, showWarning, showSuccess } = useErrorHandler();
+  
+  const baseFontSize = isLargeTextMode ? 18 : 16;
+  const largeFontSize = isLargeTextMode ? 22 : 20;
+  
+  const baseTextStyle: React.CSSProperties = { fontSize: `${baseFontSize}px` };
+  const largeTextStyle: React.CSSProperties = { fontSize: `${largeFontSize}px` };
 
   // 현재 퀴즈 데이터 (전역 상태에서 가져옴)
   const quiz = currentQuiz || [];
@@ -178,8 +186,8 @@ const Quiz = (props: QuizProps) => {
     return (
       <div className="w-full h-full flex flex-col items-center max-w-[440px] mx-auto shadow-[0_0_10px_0_rgba(0,0,0,0.1)] bg-[#F7F8FB]">
         <div className="h-[calc(100vh-72px)] w-full max-w-[440px] box-border mx-auto flex flex-col items-center justify-center overflow-hidden">
-          <span className="text-[24px] my-[10px]">문제을 만들고 있어요.</span>
-          <span className="text-[24px] my-[10px]">잠시 기다려주세요.</span>
+          <span className="my-[10px]" style={largeTextStyle}>문제을 만들고 있어요.</span>
+          <span className="my-[10px]" style={largeTextStyle}>잠시 기다려주세요.</span>
           <Spinner
             option={{
               size: 50,
@@ -264,18 +272,19 @@ const Quiz = (props: QuizProps) => {
             </button>
           </div>
           {showDescription && (
-            <div className="m-[20px] p-[10px] bg-[#f0f0f0] rounded-[8px] shadow-[2px_2px_6px_rgba(0,0,0,0.1)] text-[16px] text-center">
+            <div className="m-[20px] p-[10px] bg-[#f0f0f0] rounded-[8px] shadow-[2px_2px_6px_rgba(0,0,0,0.1)] text-center" style={baseTextStyle}>
               {currentQuestion.description}
             </div>
           )}
           <button
-            className={`rounded-[10px] w-[166px] p-[15px_0px] text-center text-[16px] border-0 m-[50px_0] cursor-pointer ${
+            className={`rounded-[10px] w-[166px] p-[15px_0px] text-center border-0 m-[50px_0] cursor-pointer ${
               selectedAnswer === null
                 ? "bg-[#f6f6f6] cursor-not-allowed"
                 : "bg-[#00daaa]"
             }`}
             onClick={handleNext}
             disabled={selectedAnswer === null}
+            style={baseTextStyle}
           >
             다음
           </button>
@@ -283,11 +292,12 @@ const Quiz = (props: QuizProps) => {
       ) : (
         <div className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 flex justify-center items-center">
           <div className="bg-white w-[250px] h-[150px] p-[20px] rounded-[10px] text-center shadow-[0px_4px_10px_rgba(0,0,0,0.2)]">
-            <p>퀴즈를 생성할 예문이 부족합니다.</p>
-            <p>예문 생성 후에 다시 시도하세요.</p>
+            <p style={baseTextStyle}>퀴즈를 생성할 예문이 부족합니다.</p>
+            <p style={baseTextStyle}>예문 생성 후에 다시 시도하세요.</p>
             <button
               className="mt-[20px] p-[10px_20px] bg-[#00daaa] border-none rounded-[5px] cursor-pointer hover:bg-[#c9c9c9]"
               onClick={handleClosePopup}
+              style={baseTextStyle}
             >
               확인
             </button>
@@ -298,11 +308,12 @@ const Quiz = (props: QuizProps) => {
       {showPopup && (
         <div className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 flex justify-center items-center">
           <div className="bg-white w-[250px] h-[150px] p-[20px] rounded-[10px] text-center shadow-[0px_4px_10px_rgba(0,0,0,0.2)]">
-            <p>맞은 개수: {correctCount}</p>
-            <p>틀린 개수: {quiz.length - correctCount}</p>
+            <p style={baseTextStyle}>맞은 개수: {correctCount}</p>
+            <p style={baseTextStyle}>틀린 개수: {quiz.length - correctCount}</p>
             <button
               className="mt-[20px] p-[10px_20px] bg-[#00daaa] border-none rounded-[5px] cursor-pointer hover:bg-[#c9c9c9]"
               onClick={handleClosePopup}
+              style={baseTextStyle}
             >
               확인
             </button>

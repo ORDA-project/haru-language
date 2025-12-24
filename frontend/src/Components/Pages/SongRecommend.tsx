@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import NavBar from "../Templates/Navbar";
 import { useErrorHandler } from "../../hooks/useErrorHandler";
 import { useAtom } from "jotai";
+import { isLargeTextModeAtom } from "../../store/dataStore";
 import {
   currentSongAtom,
   isSongLoadingAtom,
@@ -19,6 +20,7 @@ const SongRecommend = (props: RecommendProps) => {
   const [isSongLoading] = useAtom(isSongLoadingAtom);
   const [, setCurrentSongData] = useAtom(setCurrentSongAtom);
   const [, setSongLoading] = useAtom(setSongLoadingAtom);
+  const [isLargeTextMode] = useAtom(isLargeTextModeAtom);
 
   const navigate = useNavigate();
   const { showError, showWarning, showInfo } = useErrorHandler();
@@ -26,6 +28,14 @@ const SongRecommend = (props: RecommendProps) => {
   // 로컬 상태 추가
   const [youtubeEmbedUrl, setYoutubeEmbedUrl] = useState<string>("");
   const [isYoutubeLoading, setIsYoutubeLoading] = useState<boolean>(false);
+  
+  const baseFontSize = isLargeTextMode ? 18 : 16;
+  const largeFontSize = isLargeTextMode ? 22 : 20;
+  const smallFontSize = isLargeTextMode ? 16 : 14;
+  
+  const baseTextStyle: React.CSSProperties = { fontSize: `${baseFontSize}px` };
+  const largeTextStyle: React.CSSProperties = { fontSize: `${largeFontSize}px` };
+  const smallTextStyle: React.CSSProperties = { fontSize: `${smallFontSize}px` };
 
   // 전역 상태에서 데이터 가져오기
   const title = currentSong?.title || "로딩 중...";
@@ -265,7 +275,7 @@ const SongRecommend = (props: RecommendProps) => {
               <div className="w-full h-[300px] bg-gray-200 rounded-lg flex items-center justify-center">
                 <div className="text-center">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#00DAAA] mx-auto mb-2"></div>
-                  <p className="text-gray-600 text-sm">
+                  <p className="text-gray-600" style={smallTextStyle}>
                     YouTube 비디오 로딩 중...
                   </p>
                 </div>
@@ -285,7 +295,7 @@ const SongRecommend = (props: RecommendProps) => {
               </div>
             ) : (
               <div className="w-full h-[200px] bg-gray-100 rounded-lg flex items-center justify-center">
-                <p className="text-gray-500 text-sm text-center">
+                <p className="text-gray-500 text-center" style={smallTextStyle}>
                   YouTube 비디오를
                   <br />
                   불러올 수 없습니다
@@ -294,8 +304,8 @@ const SongRecommend = (props: RecommendProps) => {
             )}
           </div>
           <div className="w-full bg-[#00daaa]">
-            <div className="p-[10px_20px] text-[22px] font-bold">{title}</div>
-            <div className="p-[10px_20px] text-[18px]">{artist}</div>
+            <div className="p-[10px_20px] font-bold" style={largeTextStyle}>{title}</div>
+            <div className="p-[10px_20px]" style={baseTextStyle}>{artist}</div>
           </div>
           <div className="whitespace-pre-wrap p-3">
             <div dangerouslySetInnerHTML={{ __html: lyric }} />

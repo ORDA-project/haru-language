@@ -1,4 +1,6 @@
 import React, { useRef, useState, useEffect } from "react";
+import { useAtom } from "jotai";
+import { isLargeTextModeAtom } from "../../store/dataStore";
 import { Icons } from "./Icons";
 
 interface ImageUploadModalProps {
@@ -22,6 +24,15 @@ const ImageUploadModal = ({
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [showGuide, setShowGuide] = useState(true);
+  const [isLargeTextMode] = useAtom(isLargeTextModeAtom);
+  
+  const baseFontSize = isLargeTextMode ? 18 : 16;
+  const smallFontSize = isLargeTextMode ? 16 : 14;
+  const headerFontSize = isLargeTextMode ? 22 : 18;
+  
+  const baseTextStyle: React.CSSProperties = { fontSize: `${baseFontSize}px` };
+  const smallTextStyle: React.CSSProperties = { fontSize: `${smallFontSize}px` };
+  const headerTextStyle: React.CSSProperties = { fontSize: `${headerFontSize}px` };
 
   // 카메라 스트림 정리 함수 (상태 업데이트 없이 리소스만 정리)
   const cleanupResources = () => {
@@ -366,7 +377,7 @@ const ImageUploadModal = ({
           <>
             {/* Header */}
             <div className="text-center mb-6">
-              <h2 className="text-lg font-semibold text-gray-800">{title}</h2>
+              <h2 className="font-semibold text-gray-800" style={headerTextStyle}>{title}</h2>
             </div>
 
             {/* Options */}
@@ -380,7 +391,7 @@ const ImageUploadModal = ({
                   stroke="white"
                   strokeOpacity="1"
                 />
-                <span className="font-medium">카메라로 촬영</span>
+                <span className="font-medium" style={baseTextStyle}>카메라로 촬영</span>
               </button>
 
               <button
@@ -429,7 +440,7 @@ const ImageUploadModal = ({
                     strokeLinejoin="round"
                   />
                 </svg>
-                <span className="font-medium">갤러리에서 선택</span>
+                <span className="font-medium" style={baseTextStyle}>갤러리에서 선택</span>
               </button>
             </div>
 
@@ -437,6 +448,7 @@ const ImageUploadModal = ({
             <button
               onClick={onClose}
               className="w-full mt-4 py-3 text-gray-500 hover:text-gray-700 transition-colors"
+              style={baseTextStyle}
             >
               취소
             </button>
@@ -445,13 +457,13 @@ const ImageUploadModal = ({
           <>
             {/* Camera View */}
             <div className="text-center mb-4">
-              <h2 className="text-lg font-semibold text-gray-800">사진 촬영</h2>
+              <h2 className="font-semibold text-gray-800" style={headerTextStyle}>사진 촬영</h2>
             </div>
 
             {/* 안내 팝업 메시지 - 카메라 위에 표시 */}
             {showGuide && (
               <div className="mb-4 bg-gray-100 border-2 border-blue-500 rounded-2xl px-4 py-3 shadow-lg">
-                <p className="text-center text-black text-sm font-medium leading-relaxed">
+                <p className="text-center text-black font-medium leading-relaxed" style={smallTextStyle}>
                   챕터 명과 예문문장이<br />잘 보이게 찍어주세요!
                 </p>
               </div>
@@ -481,6 +493,7 @@ const ImageUploadModal = ({
               <button
                 onClick={handleCloseCamera}
                 className="px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-xl transition-colors"
+                style={baseTextStyle}
               >
                 취소
               </button>

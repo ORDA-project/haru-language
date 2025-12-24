@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+import { useAtom } from "jotai";
+import { isLargeTextModeAtom } from "../../store/dataStore";
 import { useCreateInvitation } from "../../entities/friends/queries";
 import { useErrorHandler } from "../../hooks/useErrorHandler";
 import FriendInvitePopup from "./FriendInvitePopup";
@@ -14,6 +16,17 @@ const FriendInviteModal = ({ isOpen, onClose }: FriendInviteModalProps) => {
   const [showPopup, setShowPopup] = useState(false);
   const { showError } = useErrorHandler();
   const createInvitation = useCreateInvitation();
+  const [isLargeTextMode] = useAtom(isLargeTextModeAtom);
+  
+  const baseFontSize = isLargeTextMode ? 18 : 16;
+  const smallFontSize = isLargeTextMode ? 16 : 14;
+  const headerFontSize = isLargeTextMode ? 22 : 20;
+  const xSmallFontSize = isLargeTextMode ? 14 : 12;
+  
+  const baseTextStyle: React.CSSProperties = { fontSize: `${baseFontSize}px` };
+  const smallTextStyle: React.CSSProperties = { fontSize: `${smallFontSize}px` };
+  const headerTextStyle: React.CSSProperties = { fontSize: `${headerFontSize}px` };
+  const xSmallTextStyle: React.CSSProperties = { fontSize: `${xSmallFontSize}px` };
 
   // 모달이 닫힐 때 상태 초기화
   useEffect(() => {
@@ -70,7 +83,7 @@ const FriendInviteModal = ({ isOpen, onClose }: FriendInviteModalProps) => {
       <div className="bg-white rounded-2xl p-6 w-full max-w-sm mx-auto shadow-xl">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-gray-800">친구 초대하기</h2>
+          <h2 className="font-bold text-gray-800" style={headerTextStyle}>친구 초대하기</h2>
           <button
             onClick={onClose}
             className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100"
@@ -109,7 +122,7 @@ const FriendInviteModal = ({ isOpen, onClose }: FriendInviteModalProps) => {
                 />
               </svg>
             </div>
-            <p className="text-gray-600 text-sm">
+            <p className="text-gray-600" style={smallTextStyle}>
               친구와 함께 영어 학습을 시작해보세요!
             </p>
           </div>
@@ -118,6 +131,7 @@ const FriendInviteModal = ({ isOpen, onClose }: FriendInviteModalProps) => {
             onClick={handleCreateInvite}
             disabled={isLoading}
             className="w-full py-3 bg-[#00DAAA] hover:bg-[#00C495] disabled:bg-gray-300 text-white font-semibold rounded-xl transition-colors"
+            style={baseTextStyle}
           >
             {isLoading ? "링크 생성 중..." : "초대 링크 생성하기"}
           </button>
@@ -125,7 +139,7 @@ const FriendInviteModal = ({ isOpen, onClose }: FriendInviteModalProps) => {
 
         {/* Footer */}
         <div className="mt-6 pt-4 border-t border-gray-100">
-          <p className="text-xs text-gray-500 text-center">
+          <p className="text-gray-500 text-center" style={xSmallTextStyle}>
             친구가 링크를 통해 가입하면 자동으로 친구가 됩니다
           </p>
         </div>
