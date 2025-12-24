@@ -460,14 +460,14 @@ const DailySentence = () => {
           {/* Step 1: Question Display */}
           {currentStep === "question" && (
             <div className="px-4 py-6">
-              <div className="bg-white rounded-3xl p-6 shadow-lg border-4 border-[#00DAAA]">
-                <div className="flex items-center justify-between mb-6">
-                  <div className="bg-[#00E8B6] px-4 py-2 rounded-full">
-                    <span className="text-sm font-bold text-gray-800">
+              <div className="bg-white rounded-3xl p-6 shadow-lg border-4 border-[#00DAAA] w-full max-w-full overflow-hidden">
+                <div className="flex items-center justify-between mb-6 flex-wrap gap-2">
+                  <div className="bg-[#00E8B6] px-4 py-2 rounded-full flex-shrink-0">
+                    <span className="text-sm font-bold text-gray-800 whitespace-nowrap">
                       오늘의 한줄 영어
                     </span>
                   </div>
-                  <span className="text-sm text-gray-500 font-medium">
+                  <span className="text-sm text-gray-500 font-medium flex-shrink-0 whitespace-nowrap">
                     {formatDate()}
                   </span>
                 </div>
@@ -477,13 +477,13 @@ const DailySentence = () => {
                   {currentQuestion && (
                     <>
                       {/* 첫 번째 질문 */}
-                      <div className="bg-gray-50 rounded-2xl p-4">
-                        <div className="font-bold text-gray-900 leading-relaxed mb-2" style={baseTextStyle}>
+                      <div className="bg-gray-50 rounded-2xl p-4 w-full overflow-hidden">
+                        <div className="font-bold text-gray-900 leading-relaxed mb-2 break-words" style={baseTextStyle}>
                           {languageMode === "korean"
                             ? currentQuestion.englishQuestion
                             : currentQuestion.koreanQuestion}
                         </div>
-                        <div className="text-gray-600 leading-relaxed" style={baseTextStyle}>
+                        <div className="text-gray-600 leading-relaxed break-words" style={baseTextStyle}>
                           {languageMode === "korean"
                             ? currentQuestion.koreanQuestion
                             : currentQuestion.englishQuestion}
@@ -492,16 +492,16 @@ const DailySentence = () => {
 
                       {/* 두 번째 질문 (선택사항) */}
                       {currentQuestion.secondQuestion && (
-                        <div className="bg-gray-50 rounded-2xl p-4">
-                          <div className="text-sm text-gray-500 mb-1">
+                        <div className="bg-gray-50 rounded-2xl p-4 w-full overflow-hidden">
+                          <div className="text-sm text-gray-500 mb-1 whitespace-nowrap">
                             (선택)
                           </div>
-                          <div className="font-bold text-gray-900 leading-relaxed mb-2" style={baseTextStyle}>
+                          <div className="font-bold text-gray-900 leading-relaxed mb-2 break-words" style={baseTextStyle}>
                             {languageMode === "korean"
                               ? currentQuestion.secondQuestion.english
                               : currentQuestion.secondQuestion.korean}
                           </div>
-                          <div className="text-gray-600 leading-relaxed" style={baseTextStyle}>
+                          <div className="text-gray-600 leading-relaxed break-words" style={baseTextStyle}>
                             {languageMode === "korean"
                               ? currentQuestion.secondQuestion.korean
                               : currentQuestion.secondQuestion.english}
@@ -511,16 +511,16 @@ const DailySentence = () => {
 
                       {/* 세 번째 질문 (선택사항) */}
                       {currentQuestion.thirdQuestion && (
-                        <div className="bg-gray-50 rounded-2xl p-4">
-                          <div className="text-sm text-gray-500 mb-1">
+                        <div className="bg-gray-50 rounded-2xl p-4 w-full overflow-hidden">
+                          <div className="text-sm text-gray-500 mb-1 whitespace-nowrap">
                             (선택)
                           </div>
-                          <div className="font-bold text-gray-900 leading-relaxed mb-2" style={baseTextStyle}>
+                          <div className="font-bold text-gray-900 leading-relaxed mb-2 break-words" style={baseTextStyle}>
                             {languageMode === "korean"
                               ? currentQuestion.thirdQuestion.english
                               : currentQuestion.thirdQuestion.korean}
                           </div>
-                          <div className="text-gray-600 leading-relaxed" style={baseTextStyle}>
+                          <div className="text-gray-600 leading-relaxed break-words" style={baseTextStyle}>
                             {languageMode === "korean"
                               ? currentQuestion.thirdQuestion.korean
                               : currentQuestion.thirdQuestion.english}
@@ -532,7 +532,7 @@ const DailySentence = () => {
                 </div>
 
                 {/* 텍스트 입력 영역 */}
-                <div className="relative">
+                <div className="relative w-full">
                   <textarea
                     value={userAnswer}
                     onChange={(e) => setUserAnswer(e.target.value)}
@@ -541,7 +541,7 @@ const DailySentence = () => {
                         ? "여기에 답변을 작성해주세요..."
                         : "Please write your answer here..."
                     }
-                    className="w-full h-40 p-5 border-2 border-gray-200 rounded-2xl resize-none focus:outline-none focus:ring-2 focus:ring-[#00DAAA] focus:border-transparent"
+                    className="w-full h-40 p-5 border-2 border-gray-200 rounded-2xl resize-none focus:outline-none focus:ring-2 focus:ring-[#00DAAA] focus:border-transparent box-border"
                     style={baseTextStyle}
                   />
                 </div>
@@ -553,7 +553,7 @@ const DailySentence = () => {
                     translateWritingMutation.isPending ||
                     correctWritingMutation.isPending
                   }
-                  className={`w-full py-4 rounded-2xl font-bold mt-6 shadow-lg hover:shadow-xl transition-shadow ${
+                  className={`w-full py-4 rounded-2xl font-bold mt-6 shadow-lg hover:shadow-xl transition-shadow box-border ${
                     userAnswer.trim()
                       ? "bg-[#FF6B35] text-white"
                       : "bg-gray-300 text-gray-500 cursor-not-allowed"
