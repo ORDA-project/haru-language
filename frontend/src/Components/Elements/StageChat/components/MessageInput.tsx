@@ -25,7 +25,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   return (
     <div
       className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-40 max-w-[440px] mx-auto"
-      style={{ paddingBottom: isLargeTextMode ? "1.5rem" : "1rem" }}
+      style={{ paddingBottom: isLargeTextMode ? "calc(1.5rem + 72px)" : "calc(1rem + 72px)" }}
     >
       <div className={`flex items-end gap-2 ${isLargeTextMode ? "p-5" : "p-4"}`}>
         <button
