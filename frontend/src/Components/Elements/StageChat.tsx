@@ -482,6 +482,13 @@ const StageChat = ({ onBack }: StageChatProps) => {
       let descriptionContent = actualExample.description || "이미지 분석이 완료되었습니다.";
       // 문자열로 변환 후 마크다운 처리 (안전성 확보)
       if (typeof descriptionContent === "string") {
+        // 이미 HTML이 포함되어 있는지 확인하고 제거 (이스케이프된 HTML 처리)
+        descriptionContent = descriptionContent
+          .replace(/&lt;span style="text-decoration: underline; color: #00DAAA; font-weight: 500;"&gt;/g, '') // 이스케이프된 태그 제거
+          .replace(/&lt;\/span&gt;/g, '') // 이스케이프된 닫는 태그 제거
+          .replace(/&lt;span[^&]*&gt;/g, '') // 기타 이스케이프된 span 태그 제거
+          .replace(/&lt;\/span&gt;/g, ''); // 닫는 태그 제거
+        
         // 개행 문자 처리 및 마크다운 스타일 적용
         descriptionContent = descriptionContent
           .replace(/\\n/g, "\n") // \n을 실제 개행으로 변환
