@@ -256,6 +256,34 @@ const QuestionDetail = () => {
     return map;
   }, [writingQuestionsData?.data]);
 
+  // AI 대화 기록 불러오기 (localStorage)
+  const chatMessages = useMemo(() => {
+    if (!targetDate) return [];
+    try {
+      // targetDate는 YYYY-MM-DD 형식, getTodayStringBy4AM도 YYYY-MM-DD 형식 반환
+      const storageKey = `stage_chat_messages_${targetDate}`;
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        const messages = JSON.parse(saved);
+        if (Array.isArray(messages) && messages.length > 0) {
+          // 타임스탬프를 Date 객체로 변환하고, 초기 AI 메시지 제외
+          return messages
+            .map((msg: any) => ({
+              ...msg,
+              timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date()
+            }))
+            .filter((msg: any) => {
+              // 초기 인사 메시지 제외
+              return !msg.content?.includes("안녕하세요! 영어 학습을 도와드릴");
+            });
+        }
+      }
+    } catch (error) {
+      console.error("AI 대화 기록 불러오기 실패:", error);
+    }
+    return [];
+  }, [targetDate]);
+
   const isLoading = questionsLoading || examplesLoading || writingRecordsLoading;
 
   const currentIndex = availableDates.findIndex(
@@ -1524,7 +1552,121 @@ const QuestionDetail = () => {
           </>
         )}
 
-        {questions.length === 0 && exampleRecords.length === 0 && writingRecords.length === 0 && (
+        {/* AI 대화 기록 섹션 */}
+        {chatMessages.length > 0 && (
+          <>
+            <div className="space-y-2 w-full max-w-full overflow-hidden mt-6">
+              <div className="font-semibold text-gray-600" style={headerTextStyle}>AI 대화</div>
+              
+              {chatMessages.map((message: any, index: number) => (
+                <div key={message.id || index} className="space-y-3">
+                  {/* 사용자 메시지 */}
+                  {message.type === "user" && (
+                    <div className="flex justify-end items-start">
+                      <div className={`max-w-[80%] min-w-0 ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-2xl bg-white text-gray-800 shadow-sm border border-gray-100`}
+                        style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}
+                      >
+                        {message.imageUrl && (
+                          <div className="mb-2">
+                            <img
+                              src={message.imageUrl}
+                              alt="업로드된 이미지"
+                              className="w-full rounded-lg object-contain max-h-64"
+                            />
+                          </div>
+                        )}
+                        {message.content && (
+                          <p className="leading-relaxed whitespace-pre-wrap break-words" style={{...baseTextStyle, wordBreak: 'break-word', overflowWrap: 'break-word'}}>
+                            {message.content}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* AI 메시지 */}
+                  {message.type === "ai" && (
+                    <div className="flex justify-start items-start">
+                      <div className={`max-w-[80%] min-w-0 ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-2xl bg-white text-gray-800 shadow-sm border border-gray-100`}
+                        style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}
+                      >
+                        {message.examples && message.examples.length > 0 ? (
+                          <div className="space-y-3">
+                            {message.content && (
+                              <div
+                                className="leading-relaxed"
+                                style={baseTextStyle}
+                                dangerouslySetInnerHTML={{ 
+                                  __html: message.content
+                                    .replace(/\*\*(.*?)\*\*/g, '<span style="text-decoration: underline; color: #00DAAA; font-weight: 500;">$1</span>')
+                                    .replace(/"([^"]*)"/g, '<span style="color: #00DAAA; font-weight: 500;">"$1"</span>')
+                                    .replace(/\n/g, "<br/>")
+                                }}
+                              />
+                            )}
+                            {/* 예문 카드들 */}
+                            <div className="space-y-3">
+                              {message.examples.map((example: any, exIndex: number) => (
+                                <div key={exIndex} className="px-4 py-3 bg-white rounded-lg shadow-sm border border-gray-100">
+                                  <div className="inline-block bg-[#B8E6D3] rounded-full px-2 py-0.5 mb-3">
+                                    <span className="font-medium text-gray-900" style={{ fontSize: `${isLargeTextMode ? 16 : 12}px` }}>
+                                      {example.context || "예문 상황"}
+                                    </span>
+                                  </div>
+                                  <div className="space-y-2">
+                                    {example.dialogue?.A && (
+                                      <div className="flex items-start gap-2">
+                                        <div className="w-8 h-8 rounded-full bg-[#00DAAA] flex items-center justify-center flex-shrink-0">
+                                          <span className="text-white font-bold" style={{ fontSize: `${isLargeTextMode ? 16 : 14}px` }}>A</span>
+                                        </div>
+                                        <div className="flex-1">
+                                          <p className="text-gray-800" style={baseTextStyle}>{example.dialogue.A.english}</p>
+                                          {example.dialogue.A.korean && (
+                                            <p className="text-gray-500 mt-1" style={smallTextStyle}>{example.dialogue.A.korean}</p>
+                                          )}
+                                        </div>
+                                      </div>
+                                    )}
+                                    {example.dialogue?.B && (
+                                      <div className="flex items-start gap-2">
+                                        <div className="w-8 h-8 rounded-full bg-[#00DAAA] flex items-center justify-center flex-shrink-0">
+                                          <span className="text-white font-bold" style={{ fontSize: `${isLargeTextMode ? 16 : 14}px` }}>B</span>
+                                        </div>
+                                        <div className="flex-1">
+                                          <p className="text-gray-800" style={baseTextStyle}>{example.dialogue.B.english}</p>
+                                          {example.dialogue.B.korean && (
+                                            <p className="text-gray-500 mt-1" style={smallTextStyle}>{example.dialogue.B.korean}</p>
+                                          )}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ) : (
+                          <div
+                            className="leading-relaxed"
+                            style={baseTextStyle}
+                            dangerouslySetInnerHTML={{ 
+                              __html: message.content
+                                .replace(/\*\*(.*?)\*\*/g, '<span style="text-decoration: underline; color: #00DAAA; font-weight: 500;">$1</span>')
+                                .replace(/"([^"]*)"/g, '<span style="color: #00DAAA; font-weight: 500;">"$1"</span>')
+                                .replace(/\n/g, "<br/>")
+                            }}
+                          />
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        {questions.length === 0 && exampleRecords.length === 0 && writingRecords.length === 0 && chatMessages.length === 0 && (
           <div className="flex justify-center items-center py-8">
             <div className="text-center text-gray-500">
               <p style={baseTextStyle}>이 날짜에는 학습 기록이 없습니다.</p>
