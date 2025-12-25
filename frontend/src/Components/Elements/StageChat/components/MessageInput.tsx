@@ -23,24 +23,26 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   onImageClick,
 }) => {
   const inputHeight = isLargeTextMode ? "52px" : "48px";
+  const buttonSize = isLargeTextMode ? "40px" : "36px";
+  const inputFontSize = isLargeTextMode ? "16px" : "14px";
   
   return (
     <div
       className="fixed left-0 right-0 bg-white border-t border-gray-200 z-40 max-w-[440px] mx-auto"
       style={{ 
         bottom: "72px",
-        paddingBottom: isLargeTextMode ? "1rem" : "0.75rem"
+        paddingBottom: isLargeTextMode ? "0.5rem" : "0.375rem"
       }}
     >
-      <div className={`flex items-center gap-2 ${isLargeTextMode ? "px-5 py-3" : "px-4 py-2"}`}>
+      <div className={`flex items-center gap-2 ${isLargeTextMode ? "px-4 py-2" : "px-3 py-1.5"}`}>
         <button
           onClick={onImageClick}
           className="rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors flex-shrink-0"
-          style={{ width: inputHeight, height: inputHeight }}
+          style={{ width: buttonSize, height: buttonSize }}
           aria-label="이미지 업로드"
         >
           <Icons.camera
-            className="w-5 h-5"
+            className={isLargeTextMode ? "w-4 h-4" : "w-3.5 h-3.5"}
             stroke="gray"
             strokeOpacity="1"
           />
@@ -51,11 +53,13 @@ export const MessageInput: React.FC<MessageInputProps> = ({
             onChange={(e) => onInputChange(e.target.value)}
             onKeyPress={onKeyPress}
             placeholder="궁금한 것을 질문해보세요..."
-            className="w-full px-4 py-3 border border-gray-300 rounded-2xl resize-none focus:outline-none focus:ring-2 focus:ring-[#00DAAA] focus:border-transparent bg-white"
+            className="w-full px-3 py-2 border border-gray-300 rounded-2xl resize-none focus:outline-none focus:ring-2 focus:ring-[#00DAAA] focus:border-transparent bg-white"
             style={{
               ...baseTextStyle,
+              fontSize: inputFontSize,
               minHeight: inputHeight,
               maxHeight: "120px",
+              lineHeight: "1.4",
             }}
             rows={1}
           />
@@ -68,11 +72,11 @@ export const MessageInput: React.FC<MessageInputProps> = ({
               ? "bg-[#00DAAA] hover:bg-[#00C495] cursor-pointer"
               : "bg-gray-300 cursor-not-allowed"
           }`}
-          style={{ width: inputHeight, height: inputHeight }}
+          style={{ width: buttonSize, height: buttonSize }}
         >
           <svg
-            width="20"
-            height="20"
+            width={isLargeTextMode ? "18" : "16"}
+            height={isLargeTextMode ? "18" : "16"}
             viewBox="0 0 24 24"
             fill="none"
             className="text-white"
