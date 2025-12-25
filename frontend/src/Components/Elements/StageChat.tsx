@@ -589,28 +589,11 @@ const StageChat = ({ onBack }: StageChatProps) => {
       {/* Chat Stage */}
       {cropStage === "chat" && (
         <>
-          {/* Date Separator - 고정 */}
-          <div className="px-4 py-1 bg-white border-b border-gray-200" style={{ marginTop: '48px' }}>
-            <div className="flex items-center">
-              <div className="flex-1 h-px bg-gray-300"></div>
-              <div className="px-4">
-                <span className="text-gray-500 font-medium" style={{ fontSize: `${isLargeTextMode ? 18 : 14}px` }}>
-                  {
-                    new Date().toLocaleDateString("ko-KR", {
-                      year: "2-digit",
-                      month: "2-digit",
-                      day: "2-digit",
-                      weekday: "short",
-                    })
-                  }
-                </span>
-              </div>
-              <div className="flex-1 h-px bg-gray-300"></div>
-            </div>
-          </div>
+          {/* Date Separator - 공간만 유지 (보이지 않음) */}
+          <div style={{ marginTop: '48px', height: '0px' }}></div>
 
           {/* Messages - 스크롤 가능 */}
-          <div className="flex-1 overflow-y-auto px-4 space-y-3" style={{ paddingTop: 'calc(48px + 0.5rem)', paddingBottom: 'calc(72px + 5rem)' }}>
+          <div className="flex-1 overflow-y-auto px-4 space-y-3" style={{ paddingTop: '0.5rem', paddingBottom: 'calc(72px + 5rem)' }}>
             {messages.map((message, index) => {
               const currentIndex = exampleScrollIndices[message.id] ?? 0;
               const currentExample = message.examples?.[currentIndex];
