@@ -8,6 +8,8 @@ export const useChatTTS = () => {
   const [playingChatExampleId, setPlayingChatExampleId] = useState<string | null>(null);
   const ttsMutation = useGenerateTTS();
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const isPlayingTTSRef = useRef(false);
+  const playingChatExampleIdRef = useRef<string | null>(null);
   const { showError } = useErrorHandler();
 
   const stopTTS = useCallback(() => {
@@ -19,42 +21,18 @@ export const useChatTTS = () => {
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
     }
+    isPlayingTTSRef.current = false;
+    playingChatExampleIdRef.current = null;
     setIsPlayingTTS(false);
     setPlayingChatExampleId(null);
   }, []);
-
-  const useBrowserTTS = useCallback((textToRead: string, exampleId: string) => {
-    if (!('speechSynthesis' in window)) {
-      showError("TTS 오류", "음성을 재생할 수 없습니다. 브라우저가 TTS를 지원하지 않습니다.");
-      return;
-    }
-
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(textToRead);
-    utterance.lang = 'en-US';
-    utterance.rate = 1.0;
-    utterance.pitch = 1.0;
-    utterance.volume = 1.0;
-
-    utterance.onend = () => {
-      setPlayingChatExampleId(null);
-      setIsPlayingTTS(false);
-    };
-
-    utterance.onerror = () => {
-      setPlayingChatExampleId(null);
-      setIsPlayingTTS(false);
-    };
-
-    window.speechSynthesis.speak(utterance);
-  }, [showError]);
 
   const playChatExampleTTS = useCallback(async (
     dialogueA: string,
     dialogueB: string,
     exampleId: string
   ) => {
-    if (playingChatExampleId === exampleId && isPlayingTTS) {
+    if (playingChatExampleIdRef.current === exampleId && isPlayingTTSRef.current) {
       stopTTS();
       return;
     }
@@ -67,8 +45,44 @@ export const useChatTTS = () => {
     const textToRead = `${dialogueA}. ${dialogueB}`;
 
     stopTTS();
+    playingChatExampleIdRef.current = exampleId;
+    isPlayingTTSRef.current = true;
     setPlayingChatExampleId(exampleId);
     setIsPlayingTTS(true);
+
+    const useBrowserTTS = (text: string) => {
+      if (!('speechSynthesis' in window)) {
+        showError("TTS 오류", "음성을 재생할 수 없습니다. 브라우저가 TTS를 지원하지 않습니다.");
+        playingChatExampleIdRef.current = null;
+        isPlayingTTSRef.current = false;
+        setPlayingChatExampleId(null);
+        setIsPlayingTTS(false);
+        return;
+      }
+
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'en-US';
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+      utterance.volume = 1.0;
+
+      utterance.onend = () => {
+        playingChatExampleIdRef.current = null;
+        isPlayingTTSRef.current = false;
+        setPlayingChatExampleId(null);
+        setIsPlayingTTS(false);
+      };
+
+      utterance.onerror = () => {
+        playingChatExampleIdRef.current = null;
+        isPlayingTTSRef.current = false;
+        setPlayingChatExampleId(null);
+        setIsPlayingTTS(false);
+      };
+
+      window.speechSynthesis.speak(utterance);
+    };
 
     try {
       let response = null;
@@ -95,7 +109,7 @@ export const useChatTTS = () => {
       }
 
       if (!response || !response.audioContent) {
-        useBrowserTTS(textToRead, exampleId);
+        useBrowserTTS(textToRead);
         return;
       }
 
@@ -105,6 +119,8 @@ export const useChatTTS = () => {
 
       audio.onended = () => {
         if (audioRef.current === audio) {
+          playingChatExampleIdRef.current = null;
+          isPlayingTTSRef.current = false;
           setPlayingChatExampleId(null);
           setIsPlayingTTS(false);
           audioRef.current = null;
@@ -113,22 +129,27 @@ export const useChatTTS = () => {
 
       audio.onerror = () => {
         if (audioRef.current === audio) {
+          playingChatExampleIdRef.current = null;
+          isPlayingTTSRef.current = false;
           setPlayingChatExampleId(null);
           setIsPlayingTTS(false);
           audioRef.current = null;
-          useBrowserTTS(textToRead, exampleId);
+          useBrowserTTS(textToRead);
         }
       };
 
       audio.oncanplaythrough = async () => {
-        if (audioRef.current === audio && playingChatExampleId === exampleId && isPlayingTTS) {
+        if (audioRef.current === audio && playingChatExampleIdRef.current === exampleId && isPlayingTTSRef.current) {
           try {
             await audio.play();
           } catch (playError) {
             console.error("오디오 재생 오류:", playError);
+            playingChatExampleIdRef.current = null;
+            isPlayingTTSRef.current = false;
             setPlayingChatExampleId(null);
             setIsPlayingTTS(false);
             audioRef.current = null;
+            useBrowserTTS(textToRead);
           }
         }
       };
@@ -136,11 +157,13 @@ export const useChatTTS = () => {
       audio.load();
     } catch (error) {
       console.error("TTS 요청 중 오류:", error);
+      playingChatExampleIdRef.current = null;
+      isPlayingTTSRef.current = false;
       setPlayingChatExampleId(null);
       setIsPlayingTTS(false);
-      showError("재생 오류", "TTS 요청 중 오류가 발생했습니다.");
+      useBrowserTTS(textToRead);
     }
-  }, [isPlayingTTS, playingChatExampleId, stopTTS, ttsMutation, useBrowserTTS, showError]);
+  }, [stopTTS, ttsMutation, showError]);
 
   return {
     isPlayingTTS,
