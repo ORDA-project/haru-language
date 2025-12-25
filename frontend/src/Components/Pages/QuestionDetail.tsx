@@ -39,8 +39,6 @@ const QuestionDetail = () => {
   const [selectedExampleIds, setSelectedExampleIds] = useState<Set<number>>(new Set());
   const [isDeleteModeWriting, setIsDeleteModeWriting] = useState(false);
   const [selectedWritingIds, setSelectedWritingIds] = useState<Set<number>>(new Set());
-  const [isDeleteModeQuestion, setIsDeleteModeQuestion] = useState(false);
-  const [selectedQuestionIds, setSelectedQuestionIds] = useState<Set<number>>(new Set());
   const [isDeleteModeChat, setIsDeleteModeChat] = useState(false);
   const [selectedChatMessageIds, setSelectedChatMessageIds] = useState<Set<string>>(new Set());
   const ttsMutation = useGenerateTTS();
@@ -48,7 +46,6 @@ const QuestionDetail = () => {
   const { showWarning, showError, showSuccess } = useErrorHandler();
   const deleteWritingRecordMutation = useDeleteWritingRecord();
   const deleteExampleMutation = useDeleteExample();
-  const deleteQuestionMutation = useDeleteQuestion();
   
   // 스타일 계산 (메모이제이션)
   const textStyles = useMemo(() => createExtendedTextStyles(isLargeTextMode), [isLargeTextMode]);
@@ -122,14 +119,6 @@ const QuestionDetail = () => {
     return selectedDate; // 이미 YYYY-MM-DD 형식
   }, [selectedDate]);
 
-  const questions = useMemo(() => {
-    if (!questionsData?.data || !targetDate) return [];
-    return questionsData.data.filter((q) => {
-      if (!q.created_at) return false;
-      const questionDate = getDateString(q.created_at);
-      return questionDate === targetDate;
-    });
-  }, [questionsData?.data, targetDate]);
 
   const exampleRecords = useMemo(() => {
     const parseGeneratedExample = (rawDescription?: string) => {
@@ -289,7 +278,7 @@ const QuestionDetail = () => {
     return [];
   }, [targetDate]);
 
-  const isLoading = questionsLoading || examplesLoading || writingRecordsLoading;
+  const isLoading = examplesLoading || writingRecordsLoading;
 
   const currentIndex = availableDates.findIndex(
     (d) => d === selectedDate
@@ -650,7 +639,6 @@ const QuestionDetail = () => {
       {/* Chat Content */}
       <div className={`flex-1 overflow-y-auto ${isLargeTextMode ? "p-5" : "p-4"} ${isLargeTextMode ? "space-y-5" : "space-y-4"} bg-[#F7F8FB] ${
         (isDeleteModeWriting && selectedWritingIds.size > 0) || 
-        (isDeleteModeQuestion && selectedQuestionIds.size > 0) ||
         (isDeleteMode && selectedExampleIds.size > 0) ||
         (isDeleteModeChat && selectedChatMessageIds.size > 0)
           ? "pb-32" 
@@ -913,291 +901,6 @@ const QuestionDetail = () => {
                 </div>
               );
             })}
-          </>
-        )}
-
-        {/* 채팅기록 섹션 */}
-        {questions.length > 0 && (
-          <>
-            <div className="space-y-2 w-full max-w-full overflow-hidden">
-              <div className="flex items-center justify-between w-full min-w-0 gap-2">
-                <div className="font-semibold text-gray-600 flex-shrink-0" style={headerTextStyle}>채팅기록</div>
-                <button
-                  onClick={() => {
-                    setIsDeleteModeQuestion(!isDeleteModeQuestion);
-                    if (isDeleteModeQuestion) {
-                      setSelectedQuestionIds(new Set());
-                    }
-                  }}
-                  className={`px-3 py-2 rounded-lg font-semibold transition-colors flex items-center gap-1.5 shadow-md flex-shrink-0 whitespace-nowrap ${
-                    isDeleteModeQuestion
-                      ? 'bg-red-500 hover:bg-red-600 active:bg-red-700 text-white'
-                      : 'bg-white hover:bg-gray-50 text-gray-700 border-2 border-gray-300'
-                  }`}
-                  style={smallTextStyle}
-                >
-                  {isDeleteModeQuestion ? (
-                    <>
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                      취소
-                    </>
-                  ) : (
-                    <>
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                      삭제
-                    </>
-                  )}
-                </button>
-              </div>
-              
-              {isDeleteModeQuestion && (
-                <>
-                   <div className="flex items-center justify-between mb-3 w-full max-w-full overflow-hidden">
-                     <button
-                       onClick={() => {
-                         if (selectedQuestionIds.size === questions.length && questions.length > 0) {
-                           setSelectedQuestionIds(new Set());
-                         } else {
-                           setSelectedQuestionIds(new Set(questions.map((q: any) => q.id)));
-                         }
-                       }}
-                       className="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors flex-shrink-0"
-                     >
-                       <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${
-                         selectedQuestionIds.size === questions.length && questions.length > 0
-                           ? 'bg-red-500 border-red-500' 
-                           : 'bg-white border-gray-300'
-                       }`}>
-                         {selectedQuestionIds.size === questions.length && questions.length > 0 && (
-                           <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                           </svg>
-                         )}
-                       </div>
-                       <span className="text-gray-700 whitespace-nowrap" style={smallTextStyle}>전체 선택</span>
-                     </button>
-                   </div>
-                   
-                   {/* 하단 고정 삭제 액션 바 */}
-                   {selectedQuestionIds.size > 0 && (
-                    <div className="absolute bottom-20 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-40 w-full max-w-full overflow-hidden box-border">
-                      <div className="flex items-center justify-between px-3 py-2.5 gap-2 w-full min-w-0">
-                        <span className="text-gray-700 font-medium flex-shrink-0 whitespace-nowrap" style={baseTextStyle}>
-                          {selectedQuestionIds.size}개 선택
-                        </span>
-                        <div className="flex items-center gap-1.5 flex-shrink-0">
-                          <button
-                            onClick={() => setSelectedQuestionIds(new Set())}
-                            className="px-3 py-1.5 text-gray-600 hover:text-gray-800 transition-colors whitespace-nowrap"
-                            style={smallTextStyle}
-                          >
-                            취소
-                          </button>
-                          <button
-                            onClick={async () => {
-                              if (window.confirm(`선택한 ${selectedQuestionIds.size}개의 채팅 기록을 삭제하시겠습니까?`)) {
-                                try {
-                                  const selectedQuestions = questions.filter((q: any) => selectedQuestionIds.has(q.id));
-                                  const deletePromises = Array.from(selectedQuestionIds).map(id =>
-                                    deleteQuestionMutation.mutateAsync(id)
-                                  );
-                                  await Promise.all(deletePromises);
-                                  // localStorage에서도 채팅 메시지 제거
-                                  const questionContents = selectedQuestions.map((q: any) => q.content || "");
-                                  removeChatMessagesFromStorage(Array.from(selectedQuestionIds), questionContents, "stage_chat_messages");
-                                  removeChatMessagesFromStorage(Array.from(selectedQuestionIds), questionContents, "chat_messages");
-                                  showSuccess("삭제 완료", `${selectedQuestionIds.size}개의 채팅 기록이 삭제되었습니다.`);
-                                  setSelectedQuestionIds(new Set());
-                                  setIsDeleteModeQuestion(false);
-                                } catch (error) {
-                                  showError("삭제 실패", "채팅 기록 삭제에 실패했습니다.");
-                                }
-                              }
-                            }}
-                            disabled={deleteQuestionMutation.isPending}
-                            className="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors disabled:opacity-50 font-medium flex items-center gap-1 whitespace-nowrap"
-                            style={smallTextStyle}
-                          >
-                            <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                            <span className="whitespace-nowrap">삭제</span>
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </>
-              )}
-              
-              {questions.map((question, index) => {
-                const isSelected = selectedQuestionIds.has(question.id);
-                
-                return (
-                  <div 
-                    key={question.id} 
-                    className={`space-y-3 relative transition-all duration-200 ${
-                      isDeleteModeQuestion && isSelected ? 'ring-2 ring-red-500 ring-offset-2 rounded-lg' : ''
-                    }`}
-                  >
-                    {/* User Question */}
-                    <div className="flex justify-end items-start gap-3">
-                      {/* 체크박스 (삭제 모드일 때만 표시, 왼쪽에 배치) */}
-                      {isDeleteModeQuestion && (
-                        <div className="flex-shrink-0 pt-1">
-                          <button
-                            onClick={() => {
-                              const newSet = new Set(selectedQuestionIds);
-                              if (isSelected) {
-                                newSet.delete(question.id);
-                              } else {
-                                newSet.add(question.id);
-                              }
-                              setSelectedQuestionIds(newSet);
-                            }}
-                            className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
-                              isSelected 
-                                ? 'bg-red-500 border-red-500' 
-                                : 'bg-white border-gray-300 hover:border-red-400'
-                            }`}
-                            aria-label={isSelected ? "선택 해제" : "선택"}
-                          >
-                            {isSelected && (
-                              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                              </svg>
-                            )}
-                          </button>
-                        </div>
-                      )}
-                       <div className={`max-w-[80%] min-w-0 ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-2xl bg-white text-gray-800 shadow-sm border border-gray-100 transition-all ${
-                         isDeleteModeQuestion && isSelected ? 'bg-red-50 border-red-200' : ''
-                       }`}
-                       style={{ 
-                         wordBreak: 'break-word', 
-                         overflowWrap: 'break-word'
-                       }}
-                       >
-                         <p className="leading-relaxed whitespace-pre-wrap break-words" style={{...baseTextStyle, wordBreak: 'break-word', overflowWrap: 'break-word'}}>
-                           {question.content}
-                         </p>
-                       </div>
-                    </div>
-
-                    {/* AI Response */}
-                    {question.Answers && question.Answers.length > 0 && (
-                      <div className="flex justify-start">
-                        <div className={`max-w-[80%] min-w-0 ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-2xl bg-white text-gray-800 shadow-sm border border-gray-100`}
-                        style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}
-                        >
-                        <div className="leading-relaxed" style={baseTextStyle}>
-                    {question.Answers[0].content.includes(
-                      "회화, 독해, 문법분석"
-                    ) ? (
-                      // 버튼 형태의 응답
-                      <div className="space-y-3">
-                        <p className="text-gray-600 mb-3" style={baseTextStyle}>
-                          {question.Answers[0].content}
-                        </p>
-                        <div className="flex flex-wrap gap-2">
-                          <button className="px-3 py-2 bg-[#00DAAA] text-white rounded-full" style={xSmallTextStyle}>
-                            회화
-                          </button>
-                          <button className="px-3 py-2 bg-white text-gray-700 rounded-full border border-gray-300" style={xSmallTextStyle}>
-                            독해
-                          </button>
-                          <button className="px-3 py-2 bg-white text-gray-700 rounded-full border border-gray-300" style={xSmallTextStyle}>
-                            문법분석
-                          </button>
-                          <button className="px-3 py-2 bg-white text-gray-700 rounded-full border border-gray-300" style={xSmallTextStyle}>
-                            비즈니스
-                          </button>
-                          <button className="px-3 py-2 bg-white text-gray-700 rounded-full border border-gray-300" style={xSmallTextStyle}>
-                            어휘
-                          </button>
-                        </div>
-                      </div>
-                    ) : question.Answers[0].content.includes(
-                        "채팅 또는 카메라"
-                      ) ? (
-                      // 채팅/카메라 선택 버튼
-                      <div className="space-y-3">
-                        <p className="text-gray-600 mb-3" style={baseTextStyle}>
-                          {question.Answers[0].content}
-                        </p>
-                        <div className="flex gap-2">
-                          <button className="px-4 py-2 bg-white text-gray-700 rounded-full border border-gray-300" style={smallTextStyle}>
-                            채팅
-                          </button>
-                          <button className="px-4 py-2 bg-[#00DAAA] text-white rounded-full" style={smallTextStyle}>
-                            카메라
-                          </button>
-                        </div>
-                      </div>
-                    ) : question.Answers[0].content.includes(
-                        "How Do You Feel Today"
-                      ) ? (
-                      // 이미지와 상세 설명이 포함된 응답
-                      <div className="space-y-4">
-                        <div className="bg-white rounded-lg p-4 border border-gray-200">
-                          <h3 className="font-semibold text-gray-800 mb-3" style={headerTextStyle}>
-                            How Do You Feel Today?
-                          </h3>
-                          <div className="bg-gray-100 rounded-lg p-4 mb-3">
-                            <div className="text-gray-600 space-y-2" style={baseTextStyle}>
-                              <p>A: How do you feel today?</p>
-                              <p>B: Not so good.</p>
-                              <p>A: What's the matter?</p>
-                              <p>B: I have a headache.</p>
-                              <p>A: I'm sorry to hear that.</p>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="text-gray-700 leading-relaxed" style={baseTextStyle}>
-                          <p className="mb-3">
-                            <strong>'How do you feel today?'</strong>는 한국어로{" "}
-                            <strong>'오늘 기분이 어때?'</strong> 또는{" "}
-                            <strong>'오늘은 어떻게 느껴?'</strong>로 번역됩니다.
-                            주로 상대방의 감정이나 컨디션에 대해 묻는 표현으로,
-                            친근하고 일상적인 대화에서 자주 사용됩니다.
-                          </p>
-                          <div className="bg-[#E8F5E8] rounded-lg p-3 border border-[#4A7C59]">
-                            <h4 className="font-semibold text-[#2D5A2D] mb-2" style={headerTextStyle}>
-                              컨디션을 물을 때
-                            </h4>
-                            <div className="text-[#2D5A2D] space-y-1" style={baseTextStyle}>
-                              <p>
-                                A: You looked tired yesterday. How do you feel
-                                today?
-                              </p>
-                              <p>A: 어제 피곤해 보이던데, 오늘은 어때?</p>
-                              <p>B: Much better, I got some good rest.</p>
-                              <p>B: 훨씬 나아졌어. 푹 쉬었거든.</p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      // 일반 텍스트 응답
-                      <p className="leading-relaxed whitespace-pre-wrap" style={{...baseTextStyle, paddingLeft: '8px'}}>
-                        {question.Answers[0].content}
-                      </p>
-                    )}
-                        </div>
-                      </div>
-                    </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* 구분선 */}
-            <div className="border-t border-gray-300 my-4"></div>
           </>
         )}
 
@@ -1584,12 +1287,12 @@ const QuestionDetail = () => {
           </>
         )}
 
-        {/* AI 대화 기록 섹션 */}
+        {/* 채팅기록 섹션 */}
         {chatMessages.length > 0 && (
           <>
-            <div className="space-y-2 w-full max-w-full overflow-hidden mt-6">
+            <div className="space-y-2 w-full max-w-full overflow-hidden">
               <div className="flex items-center justify-between w-full min-w-0 gap-2">
-                <div className="font-semibold text-gray-600 flex-shrink-0" style={headerTextStyle}>AI 대화</div>
+                <div className="font-semibold text-gray-600 flex-shrink-0" style={headerTextStyle}>채팅기록</div>
                 <button
                   onClick={() => {
                     setIsDeleteModeChat(!isDeleteModeChat);
@@ -1667,7 +1370,7 @@ const QuestionDetail = () => {
                           </button>
                           <button
                             onClick={async () => {
-                              if (window.confirm(`선택한 ${selectedChatMessageIds.size}개의 AI 대화 기록을 삭제하시겠습니까?`)) {
+                              if (window.confirm(`선택한 ${selectedChatMessageIds.size}개의 채팅 기록을 삭제하시겠습니까?`)) {
                                 try {
                                   // localStorage에서 메시지 제거
                                   const storageKey = `stage_chat_messages_${targetDate}`;
@@ -1688,13 +1391,13 @@ const QuestionDetail = () => {
                                     }
                                   }
                                   
-                                  showSuccess("삭제 완료", `${selectedChatMessageIds.size}개의 AI 대화 기록이 삭제되었습니다.`);
+                                  showSuccess("삭제 완료", `${selectedChatMessageIds.size}개의 채팅 기록이 삭제되었습니다.`);
                                   setSelectedChatMessageIds(new Set());
                                   setIsDeleteModeChat(false);
                                   // 페이지 새로고침하여 변경사항 반영
                                   window.location.reload();
                                 } catch (error) {
-                                  showError("삭제 실패", "AI 대화 기록 삭제에 실패했습니다.");
+                                  showError("삭제 실패", "채팅 기록 삭제에 실패했습니다.");
                                 }
                               }
                             }}
@@ -2051,7 +1754,7 @@ const QuestionDetail = () => {
           </>
         )}
 
-        {questions.length === 0 && exampleRecords.length === 0 && writingRecords.length === 0 && chatMessages.length === 0 && (
+        {exampleRecords.length === 0 && writingRecords.length === 0 && chatMessages.length === 0 && (
           <div className="flex justify-center items-center py-8">
             <div className="text-center text-gray-500">
               <p style={baseTextStyle}>이 날짜에는 학습 기록이 없습니다.</p>
