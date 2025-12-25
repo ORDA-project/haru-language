@@ -618,73 +618,32 @@ const StageChat = ({ onBack }: StageChatProps) => {
                 )}
 
                 {/* 예문 카드 */}
-                {message.examples && message.examples.length > 0 && (
-                  <div className="flex flex-col justify-start">
-                    {/* 스크롤 컨테이너 */}
-                    <div
-                      ref={(el) => {
-                        exampleScrollRefs.current[message.id] = el;
-                      }}
-                      data-example-scroll-container
-                      className="flex flex-row overflow-x-auto gap-4 pb-2"
-                      style={{
-                        scrollSnapType: 'x mandatory',
-                        WebkitOverflowScrolling: 'touch',
-                        scrollbarWidth: 'none',
-                        msOverflowStyle: 'none',
-                      }}
-                      onScroll={(e) => {
-                        const container = e.currentTarget;
-                        const scrollLeft = container.scrollLeft;
-                        const cardWidth = 343 + 16; // 카드 너비 + gap
-                        const currentIndex = Math.round(scrollLeft / cardWidth);
-                        if (message.examples && message.examples.length > 0) {
-                          setExampleScrollIndices((prev) => ({
-                            ...prev,
-                            [message.id]: Math.min(currentIndex, message.examples!.length - 1),
-                          }));
-                        }
-                      }}
-                    >
-                      <style>{`
-                        div[data-example-scroll-container]::-webkit-scrollbar {
-                          display: none;
-                        }
-                      `}</style>
-                      {message.examples.map((example, exampleIndex) => {
-                        const currentScrollIndex = exampleScrollIndices[message.id] ?? 0;
-                        return (
-                          <div
-                            key={exampleIndex}
-                            className="flex-shrink-0 bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden"
-                            style={{
-                              width: '343px',
-                              paddingLeft: '12px',
-                              paddingTop: '12px',
-                              paddingBottom: '16px',
-                              paddingRight: '16px',
-                              scrollSnapAlign: 'start',
-                            }}
-                          >
-                            {/* Context Badge and Dots */}
-                            <div className="flex items-center justify-between mb-3">
-                              <div className="inline-block bg-[#B8E6D3] rounded-full px-2 py-0.5 border border-[#B8E6D3]" style={{ marginLeft: '-4px', marginTop: '-4px' }}>
-                                <span className="font-medium text-gray-900" style={{ fontSize: `${isLargeTextMode ? 16 : 12}px` }}>예문 상황</span>
-                              </div>
-                              <div className="flex items-center" style={{ gap: '4px' }}>
-                                {message.examples && message.examples.length > 0 && [0, 1, 2].map((dotIdx) => (
-                                  <div
-                                    key={dotIdx}
-                                    style={{
-                                      width: '6px',
-                                      height: '6px',
-                                      borderRadius: '50%',
-                                      backgroundColor: dotIdx === currentScrollIndex ? '#00DAAA' : '#D1D5DB',
-                                    }}
-                                  />
-                                ))}
-                              </div>
-                            </div>
+                {message.examples && message.examples.length > 0 && (() => {
+                  const currentIndex = exampleScrollIndices[message.id] ?? 0;
+                  const currentExample = message.examples[currentIndex];
+                  return (
+                    <div className="flex justify-start">
+                      <div className="max-w-[80%] px-4 py-3 bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden"
+                      >
+                        {/* Context Badge and Dots */}
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="inline-block bg-[#B8E6D3] rounded-full px-2 py-0.5 border border-[#B8E6D3]" style={{ marginLeft: '-4px', marginTop: '-4px' }}>
+                            <span className="font-medium text-gray-900" style={{ fontSize: `${isLargeTextMode ? 16 : 12}px` }}>예문 상황</span>
+                          </div>
+                          <div className="flex items-center" style={{ gap: '4px' }}>
+                            {message.examples && message.examples.length > 0 && [0, 1, 2].map((dotIdx) => (
+                              <div
+                                key={dotIdx}
+                                style={{
+                                  width: '6px',
+                                  height: '6px',
+                                  borderRadius: '50%',
+                                  backgroundColor: dotIdx === currentIndex ? '#00DAAA' : '#D1D5DB',
+                                }}
+                              />
+                            ))}
+                          </div>
+                        </div>
 
                         {/* Dialogue */}
                         <div className="space-y-2 mb-3" style={{ paddingLeft: '8px' }}>
@@ -695,10 +654,10 @@ const StageChat = ({ onBack }: StageChatProps) => {
                             </div>
                             <div className="flex-1" style={{ paddingLeft: '4px', marginTop: '-2px' }}>
                               <p className="font-medium text-gray-900 leading-relaxed" style={{ fontSize: `${isLargeTextMode ? 18 : 14}px` }}>
-                                {example.dialogue?.A?.english || "예문 내용"}
+                                {currentExample.dialogue?.A?.english || "예문 내용"}
                               </p>
                               <p className="text-gray-600 leading-relaxed mt-1" style={{ fontSize: `${isLargeTextMode ? 18 : 14}px` }}>
-                                {example.dialogue?.A?.korean || "예문 한글버전"}
+                                {currentExample.dialogue?.A?.korean || "예문 한글버전"}
                               </p>
                             </div>
                           </div>
@@ -710,10 +669,10 @@ const StageChat = ({ onBack }: StageChatProps) => {
                             </div>
                             <div className="flex-1" style={{ paddingLeft: '4px', marginTop: '-2px' }}>
                               <p className="font-medium text-gray-900 leading-relaxed" style={{ fontSize: `${isLargeTextMode ? 18 : 14}px` }}>
-                                {example.dialogue?.B?.english || "예문 내용"}
+                                {currentExample.dialogue?.B?.english || "예문 내용"}
                               </p>
                               <p className="text-gray-600 leading-relaxed mt-1" style={{ fontSize: `${isLargeTextMode ? 18 : 14}px` }}>
-                                {example.dialogue?.B?.korean || "예문 한글버전"}
+                                {currentExample.dialogue?.B?.korean || "예문 한글버전"}
                               </p>
                             </div>
                           </div>
@@ -723,15 +682,13 @@ const StageChat = ({ onBack }: StageChatProps) => {
                         <div className="flex justify-center items-center gap-2 pt-4 border-t border-gray-200">
                           <button
                             onClick={() => {
-                              const scrollContainer = exampleScrollRefs.current[message.id];
-                              if (scrollContainer && message.examples) {
-                                const currentIndex = exampleScrollIndices[message.id] ?? 0;
-                                const newIndex = Math.max(0, currentIndex - 1);
-                                const cardWidth = 343 + 16; // 카드 너비 + gap
-                                scrollContainer.scrollTo({
-                                  left: newIndex * cardWidth,
-                                  behavior: 'smooth'
-                                });
+                              if (message.examples) {
+                                const currentIdx = exampleScrollIndices[message.id] ?? 0;
+                                const newIndex = Math.max(0, currentIdx - 1);
+                                setExampleScrollIndices((prev) => ({
+                                  ...prev,
+                                  [message.id]: newIndex,
+                                }));
                               }
                             }}
                             disabled={message.examples && (exampleScrollIndices[message.id] ?? 0) === 0}
@@ -745,7 +702,7 @@ const StageChat = ({ onBack }: StageChatProps) => {
                           <button
                             onClick={async () => {
                               // 재생 중이면 중지
-                              const exampleId = `${message.id}-${exampleIndex}`;
+                              const exampleId = `${message.id}-${currentIndex}`;
                               if (playingExampleId === exampleId && isPlayingTTS) {
                                 stopCurrentAudio();
                                 setPlayingExampleId(null);
@@ -754,13 +711,13 @@ const StageChat = ({ onBack }: StageChatProps) => {
                               }
 
                               // 안전한 접근을 위한 null 체크
-                              if (!example?.dialogue?.A?.english || !example?.dialogue?.B?.english) {
+                              if (!currentExample?.dialogue?.A?.english || !currentExample?.dialogue?.B?.english) {
                                 showError("재생 오류", "예문 데이터가 올바르지 않습니다.");
                                 return;
                               }
                               
-                              const dialogueA = example.dialogue.A.english;
-                              const dialogueB = example.dialogue.B.english;
+                              const dialogueA = currentExample.dialogue.A.english;
+                              const dialogueB = currentExample.dialogue.B.english;
                               const textToRead = `${dialogueA}. ${dialogueB}`;
                               
                               stopCurrentAudio();
@@ -810,13 +767,13 @@ const StageChat = ({ onBack }: StageChatProps) => {
                               }
                             }}
                             className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors shadow-md ${
-                              playingExampleId === `${message.id}-${exampleIndex}` && isPlayingTTS
+                              playingExampleId === `${message.id}-${currentIndex}` && isPlayingTTS
                                 ? "bg-[#FF6B35] hover:bg-[#E55A2B]"
                                 : "bg-[#00DAAA] hover:bg-[#00C299]"
                             }`}
-                            aria-label={playingExampleId === `${message.id}-${exampleIndex}` && isPlayingTTS ? "재생 중지" : "음성 재생"}
+                            aria-label={playingExampleId === `${message.id}-${currentIndex}` && isPlayingTTS ? "재생 중지" : "음성 재생"}
                           >
-                            {playingExampleId === `${message.id}-${exampleIndex}` && isPlayingTTS ? (
+                            {playingExampleId === `${message.id}-${currentIndex}` && isPlayingTTS ? (
                               <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
                                 <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
                               </svg>
@@ -828,15 +785,13 @@ const StageChat = ({ onBack }: StageChatProps) => {
                           </button>
                           <button
                             onClick={() => {
-                              const scrollContainer = exampleScrollRefs.current[message.id];
-                              if (scrollContainer && message.examples) {
-                                const currentIndex = exampleScrollIndices[message.id] ?? 0;
-                                const newIndex = Math.min(message.examples.length - 1, currentIndex + 1);
-                                const cardWidth = 343 + 16; // 카드 너비 + gap
-                                scrollContainer.scrollTo({
-                                  left: newIndex * cardWidth,
-                                  behavior: 'smooth'
-                                });
+                              if (message.examples) {
+                                const currentIdx = exampleScrollIndices[message.id] ?? 0;
+                                const newIndex = Math.min(message.examples.length - 1, currentIdx + 1);
+                                setExampleScrollIndices((prev) => ({
+                                  ...prev,
+                                  [message.id]: newIndex,
+                                }));
                               }
                             }}
                             disabled={message.examples && (exampleScrollIndices[message.id] ?? 0) >= message.examples.length - 1}
@@ -848,12 +803,10 @@ const StageChat = ({ onBack }: StageChatProps) => {
                             </svg>
                           </button>
                         </div>
-                          </div>
-                        );
-                      })}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
 
               </React.Fragment>
             ))}
