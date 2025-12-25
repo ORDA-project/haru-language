@@ -31,7 +31,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
       className="fixed left-0 right-0 bg-white border-t border-gray-200 z-40 max-w-[440px] mx-auto"
       style={{ 
         bottom: "72px",
-        paddingBottom: isLargeTextMode ? "0.5rem" : "0.375rem"
+        paddingBottom: isLargeTextMode ? "0.25rem" : "0.1875rem"
       }}
     >
       <div className={`flex items-center gap-2 ${isLargeTextMode ? "px-4 py-2" : "px-3 py-1.5"}`}>
@@ -52,14 +52,16 @@ export const MessageInput: React.FC<MessageInputProps> = ({
             value={inputMessage}
             onChange={(e) => onInputChange(e.target.value)}
             onKeyPress={onKeyPress}
-            placeholder="궁금한 것을 질문해보세요..."
-            className="w-full px-3 py-2 border border-gray-300 rounded-2xl resize-none focus:outline-none focus:ring-2 focus:ring-[#00DAAA] focus:border-transparent bg-white"
+            placeholder="궁금한 것을 질문해보세요!"
+            className="w-full px-3 border border-gray-300 rounded-2xl resize-none focus:outline-none focus:ring-2 focus:ring-[#00DAAA] focus:border-transparent bg-white"
             style={{
               ...baseTextStyle,
               fontSize: inputFontSize,
               minHeight: inputHeight,
               maxHeight: "120px",
               lineHeight: "1.4",
+              paddingTop: `calc((${inputHeight} - ${inputFontSize} * 1.4) / 2)`,
+              paddingBottom: `calc((${inputHeight} - ${inputFontSize} * 1.4) / 2)`,
             }}
             rows={1}
           />

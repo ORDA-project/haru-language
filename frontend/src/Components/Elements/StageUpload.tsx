@@ -33,7 +33,7 @@ const StageUpload = ({ handleFileUpload, handleAIChat, hasSavedExample = false, 
   return (
     <div className="w-full flex-1 flex flex-col bg-[#F7F8FB]">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 bg-white border-b border-gray-200">
+      <div className="flex items-center justify-between py-3 px-4 bg-white border-b border-gray-200">
         <div className="w-8"></div>
         <div className="text-center">
           <h1 className="font-semibold text-gray-800" style={headerTextStyle}>예문 생성</h1>
