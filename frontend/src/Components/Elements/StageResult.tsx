@@ -153,6 +153,8 @@ const StageResult = ({
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isPlayingTTS, setIsPlayingTTS] = useState(false);
   const [playingExampleId, setPlayingExampleId] = useState<string | null>(null);
+  const playingExampleIdRef = useRef<string | null>(null);
+  const isPlayingTTSRef = useRef<boolean>(false);
   const [isLargeTextMode] = useAtom(isLargeTextModeAtom);
   const [windowWidth, setWindowWidth] = useState(() => typeof window !== 'undefined' ? window.innerWidth : 440);
   const { showError, showSuccess } = useErrorHandler();
@@ -326,7 +328,7 @@ const StageResult = ({
 
   // TTS 재생
   const playDialogueSequence = useCallback(async (dialogueA: string, dialogueB: string, exampleId: string) => {
-    const playSingleDialogue = async (text: string): Promise<void> => {
+    const playSingleDialogue = async (text: string, currentExampleId: string): Promise<void> => {
       return new Promise((resolve, reject) => {
         fetch(API_ENDPOINTS.tts, {
           method: "POST",
@@ -359,10 +361,19 @@ const StageResult = ({
             };
             
             audio.oncanplaythrough = async () => {
-              try {
-                await audio.play();
-              } catch (playError) {
-                reject(playError);
+              // 재생 중지 상태 확인 - ref를 사용하여 최신 상태 확인
+              if (audioRef.current === audio && playingExampleIdRef.current === currentExampleId && isPlayingTTSRef.current) {
+                try {
+                  await audio.play();
+                } catch (playError) {
+                  reject(playError);
+                }
+              } else if (audioRef.current === audio) {
+                // 상태가 변경되었으면 재생하지 않음
+                audio.pause();
+                audio.currentTime = 0;
+                audioRef.current = null;
+                reject(new Error("재생이 취소되었습니다."));
               }
             };
             
@@ -373,15 +384,25 @@ const StageResult = ({
     };
 
     try {
-      await playSingleDialogue(dialogueA);
-      await playSingleDialogue(dialogueB);
-      setIsPlayingTTS(false);
-      setPlayingExampleId(null);
+      await playSingleDialogue(dialogueA, exampleId);
+      // 첫 번째 재생 후 상태 확인
+      if (playingExampleIdRef.current !== exampleId || !isPlayingTTSRef.current) {
+        return;
+      }
+      await playSingleDialogue(dialogueB, exampleId);
+      if (playingExampleIdRef.current === exampleId) {
+        playingExampleIdRef.current = null;
+        isPlayingTTSRef.current = false;
+        setIsPlayingTTS(false);
+        setPlayingExampleId(null);
+      }
     } catch (error) {
       if (import.meta.env.DEV) {
         console.error("TTS 오류:", error);
       }
       stopCurrentAudio();
+      playingExampleIdRef.current = null;
+      isPlayingTTSRef.current = false;
       setIsPlayingTTS(false);
       setPlayingExampleId(null);
     }
@@ -700,7 +721,13 @@ const StageResult = ({
   // 예문 카드 재생 핸들러
   const handlePlayExample = useCallback((example: Example) => {
     if (playingExampleId === example.id) {
-      stopCurrentAudio();
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+        audioRef.current = null;
+      }
+      playingExampleIdRef.current = null;
+      isPlayingTTSRef.current = false;
       setPlayingExampleId(null);
       setIsPlayingTTS(false);
       return;
@@ -716,6 +743,8 @@ const StageResult = ({
     const dialogueB = example.dialogue.B.english;
     
     stopCurrentAudio();
+    playingExampleIdRef.current = example.id;
+    isPlayingTTSRef.current = true;
     setPlayingExampleId(example.id);
     setIsPlayingTTS(true);
     playDialogueSequence(dialogueA, dialogueB, example.id);

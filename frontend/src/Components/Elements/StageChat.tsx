@@ -48,6 +48,8 @@ const StageChat = ({ onBack }: StageChatProps) => {
   const [isPlayingTTS, setIsPlayingTTS] = useState(false);
   const [playingExampleId, setPlayingExampleId] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const playingExampleIdRef = useRef<string | null>(null);
+  const isPlayingTTSRef = useRef<boolean>(false);
 
   // 대화 내역 저장/불러오기
   const getStorageKey = () => {
@@ -704,7 +706,13 @@ const StageChat = ({ onBack }: StageChatProps) => {
                               // 재생 중이면 중지
                               const exampleId = `${message.id}-${currentIndex}`;
                               if (playingExampleId === exampleId && isPlayingTTS) {
-                                stopCurrentAudio();
+                                if (audioRef.current) {
+                                  audioRef.current.pause();
+                                  audioRef.current.currentTime = 0;
+                                  audioRef.current = null;
+                                }
+                                playingExampleIdRef.current = null;
+                                isPlayingTTSRef.current = false;
                                 setPlayingExampleId(null);
                                 setIsPlayingTTS(false);
                                 return;
@@ -720,7 +728,11 @@ const StageChat = ({ onBack }: StageChatProps) => {
                               const dialogueB = currentExample.dialogue.B.english;
                               const textToRead = `${dialogueA}. ${dialogueB}`;
                               
+                              // 기존 오디오 정지
                               stopCurrentAudio();
+                              
+                              playingExampleIdRef.current = exampleId;
+                              isPlayingTTSRef.current = true;
                               setPlayingExampleId(exampleId);
                               setIsPlayingTTS(true);
                               
@@ -736,25 +748,45 @@ const StageChat = ({ onBack }: StageChatProps) => {
                                 audioRef.current = audio;
                                 
                                 audio.onended = () => {
-                                  setPlayingExampleId(null);
-                                  setIsPlayingTTS(false);
-                                  audioRef.current = null;
+                                  if (audioRef.current === audio) {
+                                    playingExampleIdRef.current = null;
+                                    isPlayingTTSRef.current = false;
+                                    setPlayingExampleId(null);
+                                    setIsPlayingTTS(false);
+                                    audioRef.current = null;
+                                  }
                                 };
                                 
                                 audio.onerror = () => {
-                                  setPlayingExampleId(null);
-                                  setIsPlayingTTS(false);
-                                  audioRef.current = null;
-                                  showError("재생 오류", "오디오 재생 중 오류가 발생했습니다.");
+                                  if (audioRef.current === audio) {
+                                    playingExampleIdRef.current = null;
+                                    isPlayingTTSRef.current = false;
+                                    setPlayingExampleId(null);
+                                    setIsPlayingTTS(false);
+                                    audioRef.current = null;
+                                    showError("재생 오류", "오디오 재생 중 오류가 발생했습니다.");
+                                  }
                                 };
                                 
                                 audio.oncanplaythrough = async () => {
-                                  try {
-                                    await audio.play();
-                                  } catch (e) {
-                                    console.error("재생 실패:", e);
-                                    setPlayingExampleId(null);
-                                    setIsPlayingTTS(false);
+                                  // 재생 중지 상태 확인 - ref를 사용하여 최신 상태 확인
+                                  if (audioRef.current === audio && playingExampleIdRef.current === exampleId && isPlayingTTSRef.current) {
+                                    try {
+                                      await audio.play();
+                                    } catch (e) {
+                                      console.error("재생 실패:", e);
+                                      if (audioRef.current === audio) {
+                                        playingExampleIdRef.current = null;
+                                        isPlayingTTSRef.current = false;
+                                        setPlayingExampleId(null);
+                                        setIsPlayingTTS(false);
+                                        audioRef.current = null;
+                                      }
+                                    }
+                                  } else if (audioRef.current === audio) {
+                                    // 상태가 변경되었으면 재생하지 않음
+                                    audio.pause();
+                                    audio.currentTime = 0;
                                     audioRef.current = null;
                                   }
                                 };
@@ -763,6 +795,9 @@ const StageChat = ({ onBack }: StageChatProps) => {
                                 console.error("TTS 오류:", error);
                                 setPlayingExampleId(null);
                                 setIsPlayingTTS(false);
+                                if (audioRef.current) {
+                                  audioRef.current = null;
+                                }
                                 showError("TTS 오류", "음성 생성 중 오류가 발생했습니다.");
                               }
                             }}
