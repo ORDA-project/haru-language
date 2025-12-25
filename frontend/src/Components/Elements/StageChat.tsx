@@ -478,11 +478,28 @@ const StageChat = ({ onBack }: StageChatProps) => {
         throw new Error("유효한 예문을 찾을 수 없습니다.");
       }
 
-      // 요약 메시지
+      // 요약 메시지 (마크다운 처리 적용)
+      let descriptionContent = actualExample.description || "이미지 분석이 완료되었습니다.";
+      // 문자열로 변환 후 마크다운 처리 (안전성 확보)
+      if (typeof descriptionContent === "string") {
+        // 개행 문자 처리 및 마크다운 스타일 적용
+        descriptionContent = descriptionContent
+          .replace(/\\n/g, "\n") // \n을 실제 개행으로 변환
+          .replace(/\*\*(.*?)\*\*/g, '<span style="text-decoration: underline; color: #00DAAA; font-weight: 500;">$1</span>') // **텍스트**를 밑줄과 색상으로 변환
+          .replace(
+            /"([^"]*)"/g,
+            '<span style="color: #00DAAA; font-weight: 500;">"$1"</span>'
+          ) // 따옴표 안의 텍스트를 하이라이트
+          .replace(/\n/g, "<br/>"); // 개행을 <br/>로 변환
+      } else {
+        // 문자열이 아닌 경우 그대로 사용
+        descriptionContent = String(descriptionContent);
+      }
+
       const summaryMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: "ai",
-        content: actualExample.description || "이미지 분석이 완료되었습니다.",
+        content: descriptionContent,
         timestamp: new Date(),
       };
 
