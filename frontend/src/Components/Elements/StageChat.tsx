@@ -321,7 +321,7 @@ const StageChat = ({ onBack }: StageChatProps) => {
     }
   };
 
-  const handleCrop = () => {
+  const handleCrop = async () => {
     try {
       const cropper = cropperRef.current?.cropper;
       if (!cropper) {
@@ -381,8 +381,8 @@ const StageChat = ({ onBack }: StageChatProps) => {
         return updated;
       });
 
-      // AI에게 이미지 분석 요청
-      handleImageAnalysis(croppedDataURL);
+      // AI에게 이미지 분석 요청 (예문 생성과 동일한 방식)
+      await handleImageAnalysis(croppedDataURL);
 
       showSuccess(
         "이미지 업로드 완료",
@@ -502,14 +502,18 @@ const StageChat = ({ onBack }: StageChatProps) => {
         return updated;
       });
     } catch (error) {
-      console.error("Error analyzing image:", error);
-      
-      let errorMessage = "이미지 분석 중 오류가 발생했습니다.";
-      if (axios.isAxiosError(error)) {
-        if (import.meta.env.DEV) {
+      if (import.meta.env.DEV) {
+        console.error("이미지 분석 오류 상세:", error);
+        if (axios.isAxiosError(error)) {
           console.error("응답 데이터:", error.response?.data);
           console.error("응답 상태:", error.response?.status);
+          console.error("요청 헤더:", error.config?.headers);
         }
+      }
+      
+      // 예문 생성과 동일한 방식으로 에러 처리
+      let errorMessage = "이미지 분석 중 오류가 발생했습니다.";
+      if (axios.isAxiosError(error)) {
         const status = error.response?.status;
         const data = error.response?.data as any;
         errorMessage = data?.message || `서버 오류 (${status || "알 수 없음"})`;
