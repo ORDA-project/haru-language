@@ -1,20 +1,19 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useAtom } from "jotai";
 import { Example } from "../../types";
-import { API_ENDPOINTS, API_BASE_URL } from "../../config/api";
 import { isLargeTextModeAtom } from "../../store/dataStore";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import axios, { AxiosError } from "axios";
+import { ChevronLeft } from "lucide-react";
 import { useErrorHandler } from "../../hooks/useErrorHandler";
 import ImageUploadModal from "./ImageUploadModal";
-import Cropper from "react-cropper";
-import "cropperjs/dist/cropper.css";
-import { dataURItoBlob, MAX_IMAGE_SIZE } from "../../utils/imageUtils";
 import { createTextStyles } from "../../utils/styleUtils";
-import { groupExamples, formatContextText, EXAMPLES_PER_GROUP } from "../../utils/exampleUtils";
+import { groupExamples } from "../../utils/exampleUtils";
 import { Icons } from "./Icons";
-import { createStorageKey, safeSetItem, safeGetItem, isTodayData } from "../../utils/storageUtils";
+import { safeSetItem, safeGetItem } from "../../utils/storageUtils";
 import { getTodayStringBy4AM } from "../../utils/dateUtils";
+import { ExampleGroup } from "./StageResult/components/ExampleGroup";
+import { ImageCropStage } from "./StageResult/components/ImageCropStage";
+import { useStageResultTTS } from "./StageResult/hooks/useStageResultTTS";
+import { useAddMoreExamples } from "./StageResult/hooks/useAddMoreExamples";
 
 interface StageResultProps {
   description: string;
@@ -66,59 +65,6 @@ interface GroupCurrentIndices {
   [groupIndex: number]: number;
 }
 
-// 상수
-const API_TIMEOUT = 60000; // 60초 타임아웃 (OCR + GPT 처리 시간 고려)
-const EXAMPLE_CARD_WIDTH = 343;
-const ADD_BUTTON_WIDTH = Math.floor(EXAMPLE_CARD_WIDTH / 3); // 114px
-
-const normalizeExampleResponse = (response: ExampleApiResponse) => {
-  let actualExample = response?.generatedExample;
-  if (actualExample?.generatedExample) {
-    actualExample = actualExample.generatedExample;
-  }
-  return actualExample;
-};
-
-const transformApiExamplesToLocal = (apiExamples: Array<any>): Example[] => {
-  return apiExamples.map((ex) => ({
-    id: `${Date.now()}-${Math.random()}`,
-    context: ex.context || "",
-    dialogue: {
-      A: {
-        english: ex.dialogue?.A?.english || "",
-        korean: ex.dialogue?.A?.korean || "",
-      },
-      B: {
-        english: ex.dialogue?.B?.english || "",
-        korean: ex.dialogue?.B?.korean || "",
-      },
-    },
-  }));
-};
-
-const getAuthHeaders = (): Record<string, string> => {
-  const token = localStorage.getItem("accessToken");
-  const headers: Record<string, string> = {};
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
-  return headers;
-};
-
-const createFormDataFromImage = (image: string | File): FormData => {
-  const formData = new FormData();
-  if (typeof image === "string") {
-    const blob = dataURItoBlob(image);
-    if (blob.size > MAX_IMAGE_SIZE) {
-      throw new Error("이미지 파일이 너무 큽니다. (5MB 이하로 해주세요)");
-    }
-    const fileName = blob.type === "image/jpeg" ? "cropped-image.jpg" : "cropped-image.png";
-    formData.append("image", blob, fileName);
-  } else {
-    formData.append("image", image);
-  }
-  return formData;
-};
 
 const StageResult = ({
   description,
@@ -149,18 +95,23 @@ const StageResult = ({
   
   const newImageSets = propNewImageSets ?? internalNewImageSets;
   const setNewImageSets = propSetNewImageSets ?? setInternalNewImageSets;
-  const cropperRef = useRef<any>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [isPlayingTTS, setIsPlayingTTS] = useState(false);
-  const [playingExampleId, setPlayingExampleId] = useState<string | null>(null);
-  const playingExampleIdRef = useRef<string | null>(null);
-  const isPlayingTTSRef = useRef<boolean>(false);
   const [isLargeTextMode] = useAtom(isLargeTextModeAtom);
   const [windowWidth, setWindowWidth] = useState(() => typeof window !== 'undefined' ? window.innerWidth : 440);
   const { showError, showSuccess } = useErrorHandler();
   const isInitializedRef = useRef(false);
   const [groupScrollIndices, setGroupScrollIndices] = useState<Record<number, number>>({});
   const groupScrollRefs = useRef<Record<number, HTMLDivElement | null>>({});
+  
+  // TTS 훅 사용
+  const { isPlayingTTS, playingExampleId, handlePlayExample } = useStageResultTTS();
+  
+  // 예문 추가 훅 사용
+  const {
+    isLoadingMore,
+    setIsLoadingMore,
+    generateExamplesFromImage,
+    getErrorMessage: getErrorMsg,
+  } = useAddMoreExamples();
 
   // 화면 크기 감지 (throttling + requestAnimationFrame으로 성능 최적화)
   useEffect(() => {
@@ -284,21 +235,6 @@ const StageResult = ({
     return new Set(newImageSets.map(set => set.exampleGroupIndex));
   }, [newImageSets]);
 
-  // 오디오 정리
-  const stopCurrentAudio = useCallback(() => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
-      audioRef.current = null;
-    }
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      stopCurrentAudio();
-    };
-  }, [stopCurrentAudio]);
-
   // 그룹 네비게이션 핸들러
   const handleNextInGroup = useCallback((groupIndex: number) => {
     setGroupCurrentIndices((prev) => {
@@ -324,155 +260,6 @@ const StageResult = ({
 
   const handleDotClick = useCallback((groupIndex: number, index: number) => {
     setGroupCurrentIndices((prev) => ({ ...prev, [groupIndex]: index }));
-  }, []);
-
-  // TTS 재생
-  const playDialogueSequence = useCallback(async (dialogueA: string, dialogueB: string, exampleId: string) => {
-    const playSingleDialogue = async (text: string, currentExampleId: string): Promise<void> => {
-      return new Promise((resolve, reject) => {
-        fetch(API_ENDPOINTS.tts, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text }),
-          credentials: "include",
-        })
-          .then((res) => {
-            if (!res.ok) throw new Error("TTS 요청에 실패했습니다.");
-            return res.json();
-          })
-          .then(({ audioContent }) => {
-            const audio = new Audio(`data:audio/mp3;base64,${audioContent}`);
-            audioRef.current = audio;
-            
-            const cleanup = () => {
-              if (audioRef.current === audio) {
-                audioRef.current = null;
-              }
-            };
-
-            audio.onended = () => {
-              resolve();
-              cleanup();
-            };
-            
-            audio.onerror = () => {
-              reject(new Error("오디오 재생 실패"));
-              cleanup();
-            };
-            
-            audio.oncanplaythrough = async () => {
-              // 재생 중지 상태 확인 - ref를 사용하여 최신 상태 확인
-              if (audioRef.current === audio && playingExampleIdRef.current === currentExampleId && isPlayingTTSRef.current) {
-                try {
-                  await audio.play();
-                } catch (playError) {
-                  reject(playError);
-                }
-              } else if (audioRef.current === audio) {
-                // 상태가 변경되었으면 재생하지 않음
-                audio.pause();
-                audio.currentTime = 0;
-                audioRef.current = null;
-                reject(new Error("재생이 취소되었습니다."));
-              }
-            };
-            
-            audio.load();
-          })
-          .catch(reject);
-      });
-    };
-
-    try {
-      await playSingleDialogue(dialogueA, exampleId);
-      // 첫 번째 재생 후 상태 확인
-      if (playingExampleIdRef.current !== exampleId || !isPlayingTTSRef.current) {
-        return;
-      }
-      await playSingleDialogue(dialogueB, exampleId);
-      if (playingExampleIdRef.current === exampleId) {
-        playingExampleIdRef.current = null;
-        isPlayingTTSRef.current = false;
-        setIsPlayingTTS(false);
-        setPlayingExampleId(null);
-      }
-    } catch (error) {
-      if (import.meta.env.DEV) {
-        console.error("TTS 오류:", error);
-      }
-      stopCurrentAudio();
-      playingExampleIdRef.current = null;
-      isPlayingTTSRef.current = false;
-      setIsPlayingTTS(false);
-      setPlayingExampleId(null);
-    }
-  }, [stopCurrentAudio]);
-
-  // 예문 생성 API 호출 (공통 로직) - 예문과 설명을 함께 반환
-  const generateExamplesFromImage = useCallback(async (image: string | File): Promise<{ examples: Example[]; description: string }> => {
-    try {
-      const formData = createFormDataFromImage(image);
-      const headers = getAuthHeaders();
-      
-      // FormData를 보낼 때는 Content-Type을 설정하지 않음 (브라우저가 자동으로 boundary 설정)
-      // axios가 자동으로 설정하는 것을 방지하기 위해 명시적으로 제거하지 않아도 됨
-      
-      if (import.meta.env.DEV) {
-        console.log("예문 생성 요청 시작...", {
-          imageType: typeof image,
-          formDataKeys: Array.from(formData.keys()),
-        });
-      }
-
-      const response = await axios.post<ExampleApiResponse>("/example", formData, {
-        baseURL: API_BASE_URL,
-        headers: {
-          ...headers,
-          // Content-Type을 명시적으로 설정하지 않음 (FormData는 브라우저가 자동 설정)
-        },
-        withCredentials: true,
-        timeout: API_TIMEOUT,
-      });
-
-      if (import.meta.env.DEV) {
-        console.log("예문 생성 응답:", response.data);
-      }
-
-      const actualExample = normalizeExampleResponse(response.data);
-
-      if (!actualExample) {
-        if (import.meta.env.DEV) {
-          console.error("예문 데이터를 찾을 수 없습니다. 응답:", response.data);
-        }
-        throw new Error("예문 데이터를 찾을 수 없습니다.");
-      }
-
-      if (!actualExample.examples || !Array.isArray(actualExample.examples)) {
-        if (import.meta.env.DEV) {
-          console.error("예문 배열이 올바르지 않습니다. actualExample:", actualExample);
-        }
-        throw new Error("예문 배열이 올바르지 않습니다.");
-      }
-
-      if (actualExample.examples.length === 0) {
-        throw new Error("생성된 예문이 없습니다.");
-      }
-
-      return {
-        examples: transformApiExamplesToLocal(actualExample.examples),
-        description: actualExample.description || ""
-      };
-    } catch (error) {
-      if (import.meta.env.DEV) {
-        console.error("예문 생성 오류 상세:", error);
-        if (axios.isAxiosError(error)) {
-          console.error("응답 데이터:", error.response?.data);
-          console.error("응답 상태:", error.response?.status);
-          console.error("요청 헤더:", error.config?.headers);
-        }
-      }
-      throw error;
-    }
   }, []);
 
   // 예문 추가 핸들러
@@ -560,7 +347,7 @@ const StageResult = ({
         setIsModalOpen(true);
       }
     } catch (error) {
-      const errorMessage = getErrorMessage(error);
+      const errorMessage = getErrorMsg(error);
       showError("예문 추가 실패", errorMessage);
       
       if (import.meta.env.DEV) {
@@ -569,7 +356,7 @@ const StageResult = ({
     } finally {
       setIsLoadingMore(false);
     }
-  }, [isLoadingMore, uploadedImage, extractedText, generateExamplesFromImage, showError, showSuccess, newImageSets]);
+  }, [isLoadingMore, uploadedImage, extractedText, generateExamplesFromImage, showError, showSuccess, newImageSets, getErrorMsg]);
 
   // 이미지 선택 핸들러 - 크롭 단계로 이동
   const handleImageSelect = useCallback((file: File) => {
@@ -584,52 +371,14 @@ const StageResult = ({
   }, []);
 
   // 크롭 완료 핸들러
-  const handleCropComplete = useCallback(async () => {
-    if (!cropperRef.current?.cropper || !selectedImageForCrop) {
-      showError("크롭 오류", "이미지를 자를 수 없습니다.");
-      return;
-    }
-
+  const handleCropComplete = useCallback(async (croppedDataURL: string) => {
+    // 크롭 단계 닫기
+    setShowCropStage(false);
+    setSelectedImageForCrop(null);
+    
+    // 예문 생성
+    setIsLoadingMore(true);
     try {
-      const cropper = cropperRef.current.cropper;
-      const croppedCanvas = cropper.getCroppedCanvas({
-        imageSmoothingEnabled: true,
-        imageSmoothingQuality: "medium", // high -> medium으로 변경하여 처리 속도 개선
-        maxWidth: 1200, // 1920 -> 1200으로 줄여서 처리 시간 단축
-        maxHeight: 1200, // 1920 -> 1200으로 줄여서 처리 시간 단축
-      });
-
-      if (!croppedCanvas) {
-        showError("크롭 오류", "이미지를 자를 수 없습니다.");
-        return;
-      }
-
-      // 흰색 배경이 있는 새 canvas 생성
-      const finalCanvas = document.createElement("canvas");
-      finalCanvas.width = croppedCanvas.width;
-      finalCanvas.height = croppedCanvas.height;
-      const ctx = finalCanvas.getContext("2d");
-      if (!ctx) {
-        showError("크롭 오류", "이미지를 처리할 수 없습니다.");
-        return;
-      }
-      
-      // 흰색 배경 채우기
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
-      
-      // 크롭된 이미지 그리기
-      ctx.drawImage(croppedCanvas, 0, 0);
-
-      // JPEG 품질을 낮춰서 파일 크기와 처리 시간 단축 (0.8 -> 0.7)
-      const croppedDataURL = finalCanvas.toDataURL("image/jpeg", 0.7);
-      
-      // 크롭 단계 닫기
-      setShowCropStage(false);
-      setSelectedImageForCrop(null);
-      
-      // 예문 생성
-      setIsLoadingMore(true);
       const { examples: newExamples, description: newDescription } = await generateExamplesFromImage(croppedDataURL);
       
       // 상태 업데이트를 requestAnimationFrame으로 분할하여 성능 최적화
@@ -668,7 +417,7 @@ const StageResult = ({
       });
       showSuccess("예문 추가 완료", "새로운 예문 3개가 추가되었습니다!");
     } catch (error) {
-      const errorMessage = getErrorMessage(error);
+      const errorMessage = getErrorMsg(error);
       showError("예문 생성 실패", errorMessage);
       
       if (import.meta.env.DEV) {
@@ -677,7 +426,7 @@ const StageResult = ({
     } finally {
       setIsLoadingMore(false);
     }
-  }, [selectedImageForCrop, generateExamplesFromImage, showError, showSuccess]);
+  }, [generateExamplesFromImage, showError, showSuccess, getErrorMsg, setNewImageSets, onExamplesUpdate]);
 
   // 크롭 취소 핸들러
   const handleCropCancel = useCallback(() => {
@@ -685,70 +434,6 @@ const StageResult = ({
     setSelectedImageForCrop(null);
   }, []);
 
-  // 에러 메시지 추출
-  const getErrorMessage = (error: unknown): string => {
-    if (axios.isAxiosError(error)) {
-      const axiosError = error as AxiosError<{ message?: string }>;
-      if (axiosError.response) {
-        const status = axiosError.response.status;
-        const message = axiosError.response.data?.message || "서버에서 오류가 발생했습니다.";
-        
-        if (status === 400) {
-          return `잘못된 요청: ${message}`;
-        }
-        if (status === 401) {
-          return "로그인이 필요합니다. 다시 로그인해주세요.";
-        }
-        if (status === 500) {
-          return `서버 오류: ${message}`;
-        }
-        return message;
-      }
-      if (axiosError.request) {
-        return "서버에 연결할 수 없습니다. 네트워크를 확인해주세요.";
-      }
-      if (axiosError.code === 'ECONNABORTED') {
-        return "요청 시간이 초과되었습니다. 다시 시도해주세요.";
-      }
-      return axiosError.message || "요청 중 오류가 발생했습니다.";
-    }
-    if (error instanceof Error) {
-      return error.message;
-    }
-    return "알 수 없는 오류가 발생했습니다.";
-  };
-
-  // 예문 카드 재생 핸들러
-  const handlePlayExample = useCallback((example: Example) => {
-    if (playingExampleId === example.id) {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-        audioRef.current = null;
-      }
-      playingExampleIdRef.current = null;
-      isPlayingTTSRef.current = false;
-      setPlayingExampleId(null);
-      setIsPlayingTTS(false);
-      return;
-    }
-
-    // 안전한 접근을 위한 null 체크
-    if (!example?.dialogue?.A?.english || !example?.dialogue?.B?.english) {
-      showError("재생 오류", "예문 데이터가 올바르지 않습니다.");
-      return;
-    }
-
-    const dialogueA = example.dialogue.A.english;
-    const dialogueB = example.dialogue.B.english;
-    
-    stopCurrentAudio();
-    playingExampleIdRef.current = example.id;
-    isPlayingTTSRef.current = true;
-    setPlayingExampleId(example.id);
-    setIsPlayingTTS(true);
-    playDialogueSequence(dialogueA, dialogueB, example.id);
-  }, [playingExampleId, stopCurrentAudio, playDialogueSequence]);
 
   // Early return
   if (exampleGroups.length === 0) {
@@ -850,189 +535,25 @@ const StageResult = ({
             });
           }
           
-          const isCardPlaying = playingExampleId === example.id;
-          
           return (
             <React.Fragment key={`group-${groupIndex}`}>
-              {/* Example Card */}
-              <div className="flex justify-start">
-                <div 
-                  className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden"
-                  style={{ 
-                    width: `${EXAMPLE_CARD_WIDTH}px`,
-                    paddingLeft: isLargeTextMode ? '20px' : '16px',
-                    paddingTop: isLargeTextMode ? '16px' : '12px',
-                    paddingBottom: isLargeTextMode ? '20px' : '16px',
-                    paddingRight: isLargeTextMode ? '20px' : '16px'
-                  }}
-                >
-                  {(() => {
-                    const currentExample = group[currentIdx];
-                    return (
-                      <>
-                        {/* Context Badge and Dots */}
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="inline-block bg-[#B8E6D3] rounded-full px-2 py-0.5 border border-[#B8E6D3]" style={{ marginLeft: '-4px', marginTop: '-4px' }}>
-                            <span className="font-medium text-gray-900" style={textStyles.xSmall}>예문 상황</span>
-                          </div>
-                          <div className="flex items-center" style={{ gap: '4px' }}>
-                            {[0, 1, 2].map((dotIdx) => (
-                              <div
-                                key={dotIdx}
-                                onClick={() => {
-                                  if (dotIdx < group.length) {
-                                    handleDotClick(groupIndex, dotIdx);
-                                  }
-                                }}
-                                style={{
-                                  width: '6px',
-                                  height: '6px',
-                                  borderRadius: '50%',
-                                  backgroundColor: dotIdx === currentIdx && dotIdx < group.length ? '#00DAAA' : '#D1D5DB',
-                                  cursor: dotIdx < group.length ? 'pointer' : 'default'
-                                }}
-                                aria-label={`예문 ${dotIdx + 1}`}
-                              />
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Dialogue */}
-                        <div className="space-y-2 mb-3" style={{ paddingLeft: '8px' }}>
-                          {/* A's dialogue */}
-                          <div className="flex items-start space-x-2">
-                            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0 bg-[#B8E6D3]`} style={textStyles.xSmall}>
-                              A
-                            </div>
-                            <div className="flex-1" style={{ paddingLeft: '4px', marginTop: '-2px' }}>
-                              <p className="font-medium text-gray-900 leading-relaxed" style={textStyles.small}>
-                                {currentExample.dialogue?.A?.english || "예문 내용"}
-                              </p>
-                              {currentExample.dialogue?.A?.korean && (
-                                <p className="text-gray-600 leading-relaxed mt-1" style={textStyles.small}>
-                                  {currentExample.dialogue.A.korean}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* B's dialogue */}
-                          <div className="flex items-start space-x-2">
-                            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0 bg-[#B8E6D3]`} style={textStyles.xSmall}>
-                              B
-                            </div>
-                            <div className="flex-1" style={{ paddingLeft: '4px', marginTop: '-2px' }}>
-                              <p className="font-medium text-gray-900 leading-relaxed" style={textStyles.small}>
-                                {currentExample.dialogue?.B?.english || "예문 내용"}
-                              </p>
-                              {currentExample.dialogue?.B?.korean && (
-                                <p className="text-gray-600 leading-relaxed mt-1" style={textStyles.small}>
-                                  {currentExample.dialogue.B.korean}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-
-                          {/* Controls */}
-                          <div className="flex justify-center items-center gap-2 pt-4 border-t border-gray-200">
-                          <button
-                            onClick={() => {
-                              handlePreviousInGroup(groupIndex);
-                            }}
-                            disabled={currentIdx === 0}
-                            className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                            aria-label="이전 예문"
-                          >
-                            <ChevronLeft className="w-5 h-5" />
-                          </button>
-                          <button
-                            onClick={() => handlePlayExample(currentExample)}
-                            className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors shadow-md ${
-                              playingExampleId === currentExample.id
-                                ? "bg-[#FF6B35] hover:bg-[#E55A2B]"
-                                : "bg-[#00DAAA] hover:bg-[#00C299]"
-                            }`}
-                            aria-label={playingExampleId === currentExample.id ? "재생 중지" : "음성 재생"}
-                          >
-                            {playingExampleId === currentExample.id ? (
-                              <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
-                              </svg>
-                            ) : (
-                              <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
-                              </svg>
-                            )}
-                          </button>
-                          <button
-                            onClick={() => {
-                              handleNextInGroup(groupIndex);
-                            }}
-                            disabled={currentIdx >= group.length - 1}
-                            className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                            aria-label="다음 예문"
-                          >
-                            <ChevronRight className="w-5 h-5" />
-                          </button>
-                        </div>
-                      </>
-                    );
-                  })()}
-                </div>
-              </div>
-
-              {/* 상황 설명 - 예문 카드 아래에 표시 */}
-              {group[groupScrollIndices[groupIndex] ?? currentIdx]?.context && (
-                <div className="flex justify-start">
-                  <div 
-                    className={`max-w-[80%] ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-lg bg-gray-50 text-gray-700 border border-gray-200`}
-                    style={{
-                      boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
-                    }}
-                  >
-                    <p className="leading-relaxed whitespace-pre-wrap" style={{ ...textStyles.base, color: '#374151', lineHeight: '1.6' }}>
-                      {formatContextText(group[groupScrollIndices[groupIndex] ?? currentIdx].context)}
-                    </p>
-                  </div>
-                </div>
-              )}
-              
-              {/* 예문 추가 버튼 - 원본 예문 그룹의 마지막 그룹 아래에만 표시 */}
-              {groupIndex === exampleGroups.length - 1 && !newImageSetGroupIndices.has(groupIndex) && (
-                <div className="flex justify-start mt-4">
-                  <button
-                    onClick={() => handleAddMoreExamples()}
-                    disabled={isLoadingMore}
-                    className="bg-[#00DAAA] hover:bg-[#00C495] active:bg-[#00B085] text-gray-900 font-semibold rounded-full transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
-                    style={{
-                      minWidth: `${ADD_BUTTON_WIDTH}px`,
-                      height: isLargeTextMode ? '42px' : '32px',
-                      fontSize: isLargeTextMode ? '18px' : '14px',
-                      padding: isLargeTextMode ? '0 14px' : '0 12px',
-                      whiteSpace: 'nowrap'
-                    }}
-                    aria-label="예문 추가"
-                  >
-                    {isLoadingMore ? (
-                      <>
-                        <svg className="animate-spin flex-shrink-0" width={isLargeTextMode ? "16" : "14"} height={isLargeTextMode ? "16" : "14"} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        <span>생성 중...</span>
-                      </>
-                    ) : (
-                      <>
-                        <svg width={isLargeTextMode ? "16" : "14"} height={isLargeTextMode ? "16" : "14"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M12 5v14M5 12h14" />
-                        </svg>
-                        <span>예문추가</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              )}
+              <ExampleGroup
+                group={group}
+                groupIndex={groupIndex}
+                currentIndex={currentIdx}
+                groupScrollIndex={groupScrollIndices[groupIndex] ?? currentIdx}
+                isPlaying={isPlayingTTS}
+                playingExampleId={playingExampleId || ""}
+                isLargeTextMode={isLargeTextMode}
+                textStyles={textStyles}
+                onPrevious={() => handlePreviousInGroup(groupIndex)}
+                onNext={() => handleNextInGroup(groupIndex)}
+                onPlay={handlePlayExample}
+                onDotClick={(index) => handleDotClick(groupIndex, index)}
+                showAddButton={groupIndex === exampleGroups.length - 1 && !newImageSetGroupIndices.has(groupIndex)}
+                onAddMore={() => handleAddMoreExamples()}
+                isLoadingMore={isLoadingMore}
+              />
             </React.Fragment>
           );
         })}
@@ -1092,183 +613,23 @@ const StageResult = ({
               
               {/* 3. 새 예문 그룹 */}
               {group && example && (
-                <React.Fragment>
-                  {/* Example Card */}
-                  <div className="flex justify-start">
-                    <div 
-                      className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden"
-                      style={{ 
-                        width: `${EXAMPLE_CARD_WIDTH}px`,
-                        paddingLeft: isLargeTextMode ? '20px' : '16px',
-                        paddingTop: isLargeTextMode ? '16px' : '12px',
-                        paddingBottom: isLargeTextMode ? '20px' : '16px',
-                        paddingRight: isLargeTextMode ? '20px' : '16px'
-                      }}
-                    >
-                      {(() => {
-                        const currentExample = group[currentIdx];
-                        return (
-                          <>
-                            {/* Context Badge and Dots */}
-                            <div className="flex items-center justify-between mb-3">
-                              <div className="inline-block bg-[#B8E6D3] rounded-full px-2 py-0.5 border border-[#B8E6D3]" style={{ marginLeft: '-4px', marginTop: '-4px' }}>
-                                <span className="font-medium text-gray-900" style={textStyles.xSmall}>예문 상황</span>
-                              </div>
-                              <div className="flex items-center" style={{ gap: '4px' }}>
-                                {[0, 1, 2].map((dotIdx) => (
-                                  <div
-                                    key={dotIdx}
-                                    onClick={() => {
-                                      if (dotIdx < group.length) {
-                                        handleDotClick(groupIndex, dotIdx);
-                                      }
-                                    }}
-                                    style={{
-                                      width: '6px',
-                                      height: '6px',
-                                      borderRadius: '50%',
-                                      backgroundColor: dotIdx === currentIdx && dotIdx < group.length ? '#00DAAA' : '#D1D5DB',
-                                      cursor: dotIdx < group.length ? 'pointer' : 'default'
-                                    }}
-                                    aria-label={`예문 ${dotIdx + 1}`}
-                                  />
-                                ))}
-                              </div>
-                            </div>
-
-                            {/* Dialogue */}
-                            <div className="space-y-2 mb-3" style={{ paddingLeft: '8px' }}>
-                              {/* A's dialogue */}
-                              <div className="flex items-start space-x-2">
-                                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0 bg-[#B8E6D3]`} style={textStyles.xSmall}>
-                                  A
-                                </div>
-                                <div className="flex-1" style={{ paddingLeft: '4px', marginTop: '-2px' }}>
-                                  <p className="font-medium text-gray-900 leading-relaxed" style={textStyles.small}>
-                                    {currentExample.dialogue?.A?.english || "예문 내용"}
-                                  </p>
-                                  {currentExample.dialogue?.A?.korean && (
-                                    <p className="text-gray-600 leading-relaxed mt-1" style={textStyles.small}>
-                                      {currentExample.dialogue.A.korean}
-                                    </p>
-                                  )}
-                                </div>
-                              </div>
-
-                              {/* B's dialogue */}
-                              <div className="flex items-start space-x-2">
-                                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0 bg-[#B8E6D3]`} style={textStyles.xSmall}>
-                                  B
-                                </div>
-                                <div className="flex-1" style={{ paddingLeft: '4px', marginTop: '-2px' }}>
-                                  <p className="font-medium text-gray-900 leading-relaxed" style={textStyles.small}>
-                                    {currentExample.dialogue?.B?.english || "예문 내용"}
-                                  </p>
-                                  {currentExample.dialogue?.B?.korean && (
-                                    <p className="text-gray-600 leading-relaxed mt-1" style={textStyles.small}>
-                                      {currentExample.dialogue.B.korean}
-                                    </p>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Controls */}
-                            <div className="flex justify-center items-center gap-2 pt-4 border-t border-gray-200">
-                              <button
-                                onClick={() => {
-                                  handlePreviousInGroup(groupIndex);
-                                }}
-                                disabled={currentIdx === 0}
-                                className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                                aria-label="이전 예문"
-                              >
-                                <ChevronLeft className="w-5 h-5" />
-                              </button>
-                              <button
-                                onClick={() => handlePlayExample(currentExample)}
-                                className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors shadow-md ${
-                                  playingExampleId === currentExample.id
-                                    ? "bg-[#FF6B35] hover:bg-[#E55A2B]"
-                                    : "bg-[#00DAAA] hover:bg-[#00C299]"
-                                }`}
-                                aria-label={playingExampleId === currentExample.id ? "재생 중지" : "음성 재생"}
-                              >
-                                {playingExampleId === currentExample.id ? (
-                                  <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
-                                  </svg>
-                                ) : (
-                                  <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
-                                  </svg>
-                                )}
-                              </button>
-                              <button
-                                onClick={() => {
-                                  handleNextInGroup(groupIndex);
-                                }}
-                                disabled={currentIdx >= group.length - 1}
-                                className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                                aria-label="다음 예문"
-                              >
-                                <ChevronRight className="w-5 h-5" />
-                              </button>
-                            </div>
-                          </>
-                        );
-                      })()}
-                    </div>
-                  </div>
-                  
-                  {/* 상황 설명 - 예문 카드 아래에 표시 */}
-                  {example.context && (
-                    <div className="flex justify-start">
-                      <div 
-                        className={`max-w-[80%] ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-lg bg-gray-50 text-gray-800 border border-gray-200 shadow-sm`}
-                        style={{ marginTop: '8px' }}
-                      >
-                        <p className="leading-relaxed whitespace-pre-wrap" style={{ ...textStyles.base, lineHeight: '1.6' }}>
-                          {formatContextText(example.context)}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* 예문 추가 버튼 - 각 세트의 마지막에 배치 */}
-                  <div className="flex justify-start mt-4">
-                    <button
-                      onClick={() => handleAddMoreExamples(imageSet.image)}
-                      disabled={isLoadingMore}
-                      className="bg-[#00DAAA] hover:bg-[#00C495] active:bg-[#00B085] text-gray-900 font-semibold rounded-full transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
-                      style={{
-                        minWidth: `${ADD_BUTTON_WIDTH}px`,
-                        height: isLargeTextMode ? '42px' : '32px',
-                        fontSize: isLargeTextMode ? '18px' : '14px',
-                        padding: isLargeTextMode ? '0 14px' : '0 12px',
-                        whiteSpace: 'nowrap'
-                      }}
-                      aria-label="예문 추가"
-                    >
-                      {isLoadingMore ? (
-                        <>
-                          <svg className="animate-spin flex-shrink-0" width={isLargeTextMode ? "16" : "14"} height={isLargeTextMode ? "16" : "14"} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                          </svg>
-                          <span>생성 중...</span>
-                        </>
-                      ) : (
-                        <>
-                          <svg width={isLargeTextMode ? "16" : "14"} height={isLargeTextMode ? "16" : "14"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M12 5v14M5 12h14" />
-                          </svg>
-                          <span>예문추가</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </React.Fragment>
+                <ExampleGroup
+                  group={group}
+                  groupIndex={groupIndex}
+                  currentIndex={currentIdx}
+                  groupScrollIndex={groupScrollIndices[groupIndex] ?? currentIdx}
+                  isPlaying={isPlayingTTS}
+                  playingExampleId={playingExampleId || ""}
+                  isLargeTextMode={isLargeTextMode}
+                  textStyles={textStyles}
+                  onPrevious={() => handlePreviousInGroup(groupIndex)}
+                  onNext={() => handleNextInGroup(groupIndex)}
+                  onPlay={handlePlayExample}
+                  onDotClick={(index) => handleDotClick(groupIndex, index)}
+                  showAddButton={true}
+                  onAddMore={() => handleAddMoreExamples(imageSet.image)}
+                  isLoadingMore={isLoadingMore}
+                />
               )}
             </React.Fragment>
           );
@@ -1325,147 +686,14 @@ const StageResult = ({
 
       {/* Crop Stage */}
       {showCropStage && selectedImageForCrop && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-          <div className="w-full h-full flex flex-col bg-[#F7F8FB] max-w-[440px] mx-auto">
-            {/* Header */}
-            <div className="flex items-center justify-between p-4 bg-white border-b border-gray-200">
-              <button
-                onClick={handleCropCancel}
-                className="w-8 h-8 flex items-center justify-center"
-              >
-                <svg
-                  className="w-5 h-5 text-gray-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 19l-7-7 7-7"
-                  />
-                </svg>
-              </button>
-              <div className="text-center">
-                <h1 className="font-semibold text-gray-800" style={textStyles.header}>이미지 자르기</h1>
-              </div>
-              <div className="w-8"></div>
-            </div>
-
-            {/* Content */}
-            <div className="flex-1 flex flex-col p-4 overflow-y-auto">
-              <div className="mb-4">
-                <p className="font-medium text-gray-800 text-center" style={textStyles.base}>
-                  어떤 문장을 기반으로 예문을 생성하고 싶으신가요?
-                </p>
-              </div>
-
-              <div className="flex-1 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden relative min-h-0" style={{ touchAction: 'none' }}>
-                <style>{`
-                  .cropper-container {
-                    overflow: hidden !important;
-                    touch-action: none !important;
-                  }
-                  .cropper-view-box {
-                    outline: 2px solid #00DAAA !important;
-                    outline-offset: -2px;
-                  }
-                  .cropper-face {
-                    background-color: transparent !important;
-                  }
-                  .cropper-modal {
-                    background-color: rgba(0, 0, 0, 0.5) !important;
-                  }
-                  .cropper-drag-box {
-                    cursor: move !important;
-                  }
-                  .cropper-crop-box {
-                    cursor: move !important;
-                  }
-                  .cropper-point {
-                    cursor: pointer !important;
-                  }
-                  .cropper-point.point-se {
-                    cursor: nwse-resize !important;
-                  }
-                  .cropper-point.point-sw {
-                    cursor: nesw-resize !important;
-                  }
-                  .cropper-point.point-nw {
-                    cursor: nwse-resize !important;
-                  }
-                  .cropper-point.point-ne {
-                    cursor: nesw-resize !important;
-                  }
-                  .cropper-point.point-n {
-                    cursor: ns-resize !important;
-                  }
-                  .cropper-point.point-s {
-                    cursor: ns-resize !important;
-                  }
-                  .cropper-point.point-w {
-                    cursor: ew-resize !important;
-                  }
-                  .cropper-point.point-e {
-                    cursor: ew-resize !important;
-                  }
-                `}</style>
-                <Cropper
-                  src={selectedImageForCrop}
-                  style={{ height: "100%", width: "100%", maxHeight: "100%", objectFit: "contain", touchAction: 'none' }}
-                  aspectRatio={NaN}
-                  guides={true}
-                  ref={cropperRef}
-                  viewMode={1}
-                  dragMode="move"
-                  autoCropArea={0.8}
-                  restore={false}
-                  modal={true}
-                  highlight={true}
-                  cropBoxMovable={true}
-                  cropBoxResizable={true}
-                  toggleDragModeOnDblclick={false}
-                  background={true}
-                  responsive={true}
-                  checkOrientation={false}
-                  zoomable={true}
-                  zoomOnTouch={true}
-                  zoomOnWheel={false}
-                  scalable={true}
-                  rotatable={false}
-                  minCropBoxWidth={50}
-                  minCropBoxHeight={50}
-                  ready={() => {
-                    if (cropperRef.current?.cropper) {
-                      const cropper = cropperRef.current.cropper;
-                      cropper.setAspectRatio(NaN);
-                    }
-                  }}
-                />
-              </div>
-
-              {/* Buttons */}
-              <div className="mt-6 space-y-3">
-                <button
-                  onClick={handleCropComplete}
-                  disabled={isLoadingMore}
-                  className="w-full py-4 bg-[#00DAAA] hover:bg-[#00C495] active:bg-[#00B085] text-white font-semibold rounded-full transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                  style={textStyles.base}
-                >
-                  {isLoadingMore ? "생성 중..." : "선택 영역 예문 생성"}
-                </button>
-                <button
-                  onClick={handleCropCancel}
-                  className="w-full py-3 bg-white hover:bg-gray-50 active:bg-gray-100 text-gray-700 font-medium rounded-full border border-gray-300 transition-colors"
-                  style={textStyles.base}
-                >
-                  다른 사진 선택하기
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <ImageCropStage
+          selectedImage={selectedImageForCrop}
+          isLoading={isLoadingMore}
+          isLargeTextMode={isLargeTextMode}
+          textStyles={textStyles}
+          onCropComplete={handleCropComplete}
+          onCancel={handleCropCancel}
+        />
       )}
     </div>
   );

@@ -10,6 +10,11 @@ import ImageUploadModal from "./ImageUploadModal";
 import { Icons } from "./Icons";
 import { getTodayStringBy4AM } from "../../utils/dateUtils";
 import { dataURItoBlob, MAX_IMAGE_SIZE } from "../../utils/imageUtils";
+import { ChatMessage } from "./StageChat/components/ChatMessage";
+import { ChatExampleCard } from "./StageChat/components/ChatExampleCard";
+import { MessageInput } from "./StageChat/components/MessageInput";
+import { useChatMessages } from "./StageChat/hooks/useChatMessages";
+import { useChatTTS } from "../../Pages/QuestionDetail/hooks/useChatTTS";
 
 interface ExampleData {
   context: string;
@@ -76,7 +81,7 @@ const normalizeExampleResponse = (response: ExampleApiResponse) => {
 };
 
 const StageChat = ({ onBack }: StageChatProps) => {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const { messages, setMessages, addMessage } = useChatMessages();
   const [inputMessage, setInputMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -87,47 +92,9 @@ const StageChat = ({ onBack }: StageChatProps) => {
   const [isLargeTextMode] = useAtom(isLargeTextModeAtom);
   const [exampleScrollIndices, setExampleScrollIndices] = useState<Record<string, number>>({});
   const exampleScrollRefs = useRef<Record<string, HTMLDivElement | null>>({});
-  const [isPlayingTTS, setIsPlayingTTS] = useState(false);
-  const [playingExampleId, setPlayingExampleId] = useState<string | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const playingExampleIdRef = useRef<string | null>(null);
-  const isPlayingTTSRef = useRef<boolean>(false);
-
-  // 대화 내역 저장/불러오기
-  const getStorageKey = () => {
-    const dateKey = getTodayStringBy4AM();
-    return `stage_chat_messages_${dateKey}`;
-  };
-
-  const saveMessages = (msgs: Message[]) => {
-    try {
-      const storageKey = getStorageKey();
-      const messagesToSave = msgs.map(msg => ({
-        ...msg,
-        timestamp: msg.timestamp ? msg.timestamp.toISOString() : new Date().toISOString()
-      }));
-      localStorage.setItem(storageKey, JSON.stringify(messagesToSave));
-    } catch (error) {
-      console.error("대화 내역 저장 실패:", error);
-    }
-  };
-
-  const loadMessages = (): Message[] | null => {
-    try {
-      const storageKey = getStorageKey();
-      const saved = localStorage.getItem(storageKey);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        return parsed.map((msg: any) => ({
-          ...msg,
-          timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date()
-        }));
-      }
-    } catch (error) {
-      console.error("대화 내역 불러오기 실패:", error);
-    }
-    return null;
-  };
+  
+  // TTS 훅 사용
+  const { isPlayingTTS, playingChatExampleId, playChatExampleTTS, stopTTS } = useChatTTS();
   
   // 큰글씨 모드에 따른 텍스트 크기 (중년층용)
   const baseFontSize = isLargeTextMode ? 18 : 16;
@@ -140,38 +107,11 @@ const StageChat = ({ onBack }: StageChatProps) => {
   const cropperRef = useRef<any>(null);
   const { showError, showSuccess } = useErrorHandler();
 
-  // 오디오 정리
-  const stopCurrentAudio = useCallback(() => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
-      audioRef.current = null;
-    }
-  }, []);
-
   useEffect(() => {
     return () => {
-      stopCurrentAudio();
+      stopTTS();
     };
-  }, [stopCurrentAudio]);
-
-  // 초기 AI 메시지 및 저장된 대화 내역 불러오기
-  useEffect(() => {
-    const savedMessages = loadMessages();
-    if (savedMessages && savedMessages.length > 0) {
-      setMessages(savedMessages);
-    } else {
-      const initialMessage: Message = {
-        id: "1",
-        type: "ai",
-        content:
-          "안녕하세요! 영어 학습을 도와드릴 AI 튜터입니다. 궁금한 것이 있으시면 언제든지 질문해주세요!",
-        timestamp: new Date(),
-      };
-      setMessages([initialMessage]);
-      saveMessages([initialMessage]);
-    }
-  }, []);
+  }, [stopTTS]);
 
   // 메시지 스크롤 (requestAnimationFrame 사용하여 성능 최적화)
   useEffect(() => {
@@ -190,11 +130,7 @@ const StageChat = ({ onBack }: StageChatProps) => {
       timestamp: new Date(),
     };
 
-    setMessages((prev) => {
-      const updated = [...prev, userMessage];
-      saveMessages(updated);
-      return updated;
-    });
+    addMessage(userMessage);
     setInputMessage("");
     setIsLoading(true);
 
@@ -247,11 +183,7 @@ const StageChat = ({ onBack }: StageChatProps) => {
         timestamp: new Date(),
       };
 
-      setMessages((prev) => {
-        const updated = [...prev, aiMessage];
-        saveMessages(updated);
-        return updated;
-      });
+      addMessage(aiMessage);
     } catch (error) {
       console.error("Error sending message:", error);
       
@@ -276,11 +208,7 @@ const StageChat = ({ onBack }: StageChatProps) => {
         content: errorMessage + " 다시 시도해주세요.",
         timestamp: new Date(),
       };
-      setMessages((prev) => {
-        const updated = [...prev, errorMsg];
-        saveMessages(updated);
-        return updated;
-      });
+      addMessage(errorMsg);
     } finally {
       setIsLoading(false);
     }
@@ -374,11 +302,7 @@ const StageChat = ({ onBack }: StageChatProps) => {
         imageUrl: croppedDataURL, // 크롭된 이미지 URL 저장
         timestamp: new Date(),
       };
-      setMessages((prev) => {
-        const updated = [...prev, imageMessage];
-        saveMessages(updated);
-        return updated;
-      });
+      addMessage(imageMessage);
 
       // AI에게 이미지 분석 요청 (예문 생성과 동일한 방식)
       await handleImageAnalysis(croppedDataURL);
@@ -503,11 +427,8 @@ const StageChat = ({ onBack }: StageChatProps) => {
         timestamp: new Date(),
       };
 
-      setMessages((prev) => {
-        const updated = [...prev, summaryMessage, exampleMessage];
-        saveMessages(updated);
-        return updated;
-      });
+      addMessage(summaryMessage);
+      addMessage(exampleMessage);
     } catch (error) {
       if (import.meta.env.DEV) {
         console.error("이미지 분석 오류 상세:", error);
@@ -536,11 +457,7 @@ const StageChat = ({ onBack }: StageChatProps) => {
         content: errorMessage + " 다시 시도해주세요.",
         timestamp: new Date(),
       };
-      setMessages((prev) => {
-        const updated = [...prev, errorMsg];
-        saveMessages(updated);
-        return updated;
-      });
+      addMessage(errorMsg);
     } finally {
       setIsLoading(false);
     }
@@ -694,283 +611,55 @@ const StageChat = ({ onBack }: StageChatProps) => {
 
           {/* Messages - 스크롤 가능 */}
           <div className="flex-1 overflow-y-auto px-4 pt-2 space-y-3" style={{ paddingBottom: 'calc(72px + 5rem)' }}>
-            {messages.map((message, index) => (
-              <React.Fragment key={message.id}>
-                {/* 일반 메시지 */}
-                {!message.examples && (
-                  <div
-                    className={`flex ${
-                      message.type === "user" ? "justify-end" : "justify-start"
-                    }`}
-                  >
-                    <div
-                      className={`max-w-[80%] px-4 py-3 rounded-2xl ${
-                        message.type === "user"
-                          ? "bg-gray-200 text-gray-800"
-                          : "bg-gray-200 text-gray-800 shadow-sm border border-gray-100"
-                      }`}
-                    >
-                      {/* 사용자 메시지에 이미지가 있는 경우 */}
-                      {message.type === "user" && message.imageUrl && (
-                        <div className="mb-2">
-                          <img
-                            src={message.imageUrl}
-                            alt="업로드된 이미지"
-                            className="w-full rounded-lg object-contain max-h-64"
-                          />
-                        </div>
-                      )}
-                      {/* 텍스트 내용 표시 (이미지가 있으면 이미지 아래에 표시) */}
-                      {message.content && (
-                        message.type === "ai" ? (
-                          <div
-                            className="leading-relaxed"
-                            style={baseTextStyle}
-                            dangerouslySetInnerHTML={{ 
-                              __html: message.content
-                                .replace(/"text-decoration:\s*underline;\s*color:\s*#00DAAA;\s*font-weight:\s*500;">/gi, '') // "text-decoration:..."> 패턴 제거
-                                .replace(/"text-decoration:\s*underline;\s*color:\s*#00DAAA;\s*font-weight:\s*500;"/gi, '') // "text-decoration:..." 패턴 제거 (닫는 > 없음)
-                                .replace(/\*\*(.*?)\*\*/g, '<u>$1</u>') // **텍스트** → 밑줄 (예문 생성과 동일)
-                                .replace(/__(.*?)__/g, '<u>$1</u>') // __텍스트__ → 밑줄
-                                .replace(/\*(.*?)\*/g, '<u>$1</u>') // *텍스트* → 밑줄
-                            }}
-                          />
-                        ) : (
-                          <p className="leading-relaxed whitespace-pre-wrap" style={baseTextStyle}>
-                            {message.content}
-                          </p>
-                        )
-                      )}
-                    </div>
-                  </div>
-                )}
+            {messages.map((message, index) => {
+              const currentIndex = exampleScrollIndices[message.id] ?? 0;
+              const currentExample = message.examples?.[currentIndex];
+              const exampleId = message.examples ? `${message.id}-${currentIndex}` : null;
+              const isPlaying = exampleId && playingChatExampleId === exampleId && isPlayingTTS;
 
-                {/* 예문 카드 */}
-                {message.examples && message.examples.length > 0 && (() => {
-                  const currentIndex = exampleScrollIndices[message.id] ?? 0;
-                  const currentExample = message.examples[currentIndex];
-                  return (
-                    <div className="flex justify-start">
-                      <div className="max-w-[80%] px-4 py-3 bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden"
-                      >
-                        {/* Context Badge and Dots */}
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="inline-block bg-[#B8E6D3] rounded-full px-2 py-0.5 border border-[#B8E6D3]" style={{ marginLeft: '-4px', marginTop: '-4px' }}>
-                            <span className="font-medium text-gray-900" style={{ fontSize: `${isLargeTextMode ? 16 : 12}px` }}>예문 상황</span>
-                          </div>
-                          <div className="flex items-center" style={{ gap: '4px' }}>
-                            {message.examples && message.examples.length > 0 && [0, 1, 2].map((dotIdx) => (
-                              <div
-                                key={dotIdx}
-                                style={{
-                                  width: '6px',
-                                  height: '6px',
-                                  borderRadius: '50%',
-                                  backgroundColor: dotIdx === currentIndex ? '#00DAAA' : '#D1D5DB',
-                                }}
-                              />
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Dialogue */}
-                        <div className="space-y-2 mb-3" style={{ paddingLeft: '8px' }}>
-                          {/* A's dialogue */}
-                          <div className="flex items-start space-x-2">
-                            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0 bg-[#B8E6D3]`} style={{ fontSize: `${isLargeTextMode ? 16 : 12}px` }}>
-                              A
-                            </div>
-                            <div className="flex-1" style={{ paddingLeft: '4px', marginTop: '-2px' }}>
-                              <p className="font-medium text-gray-900 leading-relaxed" style={{ fontSize: `${isLargeTextMode ? 18 : 14}px` }}>
-                                {currentExample.dialogue?.A?.english || "예문 내용"}
-                              </p>
-                              <p className="text-gray-600 leading-relaxed mt-1" style={{ fontSize: `${isLargeTextMode ? 18 : 14}px` }}>
-                                {currentExample.dialogue?.A?.korean || "예문 한글버전"}
-                              </p>
-                            </div>
-                          </div>
-
-                          {/* B's dialogue */}
-                          <div className="flex items-start space-x-2">
-                            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0 bg-[#B8E6D3]`} style={{ fontSize: `${isLargeTextMode ? 16 : 12}px` }}>
-                              B
-                            </div>
-                            <div className="flex-1" style={{ paddingLeft: '4px', marginTop: '-2px' }}>
-                              <p className="font-medium text-gray-900 leading-relaxed" style={{ fontSize: `${isLargeTextMode ? 18 : 14}px` }}>
-                                {currentExample.dialogue?.B?.english || "예문 내용"}
-                              </p>
-                              <p className="text-gray-600 leading-relaxed mt-1" style={{ fontSize: `${isLargeTextMode ? 18 : 14}px` }}>
-                                {currentExample.dialogue?.B?.korean || "예문 한글버전"}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Controls */}
-                        <div className="flex justify-center items-center gap-2 pt-4 border-t border-gray-200">
-                          <button
-                            onClick={() => {
-                              if (message.examples) {
-                                const currentIdx = exampleScrollIndices[message.id] ?? 0;
-                                const newIndex = Math.max(0, currentIdx - 1);
-                                setExampleScrollIndices((prev) => ({
-                                  ...prev,
-                                  [message.id]: newIndex,
-                                }));
-                              }
-                            }}
-                            disabled={message.examples && (exampleScrollIndices[message.id] ?? 0) === 0}
-                            className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                            aria-label="이전 예문"
-                          >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                            </svg>
-                          </button>
-                          <button
-                            onClick={async () => {
-                              // 재생 중이면 중지
-                              const exampleId = `${message.id}-${currentIndex}`;
-                              if (playingExampleId === exampleId && isPlayingTTS) {
-                                if (audioRef.current) {
-                                  audioRef.current.pause();
-                                  audioRef.current.currentTime = 0;
-                                  audioRef.current = null;
-                                }
-                                playingExampleIdRef.current = null;
-                                isPlayingTTSRef.current = false;
-                                setPlayingExampleId(null);
-                                setIsPlayingTTS(false);
-                                return;
-                              }
-
-                              // 안전한 접근을 위한 null 체크
-                              if (!currentExample?.dialogue?.A?.english || !currentExample?.dialogue?.B?.english) {
-                                showError("재생 오류", "예문 데이터가 올바르지 않습니다.");
-                                return;
-                              }
-                              
-                              const dialogueA = currentExample.dialogue.A.english;
-                              const dialogueB = currentExample.dialogue.B.english;
-                              const textToRead = `${dialogueA}. ${dialogueB}`;
-                              
-                              // 기존 오디오 정지
-                              stopCurrentAudio();
-                              
-                              playingExampleIdRef.current = exampleId;
-                              isPlayingTTSRef.current = true;
-                              setPlayingExampleId(exampleId);
-                              setIsPlayingTTS(true);
-                              
-                              try {
-                                const response = await fetch(API_ENDPOINTS.tts, {
-                                  method: "POST",
-                                  headers: { "Content-Type": "application/json" },
-                                  body: JSON.stringify({ text: textToRead }),
-                                  credentials: "include",
-                                });
-                                const { audioContent } = await response.json();
-                                const audio = new Audio(`data:audio/mp3;base64,${audioContent}`);
-                                audioRef.current = audio;
-                                
-                                audio.onended = () => {
-                                  if (audioRef.current === audio) {
-                                    playingExampleIdRef.current = null;
-                                    isPlayingTTSRef.current = false;
-                                    setPlayingExampleId(null);
-                                    setIsPlayingTTS(false);
-                                    audioRef.current = null;
-                                  }
-                                };
-                                
-                                audio.onerror = () => {
-                                  if (audioRef.current === audio) {
-                                    playingExampleIdRef.current = null;
-                                    isPlayingTTSRef.current = false;
-                                    setPlayingExampleId(null);
-                                    setIsPlayingTTS(false);
-                                    audioRef.current = null;
-                                    showError("재생 오류", "오디오 재생 중 오류가 발생했습니다.");
-                                  }
-                                };
-                                
-                                audio.oncanplaythrough = async () => {
-                                  // 재생 중지 상태 확인 - ref를 사용하여 최신 상태 확인
-                                  if (audioRef.current === audio && playingExampleIdRef.current === exampleId && isPlayingTTSRef.current) {
-                                    try {
-                                      await audio.play();
-                                    } catch (e) {
-                                      console.error("재생 실패:", e);
-                                      if (audioRef.current === audio) {
-                                        playingExampleIdRef.current = null;
-                                        isPlayingTTSRef.current = false;
-                                        setPlayingExampleId(null);
-                                        setIsPlayingTTS(false);
-                                        audioRef.current = null;
-                                      }
-                                    }
-                                  } else if (audioRef.current === audio) {
-                                    // 상태가 변경되었으면 재생하지 않음
-                                    audio.pause();
-                                    audio.currentTime = 0;
-                                    audioRef.current = null;
-                                  }
-                                };
-                                audio.load();
-                              } catch (error) {
-                                console.error("TTS 오류:", error);
-                                setPlayingExampleId(null);
-                                setIsPlayingTTS(false);
-                                if (audioRef.current) {
-                                  audioRef.current = null;
-                                }
-                                showError("TTS 오류", "음성 생성 중 오류가 발생했습니다.");
-                              }
-                            }}
-                            className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors shadow-md ${
-                              playingExampleId === `${message.id}-${currentIndex}` && isPlayingTTS
-                                ? "bg-[#FF6B35] hover:bg-[#E55A2B]"
-                                : "bg-[#00DAAA] hover:bg-[#00C299]"
-                            }`}
-                            aria-label={playingExampleId === `${message.id}-${currentIndex}` && isPlayingTTS ? "재생 중지" : "음성 재생"}
-                          >
-                            {playingExampleId === `${message.id}-${currentIndex}` && isPlayingTTS ? (
-                              <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
-                              </svg>
-                            ) : (
-                              <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
-                              </svg>
-                            )}
-                          </button>
-                          <button
-                            onClick={() => {
-                              if (message.examples) {
-                                const currentIdx = exampleScrollIndices[message.id] ?? 0;
-                                const newIndex = Math.min(message.examples.length - 1, currentIdx + 1);
-                                setExampleScrollIndices((prev) => ({
-                                  ...prev,
-                                  [message.id]: newIndex,
-                                }));
-                              }
-                            }}
-                            disabled={message.examples && (exampleScrollIndices[message.id] ?? 0) >= message.examples.length - 1}
-                            className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                            aria-label="다음 예문"
-                          >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                            </svg>
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })()}
-
-              </React.Fragment>
-            ))}
+              return (
+                <React.Fragment key={message.id}>
+                  {message.examples && message.examples.length > 0 ? (
+                    <ChatExampleCard
+                      example={currentExample || message.examples[0]}
+                      currentIndex={currentIndex}
+                      totalExamples={message.examples.length}
+                      onPrevious={() => {
+                        const newIndex = Math.max(0, currentIndex - 1);
+                        setExampleScrollIndices((prev) => ({
+                          ...prev,
+                          [message.id]: newIndex,
+                        }));
+                      }}
+                      onNext={() => {
+                        const newIndex = Math.min(message.examples!.length - 1, currentIndex + 1);
+                        setExampleScrollIndices((prev) => ({
+                          ...prev,
+                          [message.id]: newIndex,
+                        }));
+                      }}
+                      onPlay={() => {
+                        if (currentExample?.dialogue?.A?.english && currentExample?.dialogue?.B?.english) {
+                          playChatExampleTTS(
+                            currentExample.dialogue.A.english,
+                            currentExample.dialogue.B.english,
+                            exampleId!
+                          );
+                        }
+                      }}
+                      isPlaying={!!isPlaying}
+                      isLargeTextMode={isLargeTextMode}
+                    />
+                  ) : (
+                    <ChatMessage
+                      message={message}
+                      isLargeTextMode={isLargeTextMode}
+                      baseTextStyle={baseTextStyle}
+                    />
+                  )}
+                </React.Fragment>
+              );
+            })}
 
             {/* Loading indicator */}
             {isLoading && (
@@ -1000,56 +689,16 @@ const StageChat = ({ onBack }: StageChatProps) => {
           </div>
 
           {/* Input - 고정 */}
-          <div className="p-4 bg-white border-t border-gray-200 fixed bottom-0 left-0 right-0 max-w-[440px] mx-auto z-40" style={{ paddingBottom: 'calc(72px + 1rem)' }}>
-            <div className="flex items-end space-x-3">
-              <button
-                onClick={() => setIsModalOpen(true)}
-                className="w-12 h-12 bg-[#00DAAA] hover:bg-[#00C495] rounded-full flex items-center justify-center shadow-lg transition-colors flex-shrink-0"
-              >
-                <Icons.camera
-                  className="w-5 h-5"
-                  stroke="white"
-                  strokeOpacity="1"
-                />
-              </button>
-              <div className="flex-1">
-                <textarea
-                  value={inputMessage}
-                  onChange={(e) => setInputMessage(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  placeholder="궁금한 것을 질문해보세요..."
-                  className="w-full px-4 py-3 border border-gray-300 rounded-2xl resize-none focus:outline-none focus:ring-2 focus:ring-[#00DAAA] focus:border-transparent bg-white"
-                  rows={1}
-                  style={{ minHeight: "48px", maxHeight: "120px", ...baseTextStyle }}
-                />
-              </div>
-              <button
-                onClick={handleSendMessage}
-                disabled={!inputMessage.trim() || isLoading}
-                className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors flex-shrink-0 ${
-                  inputMessage.trim() && !isLoading
-                    ? "bg-[#00DAAA] hover:bg-[#00C495] cursor-pointer"
-                    : "bg-gray-300 cursor-not-allowed"
-                }`}
-              >
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  className="text-white"
-                >
-                  <path
-                    d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </button>
-            </div>
-          </div>
+          <MessageInput
+            inputMessage={inputMessage}
+            isLoading={isLoading}
+            isLargeTextMode={isLargeTextMode}
+            baseTextStyle={baseTextStyle}
+            onInputChange={setInputMessage}
+            onSend={handleSendMessage}
+            onKeyPress={handleKeyPress}
+            onImageClick={() => setIsModalOpen(true)}
+          />
         </>
       )}
 
