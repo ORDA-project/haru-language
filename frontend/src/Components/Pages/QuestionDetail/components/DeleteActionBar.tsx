@@ -22,7 +22,7 @@ export const DeleteActionBar: React.FC<DeleteActionBarProps> = ({
   if (selectedCount === 0) return null;
 
   return (
-    <div className="fixed bottom-20 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50 max-w-[440px] mx-auto">
+    <div className="fixed bottom-20 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-40 max-w-[440px] mx-auto">
       <div className="flex items-center justify-between px-4 py-3">
         <span style={baseTextStyle} className="text-gray-700 font-medium">
           {selectedCount}개 선택됨

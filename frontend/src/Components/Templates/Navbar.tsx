@@ -30,7 +30,7 @@ const NavBar = ({ currentPage }: NavBarProps) => {
   const homeLabelStyle: React.CSSProperties = { fontSize: `${homeLabelFontSize}px` };
 
   return (
-    <div className="flex items-center justify-around bg-[#00daaa] fixed bottom-0 left-0 right-0 w-full max-w-[440px] mx-auto box-border h-[72px]">
+    <div className="flex items-center justify-around bg-[#00daaa] fixed bottom-0 left-0 right-0 w-full max-w-[440px] mx-auto box-border h-[72px] z-[100]">
       {/* 예문 버튼 */}
       <NavLink
         to="/example"

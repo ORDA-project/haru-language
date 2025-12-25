@@ -6,7 +6,7 @@ export default function VersionInfo() {
   const navigate = useNavigate();
 
   return (
-    <div className="w-full h-screen flex flex-col max-w-[440px] mx-auto bg-gray-50 shadow-[0_0_10px_0_rgba(0,0,0,0.1)]">
+    <div className="w-full h-[calc(100vh-72px)] flex flex-col max-w-[440px] mx-auto bg-gray-50 shadow-[0_0_10px_0_rgba(0,0,0,0.1)]">
       {/* 헤더 영역 */}
       <div className="flex items-center justify-between p-4 bg-white border-b border-gray-200">
         <button

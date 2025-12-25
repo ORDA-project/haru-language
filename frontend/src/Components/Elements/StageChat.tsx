@@ -874,7 +874,7 @@ const StageChat = ({ onBack }: StageChatProps) => {
           </div>
 
           {/* Input - 고정 */}
-          <div className="p-4 bg-white border-t border-gray-200 fixed bottom-0 left-0 right-0 max-w-[440px] mx-auto" style={{ paddingBottom: 'calc(72px + 1rem)' }}>
+          <div className="p-4 bg-white border-t border-gray-200 fixed bottom-0 left-0 right-0 max-w-[440px] mx-auto z-40" style={{ paddingBottom: 'calc(72px + 1rem)' }}>
             <div className="flex items-end space-x-3">
               <button
                 onClick={() => setIsModalOpen(true)}

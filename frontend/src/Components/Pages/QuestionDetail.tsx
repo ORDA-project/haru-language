@@ -686,7 +686,7 @@ const QuestionDetail = () => {
                    
                    {/* 하단 고정 삭제 액션 바 */}
                   {selectedWritingIds.size > 0 && (
-                    <div className="absolute bottom-20 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50 w-full max-w-full overflow-hidden box-border">
+                    <div className="absolute bottom-20 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-40 w-full max-w-full overflow-hidden box-border">
                       <div className="flex items-center justify-between px-3 py-2.5 gap-2 w-full min-w-0">
                         <span className="text-gray-700 font-medium flex-shrink-0 whitespace-nowrap" style={baseTextStyle}>
                           {selectedWritingIds.size}개 선택
@@ -946,7 +946,7 @@ const QuestionDetail = () => {
                    
                    {/* 하단 고정 삭제 액션 바 */}
                    {selectedQuestionIds.size > 0 && (
-                    <div className="absolute bottom-20 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50 w-full max-w-full overflow-hidden box-border">
+                    <div className="absolute bottom-20 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-40 w-full max-w-full overflow-hidden box-border">
                       <div className="flex items-center justify-between px-3 py-2.5 gap-2 w-full min-w-0">
                         <span className="text-gray-700 font-medium flex-shrink-0 whitespace-nowrap" style={baseTextStyle}>
                           {selectedQuestionIds.size}개 선택
