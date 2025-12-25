@@ -191,13 +191,9 @@ export const ExampleRecordsSection: React.FC<ExampleRecordsSectionProps> = ({
 
                 <div className="flex justify-start">
                   <div
-                    className="bg-white shadow-sm border border-gray-100 rounded-lg relative"
+                    className={`bg-white shadow-sm border border-gray-100 rounded-lg relative ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"}`}
                     style={{
                       width: "343px",
-                      paddingLeft: isLargeTextMode ? "20px" : "16px",
-                      paddingTop: isLargeTextMode ? "16px" : "12px",
-                      paddingBottom: isLargeTextMode ? "20px" : "16px",
-                      paddingRight: isLargeTextMode ? "20px" : "16px",
                     }}
                   >
                     <div className="flex items-center justify-between mb-3">
