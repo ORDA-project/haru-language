@@ -231,16 +231,7 @@ const StageChat = ({ onBack }: StageChatProps) => {
         formattedContent = JSON.stringify(response.data.answer);
       }
 
-      // 개행 문자 처리 및 마크다운 스타일 적용
-      formattedContent = formattedContent
-        .replace(/\\n/g, "\n") // \n을 실제 개행으로 변환
-        .replace(/\*\*(.*?)\*\*/g, '<span style="text-decoration: underline; color: #00DAAA; font-weight: 500;">$1</span>') // **텍스트**를 밑줄과 색상으로 변환
-        .replace(
-          /"([^"]*)"/g,
-          '<span style="color: #00DAAA; font-weight: 500;">"$1"</span>'
-        ) // 따옴표 안의 텍스트를 하이라이트
-        .replace(/\n/g, "<br/>"); // 개행을 <br/>로 변환
-
+      // 원본 텍스트 그대로 저장 (예문 생성과 동일하게, 렌더링할 때만 변환)
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: "ai",
