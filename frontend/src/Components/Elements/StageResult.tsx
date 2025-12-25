@@ -771,7 +771,7 @@ const StageResult = ({
   }
 
   return (
-    <div className="w-full h-full flex flex-col bg-[#F7F8FB] relative">
+    <div className="w-full flex-1 flex flex-col bg-[#F7F8FB] relative">
       {/* Header */}
       <div className={`flex items-center justify-between ${isLargeTextMode ? "p-5" : "p-4"} bg-white border-b border-gray-200`}>
         <button
