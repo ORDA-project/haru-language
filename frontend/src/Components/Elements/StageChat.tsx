@@ -232,10 +232,18 @@ const StageChat = ({ onBack }: StageChatProps) => {
       }
 
       // 원본 텍스트 그대로 저장 (예문 생성과 동일하게, 렌더링할 때만 변환)
+      // 서버에서 받은 이상한 패턴 제거
+      let cleanedContent = formattedContent;
+      if (typeof cleanedContent === "string") {
+        cleanedContent = cleanedContent
+          .replace(/"text-decoration:\s*underline;\s*color:\s*#00DAAA;\s*font-weight:\s*500;">/gi, '')
+          .replace(/"text-decoration:\s*underline;\s*color:\s*#00DAAA;\s*font-weight:\s*500;"/gi, '');
+      }
+      
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: "ai",
-        content: formattedContent,
+        content: cleanedContent,
         timestamp: new Date(),
       };
 
@@ -470,10 +478,18 @@ const StageChat = ({ onBack }: StageChatProps) => {
       }
 
       // 요약 메시지 (예문 생성과 동일하게 description을 그대로 저장)
+      // 서버에서 받은 이상한 패턴 제거
+      let descriptionContent = actualExample.description || "이미지 분석이 완료되었습니다.";
+      if (typeof descriptionContent === "string") {
+        descriptionContent = descriptionContent
+          .replace(/"text-decoration:\s*underline;\s*color:\s*#00DAAA;\s*font-weight:\s*500;">/gi, '')
+          .replace(/"text-decoration:\s*underline;\s*color:\s*#00DAAA;\s*font-weight:\s*500;"/gi, '');
+      }
+      
       const summaryMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: "ai",
-        content: actualExample.description || "이미지 분석이 완료되었습니다.",
+        content: descriptionContent,
         timestamp: new Date(),
       };
 
@@ -712,9 +728,11 @@ const StageChat = ({ onBack }: StageChatProps) => {
                             style={baseTextStyle}
                             dangerouslySetInnerHTML={{ 
                               __html: message.content
-                                .replace(/\*\*(.*?)\*\*/g, '<span style="text-decoration: underline; color: #00DAAA; font-weight: 500;">$1</span>') // **텍스트**를 밑줄과 색상으로 변환
-                                .replace(/"([^"]*)"/g, '<span style="color: #00DAAA; font-weight: 500;">"$1"</span>') // 따옴표 안의 텍스트를 하이라이트
-                                .replace(/\n/g, "<br/>") // 개행을 <br/>로 변환
+                                .replace(/"text-decoration:\s*underline;\s*color:\s*#00DAAA;\s*font-weight:\s*500;">/gi, '') // "text-decoration:..."> 패턴 제거
+                                .replace(/"text-decoration:\s*underline;\s*color:\s*#00DAAA;\s*font-weight:\s*500;"/gi, '') // "text-decoration:..." 패턴 제거 (닫는 > 없음)
+                                .replace(/\*\*(.*?)\*\*/g, '<u>$1</u>') // **텍스트** → 밑줄 (예문 생성과 동일)
+                                .replace(/__(.*?)__/g, '<u>$1</u>') // __텍스트__ → 밑줄
+                                .replace(/\*(.*?)\*/g, '<u>$1</u>') // *텍스트* → 밑줄
                             }}
                           />
                         ) : (

@@ -1598,9 +1598,10 @@ const QuestionDetail = () => {
                                 style={baseTextStyle}
                                 dangerouslySetInnerHTML={{ 
                                   __html: message.content
-                                    .replace(/\*\*(.*?)\*\*/g, '<span style="text-decoration: underline; color: #00DAAA; font-weight: 500;">$1</span>')
-                                    .replace(/"([^"]*)"/g, '<span style="color: #00DAAA; font-weight: 500;">"$1"</span>')
-                                    .replace(/\n/g, "<br/>")
+                                    .replace(/"text-decoration:\s*underline;\s*color:\s*#00DAAA;\s*font-weight:\s*500;">/gi, '') // "text-decoration:..." 패턴 제거
+                                    .replace(/\*\*(.*?)\*\*/g, '<u>$1</u>') // **텍스트** → 밑줄 (예문 생성과 동일)
+                                    .replace(/__(.*?)__/g, '<u>$1</u>') // __텍스트__ → 밑줄
+                                    .replace(/\*(.*?)\*/g, '<u>$1</u>') // *텍스트* → 밑줄
                                 }}
                               />
                             )}
@@ -1651,9 +1652,10 @@ const QuestionDetail = () => {
                             style={baseTextStyle}
                             dangerouslySetInnerHTML={{ 
                               __html: message.content
-                                .replace(/\*\*(.*?)\*\*/g, '<span style="text-decoration: underline; color: #00DAAA; font-weight: 500;">$1</span>')
-                                .replace(/"([^"]*)"/g, '<span style="color: #00DAAA; font-weight: 500;">"$1"</span>')
-                                .replace(/\n/g, "<br/>")
+                                .replace(/"text-decoration:\s*underline;\s*color:\s*#00DAAA;\s*font-weight:\s*500;">/gi, '') // "text-decoration:..." 패턴 제거
+                                .replace(/\*\*(.*?)\*\*/g, '<u>$1</u>') // **텍스트** → 밑줄 (예문 생성과 동일)
+                                .replace(/__(.*?)__/g, '<u>$1</u>') // __텍스트__ → 밑줄
+                                .replace(/\*(.*?)\*/g, '<u>$1</u>') // *텍스트* → 밑줄
                             }}
                           />
                         )}
