@@ -590,7 +590,7 @@ const StageChat = ({ onBack }: StageChatProps) => {
       {cropStage === "chat" && (
         <>
           {/* Date Separator - 고정 */}
-          <div className="px-4 py-1 bg-white border-b border-gray-200">
+          <div className="px-4 py-1 bg-white border-b border-gray-200" style={{ marginTop: '48px' }}>
             <div className="flex items-center">
               <div className="flex-1 h-px bg-gray-300"></div>
               <div className="px-4">
@@ -610,7 +610,7 @@ const StageChat = ({ onBack }: StageChatProps) => {
           </div>
 
           {/* Messages - 스크롤 가능 */}
-          <div className="flex-1 overflow-y-auto px-4 pt-2 space-y-3" style={{ paddingBottom: 'calc(72px + 5rem)' }}>
+          <div className="flex-1 overflow-y-auto px-4 space-y-3" style={{ paddingTop: 'calc(48px + 0.5rem)', paddingBottom: 'calc(72px + 5rem)' }}>
             {messages.map((message, index) => {
               const currentIndex = exampleScrollIndices[message.id] ?? 0;
               const currentExample = message.examples?.[currentIndex];

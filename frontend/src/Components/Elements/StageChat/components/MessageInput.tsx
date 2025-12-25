@@ -22,19 +22,21 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   onKeyPress,
   onImageClick,
 }) => {
-  const inputHeight = isLargeTextMode ? "52px" : "48px";
-  const buttonSize = isLargeTextMode ? "40px" : "36px";
-  const inputFontSize = isLargeTextMode ? "16px" : "14px";
+  const inputFontSize = isLargeTextMode ? "16px" : "12px";
+  const lineHeight = 1.4;
+  const calculatedInputHeight = isLargeTextMode ? "44px" : "40px";
+  const inputHeight = calculatedInputHeight;
+  const buttonSize = inputHeight;
   
   return (
     <div
       className="fixed left-0 right-0 bg-white border-t border-gray-200 z-40 max-w-[440px] mx-auto"
       style={{ 
         bottom: "72px",
-        paddingBottom: isLargeTextMode ? "0.25rem" : "0.1875rem"
+        paddingBottom: isLargeTextMode ? "0.125rem" : "0.09375rem"
       }}
     >
-      <div className={`flex items-center gap-2 ${isLargeTextMode ? "px-4 py-2" : "px-3 py-1.5"}`}>
+      <div className={`flex items-center gap-2 ${isLargeTextMode ? "px-4 py-1.5" : "px-3 py-1"}`}>
         <button
           onClick={onImageClick}
           className="rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors flex-shrink-0"
@@ -59,9 +61,9 @@ export const MessageInput: React.FC<MessageInputProps> = ({
               fontSize: inputFontSize,
               minHeight: inputHeight,
               maxHeight: "120px",
-              lineHeight: "1.4",
-              paddingTop: `calc((${inputHeight} - ${inputFontSize} * 1.4) / 2)`,
-              paddingBottom: `calc((${inputHeight} - ${inputFontSize} * 1.4) / 2)`,
+              lineHeight: lineHeight,
+              paddingTop: `calc((${inputHeight} - ${inputFontSize} * ${lineHeight}) / 2)`,
+              paddingBottom: `calc((${inputHeight} - ${inputFontSize} * ${lineHeight}) / 2)`,
             }}
             rows={1}
           />
