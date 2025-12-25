@@ -289,6 +289,9 @@ const QuestionDetail = () => {
   const currentIndex = availableDates.findIndex(
     (d) => d === selectedDate
   );
+  // availableDates는 내림차순 정렬 (최신이 먼저)
+  // 이전 날 = 더 오래된 날짜 (인덱스 증가)
+  // 다음 날 = 더 최신 날짜 (인덱스 감소)
   const previousDate =
     currentIndex >= 0 && currentIndex < availableDates.length - 1
       ? availableDates[currentIndex + 1]
@@ -838,7 +841,7 @@ const QuestionDetail = () => {
                     <>
                       <div className="flex justify-start">
                         <div 
-                          className="bg-white shadow-sm border border-gray-100 rounded-lg w-full max-w-[343px]"
+                          className="max-w-[80%] bg-white shadow-sm border border-gray-100 rounded-lg"
                           style={{ 
                             paddingLeft: '12px',
                             paddingTop: '12px',
@@ -1067,7 +1070,10 @@ const QuestionDetail = () => {
                        <div className={`max-w-[80%] min-w-0 ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-2xl bg-white text-gray-800 shadow-sm border border-gray-100 transition-all ${
                          isDeleteModeQuestion && isSelected ? 'bg-red-50 border-red-200' : ''
                        }`}
-                       style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}
+                       style={{ 
+                         wordBreak: 'break-word', 
+                         overflowWrap: 'break-word'
+                       }}
                        >
                          <p className="leading-relaxed whitespace-pre-wrap break-words" style={{...baseTextStyle, wordBreak: 'break-word', overflowWrap: 'break-word'}}>
                            {question.content}
@@ -1078,7 +1084,9 @@ const QuestionDetail = () => {
                     {/* AI Response */}
                     {question.Answers && question.Answers.length > 0 && (
                       <div className="flex justify-start">
-                        <div className={`max-w-[80%] ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-2xl bg-white text-gray-800 shadow-sm border border-gray-100`}>
+                        <div className={`max-w-[80%] min-w-0 ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-2xl bg-white text-gray-800 shadow-sm border border-gray-100`}
+                        style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}
+                        >
                         <div className="leading-relaxed" style={baseTextStyle}>
                     {question.Answers[0].content.includes(
                       "회화, 독해, 문법분석"

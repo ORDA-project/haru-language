@@ -169,9 +169,26 @@ const StatusCheck = ({ userId: _userId }: StatusProps) => {
   const loading = questionsLoading || examplesLoading;
 
   const handleRecordClick = (record: ProgressRecord) => {
-    // createdAt에서 날짜 추출하여 YYYY-MM-DD 형식으로 변환
-    const date = new Date(record.createdAt);
-    const dateString = date.toISOString().split("T")[0];
+    // record.date는 MM/DD 형식이므로, createdAt을 사용하여 YYYY-MM-DD 형식으로 변환
+    // createdAt은 ISO 문자열이므로 직접 사용 가능
+    let dateString: string;
+    try {
+      const date = new Date(record.createdAt);
+      if (Number.isNaN(date.getTime())) {
+        console.warn("Invalid createdAt, using current date:", record.createdAt);
+        dateString = new Date().toISOString().split("T")[0];
+      } else {
+        // 한국 시간으로 변환하여 날짜 추출
+        const koreaTime = new Date(date.toLocaleString("en-US", { timeZone: "Asia/Seoul" }));
+        const year = koreaTime.getFullYear();
+        const month = String(koreaTime.getMonth() + 1).padStart(2, '0');
+        const day = String(koreaTime.getDate()).padStart(2, '0');
+        dateString = `${year}-${month}-${day}`;
+      }
+    } catch (error) {
+      console.warn("Failed to parse createdAt, using current date:", record.createdAt, error);
+      dateString = new Date().toISOString().split("T")[0];
+    }
 
     // 보안: URL에 userId 제거 (JWT로 자동 인증)
     navigate(`/question-detail/${dateString}`);
