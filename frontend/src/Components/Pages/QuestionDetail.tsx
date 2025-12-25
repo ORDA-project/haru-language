@@ -349,17 +349,17 @@ const QuestionDetail = () => {
     // 이미 재생 중이면 중지
     if (isPlayingTTS && currentPlayingExampleId === example.id) {
       // 오디오 재생 중지
-      if (audioRef.current) {
-        audioRef.current.pause();
+    if (audioRef.current) {
+      audioRef.current.pause();
         audioRef.current.currentTime = 0; // 재생 위치 초기화
-        audioRef.current = null;
-      }
-      
-      // 브라우저 TTS도 중지
-      if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-      }
-      
+      audioRef.current = null;
+    }
+    
+    // 브라우저 TTS도 중지
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+
       setIsPlayingTTS(false);
       setCurrentPlayingExampleId(null);
       return;
@@ -685,32 +685,32 @@ const QuestionDetail = () => {
               {isDeleteModeWriting && (
                 <>
                    <div className="flex items-center justify-between mb-3 w-full max-w-full overflow-hidden">
-                     <button
-                       onClick={() => {
-                         if (selectedWritingIds.size === writingRecords.length && writingRecords.length > 0) {
-                           setSelectedWritingIds(new Set());
-                         } else {
-                           setSelectedWritingIds(new Set(writingRecords.map((r: any) => r.id)));
-                         }
-                       }}
+                    <button
+                      onClick={() => {
+                        if (selectedWritingIds.size === writingRecords.length && writingRecords.length > 0) {
+                          setSelectedWritingIds(new Set());
+                        } else {
+                          setSelectedWritingIds(new Set(writingRecords.map((r: any) => r.id)));
+                        }
+                      }}
                        className="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors flex-shrink-0"
-                     >
+                    >
                        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${
-                         selectedWritingIds.size === writingRecords.length && writingRecords.length > 0
-                           ? 'bg-red-500 border-red-500' 
-                           : 'bg-white border-gray-300'
-                       }`}>
-                         {selectedWritingIds.size === writingRecords.length && writingRecords.length > 0 && (
-                           <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                           </svg>
-                         )}
-                       </div>
+                        selectedWritingIds.size === writingRecords.length && writingRecords.length > 0
+                          ? 'bg-red-500 border-red-500' 
+                          : 'bg-white border-gray-300'
+                      }`}>
+                        {selectedWritingIds.size === writingRecords.length && writingRecords.length > 0 && (
+                          <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
+                      </div>
                        <span className="text-gray-700 whitespace-nowrap" style={smallTextStyle}>전체 선택</span>
-                     </button>
-                   </div>
-                   
-                   {/* 하단 고정 삭제 액션 바 */}
+                    </button>
+                  </div>
+                  
+                  {/* 하단 고정 삭제 액션 바 */}
                   {selectedWritingIds.size > 0 && (
                     <div className="absolute bottom-20 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-40 w-full max-w-full overflow-hidden box-border">
                       <div className="flex items-center justify-between px-3 py-2.5 gap-2 w-full min-w-0">
@@ -802,7 +802,7 @@ const QuestionDetail = () => {
                         </button>
                       </div>
                     )}
-                     <div 
+                    <div 
                        className="max-w-[80%] min-w-0 px-4 py-3 rounded-2xl bg-white text-gray-800 shadow-sm border border-gray-100 transition-all"
                        style={{ 
                          wordBreak: 'break-word', 
@@ -811,24 +811,24 @@ const QuestionDetail = () => {
                        }}
                      >
                          <div className="space-y-2 w-full min-w-0">
-                           {/* 오늘의 주제 - 불릿 있음 */}
-                           {question && (
+                          {/* 오늘의 주제 - 불릿 있음 */}
+                          {question && (
                              <div className="flex items-start min-w-0">
                                <span className="text-gray-800 mr-2 flex-shrink-0" style={baseTextStyle}>•</span>
                                <p className="text-gray-800 leading-relaxed flex-1 min-w-0 break-words" style={{...baseTextStyle, wordBreak: 'break-word', overflowWrap: 'break-word'}}>
-                                 {question.koreanQuestion || question.englishQuestion}
-                               </p>
-                             </div>
-                           )}
-                           
-                           {/* 내가 입력한 문장 - 불릿 없음 */}
+                                {question.koreanQuestion || question.englishQuestion}
+                              </p>
+                            </div>
+                          )}
+                          
+                          {/* 내가 입력한 문장 - 불릿 없음 */}
                            <div className="min-w-0">
                              <p className="text-gray-800 leading-relaxed break-words" style={{...baseTextStyle, wordBreak: 'break-word', overflowWrap: 'break-word'}}>
-                               {record.original_text}
-                             </p>
-                           </div>
-                         </div>
-                       </div>
+                              {record.original_text}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
                     </div>
 
                   {/* 2. 문장 첨삭 블록 */}
@@ -901,6 +901,557 @@ const QuestionDetail = () => {
                 </div>
               );
             })}
+            
+            {/* 구분선 */}
+            <div className="border-t border-gray-300 my-4"></div>
+          </>
+        )}
+
+        {/* 채팅기록 섹션 */}
+        {chatMessages.length > 0 && (
+          <>
+            <div className="space-y-2 w-full max-w-full overflow-hidden">
+              <div className="flex items-center justify-between w-full min-w-0 gap-2">
+                <div className="font-semibold text-gray-600 flex-shrink-0" style={headerTextStyle}>채팅기록</div>
+                <button
+                  onClick={() => {
+                    setIsDeleteModeChat(!isDeleteModeChat);
+                    if (isDeleteModeChat) {
+                      setSelectedChatMessageIds(new Set());
+                    }
+                  }}
+                  className={`px-3 py-2 rounded-lg font-semibold transition-colors flex items-center gap-1.5 shadow-md flex-shrink-0 whitespace-nowrap ${
+                    isDeleteModeChat
+                      ? 'bg-red-500 hover:bg-red-600 active:bg-red-700 text-white'
+                      : 'bg-white hover:bg-gray-50 text-gray-700 border-2 border-gray-300'
+                  }`}
+                  style={smallTextStyle}
+                >
+                  {isDeleteModeChat ? (
+                    <>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                      취소
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      삭제
+                    </>
+                  )}
+                </button>
+              </div>
+              
+              {isDeleteModeChat && (
+                <>
+                  <div className="flex items-center justify-between mb-3 w-full max-w-full overflow-hidden">
+                    <button
+                      onClick={() => {
+                        if (selectedChatMessageIds.size === chatMessages.length && chatMessages.length > 0) {
+                          setSelectedChatMessageIds(new Set());
+                        } else {
+                          setSelectedChatMessageIds(new Set(chatMessages.map((msg: any) => msg.id || `msg-${chatMessages.indexOf(msg)}`)));
+                        }
+                      }}
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors flex-shrink-0"
+                    >
+                      <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${
+                        selectedChatMessageIds.size === chatMessages.length && chatMessages.length > 0
+                          ? 'bg-red-500 border-red-500' 
+                          : 'bg-white border-gray-300'
+                      }`}>
+                        {selectedChatMessageIds.size === chatMessages.length && chatMessages.length > 0 && (
+                          <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
+                      </div>
+                      <span className="text-gray-700 whitespace-nowrap" style={smallTextStyle}>전체 선택</span>
+                    </button>
+                  </div>
+                  
+                  {/* 하단 고정 삭제 액션 바 */}
+                  {selectedChatMessageIds.size > 0 && (
+                    <div className="absolute bottom-20 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-40 w-full max-w-full overflow-hidden box-border">
+                      <div className="flex items-center justify-between px-3 py-2.5 gap-2 w-full min-w-0">
+                        <span className="text-gray-700 font-medium flex-shrink-0 whitespace-nowrap" style={baseTextStyle}>
+                          {selectedChatMessageIds.size}개 선택
+                        </span>
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                          <button
+                            onClick={() => setSelectedChatMessageIds(new Set())}
+                            className="px-3 py-1.5 text-gray-600 hover:text-gray-800 transition-colors whitespace-nowrap"
+                            style={smallTextStyle}
+                          >
+                            취소
+                          </button>
+                          <button
+                            onClick={async () => {
+                              if (window.confirm(`선택한 ${selectedChatMessageIds.size}개의 채팅 기록을 삭제하시겠습니까?`)) {
+                                try {
+                                  // localStorage에서 메시지 제거
+                                  const storageKey = `stage_chat_messages_${targetDate}`;
+                                  const saved = localStorage.getItem(storageKey);
+                                  if (saved) {
+                                    const messages = JSON.parse(saved);
+                                    if (Array.isArray(messages)) {
+                                      const filteredMessages = messages.filter((msg: any) => {
+                                        const msgId = msg.id || `msg-${messages.indexOf(msg)}`;
+                                        return !selectedChatMessageIds.has(msgId);
+                                      });
+                                      
+                                      if (filteredMessages.length === 0) {
+                                        localStorage.removeItem(storageKey);
+                                      } else {
+                                        localStorage.setItem(storageKey, JSON.stringify(filteredMessages));
+                                      }
+                                    }
+                                  }
+                                  
+                                  showSuccess("삭제 완료", `${selectedChatMessageIds.size}개의 채팅 기록이 삭제되었습니다.`);
+                                  setSelectedChatMessageIds(new Set());
+                                  setIsDeleteModeChat(false);
+                                  // 페이지 새로고침하여 변경사항 반영
+                                  window.location.reload();
+                                } catch (error) {
+                                  showError("삭제 실패", "채팅 기록 삭제에 실패했습니다.");
+                                }
+                              }
+                            }}
+                            className="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors font-medium flex items-center gap-1 whitespace-nowrap"
+                            style={smallTextStyle}
+                          >
+                            <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                            <span className="whitespace-nowrap">삭제</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+              
+              {chatMessages.map((message: any, index: number) => {
+                const messageId = message.id || `msg-${index}`;
+                const isSelected = selectedChatMessageIds.has(messageId);
+                return (
+                  <div 
+                  key={message.id || index} 
+                  className={`space-y-3 relative transition-all duration-200 ${
+                    isDeleteModeChat && isSelected ? 'ring-2 ring-red-500 ring-offset-2 rounded-lg' : ''
+                  }`}
+                >
+                  {/* 사용자 메시지 */}
+                  {message.type === "user" && (
+                    <div className="flex justify-end items-start gap-3">
+                      {/* 체크박스 (삭제 모드일 때만 표시, 왼쪽에 배치) */}
+                      {isDeleteModeChat && (
+                        <div className="flex-shrink-0 pt-1">
+                          <button
+                            onClick={() => {
+                              const newSet = new Set(selectedChatMessageIds);
+                              if (isSelected) {
+                                newSet.delete(messageId);
+                              } else {
+                                newSet.add(messageId);
+                              }
+                              setSelectedChatMessageIds(newSet);
+                            }}
+                            className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
+                              isSelected 
+                                ? 'bg-red-500 border-red-500' 
+                                : 'bg-white border-gray-300 hover:border-red-400'
+                            }`}
+                            aria-label={isSelected ? "선택 해제" : "선택"}
+                          >
+                            {isSelected && (
+                              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
+                          </button>
+                        </div>
+                      )}
+                      <div className={`max-w-[80%] min-w-0 ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-2xl bg-white text-gray-800 shadow-sm border border-gray-100 transition-all ${
+                        isDeleteModeChat && isSelected ? 'bg-red-50 border-red-200' : ''
+                      }`}
+                        style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}
+                      >
+                        {message.imageUrl && (
+                          <div className="mb-2">
+                            <img
+                              src={message.imageUrl}
+                              alt="업로드된 이미지"
+                              className="w-full rounded-lg object-contain max-h-64"
+                            />
+                          </div>
+                        )}
+                        {message.content && (
+                          <p className="leading-relaxed whitespace-pre-wrap break-words" style={{...baseTextStyle, wordBreak: 'break-word', overflowWrap: 'break-word'}}>
+                            {message.content}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* AI 메시지 */}
+                  {message.type === "ai" && (
+                    <div className="flex justify-start items-start gap-3">
+                      {/* 체크박스 (삭제 모드일 때만 표시, 왼쪽에 배치) */}
+                      {isDeleteModeChat && (
+                        <div className="flex-shrink-0 pt-1">
+                          <button
+                            onClick={() => {
+                              const newSet = new Set(selectedChatMessageIds);
+                              if (isSelected) {
+                                newSet.delete(messageId);
+                              } else {
+                                newSet.add(messageId);
+                              }
+                              setSelectedChatMessageIds(newSet);
+                            }}
+                            className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
+                              isSelected 
+                                ? 'bg-red-500 border-red-500' 
+                                : 'bg-white border-gray-300 hover:border-red-400'
+                            }`}
+                            aria-label={isSelected ? "선택 해제" : "선택"}
+                          >
+                            {isSelected && (
+                              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
+                          </button>
+                        </div>
+                      )}
+                      <div className={`max-w-[80%] min-w-0 ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-2xl bg-white text-gray-800 shadow-sm border border-gray-100 transition-all ${
+                        isDeleteModeChat && isSelected ? 'bg-red-50 border-red-200' : ''
+                      }`}
+                        style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}
+                      >
+                        {message.examples && message.examples.length > 0 ? (
+                          <div className="space-y-3">
+                            {message.content && (
+                              <div
+                                className="leading-relaxed"
+                                style={baseTextStyle}
+                                dangerouslySetInnerHTML={{ 
+                                  __html: message.content
+                                    .replace(/"text-decoration:\s*underline;\s*color:\s*#00DAAA;\s*font-weight:\s*500;">/gi, '') // "text-decoration:..." 패턴 제거
+                                    .replace(/\*\*(.*?)\*\*/g, '<u>$1</u>') // **텍스트** → 밑줄 (예문 생성과 동일)
+                                    .replace(/__(.*?)__/g, '<u>$1</u>') // __텍스트__ → 밑줄
+                                    .replace(/\*(.*?)\*/g, '<u>$1</u>') // *텍스트* → 밑줄
+                                }}
+                              />
+                            )}
+                            {/* 예문 카드 - StageChat과 동일한 형태 */}
+                            {(() => {
+                              const currentIndex = exampleScrollIndices[message.id] ?? 0;
+                              const currentExample = message.examples[currentIndex];
+                              return (
+                                <div className="px-4 py-3 bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+                                  {/* Context Badge and Dots */}
+                                  <div className="flex items-center justify-between mb-3">
+                                    <div className="inline-block bg-[#B8E6D3] rounded-full px-2 py-0.5 border border-[#B8E6D3]" style={{ marginLeft: '-4px', marginTop: '-4px' }}>
+                                      <span className="font-medium text-gray-900" style={xSmallTextStyle}>예문 상황</span>
+                                    </div>
+                                    <div className="flex items-center" style={{ gap: '4px' }}>
+                                      {message.examples && message.examples.length > 0 && [0, 1, 2].map((dotIdx) => (
+                                        <div
+                                          key={dotIdx}
+                                          style={{
+                                            width: '6px',
+                                            height: '6px',
+                                            borderRadius: '50%',
+                                            backgroundColor: dotIdx === currentIndex && dotIdx < message.examples.length ? '#00DAAA' : '#D1D5DB',
+                                          }}
+                                        />
+                                      ))}
+                                    </div>
+                                  </div>
+
+                                  {/* Dialogue */}
+                                  <div className="space-y-2 mb-3" style={{ paddingLeft: '8px' }}>
+                                    {/* A's dialogue */}
+                                    <div className="flex items-start space-x-2">
+                                      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0 bg-[#B8E6D3]`} style={xSmallTextStyle}>
+                                        A
+                                      </div>
+                                      <div className="flex-1" style={{ paddingLeft: '4px', marginTop: '-2px' }}>
+                                        <p className="font-medium text-gray-900 leading-relaxed" style={smallTextStyle}>
+                                          {currentExample.dialogue?.A?.english || "예문 내용"}
+                                        </p>
+                                        <p className="text-gray-600 leading-relaxed mt-1" style={smallTextStyle}>
+                                          {currentExample.dialogue?.A?.korean || "예문 한글버전"}
+                                        </p>
+                                      </div>
+                                    </div>
+
+                                    {/* B's dialogue */}
+                                    <div className="flex items-start space-x-2">
+                                      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0 bg-[#B8E6D3]`} style={xSmallTextStyle}>
+                                        B
+                                      </div>
+                                      <div className="flex-1" style={{ paddingLeft: '4px', marginTop: '-2px' }}>
+                                        <p className="font-medium text-gray-900 leading-relaxed" style={smallTextStyle}>
+                                          {currentExample.dialogue?.B?.english || "예문 내용"}
+                                        </p>
+                                        <p className="text-gray-600 leading-relaxed mt-1" style={smallTextStyle}>
+                                          {currentExample.dialogue?.B?.korean || "예문 한글버전"}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Controls */}
+                                  <div className="flex justify-center items-center gap-2 pt-4 border-t border-gray-200">
+                                    <button
+                                      onClick={() => {
+                                        if (message.examples) {
+                                          const currentIdx = exampleScrollIndices[message.id] ?? 0;
+                                          const newIndex = Math.max(0, currentIdx - 1);
+                                          setExampleScrollIndices((prev) => ({
+                                            ...prev,
+                                            [message.id]: newIndex,
+                                          }));
+                                        }
+                                      }}
+                                      disabled={message.examples && (exampleScrollIndices[message.id] ?? 0) === 0}
+                                      className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                                      aria-label="이전 예문"
+                                    >
+                                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                      </svg>
+                                    </button>
+                                    <button
+                                      onClick={async () => {
+                                        const exampleId = `${message.id}-${currentIndex}`;
+                                        if (playingChatExampleId === exampleId && isPlayingTTS) {
+                                          if (audioRef.current) {
+                                            audioRef.current.pause();
+                                            audioRef.current.currentTime = 0;
+                                            audioRef.current = null;
+                                          }
+                                          if ('speechSynthesis' in window) {
+                                            window.speechSynthesis.cancel();
+                                          }
+                                          setPlayingChatExampleId(null);
+                                          setIsPlayingTTS(false);
+                                          return;
+                                        }
+
+                                        if (!currentExample?.dialogue?.A?.english || !currentExample?.dialogue?.B?.english) {
+                                          showError("재생 오류", "예문 데이터가 올바르지 않습니다.");
+                                          return;
+                                        }
+                                        
+                                        const dialogueA = currentExample.dialogue.A.english;
+                                        const dialogueB = currentExample.dialogue.B.english;
+                                        const textToRead = `${dialogueA}. ${dialogueB}`;
+                                        
+                                        if (audioRef.current) {
+                                          audioRef.current.pause();
+                                          audioRef.current.currentTime = 0;
+                                          audioRef.current = null;
+                                        }
+                                        
+                                        if ('speechSynthesis' in window) {
+                                          window.speechSynthesis.cancel();
+                                        }
+                                        
+                                        setPlayingChatExampleId(exampleId);
+                                        setIsPlayingTTS(true);
+                                        
+                                        try {
+                                          // TTS API 호출 (최대 3번 재시도)
+                                          let response = null;
+                                          let retryCount = 0;
+                                          const maxRetries = 3;
+
+                                          while (retryCount < maxRetries && (!response || !response.audioContent)) {
+                                            try {
+                                              response = await ttsMutation.mutateAsync({
+                                                text: textToRead,
+                                                speed: 1.0,
+                                              });
+                                              
+                                              if (response && response.audioContent) {
+                                                break; // 성공하면 루프 종료
+                                              }
+                                            } catch (error) {
+                                              console.error(`TTS API 호출 실패 (시도 ${retryCount + 1}/${maxRetries}):`, error);
+                                            }
+                                            
+                                            retryCount++;
+                                            if (retryCount < maxRetries) {
+                                              // 재시도 전 잠시 대기
+                                              await new Promise(resolve => setTimeout(resolve, 500));
+                                            }
+                                          }
+
+                                          // TTS API가 실패하면 브라우저 내장 TTS 사용
+                                          if (!response || !response.audioContent) {
+                                            console.log("TTS API 실패, 브라우저 내장 TTS 사용");
+                                            
+                                            if ('speechSynthesis' in window) {
+                                              window.speechSynthesis.cancel();
+                                              
+                                              const utterance = new SpeechSynthesisUtterance(textToRead);
+                                              utterance.lang = 'en-US';
+                                              utterance.rate = 1.0;
+                                              utterance.pitch = 1.0;
+                                              utterance.volume = 1.0;
+
+                                              utterance.onend = () => {
+                                                setPlayingChatExampleId(null);
+                                                setIsPlayingTTS(false);
+                                              };
+
+                                              utterance.onerror = (error) => {
+                                                console.error("브라우저 TTS 오류:", error);
+                                                setPlayingChatExampleId(null);
+                                                setIsPlayingTTS(false);
+                                              };
+
+                                              window.speechSynthesis.speak(utterance);
+                                              return;
+                                            } else {
+                                              setPlayingChatExampleId(null);
+                                              setIsPlayingTTS(false);
+                                              showError("TTS 오류", "음성을 재생할 수 없습니다. 브라우저가 TTS를 지원하지 않습니다.");
+                                              return;
+                                            }
+                                          }
+
+                                          // Base64 오디오 데이터를 직접 Audio 객체로 재생
+                                          const audioUrl = `data:audio/mp3;base64,${response.audioContent}`;
+                                          const audio = new Audio(audioUrl);
+                                          audioRef.current = audio;
+                                          
+                                          audio.onended = () => {
+                                            if (audioRef.current === audio) {
+                                              setPlayingChatExampleId(null);
+                                              setIsPlayingTTS(false);
+                                              audioRef.current = null;
+                                            }
+                                          };
+                                          
+                                          audio.onerror = (error) => {
+                                            console.error("오디오 재생 실패:", error);
+                                            if (audioRef.current === audio) {
+                                              setPlayingChatExampleId(null);
+                                              setIsPlayingTTS(false);
+                                              audioRef.current = null;
+                                              // 오디오 재생 실패 시 브라우저 TTS로 대체
+                                              if ('speechSynthesis' in window) {
+                                                window.speechSynthesis.cancel();
+                                                const utterance = new SpeechSynthesisUtterance(textToRead);
+                                                utterance.lang = 'en-US';
+                                                utterance.rate = 1.0;
+                                                utterance.onend = () => {
+                                                  setPlayingChatExampleId(null);
+                                                  setIsPlayingTTS(false);
+                                                };
+                                                window.speechSynthesis.speak(utterance);
+                                              } else {
+                                                showError("재생 오류", "오디오 재생 중 오류가 발생했습니다.");
+                                              }
+                                            }
+                                          };
+                                          
+                                          audio.oncanplaythrough = async () => {
+                                            if (audioRef.current === audio && playingChatExampleId === exampleId && isPlayingTTS) {
+                                              try {
+                                                await audio.play();
+                                              } catch (playError) {
+                                                console.error("오디오 재생 오류:", playError);
+                                                setPlayingChatExampleId(null);
+                                                setIsPlayingTTS(false);
+                                                audioRef.current = null;
+                                              }
+                                            }
+                                          };
+                                          
+                                          audio.load();
+                                        } catch (error) {
+                                          console.error("TTS 요청 중 오류:", error);
+                                          setPlayingChatExampleId(null);
+                                          setIsPlayingTTS(false);
+                                          showError("재생 오류", "TTS 요청 중 오류가 발생했습니다.");
+                                        }
+                                      }}
+                                      className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors shadow-md ${
+                                        playingChatExampleId === `${message.id}-${currentIndex}` && isPlayingTTS
+                                          ? "bg-[#FF6B35] hover:bg-[#E55A2B]"
+                                          : "bg-[#00DAAA] hover:bg-[#00C299]"
+                                      }`}
+                                      aria-label={playingChatExampleId === `${message.id}-${currentIndex}` && isPlayingTTS ? "재생 중지" : "음성 재생"}
+                                    >
+                                      {playingChatExampleId === `${message.id}-${currentIndex}` && isPlayingTTS ? (
+                                        <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                          <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
+                                        </svg>
+                                      ) : (
+                                        <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                          <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
+                                        </svg>
+                                      )}
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        if (message.examples) {
+                                          const currentIdx = exampleScrollIndices[message.id] ?? 0;
+                                          const newIndex = Math.min(message.examples.length - 1, currentIdx + 1);
+                                          setExampleScrollIndices((prev) => ({
+                                            ...prev,
+                                            [message.id]: newIndex,
+                                          }));
+                                        }
+                                      }}
+                                      disabled={message.examples && (exampleScrollIndices[message.id] ?? 0) >= message.examples.length - 1}
+                                      className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                                      aria-label="다음 예문"
+                                    >
+                                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                      </svg>
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            })()}
+                          </div>
+                        ) : (
+                          <div
+                            className="leading-relaxed"
+                            style={baseTextStyle}
+                            dangerouslySetInnerHTML={{ 
+                              __html: message.content
+                                .replace(/"text-decoration:\s*underline;\s*color:\s*#00DAAA;\s*font-weight:\s*500;">/gi, '') // "text-decoration:..." 패턴 제거
+                                .replace(/\*\*(.*?)\*\*/g, '<u>$1</u>') // **텍스트** → 밑줄 (예문 생성과 동일)
+                                .replace(/__(.*?)__/g, '<u>$1</u>') // __텍스트__ → 밑줄
+                                .replace(/\*(.*?)\*/g, '<u>$1</u>') // *텍스트* → 밑줄
+                            }}
+                          />
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  </div>
+                );
+              })}
+            </div>
+            
+            {/* 구분선 */}
+            <div className="border-t border-gray-300 my-4"></div>
           </>
         )}
 
@@ -1280,473 +1831,6 @@ const QuestionDetail = () => {
                     {exampleIndex < exampleRecords.length - 1 && (
                       <div className="border-t border-gray-300 my-4"></div>
                     )}
-                  </div>
-                );
-              })}
-            </div>
-          </>
-        )}
-
-        {/* 채팅기록 섹션 */}
-        {chatMessages.length > 0 && (
-          <>
-            <div className="space-y-2 w-full max-w-full overflow-hidden">
-              <div className="flex items-center justify-between w-full min-w-0 gap-2">
-                <div className="font-semibold text-gray-600 flex-shrink-0" style={headerTextStyle}>채팅기록</div>
-                <button
-                  onClick={() => {
-                    setIsDeleteModeChat(!isDeleteModeChat);
-                    if (isDeleteModeChat) {
-                      setSelectedChatMessageIds(new Set());
-                    }
-                  }}
-                  className={`px-3 py-2 rounded-lg font-semibold transition-colors flex items-center gap-1.5 shadow-md flex-shrink-0 whitespace-nowrap ${
-                    isDeleteModeChat
-                      ? 'bg-red-500 hover:bg-red-600 active:bg-red-700 text-white'
-                      : 'bg-white hover:bg-gray-50 text-gray-700 border-2 border-gray-300'
-                  }`}
-                  style={smallTextStyle}
-                >
-                  {isDeleteModeChat ? (
-                    <>
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                      취소
-                    </>
-                  ) : (
-                    <>
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                      삭제
-                    </>
-                  )}
-                </button>
-              </div>
-              
-              {isDeleteModeChat && (
-                <>
-                  <div className="flex items-center justify-between mb-3 w-full max-w-full overflow-hidden">
-                    <button
-                      onClick={() => {
-                        if (selectedChatMessageIds.size === chatMessages.length && chatMessages.length > 0) {
-                          setSelectedChatMessageIds(new Set());
-                        } else {
-                          setSelectedChatMessageIds(new Set(chatMessages.map((msg: any) => msg.id || `msg-${chatMessages.indexOf(msg)}`)));
-                        }
-                      }}
-                      className="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors flex-shrink-0"
-                    >
-                      <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${
-                        selectedChatMessageIds.size === chatMessages.length && chatMessages.length > 0
-                          ? 'bg-red-500 border-red-500' 
-                          : 'bg-white border-gray-300'
-                      }`}>
-                        {selectedChatMessageIds.size === chatMessages.length && chatMessages.length > 0 && (
-                          <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                          </svg>
-                        )}
-                      </div>
-                      <span className="text-gray-700 whitespace-nowrap" style={smallTextStyle}>전체 선택</span>
-                    </button>
-                  </div>
-                  
-                  {/* 하단 고정 삭제 액션 바 */}
-                  {selectedChatMessageIds.size > 0 && (
-                    <div className="absolute bottom-20 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-40 w-full max-w-full overflow-hidden box-border">
-                      <div className="flex items-center justify-between px-3 py-2.5 gap-2 w-full min-w-0">
-                        <span className="text-gray-700 font-medium flex-shrink-0 whitespace-nowrap" style={baseTextStyle}>
-                          {selectedChatMessageIds.size}개 선택
-                        </span>
-                        <div className="flex items-center gap-1.5 flex-shrink-0">
-                          <button
-                            onClick={() => setSelectedChatMessageIds(new Set())}
-                            className="px-3 py-1.5 text-gray-600 hover:text-gray-800 transition-colors whitespace-nowrap"
-                            style={smallTextStyle}
-                          >
-                            취소
-                          </button>
-                          <button
-                            onClick={async () => {
-                              if (window.confirm(`선택한 ${selectedChatMessageIds.size}개의 채팅 기록을 삭제하시겠습니까?`)) {
-                                try {
-                                  // localStorage에서 메시지 제거
-                                  const storageKey = `stage_chat_messages_${targetDate}`;
-                                  const saved = localStorage.getItem(storageKey);
-                                  if (saved) {
-                                    const messages = JSON.parse(saved);
-                                    if (Array.isArray(messages)) {
-                                      const filteredMessages = messages.filter((msg: any) => {
-                                        const msgId = msg.id || `msg-${messages.indexOf(msg)}`;
-                                        return !selectedChatMessageIds.has(msgId);
-                                      });
-                                      
-                                      if (filteredMessages.length === 0) {
-                                        localStorage.removeItem(storageKey);
-                                      } else {
-                                        localStorage.setItem(storageKey, JSON.stringify(filteredMessages));
-                                      }
-                                    }
-                                  }
-                                  
-                                  showSuccess("삭제 완료", `${selectedChatMessageIds.size}개의 채팅 기록이 삭제되었습니다.`);
-                                  setSelectedChatMessageIds(new Set());
-                                  setIsDeleteModeChat(false);
-                                  // 페이지 새로고침하여 변경사항 반영
-                                  window.location.reload();
-                                } catch (error) {
-                                  showError("삭제 실패", "채팅 기록 삭제에 실패했습니다.");
-                                }
-                              }
-                            }}
-                            className="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors font-medium flex items-center gap-1 whitespace-nowrap"
-                            style={smallTextStyle}
-                          >
-                            <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                            <span className="whitespace-nowrap">삭제</span>
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </>
-              )}
-              
-              {chatMessages.map((message: any, index: number) => {
-                const messageId = message.id || `msg-${index}`;
-                const isSelected = selectedChatMessageIds.has(messageId);
-                return (
-                  <div 
-                  key={message.id || index} 
-                  className={`space-y-3 relative transition-all duration-200 ${
-                    isDeleteModeChat && isSelected ? 'ring-2 ring-red-500 ring-offset-2 rounded-lg' : ''
-                  }`}
-                >
-                  {/* 사용자 메시지 */}
-                  {message.type === "user" && (
-                    <div className="flex justify-end items-start gap-3">
-                      {/* 체크박스 (삭제 모드일 때만 표시, 왼쪽에 배치) */}
-                      {isDeleteModeChat && (
-                        <div className="flex-shrink-0 pt-1">
-                          <button
-                            onClick={() => {
-                              const newSet = new Set(selectedChatMessageIds);
-                              if (isSelected) {
-                                newSet.delete(messageId);
-                              } else {
-                                newSet.add(messageId);
-                              }
-                              setSelectedChatMessageIds(newSet);
-                            }}
-                            className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
-                              isSelected 
-                                ? 'bg-red-500 border-red-500' 
-                                : 'bg-white border-gray-300 hover:border-red-400'
-                            }`}
-                            aria-label={isSelected ? "선택 해제" : "선택"}
-                          >
-                            {isSelected && (
-                              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                              </svg>
-                            )}
-                          </button>
-                        </div>
-                      )}
-                      <div className={`max-w-[80%] min-w-0 ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-2xl bg-white text-gray-800 shadow-sm border border-gray-100 transition-all ${
-                        isDeleteModeChat && isSelected ? 'bg-red-50 border-red-200' : ''
-                      }`}
-                        style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}
-                      >
-                        {message.imageUrl && (
-                          <div className="mb-2">
-                            <img
-                              src={message.imageUrl}
-                              alt="업로드된 이미지"
-                              className="w-full rounded-lg object-contain max-h-64"
-                            />
-                          </div>
-                        )}
-                        {message.content && (
-                          <p className="leading-relaxed whitespace-pre-wrap break-words" style={{...baseTextStyle, wordBreak: 'break-word', overflowWrap: 'break-word'}}>
-                            {message.content}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* AI 메시지 */}
-                  {message.type === "ai" && (
-                    <div className="flex justify-start items-start gap-3">
-                      {/* 체크박스 (삭제 모드일 때만 표시, 왼쪽에 배치) */}
-                      {isDeleteModeChat && (
-                        <div className="flex-shrink-0 pt-1">
-                          <button
-                            onClick={() => {
-                              const newSet = new Set(selectedChatMessageIds);
-                              if (isSelected) {
-                                newSet.delete(messageId);
-                              } else {
-                                newSet.add(messageId);
-                              }
-                              setSelectedChatMessageIds(newSet);
-                            }}
-                            className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
-                              isSelected 
-                                ? 'bg-red-500 border-red-500' 
-                                : 'bg-white border-gray-300 hover:border-red-400'
-                            }`}
-                            aria-label={isSelected ? "선택 해제" : "선택"}
-                          >
-                            {isSelected && (
-                              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                              </svg>
-                            )}
-                          </button>
-                        </div>
-                      )}
-                      <div className={`max-w-[80%] min-w-0 ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-2xl bg-white text-gray-800 shadow-sm border border-gray-100 transition-all ${
-                        isDeleteModeChat && isSelected ? 'bg-red-50 border-red-200' : ''
-                      }`}
-                        style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}
-                      >
-                        {message.examples && message.examples.length > 0 ? (
-                          <div className="space-y-3">
-                            {message.content && (
-                              <div
-                                className="leading-relaxed"
-                                style={baseTextStyle}
-                                dangerouslySetInnerHTML={{ 
-                                  __html: message.content
-                                    .replace(/"text-decoration:\s*underline;\s*color:\s*#00DAAA;\s*font-weight:\s*500;">/gi, '') // "text-decoration:..." 패턴 제거
-                                    .replace(/\*\*(.*?)\*\*/g, '<u>$1</u>') // **텍스트** → 밑줄 (예문 생성과 동일)
-                                    .replace(/__(.*?)__/g, '<u>$1</u>') // __텍스트__ → 밑줄
-                                    .replace(/\*(.*?)\*/g, '<u>$1</u>') // *텍스트* → 밑줄
-                                }}
-                              />
-                            )}
-                            {/* 예문 카드 - StageChat과 동일한 형태 */}
-                            {(() => {
-                              const currentIndex = exampleScrollIndices[message.id] ?? 0;
-                              const currentExample = message.examples[currentIndex];
-                              return (
-                                <div className="px-4 py-3 bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
-                                  {/* Context Badge and Dots */}
-                                  <div className="flex items-center justify-between mb-3">
-                                    <div className="inline-block bg-[#B8E6D3] rounded-full px-2 py-0.5 border border-[#B8E6D3]" style={{ marginLeft: '-4px', marginTop: '-4px' }}>
-                                      <span className="font-medium text-gray-900" style={xSmallTextStyle}>예문 상황</span>
-                                    </div>
-                                    <div className="flex items-center" style={{ gap: '4px' }}>
-                                      {message.examples && message.examples.length > 0 && [0, 1, 2].map((dotIdx) => (
-                                        <div
-                                          key={dotIdx}
-                                          style={{
-                                            width: '6px',
-                                            height: '6px',
-                                            borderRadius: '50%',
-                                            backgroundColor: dotIdx === currentIndex && dotIdx < message.examples.length ? '#00DAAA' : '#D1D5DB',
-                                          }}
-                                        />
-                                      ))}
-                                    </div>
-                                  </div>
-
-                                  {/* Dialogue */}
-                                  <div className="space-y-2 mb-3" style={{ paddingLeft: '8px' }}>
-                                    {/* A's dialogue */}
-                                    <div className="flex items-start space-x-2">
-                                      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0 bg-[#B8E6D3]`} style={xSmallTextStyle}>
-                                        A
-                                      </div>
-                                      <div className="flex-1" style={{ paddingLeft: '4px', marginTop: '-2px' }}>
-                                        <p className="font-medium text-gray-900 leading-relaxed" style={smallTextStyle}>
-                                          {currentExample.dialogue?.A?.english || "예문 내용"}
-                                        </p>
-                                        <p className="text-gray-600 leading-relaxed mt-1" style={smallTextStyle}>
-                                          {currentExample.dialogue?.A?.korean || "예문 한글버전"}
-                                        </p>
-                                      </div>
-                                    </div>
-
-                                    {/* B's dialogue */}
-                                    <div className="flex items-start space-x-2">
-                                      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0 bg-[#B8E6D3]`} style={xSmallTextStyle}>
-                                        B
-                                      </div>
-                                      <div className="flex-1" style={{ paddingLeft: '4px', marginTop: '-2px' }}>
-                                        <p className="font-medium text-gray-900 leading-relaxed" style={smallTextStyle}>
-                                          {currentExample.dialogue?.B?.english || "예문 내용"}
-                                        </p>
-                                        <p className="text-gray-600 leading-relaxed mt-1" style={smallTextStyle}>
-                                          {currentExample.dialogue?.B?.korean || "예문 한글버전"}
-                                        </p>
-                                      </div>
-                                    </div>
-                                  </div>
-
-                                  {/* Controls */}
-                                  <div className="flex justify-center items-center gap-2 pt-4 border-t border-gray-200">
-                                    <button
-                                      onClick={() => {
-                                        if (message.examples) {
-                                          const currentIdx = exampleScrollIndices[message.id] ?? 0;
-                                          const newIndex = Math.max(0, currentIdx - 1);
-                                          setExampleScrollIndices((prev) => ({
-                                            ...prev,
-                                            [message.id]: newIndex,
-                                          }));
-                                        }
-                                      }}
-                                      disabled={message.examples && (exampleScrollIndices[message.id] ?? 0) === 0}
-                                      className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                                      aria-label="이전 예문"
-                                    >
-                                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                                      </svg>
-                                    </button>
-                                    <button
-                                      onClick={async () => {
-                                        const exampleId = `${message.id}-${currentIndex}`;
-                                        if (playingChatExampleId === exampleId && isPlayingTTS) {
-                                          if (audioRef.current) {
-                                            audioRef.current.pause();
-                                            audioRef.current.currentTime = 0;
-                                            audioRef.current = null;
-                                          }
-                                          setPlayingChatExampleId(null);
-                                          setIsPlayingTTS(false);
-                                          return;
-                                        }
-
-                                        if (!currentExample?.dialogue?.A?.english || !currentExample?.dialogue?.B?.english) {
-                                          showError("재생 오류", "예문 데이터가 올바르지 않습니다.");
-                                          return;
-                                        }
-                                        
-                                        const dialogueA = currentExample.dialogue.A.english;
-                                        const dialogueB = currentExample.dialogue.B.english;
-                                        const textToRead = `${dialogueA}. ${dialogueB}`;
-                                        
-                                        if (audioRef.current) {
-                                          audioRef.current.pause();
-                                          audioRef.current.currentTime = 0;
-                                          audioRef.current = null;
-                                        }
-                                        
-                                        setPlayingChatExampleId(exampleId);
-                                        setIsPlayingTTS(true);
-                                        
-                                        try {
-                                          const response = await fetch(API_ENDPOINTS.tts, {
-                                            method: "POST",
-                                            headers: { "Content-Type": "application/json" },
-                                            body: JSON.stringify({ text: textToRead }),
-                                            credentials: "include",
-                                          });
-                                          const { audioContent } = await response.json();
-                                          const audio = new Audio(`data:audio/mp3;base64,${audioContent}`);
-                                          audioRef.current = audio;
-                                          
-                                          audio.onended = () => {
-                                            if (audioRef.current === audio) {
-                                              setPlayingChatExampleId(null);
-                                              setIsPlayingTTS(false);
-                                              audioRef.current = null;
-                                            }
-                                          };
-                                          
-                                          audio.onerror = () => {
-                                            if (audioRef.current === audio) {
-                                              setPlayingChatExampleId(null);
-                                              setIsPlayingTTS(false);
-                                              audioRef.current = null;
-                                              showError("재생 오류", "오디오 재생 중 오류가 발생했습니다.");
-                                            }
-                                          };
-                                          
-                                          audio.oncanplaythrough = async () => {
-                                            if (audioRef.current === audio && playingChatExampleId === exampleId && isPlayingTTS) {
-                                              try {
-                                                await audio.play();
-                                              } catch (playError) {
-                                                setPlayingChatExampleId(null);
-                                                setIsPlayingTTS(false);
-                                                audioRef.current = null;
-                                              }
-                                            }
-                                          };
-                                          
-                                          audio.load();
-                                        } catch (error) {
-                                          setPlayingChatExampleId(null);
-                                          setIsPlayingTTS(false);
-                                          showError("재생 오류", "TTS 요청 중 오류가 발생했습니다.");
-                                        }
-                                      }}
-                                      className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors shadow-md ${
-                                        playingChatExampleId === `${message.id}-${currentIndex}` && isPlayingTTS
-                                          ? "bg-[#FF6B35] hover:bg-[#E55A2B]"
-                                          : "bg-[#00DAAA] hover:bg-[#00C299]"
-                                      }`}
-                                      aria-label={playingChatExampleId === `${message.id}-${currentIndex}` && isPlayingTTS ? "재생 중지" : "음성 재생"}
-                                    >
-                                      {playingChatExampleId === `${message.id}-${currentIndex}` && isPlayingTTS ? (
-                                        <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                          <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
-                                        </svg>
-                                      ) : (
-                                        <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                          <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
-                                        </svg>
-                                      )}
-                                    </button>
-                                    <button
-                                      onClick={() => {
-                                        if (message.examples) {
-                                          const currentIdx = exampleScrollIndices[message.id] ?? 0;
-                                          const newIndex = Math.min(message.examples.length - 1, currentIdx + 1);
-                                          setExampleScrollIndices((prev) => ({
-                                            ...prev,
-                                            [message.id]: newIndex,
-                                          }));
-                                        }
-                                      }}
-                                      disabled={message.examples && (exampleScrollIndices[message.id] ?? 0) >= message.examples.length - 1}
-                                      className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                                      aria-label="다음 예문"
-                                    >
-                                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                      </svg>
-                                    </button>
-                                  </div>
-                                </div>
-                              );
-                            })()}
-                          </div>
-                        ) : (
-                          <div
-                            className="leading-relaxed"
-                            style={baseTextStyle}
-                            dangerouslySetInnerHTML={{ 
-                              __html: message.content
-                                .replace(/"text-decoration:\s*underline;\s*color:\s*#00DAAA;\s*font-weight:\s*500;">/gi, '') // "text-decoration:..." 패턴 제거
-                                .replace(/\*\*(.*?)\*\*/g, '<u>$1</u>') // **텍스트** → 밑줄 (예문 생성과 동일)
-                                .replace(/__(.*?)__/g, '<u>$1</u>') // __텍스트__ → 밑줄
-                                .replace(/\*(.*?)\*/g, '<u>$1</u>') // *텍스트* → 밑줄
-                            }}
-                          />
-                        )}
-                      </div>
-                    </div>
-                  )}
                   </div>
                 );
               })}
