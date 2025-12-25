@@ -41,7 +41,9 @@ async function generateExamples(inputSentence, userId, imageUrl = null) {
     "   - What context or circumstances make it appropriate, " +
     "   - How native speakers typically use it, " +
     "   - Why someone would say this (the purpose or intent behind it). " +
-    "   Make it practical and relatable, like '이 표현은 ~할 때 쓰는 거예요' or '현지에서는 ~한 상황에서 자주 사용해요'. " +
+    "   IMPORTANT: Use polite, explanatory style (존댓말 설명체) ending with '~합니다', '~입니다', '~됩니다', etc. " +
+    "   Make it practical and relatable, like '이 표현은 ~할 때 사용합니다' or '현지에서는 ~한 상황에서 자주 사용합니다'. " +
+    "   DO NOT use informal endings like '~해요', '~거예요', '~있어요', etc." +
     "   IMPORTANT: Wrap key phrases (like specific situations, times, places, or important concepts) with double asterisks **like this** to indicate they should be underlined. " +
     "3. 'examples': an array of exactly 3 examples. " +
     "Each example must have: " +
@@ -53,7 +55,9 @@ async function generateExamples(inputSentence, userId, imageUrl = null) {
     "   - Why this conversation is happening in this context. " +
     "   - IMPORTANT: Explain BOTH Speaker A's question/statement AND Speaker B's response. " +
     "     Describe what A is asking/saying and why, AND what B is responding and why. " +
+    "     Use polite, explanatory style (존댓말 설명체) ending with '~합니다', '~입니다', '~됩니다', etc. " +
     "     For example: 'A가 ~라고 물어보는 이유는 ~이고, B가 ~라고 답하는 이유는 ~입니다.' " +
+    "     DO NOT use informal endings like '~해요', '~거예요', '~있어요', etc. " +
     "     Make sure to provide feedback on both sides of the conversation. " +
     "- 'dialogue': an object with 'A' and 'B' properties. " +
     "Each dialogue speaker (A and B) must be an object with 'english' and 'korean' string properties. " +
