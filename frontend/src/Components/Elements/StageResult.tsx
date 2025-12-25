@@ -856,7 +856,15 @@ const StageResult = ({
             <React.Fragment key={`group-${groupIndex}`}>
               {/* Example Card */}
               <div className="flex justify-start">
-                <div className={`max-w-[80%] ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden`}
+                <div 
+                  className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden"
+                  style={{ 
+                    width: `${EXAMPLE_CARD_WIDTH}px`,
+                    paddingLeft: isLargeTextMode ? '20px' : '16px',
+                    paddingTop: isLargeTextMode ? '16px' : '12px',
+                    paddingBottom: isLargeTextMode ? '20px' : '16px',
+                    paddingRight: isLargeTextMode ? '20px' : '16px'
+                  }}
                 >
                   {(() => {
                     const currentExample = group[currentIdx];
@@ -1087,7 +1095,15 @@ const StageResult = ({
                 <React.Fragment>
                   {/* Example Card */}
                   <div className="flex justify-start">
-                    <div className={`max-w-[80%] ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden`}
+                    <div 
+                      className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden"
+                      style={{ 
+                        width: `${EXAMPLE_CARD_WIDTH}px`,
+                        paddingLeft: isLargeTextMode ? '20px' : '16px',
+                        paddingTop: isLargeTextMode ? '16px' : '12px',
+                        paddingBottom: isLargeTextMode ? '20px' : '16px',
+                        paddingRight: isLargeTextMode ? '20px' : '16px'
+                      }}
                     >
                       {(() => {
                         const currentExample = group[currentIdx];
