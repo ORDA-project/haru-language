@@ -234,7 +234,7 @@ const StageChat = ({ onBack }: StageChatProps) => {
       // 개행 문자 처리 및 마크다운 스타일 적용
       formattedContent = formattedContent
         .replace(/\\n/g, "\n") // \n을 실제 개행으로 변환
-        .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") // **텍스트**를 <strong>으로 변환
+        .replace(/\*\*(.*?)\*\*/g, '<span style="text-decoration: underline; color: #00DAAA; font-weight: 500;">$1</span>') // **텍스트**를 밑줄과 색상으로 변환
         .replace(
           /"([^"]*)"/g,
           '<span style="color: #00DAAA; font-weight: 500;">"$1"</span>'
@@ -971,7 +971,7 @@ const StageChat = ({ onBack }: StageChatProps) => {
                       ></div>
                     </div>
                     <span className="text-gray-500" style={{ fontSize: `${isLargeTextMode ? 18 : 14}px` }}>
-                      AI가 답변을 준비하고 있습니다...
+                      {isLargeTextMode ? "답변을 준비중입니다..." : "AI가 답변을 준비하고 있습니다..."}
                     </span>
                   </div>
                 </div>
