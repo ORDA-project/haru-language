@@ -12,6 +12,7 @@ import NavBar from "../Templates/Navbar";
 import { createExtendedTextStyles } from "../../utils/styleUtils";
 import { getTodayStringBy4AM } from "../../utils/dateUtils";
 import { removeExamplesFromStorage, removeChatMessagesFromStorage } from "../../utils/storageUtils";
+import { API_ENDPOINTS } from "../../config/api";
 
 type ExampleDialogue = {
   speaker: string;
@@ -32,6 +33,8 @@ const QuestionDetail = () => {
   const [isPlayingTTS, setIsPlayingTTS] = useState(false);
   const [currentPlayingExampleId, setCurrentPlayingExampleId] = useState<number | null>(null);
   const [currentItemIndex, setCurrentItemIndex] = useState<Record<number, number>>({});
+  const [exampleScrollIndices, setExampleScrollIndices] = useState<Record<string, number>>({});
+  const [playingChatExampleId, setPlayingChatExampleId] = useState<string | null>(null);
   const [isDeleteMode, setIsDeleteMode] = useState(false);
   const [selectedExampleIds, setSelectedExampleIds] = useState<Set<number>>(new Set());
   const [isDeleteModeWriting, setIsDeleteModeWriting] = useState(false);
@@ -1390,12 +1393,13 @@ const QuestionDetail = () => {
                         {/* 예문 카드 */}
                         <div className="flex justify-start">
                           <div 
-                            className="bg-white shadow-sm border border-gray-100 rounded-lg relative w-full max-w-[343px]"
+                            className="bg-white shadow-sm border border-gray-100 rounded-lg relative"
                             style={{ 
-                              paddingLeft: '12px',
-                              paddingTop: '12px',
-                              paddingBottom: '16px',
-                              paddingRight: '12px'
+                              width: '343px',
+                              paddingLeft: isLargeTextMode ? '20px' : '16px',
+                              paddingTop: isLargeTextMode ? '16px' : '12px',
+                              paddingBottom: isLargeTextMode ? '20px' : '16px',
+                              paddingRight: isLargeTextMode ? '20px' : '16px'
                             }}
                           >
                             {/* 예문 상황 배지와 페이지네이션 도트 */}
@@ -1613,46 +1617,205 @@ const QuestionDetail = () => {
                                 }}
                               />
                             )}
-                            {/* 예문 카드들 */}
-                            <div className="space-y-3">
-                              {message.examples.map((example: any, exIndex: number) => (
-                                <div key={exIndex} className="px-4 py-3 bg-white rounded-lg shadow-sm border border-gray-100">
-                                  <div className="inline-block bg-[#B8E6D3] rounded-full px-2 py-0.5 mb-3">
-                                    <span className="font-medium text-gray-900" style={{ fontSize: `${isLargeTextMode ? 16 : 12}px` }}>
-                                      {example.context || "예문 상황"}
-                                    </span>
+                            {/* 예문 카드 - StageChat과 동일한 형태 */}
+                            {(() => {
+                              const currentIndex = exampleScrollIndices[message.id] ?? 0;
+                              const currentExample = message.examples[currentIndex];
+                              return (
+                                <div className="px-4 py-3 bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+                                  {/* Context Badge and Dots */}
+                                  <div className="flex items-center justify-between mb-3">
+                                    <div className="inline-block bg-[#B8E6D3] rounded-full px-2 py-0.5 border border-[#B8E6D3]" style={{ marginLeft: '-4px', marginTop: '-4px' }}>
+                                      <span className="font-medium text-gray-900" style={xSmallTextStyle}>예문 상황</span>
+                                    </div>
+                                    <div className="flex items-center" style={{ gap: '4px' }}>
+                                      {message.examples && message.examples.length > 0 && [0, 1, 2].map((dotIdx) => (
+                                        <div
+                                          key={dotIdx}
+                                          style={{
+                                            width: '6px',
+                                            height: '6px',
+                                            borderRadius: '50%',
+                                            backgroundColor: dotIdx === currentIndex && dotIdx < message.examples.length ? '#00DAAA' : '#D1D5DB',
+                                          }}
+                                        />
+                                      ))}
+                                    </div>
                                   </div>
-                                  <div className="space-y-2">
-                                    {example.dialogue?.A && (
-                                      <div className="flex items-start gap-2">
-                                        <div className="w-8 h-8 rounded-full bg-[#00DAAA] flex items-center justify-center flex-shrink-0">
-                                          <span className="text-white font-bold" style={{ fontSize: `${isLargeTextMode ? 16 : 14}px` }}>A</span>
-                                        </div>
-                                        <div className="flex-1">
-                                          <p className="text-gray-800" style={baseTextStyle}>{example.dialogue.A.english}</p>
-                                          {example.dialogue.A.korean && (
-                                            <p className="text-gray-500 mt-1" style={smallTextStyle}>{example.dialogue.A.korean}</p>
-                                          )}
-                                        </div>
+
+                                  {/* Dialogue */}
+                                  <div className="space-y-2 mb-3" style={{ paddingLeft: '8px' }}>
+                                    {/* A's dialogue */}
+                                    <div className="flex items-start space-x-2">
+                                      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0 bg-[#B8E6D3]`} style={xSmallTextStyle}>
+                                        A
                                       </div>
-                                    )}
-                                    {example.dialogue?.B && (
-                                      <div className="flex items-start gap-2">
-                                        <div className="w-8 h-8 rounded-full bg-[#00DAAA] flex items-center justify-center flex-shrink-0">
-                                          <span className="text-white font-bold" style={{ fontSize: `${isLargeTextMode ? 16 : 14}px` }}>B</span>
-                                        </div>
-                                        <div className="flex-1">
-                                          <p className="text-gray-800" style={baseTextStyle}>{example.dialogue.B.english}</p>
-                                          {example.dialogue.B.korean && (
-                                            <p className="text-gray-500 mt-1" style={smallTextStyle}>{example.dialogue.B.korean}</p>
-                                          )}
-                                        </div>
+                                      <div className="flex-1" style={{ paddingLeft: '4px', marginTop: '-2px' }}>
+                                        <p className="font-medium text-gray-900 leading-relaxed" style={smallTextStyle}>
+                                          {currentExample.dialogue?.A?.english || "예문 내용"}
+                                        </p>
+                                        <p className="text-gray-600 leading-relaxed mt-1" style={smallTextStyle}>
+                                          {currentExample.dialogue?.A?.korean || "예문 한글버전"}
+                                        </p>
                                       </div>
-                                    )}
+                                    </div>
+
+                                    {/* B's dialogue */}
+                                    <div className="flex items-start space-x-2">
+                                      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0 bg-[#B8E6D3]`} style={xSmallTextStyle}>
+                                        B
+                                      </div>
+                                      <div className="flex-1" style={{ paddingLeft: '4px', marginTop: '-2px' }}>
+                                        <p className="font-medium text-gray-900 leading-relaxed" style={smallTextStyle}>
+                                          {currentExample.dialogue?.B?.english || "예문 내용"}
+                                        </p>
+                                        <p className="text-gray-600 leading-relaxed mt-1" style={smallTextStyle}>
+                                          {currentExample.dialogue?.B?.korean || "예문 한글버전"}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Controls */}
+                                  <div className="flex justify-center items-center gap-2 pt-4 border-t border-gray-200">
+                                    <button
+                                      onClick={() => {
+                                        if (message.examples) {
+                                          const currentIdx = exampleScrollIndices[message.id] ?? 0;
+                                          const newIndex = Math.max(0, currentIdx - 1);
+                                          setExampleScrollIndices((prev) => ({
+                                            ...prev,
+                                            [message.id]: newIndex,
+                                          }));
+                                        }
+                                      }}
+                                      disabled={message.examples && (exampleScrollIndices[message.id] ?? 0) === 0}
+                                      className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                                      aria-label="이전 예문"
+                                    >
+                                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                      </svg>
+                                    </button>
+                                    <button
+                                      onClick={async () => {
+                                        const exampleId = `${message.id}-${currentIndex}`;
+                                        if (playingChatExampleId === exampleId && isPlayingTTS) {
+                                          if (audioRef.current) {
+                                            audioRef.current.pause();
+                                            audioRef.current.currentTime = 0;
+                                            audioRef.current = null;
+                                          }
+                                          setPlayingChatExampleId(null);
+                                          setIsPlayingTTS(false);
+                                          return;
+                                        }
+
+                                        if (!currentExample?.dialogue?.A?.english || !currentExample?.dialogue?.B?.english) {
+                                          showError("재생 오류", "예문 데이터가 올바르지 않습니다.");
+                                          return;
+                                        }
+                                        
+                                        const dialogueA = currentExample.dialogue.A.english;
+                                        const dialogueB = currentExample.dialogue.B.english;
+                                        const textToRead = `${dialogueA}. ${dialogueB}`;
+                                        
+                                        if (audioRef.current) {
+                                          audioRef.current.pause();
+                                          audioRef.current.currentTime = 0;
+                                          audioRef.current = null;
+                                        }
+                                        
+                                        setPlayingChatExampleId(exampleId);
+                                        setIsPlayingTTS(true);
+                                        
+                                        try {
+                                          const response = await fetch(API_ENDPOINTS.tts, {
+                                            method: "POST",
+                                            headers: { "Content-Type": "application/json" },
+                                            body: JSON.stringify({ text: textToRead }),
+                                            credentials: "include",
+                                          });
+                                          const { audioContent } = await response.json();
+                                          const audio = new Audio(`data:audio/mp3;base64,${audioContent}`);
+                                          audioRef.current = audio;
+                                          
+                                          audio.onended = () => {
+                                            if (audioRef.current === audio) {
+                                              setPlayingChatExampleId(null);
+                                              setIsPlayingTTS(false);
+                                              audioRef.current = null;
+                                            }
+                                          };
+                                          
+                                          audio.onerror = () => {
+                                            if (audioRef.current === audio) {
+                                              setPlayingChatExampleId(null);
+                                              setIsPlayingTTS(false);
+                                              audioRef.current = null;
+                                              showError("재생 오류", "오디오 재생 중 오류가 발생했습니다.");
+                                            }
+                                          };
+                                          
+                                          audio.oncanplaythrough = async () => {
+                                            if (audioRef.current === audio && playingChatExampleId === exampleId && isPlayingTTS) {
+                                              try {
+                                                await audio.play();
+                                              } catch (playError) {
+                                                setPlayingChatExampleId(null);
+                                                setIsPlayingTTS(false);
+                                                audioRef.current = null;
+                                              }
+                                            }
+                                          };
+                                          
+                                          audio.load();
+                                        } catch (error) {
+                                          setPlayingChatExampleId(null);
+                                          setIsPlayingTTS(false);
+                                          showError("재생 오류", "TTS 요청 중 오류가 발생했습니다.");
+                                        }
+                                      }}
+                                      className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors shadow-md ${
+                                        playingChatExampleId === `${message.id}-${currentIndex}` && isPlayingTTS
+                                          ? "bg-[#FF6B35] hover:bg-[#E55A2B]"
+                                          : "bg-[#00DAAA] hover:bg-[#00C299]"
+                                      }`}
+                                      aria-label={playingChatExampleId === `${message.id}-${currentIndex}` && isPlayingTTS ? "재생 중지" : "음성 재생"}
+                                    >
+                                      {playingChatExampleId === `${message.id}-${currentIndex}` && isPlayingTTS ? (
+                                        <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                          <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
+                                        </svg>
+                                      ) : (
+                                        <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                          <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
+                                        </svg>
+                                      )}
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        if (message.examples) {
+                                          const currentIdx = exampleScrollIndices[message.id] ?? 0;
+                                          const newIndex = Math.min(message.examples.length - 1, currentIdx + 1);
+                                          setExampleScrollIndices((prev) => ({
+                                            ...prev,
+                                            [message.id]: newIndex,
+                                          }));
+                                        }
+                                      }}
+                                      disabled={message.examples && (exampleScrollIndices[message.id] ?? 0) >= message.examples.length - 1}
+                                      className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                                      aria-label="다음 예문"
+                                    >
+                                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                      </svg>
+                                    </button>
                                   </div>
                                 </div>
-                              ))}
-                            </div>
+                              );
+                            })()}
                           </div>
                         ) : (
                           <div
