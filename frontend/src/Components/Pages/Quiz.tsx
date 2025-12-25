@@ -206,7 +206,7 @@ const Quiz = (props: QuizProps) => {
   return (
     <div className="w-full h-full flex flex-col items-center max-w-[440px] mx-auto shadow-[0_0_10px_0_rgba(0,0,0,0.1)] bg-[#F7F8FB]">
       {isSuccess ? (
-        <div className="h-[calc(100vh-152px)] w-full max-w-[440px] box-border mx-auto flex flex-col items-center justify-around overflow-y-scroll">
+        <div className="h-[calc(100vh-152px)] w-full max-w-[440px] box-border mx-auto flex flex-col items-center justify-around overflow-y-scroll pb-[72px]">
           <div className="relative w-[293px] p-[20px] m-[100px_10px_10px_10px] rounded-[13px] bg-[#f6f6f6] shadow-[4px_0px_7px_2px_rgba(0,0,0,0.1)] text-start break-all after:content-[''] after:absolute after:bottom-1/2 after:right-full after:w-0 after:h-0 after:border-l-[20px] after:border-l-transparent after:border-t-[10px] after:border-t-transparent after:border-b-[10px] after:border-b-transparent after:border-r-[20px] after:border-r-[#f6f6f6]">
             <p>{currentQuestion.question}</p>
           </div>

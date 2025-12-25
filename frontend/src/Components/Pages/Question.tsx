@@ -346,7 +346,7 @@ const ChatBot = () => {
             </button>
           </div>
         </div>
-        <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-2">
+        <div className="flex-1 overflow-y-auto p-5 pb-[72px] flex flex-col gap-2">
           {messages.map((msg, index) => (
             <div
               key={index}

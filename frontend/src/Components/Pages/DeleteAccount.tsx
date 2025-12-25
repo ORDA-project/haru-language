@@ -77,7 +77,7 @@ export default function DeleteAccount() {
       </div>
 
       {/* 메인 컨텐츠 영역 */}
-      <div className="flex-1 overflow-y-auto px-4 py-8">
+      <div className="flex-1 overflow-y-auto px-4 py-8 pb-[72px]">
         <div className="bg-white rounded-2xl p-6 w-full">
 
           {/* 섹션 헤더 */}

@@ -480,7 +480,7 @@ const DailySentence = () => {
           />
         </div>
 
-        <div className="h-[calc(100vh-180px)] overflow-y-scroll pb-28">
+        <div className="h-[calc(100vh-180px)] overflow-y-scroll pb-[72px]">
           {/* Progress Indicator */}
           <ProgressIndicator
             currentStep={currentStep}

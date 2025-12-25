@@ -281,7 +281,7 @@ export default function MyPage() {
 
   return (
     <div className="w-full h-full flex flex-col items-center max-w-[440px] mx-auto shadow-[0_0_10px_0_rgba(0,0,0,0.1)] bg-[#F5F6FA]">
-      <div className="h-[calc(100vh-72px)] p-0 px-5 w-full max-w-[440px] box-border mx-auto overflow-y-scroll">
+      <div className="h-[calc(100vh-72px)] p-0 px-5 pb-[72px] w-full max-w-[440px] box-border mx-auto overflow-y-scroll">
         {showFriendEdit ? (
           // 친구 목록 편집 화면
           <FriendListEdit

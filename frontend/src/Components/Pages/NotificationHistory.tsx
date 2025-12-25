@@ -84,7 +84,7 @@ const NotificationHistory = () => {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto p-4 pb-[72px]">
         {isLoading ? (
           <div className="flex justify-center items-center py-8">
             <div className="text-gray-500">알림 기록을 불러오는 중...</div>

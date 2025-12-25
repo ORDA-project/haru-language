@@ -201,7 +201,7 @@ export default function UserProfileEdit({}: UserProfileEditProps) {
     const gapSize = isLargeTextMode ? "gap-3" : "gap-2.5";
 
     return (
-      <div className={`flex-1 overflow-y-auto ${isLargeTextMode ? "py-5 pb-24" : "py-4 pb-20"} bg-gray-50`}>
+      <div className={`flex-1 overflow-y-auto ${isLargeTextMode ? "py-5" : "py-4"} pb-[72px] bg-gray-50`}>
         <div className={`px-4 space-y-6 ${isAllQuestionsAnswered() ? "pb-0" : "pb-6"}`}>
           {questions.map((question) => (
             <div key={question.id} className={`${spacing} mb-6`}>

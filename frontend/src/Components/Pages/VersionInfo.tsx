@@ -34,7 +34,7 @@ export default function VersionInfo() {
       </div>
 
       {/* 버전정보 내용 영역 */}
-      <div className="flex-1 overflow-y-auto px-4 py-6">
+      <div className="flex-1 overflow-y-auto px-4 py-6 pb-[72px]">
         <div className="bg-white rounded-lg p-6 shadow-sm">
           <div className="space-y-6">
             {/* 앱 정보 */}

@@ -185,7 +185,7 @@ const Home = () => {
   return (
     <div className="w-full h-full flex flex-col items-center max-w-[440px] mx-auto shadow-[0_0_10px_0_rgba(0,0,0,0.1)] bg-[#F7F8FB]">
       <HomeHeader />
-      <div className="h-[calc(100vh-152px)] p-0 px-3 w-full max-w-[440px] box-border mx-auto overflow-y-scroll">
+      <div className="h-[calc(100vh-152px)] p-0 px-3 pb-[72px] w-full max-w-[440px] box-border mx-auto overflow-y-scroll">
         <>
           <HomeInfo
             userName={user?.name || ""}

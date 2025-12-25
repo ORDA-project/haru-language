@@ -36,7 +36,7 @@ export default function PrivacyPolicy() {
       </div>
 
       {/* 개인정보처리방침 내용 영역 */}
-      <div className="flex-1 overflow-y-auto px-4 py-6">
+      <div className="flex-1 overflow-y-auto px-4 py-6 pb-[72px]">
         <div className="bg-white rounded-lg p-6 shadow-sm">
           <div className="prose prose-sm max-w-none">
             <h2 className="text-lg font-bold text-gray-800 mb-4">

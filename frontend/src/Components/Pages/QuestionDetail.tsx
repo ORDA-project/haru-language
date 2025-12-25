@@ -304,7 +304,7 @@ const QuestionDetail = () => {
         (isDeleteMode && selectedExampleIds.size > 0) ||
         (isDeleteModeChat && selectedChatMessageIds.size > 0)
           ? "pb-32" 
-          : "pb-20"
+          : "pb-[72px]"
       }`}>
         {/* 한줄영어 섹션 */}
         <WritingRecordsSection

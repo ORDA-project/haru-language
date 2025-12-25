@@ -34,7 +34,7 @@ export default function Announcements() {
       </div>
 
       {/* 공지사항 내용 영역 */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6">
+      <div className="flex-1 flex flex-col items-center justify-center px-6 pb-[72px]">
         <div className="text-center">
           {/* 빈 상태 이미지 */}
           <div className="w-24 h-24 mx-auto mb-6 bg-gray-100 rounded-full flex items-center justify-center">
