@@ -491,7 +491,10 @@ const StageResult = ({
         {/* 사진에 대한 설명 */}
         {description && (
           <div className="flex justify-start">
-            <div className={`max-w-[80%] ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-lg bg-white text-gray-900 border border-gray-200`}>
+            <div 
+              className={`${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-lg bg-white text-gray-900 border border-gray-200`}
+              style={{ width: "343px" }}
+            >
               <p 
                 className="leading-relaxed whitespace-pre-wrap" 
                 style={{ ...textStyles.base, color: '#111827', lineHeight: '1.6' }}
@@ -595,7 +598,10 @@ const StageResult = ({
               {/* 2. 새 이미지 설명 */}
               {imageSet.description && (
                 <div className="flex justify-start">
-                  <div className={`max-w-[80%] ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-lg bg-white text-gray-900 border border-gray-200`}>
+                  <div 
+                    className={`${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-lg bg-white text-gray-900 border border-gray-200`}
+                    style={{ width: "343px" }}
+                  >
                     <p 
                       className="leading-relaxed whitespace-pre-wrap" 
                       style={{ ...textStyles.base, color: '#111827', lineHeight: '1.6' }}

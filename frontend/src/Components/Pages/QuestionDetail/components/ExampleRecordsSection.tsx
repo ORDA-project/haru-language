@@ -172,7 +172,8 @@ export const ExampleRecordsSection: React.FC<ExampleRecordsSectionProps> = ({
                 {example.description && example.description !== "이미지에서 예문을 생성했어요." && (
                   <div className="flex justify-start">
                     <div
-                      className={`max-w-[80%] ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-lg bg-white text-gray-900 border border-gray-200`}
+                      className={`${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-lg bg-white text-gray-900 border border-gray-200`}
+                      style={{ width: "343px" }}
                     >
                       <p
                         className="leading-relaxed whitespace-pre-wrap"

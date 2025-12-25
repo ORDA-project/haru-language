@@ -68,8 +68,9 @@ export const ExampleGroup: React.FC<ExampleGroupProps> = ({
       {group[groupScrollIndex ?? currentIndex]?.context && (
         <div className="flex justify-start">
           <div
-            className={`max-w-[80%] ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-lg bg-gray-50 text-gray-700 border border-gray-200`}
+            className={`${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-lg bg-gray-50 text-gray-700 border border-gray-200`}
             style={{
+              width: "343px",
               boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
             }}
           >
