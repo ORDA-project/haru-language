@@ -22,18 +22,21 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   onKeyPress,
   onImageClick,
 }) => {
+  const inputHeight = isLargeTextMode ? "52px" : "48px";
+  
   return (
     <div
       className="fixed left-0 right-0 bg-white border-t border-gray-200 z-40 max-w-[440px] mx-auto"
       style={{ 
-        bottom: "60px",
-        paddingBottom: isLargeTextMode ? "1.5rem" : "1rem"
+        bottom: "72px",
+        paddingBottom: isLargeTextMode ? "1rem" : "0.75rem"
       }}
     >
-      <div className={`flex items-end gap-2 ${isLargeTextMode ? "p-5" : "p-4"}`}>
+      <div className={`flex items-center gap-2 ${isLargeTextMode ? "px-5 py-3" : "px-4 py-2"}`}>
         <button
           onClick={onImageClick}
-          className="w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors flex-shrink-0"
+          className="rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors flex-shrink-0"
+          style={{ width: inputHeight, height: inputHeight }}
           aria-label="이미지 업로드"
         >
           <Icons.camera
@@ -51,7 +54,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
             className="w-full px-4 py-3 border border-gray-300 rounded-2xl resize-none focus:outline-none focus:ring-2 focus:ring-[#00DAAA] focus:border-transparent bg-white"
             style={{
               ...baseTextStyle,
-              minHeight: isLargeTextMode ? "52px" : "48px",
+              minHeight: inputHeight,
               maxHeight: "120px",
             }}
             rows={1}
@@ -60,11 +63,12 @@ export const MessageInput: React.FC<MessageInputProps> = ({
         <button
           onClick={onSend}
           disabled={!inputMessage.trim() || isLoading}
-          className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors flex-shrink-0 ${
+          className={`rounded-full flex items-center justify-center transition-colors flex-shrink-0 ${
             inputMessage.trim() && !isLoading
               ? "bg-[#00DAAA] hover:bg-[#00C495] cursor-pointer"
               : "bg-gray-300 cursor-not-allowed"
           }`}
+          style={{ width: inputHeight, height: inputHeight }}
         >
           <svg
             width="20"
