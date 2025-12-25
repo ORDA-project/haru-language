@@ -4,13 +4,12 @@ import { isLargeTextModeAtom } from "../../store/dataStore";
 import axios from "axios";
 import Cropper from "react-cropper";
 import "cropperjs/dist/cropper.css";
-import { API_ENDPOINTS } from "../../config/api";
+import { API_ENDPOINTS, API_BASE_URL } from "../../config/api";
 import { useErrorHandler } from "../../hooks/useErrorHandler";
-import { http } from "../../utils/http";
 import ImageUploadModal from "./ImageUploadModal";
 import { Icons } from "./Icons";
 import { getTodayStringBy4AM } from "../../utils/dateUtils";
-import { dataURItoBlob } from "../../utils/imageUtils";
+import { dataURItoBlob, MAX_IMAGE_SIZE } from "../../utils/imageUtils";
 
 interface ExampleData {
   context: string;
@@ -32,6 +31,49 @@ interface Message {
 interface StageChatProps {
   onBack: () => void;
 }
+
+// 예문 생성과 동일한 헬퍼 함수들
+const API_TIMEOUT = 60000; // 60초 타임아웃
+
+const getAuthHeaders = (): Record<string, string> => {
+  const token = localStorage.getItem("accessToken");
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+  return headers;
+};
+
+const createFormDataFromImage = (image: string | File): FormData => {
+  const formData = new FormData();
+  if (typeof image === "string") {
+    const blob = dataURItoBlob(image);
+    if (blob.size > MAX_IMAGE_SIZE) {
+      throw new Error("이미지 파일이 너무 큽니다. (5MB 이하로 해주세요)");
+    }
+    const fileName = blob.type === "image/jpeg" ? "cropped-image.jpg" : "cropped-image.png";
+    formData.append("image", blob, fileName);
+  } else {
+    formData.append("image", image);
+  }
+  return formData;
+};
+
+interface ExampleApiResponse {
+  generatedExample?: {
+    generatedExample?: any;
+    examples?: Array<any>;
+    description?: string;
+  };
+}
+
+const normalizeExampleResponse = (response: ExampleApiResponse) => {
+  let actualExample = response?.generatedExample;
+  if (actualExample?.generatedExample) {
+    actualExample = actualExample.generatedExample;
+  }
+  return actualExample;
+};
 
 const StageChat = ({ onBack }: StageChatProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -340,85 +382,126 @@ const StageChat = ({ onBack }: StageChatProps) => {
     setIsLoading(true);
 
     try {
-      // 이미지를 Blob으로 변환
-      const blob = dataURItoBlob(imageData);
-      const formData = new FormData();
-      const fileName = blob.type === "image/jpeg" ? "cropped-image.jpg" : "cropped-image.png";
-      formData.append("image", blob, fileName);
+      // 예문 생성과 동일한 방식으로 FormData 생성
+      const formData = createFormDataFromImage(imageData);
+      const headers = getAuthHeaders();
+      
+      if (import.meta.env.DEV) {
+        console.log("이미지 분석 요청 시작...", {
+          imageType: typeof imageData,
+          formDataKeys: Array.from(formData.keys()),
+        });
+      }
 
-      // AI에게 이미지 분석 요청 (예문 생성 API 사용)
-      // http 유틸리티 사용 - JWT 토큰 자동 포함
-      const response = await http.post<{
-        generatedExample: any;
-      }>("/example", {
-        formData: formData,
+      // 예문 생성과 동일한 방식으로 API 호출
+      const response = await axios.post<ExampleApiResponse>("/example", formData, {
+        baseURL: API_BASE_URL,
+        headers: {
+          ...headers,
+          // Content-Type을 명시적으로 설정하지 않음 (FormData는 브라우저가 자동 설정)
+        },
+        withCredentials: true,
+        timeout: API_TIMEOUT,
       });
 
-      if (response && response.generatedExample) {
-        const { generatedExample } = response;
-        const actualExample =
-          generatedExample.generatedExample || generatedExample;
+      if (import.meta.env.DEV) {
+        console.log("이미지 분석 응답:", response.data);
+      }
 
-        // 예문 데이터 추출
-        const examples: ExampleData[] = [];
-        if (actualExample.examples && actualExample.examples.length > 0) {
-          actualExample.examples.forEach((example: any) => {
-            if (example.dialogue) {
-              examples.push({
-                context: example.context || "예문 상황",
-                dialogue: {
-                  A: {
-                    english: example.dialogue.A?.english || "",
-                    korean: example.dialogue.A?.korean,
-                  },
-                  B: {
-                    english: example.dialogue.B?.english || "",
-                    korean: example.dialogue.B?.korean,
-                  },
-                },
-              });
-            }
+      // 예문 생성과 동일한 방식으로 응답 정규화
+      const actualExample = normalizeExampleResponse(response.data);
+
+      if (!actualExample) {
+        if (import.meta.env.DEV) {
+          console.error("예문 데이터를 찾을 수 없습니다. 응답:", response.data);
+        }
+        throw new Error("예문 데이터를 찾을 수 없습니다.");
+      }
+
+      if (!actualExample.examples || !Array.isArray(actualExample.examples)) {
+        if (import.meta.env.DEV) {
+          console.error("예문 배열이 올바르지 않습니다. actualExample:", actualExample);
+        }
+        throw new Error("예문 배열이 올바르지 않습니다.");
+      }
+
+      if (actualExample.examples.length === 0) {
+        throw new Error("생성된 예문이 없습니다.");
+      }
+
+      // 예문 데이터 추출
+      const examples: ExampleData[] = [];
+      actualExample.examples.forEach((example: any) => {
+        if (example.dialogue) {
+          examples.push({
+            context: example.context || "예문 상황",
+            dialogue: {
+              A: {
+                english: example.dialogue.A?.english || "",
+                korean: example.dialogue.A?.korean,
+              },
+              B: {
+                english: example.dialogue.B?.english || "",
+                korean: example.dialogue.B?.korean,
+              },
+            },
           });
         }
+      });
 
-        // 요약 메시지
-        const summaryMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          type: "ai",
-          content: actualExample.description || "답변 요약 내용",
-          timestamp: new Date(),
-        };
-
-        // 예문 카드 메시지
-        const exampleMessage: Message = {
-          id: (Date.now() + 2).toString(),
-          type: "ai",
-          content: "",
-          examples: examples,
-          imageUrl: croppedImage || undefined,
-          timestamp: new Date(),
-        };
-
-        setMessages((prev) => {
-          const updated = [...prev, summaryMessage, exampleMessage];
-          saveMessages(updated);
-          return updated;
-        });
-      } else {
-        throw new Error("이미지 분석 결과를 받을 수 없습니다.");
+      if (examples.length === 0) {
+        throw new Error("유효한 예문을 찾을 수 없습니다.");
       }
-    } catch (error) {
-      console.error("Error analyzing image:", error);
-      showError("이미지 분석 오류", "이미지 분석 중 오류가 발생했습니다.");
 
-      const errorMessage: Message = {
+      // 요약 메시지
+      const summaryMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: "ai",
-        content: "이미지 분석 중 오류가 발생했습니다. 다시 시도해주세요.",
+        content: actualExample.description || "이미지 분석이 완료되었습니다.",
+        timestamp: new Date(),
+      };
+
+      // 예문 카드 메시지
+      const exampleMessage: Message = {
+        id: (Date.now() + 2).toString(),
+        type: "ai",
+        content: "",
+        examples: examples,
+        imageUrl: croppedImage || undefined,
+        timestamp: new Date(),
+      };
+
+      setMessages((prev) => {
+        const updated = [...prev, summaryMessage, exampleMessage];
+        saveMessages(updated);
+        return updated;
+      });
+    } catch (error) {
+      console.error("Error analyzing image:", error);
+      
+      let errorMessage = "이미지 분석 중 오류가 발생했습니다.";
+      if (axios.isAxiosError(error)) {
+        if (import.meta.env.DEV) {
+          console.error("응답 데이터:", error.response?.data);
+          console.error("응답 상태:", error.response?.status);
+        }
+        const status = error.response?.status;
+        const data = error.response?.data as any;
+        errorMessage = data?.message || `서버 오류 (${status || "알 수 없음"})`;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
+      showError("이미지 분석 오류", errorMessage);
+
+      const errorMsg: Message = {
+        id: (Date.now() + 1).toString(),
+        type: "ai",
+        content: errorMessage + " 다시 시도해주세요.",
         timestamp: new Date(),
       };
       setMessages((prev) => {
-        const updated = [...prev, errorMessage];
+        const updated = [...prev, errorMsg];
         saveMessages(updated);
         return updated;
       });
@@ -430,8 +513,8 @@ const StageChat = ({ onBack }: StageChatProps) => {
 
   return (
     <div className="w-full flex-1 flex flex-col bg-[#F7F8FB] relative">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 bg-white border-b border-gray-200">
+      {/* Header - 고정 */}
+      <div className="flex items-center justify-between p-4 bg-white border-b border-gray-200 fixed top-0 left-0 right-0 z-50 max-w-[440px] mx-auto">
         <button
           onClick={cropStage === "crop" ? handleBackToChat : onBack}
           className="w-8 h-8 flex items-center justify-center"
