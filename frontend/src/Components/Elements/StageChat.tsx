@@ -478,36 +478,11 @@ const StageChat = ({ onBack }: StageChatProps) => {
         throw new Error("유효한 예문을 찾을 수 없습니다.");
       }
 
-      // 요약 메시지 (마크다운 처리 적용)
-      let descriptionContent = actualExample.description || "이미지 분석이 완료되었습니다.";
-      
-      // 문자열로 변환 후 마크다운 처리
-      if (typeof descriptionContent === "string") {
-        // 서버에서 받은 이상한 형식 제거 및 정리
-        // "text-decoration:..." 패턴을 제거하고 **마크다운** 형식으로 정리
-        descriptionContent = descriptionContent
-          // 이스케이프된 HTML을 실제 HTML로 변환
-          .replace(/&lt;/g, '<')
-          .replace(/&gt;/g, '>')
-          .replace(/&amp;/g, '&')
-          // 서버에서 오는 이상한 패턴 제거: "text-decoration:...">텍스트 → 텍스트만 남기기
-          .replace(/"text-decoration:\s*underline;\s*color:\s*#00DAAA;\s*font-weight:\s*500;">/gi, '**')
-          // 마크다운 형식으로 변환
-          .replace(/\\n/g, "\n");
-        
-        // 마크다운을 HTML로 변환 (일관된 방식)
-        descriptionContent = descriptionContent
-          .replace(/\*\*(.*?)\*\*/g, '<span style="text-decoration: underline; color: #00DAAA; font-weight: 500;">$1</span>') // **텍스트**를 밑줄과 색상으로 변환
-          .replace(/"([^"]*)"/g, '<span style="color: #00DAAA; font-weight: 500;">"$1"</span>') // 따옴표 안의 텍스트를 하이라이트
-          .replace(/\n/g, "<br/>"); // 개행을 <br/>로 변환
-      } else {
-        descriptionContent = String(descriptionContent);
-      }
-
+      // 요약 메시지 (예문 생성과 동일하게 description을 그대로 저장)
       const summaryMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: "ai",
-        content: descriptionContent,
+        content: actualExample.description || "이미지 분석이 완료되었습니다.",
         timestamp: new Date(),
       };
 
@@ -744,7 +719,12 @@ const StageChat = ({ onBack }: StageChatProps) => {
                           <div
                             className="leading-relaxed"
                             style={baseTextStyle}
-                            dangerouslySetInnerHTML={{ __html: message.content }}
+                            dangerouslySetInnerHTML={{ 
+                              __html: message.content
+                                .replace(/\*\*(.*?)\*\*/g, '<span style="text-decoration: underline; color: #00DAAA; font-weight: 500;">$1</span>') // **텍스트**를 밑줄과 색상으로 변환
+                                .replace(/"([^"]*)"/g, '<span style="color: #00DAAA; font-weight: 500;">"$1"</span>') // 따옴표 안의 텍스트를 하이라이트
+                                .replace(/\n/g, "<br/>") // 개행을 <br/>로 변환
+                            }}
                           />
                         ) : (
                           <p className="leading-relaxed whitespace-pre-wrap" style={baseTextStyle}>
