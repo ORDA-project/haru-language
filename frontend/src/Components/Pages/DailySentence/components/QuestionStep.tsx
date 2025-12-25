@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React from "react";
 import { WritingQuestion } from "../../../../entities/writing/types";
 
 type LanguageMode = "korean" | "english";
@@ -9,8 +9,8 @@ interface QuestionStepProps {
   languageMode: LanguageMode;
   isLargeTextMode: boolean;
   englishQuestionFontSize: number | null;
-  englishQuestionRef: React.RefObject<HTMLDivElement>;
-  englishQuestionContainerRef: React.RefObject<HTMLDivElement>;
+  englishQuestionRef: React.RefObject<HTMLDivElement | null>;
+  englishQuestionContainerRef: React.RefObject<HTMLDivElement | null>;
   baseTextStyle: React.CSSProperties;
   smallTextStyle: React.CSSProperties;
   xSmallTextStyle: React.CSSProperties;

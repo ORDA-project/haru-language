@@ -14,7 +14,7 @@ import { ChatMessage } from "./StageChat/components/ChatMessage";
 import { ChatExampleCard } from "./StageChat/components/ChatExampleCard";
 import { MessageInput } from "./StageChat/components/MessageInput";
 import { useChatMessages } from "./StageChat/hooks/useChatMessages";
-import { useChatTTS } from "../../Pages/QuestionDetail/hooks/useChatTTS";
+import { useChatTTS } from "../Pages/QuestionDetail/hooks/useChatTTS";
 
 interface ExampleData {
   context: string;

@@ -240,24 +240,6 @@ const QuestionDetail = () => {
 
   const isLoading = examplesLoading || writingRecordsLoading;
 
-  const currentIndex = availableDates.findIndex(
-    (d) => d === selectedDate
-  );
-  // availableDates는 내림차순 정렬 (최신이 먼저)
-  // 이전 날 = 더 오래된 날짜 (인덱스 증가)
-  // 다음 날 = 더 최신 날짜 (인덱스 감소)
-  const previousDate =
-    currentIndex >= 0 && currentIndex < availableDates.length - 1
-      ? availableDates[currentIndex + 1]
-      : null;
-  const nextDate = currentIndex > 0 ? availableDates[currentIndex - 1] : null;
-
-  const handleNavigateToDate = (newDate: string) => {
-    if (!newDate || newDate === selectedDate) return;
-    setSelectedDate(newDate);
-    navigate(`/question-detail/${newDate}`, { replace: true });
-  };
-
 
   const handleBack = () => {
     navigate(-1);

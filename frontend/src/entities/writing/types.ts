@@ -77,9 +77,12 @@ export interface TranslateWritingResponse {
 
 // Writing Record 타입 (API 문서에 맞춤)
 export interface WritingRecord {
+  id: number;
+  writing_question_id: number;
   original_text: string;
   processed_text: string;
   feedback: string[];
+  created_at: string;
 }
 
 export interface GetWritingRecordsResponse {

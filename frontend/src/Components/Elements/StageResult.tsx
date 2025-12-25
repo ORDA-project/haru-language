@@ -80,7 +80,6 @@ const StageResult = ({
   // State
   const [exampleGroups, setExampleGroups] = useState<Example[][]>(() => groupExamples(examples));
   const [groupCurrentIndices, setGroupCurrentIndices] = useState<GroupCurrentIndices>({});
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showCropStage, setShowCropStage] = useState(false);
   const [selectedImageForCrop, setSelectedImageForCrop] = useState<string | null>(null);
