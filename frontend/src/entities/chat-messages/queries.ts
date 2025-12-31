@@ -1,6 +1,8 @@
 import { useGetQuery, useMutation } from "../../hooks/useQuery";
 import { API_ENDPOINTS } from "../../config/api";
 import { http } from "../../utils/http";
+import { useAtom } from "jotai";
+import { userAtom } from "../../store/authStore";
 
 export interface ChatMessage {
   id: string;
@@ -21,9 +23,11 @@ export interface ChatMessage {
  * 최근 채팅 메시지 조회 (오늘 날짜 기준)
  */
 export const useGetChatMessages = () => {
+  const [user] = useAtom(userAtom);
   return useGetQuery<ChatMessage[]>("/chat-message", {
-    queryKey: ["chat-messages"],
+    queryKey: ["chat-messages", user?.userId],
     refetchOnWindowFocus: false,
+    enabled: !!user?.userId, // 로그인한 경우에만 호출
   });
 };
 

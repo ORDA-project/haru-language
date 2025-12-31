@@ -1,6 +1,7 @@
 import { atom } from "jotai";
 import { atomWithStorage, createJSONStorage } from "jotai/utils";
 import { API_ENDPOINTS } from "../config/api";
+import { queryClient } from "../utils/queryClient";
 
 // 사용자 타입 정의
 interface User {
@@ -36,6 +37,9 @@ export const logoutAtom = atom(null, (get, set) => {
   set(userAtom, null);
   // JWT 토큰 제거
   localStorage.removeItem("accessToken");
+  // React Query 캐시 초기화 (채팅 메시지 관련 캐시 제거)
+  queryClient.removeQueries({ queryKey: ["chat-messages"] });
+  queryClient.resetQueries({ queryKey: ["chat-messages"] });
 });
 
 // 온보딩 완료 상태 확인

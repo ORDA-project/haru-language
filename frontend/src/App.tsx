@@ -1,7 +1,8 @@
 import React from "react";
 import { RouterProvider, createBrowserRouter } from "react-router-dom";
 import { Provider } from "jotai";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "./utils/queryClient";
 import Navbar from "./Components/Templates/Navbar";
 import Home from "./Components/Pages/Home";
 import Question from "./Components/Pages/Question";
@@ -114,18 +115,6 @@ const router = createBrowserRouter([
   },
 ]);
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 1,
-      staleTime: 1000 * 60 * 5, // 5 minutes
-      refetchOnWindowFocus: false,
-    },
-    mutations: {
-      retry: 1,
-    },
-  },
-});
 
 // ReactQueryDevtools는 개발 환경에서만 로드
 const ReactQueryDevtools = import.meta.env.DEV

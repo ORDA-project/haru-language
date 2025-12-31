@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAtom } from "jotai";
+import { useQueryClient } from "@tanstack/react-query";
 import { userAtom } from "../../../../store/authStore";
 import {
   useGetChatMessages,
@@ -47,6 +48,7 @@ export const useChatMessages = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const userId = user?.userId;
   const { showError } = useErrorHandler();
+  const queryClient = useQueryClient();
 
   // 서버에서 메시지 조회
   const { data: serverMessages, isLoading } = useGetChatMessages();
@@ -55,12 +57,15 @@ export const useChatMessages = () => {
 
   useEffect(() => {
     if (!userId) {
-      // 로그아웃 상태: 메시지 초기화
+      // 로그아웃 상태: 메시지 초기화 및 캐시 제거
       setMessages([]);
+      // React Query 캐시 초기화 (모든 chat-messages 관련 캐시 제거)
+      queryClient.removeQueries({ queryKey: ["chat-messages"] });
+      queryClient.resetQueries({ queryKey: ["chat-messages"] });
       return;
     }
 
-    // 서버에서 메시지 로드
+    // 서버에서 메시지 로드 (로그인한 경우에만)
     if (serverMessages && serverMessages.length > 0) {
       const convertedMessages = serverMessages.map(convertToLocalMessage);
       setMessages(convertedMessages);
@@ -90,7 +95,7 @@ export const useChatMessages = () => {
         }
       );
     }
-  }, [userId, serverMessages, isLoading, saveMessageMutation]);
+  }, [userId, serverMessages, isLoading, saveMessageMutation, queryClient]);
 
   const addMessage = useCallback(
     async (message: Message) => {
