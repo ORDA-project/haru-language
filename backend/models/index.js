@@ -16,6 +16,7 @@ const WritingExample = require("./WritingExample");
 const Friend = require("./Friend"); 
 const Invitation = require("./Invitation"); 
 const Notification = require("./Notification");
+const ChatMessage = require("./ChatMessage");
 
 
 // 관계 설정
@@ -54,6 +55,9 @@ Notification.belongsTo(User, { foreignKey: "user_id", as: "NotifiedUser" });
 User.hasMany(Notification, { foreignKey: "sender_id", as: "SentNotifications", onDelete: "CASCADE" });
 Notification.belongsTo(User, { foreignKey: "sender_id", as: "NotificationSender" }); 
 
+User.hasMany(ChatMessage, { foreignKey: "user_id", onDelete: "CASCADE" });
+ChatMessage.belongsTo(User, { foreignKey: "user_id" });
+
 
 module.exports = {
     sequelize,
@@ -74,4 +78,5 @@ module.exports = {
     Friend,
     Invitation,
     Notification,
+    ChatMessage,
   };

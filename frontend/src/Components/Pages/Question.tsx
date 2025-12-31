@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useAtom } from "jotai";
 import { isLargeTextModeAtom } from "../../store/dataStore";
+import { userAtom } from "../../store/authStore";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { API_ENDPOINTS, API_BASE_URL } from "../../config/api";
@@ -25,14 +26,20 @@ const ChatBot = () => {
   const { showError, showWarning, showInfo } = useErrorHandler();
   const ttsMutation = useGenerateTTS();
   const [isLargeTextMode] = useAtom(isLargeTextModeAtom);
+  const [user] = useAtom(userAtom);
 
-  // 대화 내역 저장/불러오기
+  // 대화 내역 저장/불러오기 - 사용자별로 구분
   const getStorageKey = () => {
     const dateKey = getTodayStringBy4AM();
-    return `chat_messages_${dateKey}`;
+    if (user?.userId) {
+      return `chat_messages_${user.userId}_${dateKey}`;
+    }
+    return `chat_messages_guest_${dateKey}`;
   };
 
   const saveMessages = (msgs: typeof messages) => {
+    if (!user?.userId) return; // 로그인하지 않은 경우 저장하지 않음
+    
     try {
       const storageKey = getStorageKey();
       const messagesToSave = msgs.map(msg => ({
@@ -46,6 +53,8 @@ const ChatBot = () => {
   };
 
   const loadMessages = () => {
+    if (!user?.userId) return null; // 로그인하지 않은 경우 로드하지 않음
+    
     try {
       const storageKey = getStorageKey();
       const saved = localStorage.getItem(storageKey);
@@ -72,10 +81,17 @@ const ChatBot = () => {
   const smallTextStyle: React.CSSProperties = { fontSize: `${smallFontSize}px`, wordBreak: 'keep-all', overflowWrap: 'break-word' as const };
 
   useEffect(() => {
+    // 로그인하지 않은 경우 메시지 초기화
+    if (!user?.userId) {
+      setMessages([]);
+      setLoading(false);
+      return;
+    }
+
     const fetchUserData = async () => {
       setLoading(true);
       try {
-        // 저장된 대화 내역 불러오기
+        // 저장된 대화 내역 불러오기 (사용자별)
         const savedMessages = loadMessages();
         if (savedMessages && savedMessages.length > 0) {
           setMessages(savedMessages);
@@ -140,7 +156,7 @@ const ChatBot = () => {
     };
 
     fetchUserData();
-  }, [showError]);
+  }, [showError, user?.userId]);
 
   const handleSend = async () => {
     if (!userInput.trim()) return;

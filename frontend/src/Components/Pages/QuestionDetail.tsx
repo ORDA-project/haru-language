@@ -2,10 +2,12 @@ import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAtom } from "jotai";
 import { isLargeTextModeAtom } from "../../store/dataStore";
+import { userAtom } from "../../store/authStore";
 import { useGetQuestionsByUserId, useDeleteQuestion } from "../../entities/questions/queries";
 import { useGetExampleHistory, useDeleteExample } from "../../entities/examples/queries";
 import { useWritingRecords, useDeleteWritingRecord } from "../../entities/writing/queries";
 import { useWritingQuestions } from "../../entities/writing/queries";
+import { useGetChatMessagesByDate, useDeleteChatMessages } from "../../entities/chat-messages/queries";
 import { useErrorHandler } from "../../hooks/useErrorHandler";
 import NavBar from "../Templates/Navbar";
 import { createExtendedTextStyles } from "../../utils/styleUtils";
@@ -33,6 +35,7 @@ type ExampleItem = {
 const QuestionDetail = () => {
   const navigate = useNavigate();
   const [isLargeTextMode] = useAtom(isLargeTextModeAtom);
+  const [user] = useAtom(userAtom);
   const [currentItemIndex, setCurrentItemIndex] = useState<Record<number, number>>({});
   const [exampleScrollIndices, setExampleScrollIndices] = useState<Record<string, number>>({});
   const [isDeleteMode, setIsDeleteMode] = useState(false);
@@ -44,6 +47,7 @@ const QuestionDetail = () => {
   const { showWarning, showError, showSuccess } = useErrorHandler();
   const deleteWritingRecordMutation = useDeleteWritingRecord();
   const deleteExampleMutation = useDeleteExample();
+  const deleteChatMessagesMutation = useDeleteChatMessages();
   
   // 스타일 계산 (메모이제이션)
   const textStyles = useMemo(() => createExtendedTextStyles(isLargeTextMode), [isLargeTextMode]);
@@ -210,33 +214,22 @@ const QuestionDetail = () => {
     return map;
   }, [writingQuestionsData?.data]);
 
-  // AI 대화 기록 불러오기 (localStorage)
+  // AI 대화 기록 불러오기 (서버 API) - 사용자별로 구분
+  const { data: chatMessagesData } = useGetChatMessagesByDate(targetDate || "");
   const chatMessages = useMemo(() => {
-    if (!targetDate) return [];
-    try {
-      // targetDate는 YYYY-MM-DD 형식, getTodayStringBy4AM도 YYYY-MM-DD 형식 반환
-      const storageKey = `stage_chat_messages_${targetDate}`;
-      const saved = localStorage.getItem(storageKey);
-      if (saved) {
-        const messages = JSON.parse(saved);
-        if (Array.isArray(messages) && messages.length > 0) {
-          // 타임스탬프를 Date 객체로 변환하고, 초기 AI 메시지 제외
-          return messages
-            .map((msg: any) => ({
-              ...msg,
-              timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date()
-            }))
-            .filter((msg: any) => {
-              // 초기 인사 메시지 제외
-              return !msg.content?.includes("안녕하세요! 영어 학습을 도와드릴");
-            });
-        }
-      }
-    } catch (error) {
-      console.error("AI 대화 기록 불러오기 실패:", error);
-    }
-    return [];
-  }, [targetDate]);
+    if (!targetDate || !user?.userId || !chatMessagesData || !Array.isArray(chatMessagesData)) return [];
+    
+    // 타임스탬프를 Date 객체로 변환하고, 초기 AI 메시지 제외
+    return chatMessagesData
+      .map((msg: any) => ({
+        ...msg,
+        timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date()
+      }))
+      .filter((msg: any) => {
+        // 초기 인사 메시지 제외
+        return !msg.content?.includes("안녕하세요! 영어 학습을 도와드릴");
+      });
+  }, [targetDate, user?.userId, chatMessagesData]);
 
   const isLoading = examplesLoading || writingRecordsLoading;
 
@@ -385,30 +378,13 @@ const QuestionDetail = () => {
             setSelectedChatMessageIds(new Set());
           }}
           onDelete={async () => {
+            if (!user?.userId) return; // 로그인하지 않은 경우 삭제 불가
             if (window.confirm(`선택한 ${selectedChatMessageIds.size}개의 채팅 기록을 삭제하시겠습니까?`)) {
               try {
-                const storageKey = `stage_chat_messages_${targetDate}`;
-                const saved = localStorage.getItem(storageKey);
-                if (saved) {
-                  const messages = JSON.parse(saved);
-                  if (Array.isArray(messages)) {
-                    const filteredMessages = messages.filter((msg: any) => {
-                      const msgId = msg.id || `msg-${messages.indexOf(msg)}`;
-                      return !selectedChatMessageIds.has(msgId);
-                    });
-
-                    if (filteredMessages.length === 0) {
-                      localStorage.removeItem(storageKey);
-                    } else {
-                      localStorage.setItem(storageKey, JSON.stringify(filteredMessages));
-                    }
-                  }
-                }
-
+                await deleteChatMessagesMutation.mutateAsync(Array.from(selectedChatMessageIds));
                 showSuccess("삭제 완료", `${selectedChatMessageIds.size}개의 채팅 기록이 삭제되었습니다.`);
                 setSelectedChatMessageIds(new Set());
                 setIsDeleteModeChat(false);
-                window.location.reload();
               } catch (error) {
                 showError("삭제 실패", "채팅 기록 삭제에 실패했습니다.");
               }

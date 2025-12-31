@@ -32,4 +32,5 @@ export const API_ENDPOINTS = {
   quiz: `${API_BASE_URL}/quiz`,
   writing: `${API_BASE_URL}/writing`,
   tts: `${API_BASE_URL}/api/tts`,
+  chatMessage: `${API_BASE_URL}/chat-message`,
 } as const;

@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 import Cropper from "react-cropper";
 import "cropperjs/dist/cropper.css";
 import axios from "axios";
+import { useAtom } from "jotai";
 import { useErrorHandler } from "../../hooks/useErrorHandler";
 import { API_BASE_URL } from "../../config/api";
 import StageUpload from "../Elements/StageUpload";
@@ -15,6 +16,7 @@ import { createStorageKey, safeSetItem, safeGetItem, isTodayData } from "../../u
 import { getTodayStringBy4AM } from "../../utils/dateUtils";
 import { dataURItoBlob, validateImageFile, validateDataURI, MAX_IMAGE_SIZE } from "../../utils/imageUtils";
 import { getAxiosErrorMessage, ERROR_MESSAGES } from "../../utils/errorMessages";
+import { userAtom } from "../../store/authStore";
 
 interface SavedExampleState {
   stage: number;
@@ -48,6 +50,7 @@ const App = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const { showError, showSuccess, showWarning } = useErrorHandler();
   const cropperRef = useRef<any>(null);
+  const [user] = useAtom(userAtom);
 
   // 예문 생성 상태 저장
   const saveExampleState = useCallback(() => {
@@ -78,11 +81,13 @@ const App = () => {
     return null;
   }, []);
 
-  // AI 대화 상태 확인
+  // AI 대화 상태 확인 - 사용자별로 구분
   const hasChatMessages = useCallback((): boolean => {
+    if (!user?.userId) return false; // 로그인하지 않은 경우 false 반환
+    
     try {
       const dateKey = getTodayStringBy4AM();
-      const storageKey = `stage_chat_messages_${dateKey}`;
+      const storageKey = `stage_chat_messages_${user.userId}_${dateKey}`;
       const saved = localStorage.getItem(storageKey);
       if (saved) {
         const messages = JSON.parse(saved);
@@ -95,7 +100,7 @@ const App = () => {
       }
     }
     return false;
-  }, []);
+  }, [user?.userId]);
 
   // 컴포넌트 마운트 시 저장된 상태 복원
   useEffect(() => {

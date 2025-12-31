@@ -12,5 +12,6 @@ router.use("/api", require("./ttsRoute"));                  // TTS 기능
 router.use("/example", require("./exampleRoute"));          // 예제 API
 router.use("/question", require("./questionRoute"));        // 질문 기능
 router.use("/writing", require("./writingRoute"));          // 작문 기능
+router.use("/chat-message", require("./chatMessageRoute")); // 채팅 메시지 기능
 
 module.exports = router;
