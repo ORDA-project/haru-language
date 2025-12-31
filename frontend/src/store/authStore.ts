@@ -37,9 +37,19 @@ export const logoutAtom = atom(null, (get, set) => {
   set(userAtom, null);
   // JWT 토큰 제거
   localStorage.removeItem("accessToken");
-  // React Query 캐시 초기화 (채팅 메시지 관련 캐시 제거)
-  queryClient.removeQueries({ queryKey: ["chat-messages"] });
-  queryClient.resetQueries({ queryKey: ["chat-messages"] });
+  // React Query 캐시 완전 초기화 (모든 chat-messages 관련 캐시 제거)
+  queryClient.removeQueries({ 
+    predicate: (query) => {
+      const key = query.queryKey;
+      return Array.isArray(key) && key[0] === "chat-messages";
+    }
+  });
+  queryClient.resetQueries({ 
+    predicate: (query) => {
+      const key = query.queryKey;
+      return Array.isArray(key) && key[0] === "chat-messages";
+    }
+  });
 });
 
 // 온보딩 완료 상태 확인

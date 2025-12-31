@@ -35,10 +35,11 @@ export const useGetChatMessages = () => {
  * 날짜별 채팅 메시지 조회
  */
 export const useGetChatMessagesByDate = (date: string) => {
+  const [user] = useAtom(userAtom);
   return useGetQuery<ChatMessage[]>(`/chat-message/date/${date}`, {
-    queryKey: ["chat-messages", date],
+    queryKey: ["chat-messages", date, user?.userId],
     refetchOnWindowFocus: false,
-    enabled: !!date,
+    enabled: !!date && !!user?.userId, // 날짜와 로그인 상태 모두 확인
   });
 };
 

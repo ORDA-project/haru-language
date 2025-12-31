@@ -55,21 +55,81 @@ export const useChatMessages = () => {
   const saveMessageMutation = useSaveChatMessage();
   const saveMessagesMutation = useSaveChatMessages();
 
+  // userId 변경 시 이전 캐시 제거 및 메시지 초기화
   useEffect(() => {
     if (!userId) {
-      // 로그아웃 상태: 메시지 초기화 및 캐시 제거
+      // 로그아웃 상태: 메시지 초기화 및 모든 캐시 제거
       setMessages([]);
-      // React Query 캐시 초기화 (모든 chat-messages 관련 캐시 제거)
-      queryClient.removeQueries({ queryKey: ["chat-messages"] });
-      queryClient.resetQueries({ queryKey: ["chat-messages"] });
+      // React Query 캐시 완전 초기화 (모든 chat-messages 관련 캐시 제거)
+      queryClient.removeQueries({ 
+        predicate: (query) => {
+          const key = query.queryKey;
+          return Array.isArray(key) && key[0] === "chat-messages";
+        }
+      });
+      queryClient.resetQueries({ 
+        predicate: (query) => {
+          const key = query.queryKey;
+          return Array.isArray(key) && key[0] === "chat-messages";
+        }
+      });
+      return;
+    }
+
+    // userId가 변경되었을 때 이전 사용자의 캐시 제거
+    queryClient.removeQueries({ 
+      predicate: (query) => {
+        const key = query.queryKey;
+        return Array.isArray(key) && 
+               key[0] === "chat-messages" && 
+               key[1] !== userId; // 현재 userId가 아닌 모든 캐시 제거
+      }
+    });
+  }, [userId, queryClient]);
+
+  useEffect(() => {
+    if (!userId) {
+      // 로그아웃 상태: 메시지 초기화 (이미 위에서 캐시 제거됨)
+      setMessages([]);
       return;
     }
 
     // 서버에서 메시지 로드 (로그인한 경우에만)
-    if (serverMessages && serverMessages.length > 0) {
-      const convertedMessages = serverMessages.map(convertToLocalMessage);
-      setMessages(convertedMessages);
-    } else if (!isLoading && serverMessages && serverMessages.length === 0) {
+    // enabled 옵션으로 로그인하지 않은 경우 호출되지 않지만, 캐시가 남아있을 수 있으므로 명시적으로 체크
+    // serverMessages가 undefined이거나 null이면 빈 배열로 처리
+    if (serverMessages && Array.isArray(serverMessages)) {
+      if (serverMessages.length > 0) {
+        const convertedMessages = serverMessages.map(convertToLocalMessage);
+        setMessages(convertedMessages);
+      } else {
+        // 빈 배열인 경우 초기 메시지 생성
+        if (!isLoading) {
+          const initialMessage: Message = {
+            id: "initial",
+            type: "ai",
+            content: "안녕하세요! 영어 학습을 도와드릴 AI 튜터입니다. 궁금한 것이 있으시면 언제든지 질문해주세요!",
+            timestamp: new Date(),
+          };
+          setMessages([initialMessage]);
+          
+          // 서버에 초기 메시지 저장
+          saveMessageMutation.mutate(
+            {
+              type: "ai",
+              content: initialMessage.content,
+            },
+            {
+              onSuccess: (saved) => {
+                setMessages([convertToLocalMessage(saved)]);
+              },
+              onError: (error) => {
+                console.error("초기 메시지 저장 실패:", error);
+              },
+            }
+          );
+        }
+      }
+    } else if (!isLoading && (serverMessages === undefined || serverMessages === null)) {
       // 메시지가 없으면 초기 메시지 생성
       const initialMessage: Message = {
         id: "initial",
