@@ -63,8 +63,8 @@ const Login: React.FC = () => {
   };
 
   const handleExplore = () => {
-    // introduction 페이지로 이동
-    navigate("/introduction");
+    // introduction 페이지로 이동 (둘러보기에서 온 경우 표시)
+    navigate("/introduction", { state: { fromExplore: true } });
   };
 
   return (

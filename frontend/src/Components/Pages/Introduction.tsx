@@ -62,6 +62,7 @@ const Introduction: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const fromHelp = (location.state as { fromHelp?: boolean })?.fromHelp || false;
+  const fromExplore = (location.state as { fromExplore?: boolean })?.fromExplore || false;
 
   const handleNext = (): void => {
     if (currentPage < pages.length - 1) {
@@ -79,9 +80,9 @@ const Introduction: React.FC = () => {
       return;
     }
     
-    // 로그인되지 않은 경우 홈으로 이동
-    if (!isLoggedIn || !user) {
-      navigate("/home");
+    // 둘러보기에서 온 경우 또는 로그인되지 않은 경우 로그인 선택 창으로 이동
+    if (fromExplore || !isLoggedIn || !user) {
+      navigate("/");
       return;
     }
 
@@ -206,7 +207,7 @@ const Introduction: React.FC = () => {
         </div>
 
         {/* 왼쪽 화살표 버튼 */}
-        {currentPage > 0 && (
+        {currentPage > 0 && currentPage < pages.length - 1 && (
           <button
             onClick={handlePrev}
             className="fixed sm:absolute left-4 sm:left-5 w-12 h-12 sm:w-[3.75rem] sm:h-[3.75rem] bg-[#d9d9d9] border-none rounded-full flex items-center justify-center cursor-pointer hover:bg-[#c8c8c8] z-20 touch-manipulation"
