@@ -295,7 +295,7 @@ const HomeInfo = ({
         <div className="font-bold leading-[150%] bg-[#00E8B6] px-4 py-2 rounded-full" style={{ fontSize: '14px', marginTop: '-4px' }}>
           <span>오늘의 한줄 영어</span>
         </div>
-        <div className="w-full my-[8px] flex flex-col min-w-0 overflow-hidden" ref={englishSentenceContainerRef}>
+        <div className="w-full my-[8px] flex flex-col min-w-0 overflow-hidden relative z-10" ref={englishSentenceContainerRef}>
           {dailySentence ? (
             <>
               <div 
@@ -310,7 +310,7 @@ const HomeInfo = ({
               </div>
               <div 
                 ref={koreanSentenceRef}
-                className="font-bold leading-[150%] break-words w-full min-w-0 mt-2"
+                className="font-bold leading-[150%] break-words w-full min-w-0 mt-2 relative z-10"
                 style={{
                   fontSize: koreanSentenceFontSize ? `${koreanSentenceFontSize}px` : '18px',
                   lineHeight: '1.4',
@@ -326,7 +326,7 @@ const HomeInfo = ({
           )}
         </div>
 
-        <div className="w-full flex flex-col items-end mt-2">
+        <div className="w-full flex flex-col items-end mt-2 relative z-0">
           <div className="rounded-[70px] bg-gradient-to-r from-transparent to-[#00DAAA] w-1/2 h-[50px] flex justify-end items-center -mr-2">
             <Icons.arrowRight className="-translate-x-[15px]" />
           </div>

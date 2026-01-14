@@ -498,7 +498,7 @@ const StageChat = ({ onBack }: StageChatProps) => {
         type: "ai",
         content: "",
         examples: examples,
-        imageUrl: croppedImage || undefined,
+        imageUrl: imageData || croppedImage || undefined, // 이미지 분석에 사용된 이미지 URL 저장
         timestamp: new Date(),
       };
 
@@ -542,7 +542,7 @@ const StageChat = ({ onBack }: StageChatProps) => {
   return (
     <div className="w-full flex-1 flex flex-col bg-[#F7F8FB] relative">
       {/* Header - 고정 */}
-      <div className="flex items-center justify-between py-3 px-4 bg-white border-b border-gray-200 fixed top-0 left-0 right-0 z-50 max-w-[440px] mx-auto">
+      <div className={`flex items-center justify-between ${isLargeTextMode ? "py-3 px-5" : "py-3 px-4"} bg-white border-b border-gray-200 fixed top-0 left-0 right-0 z-50 max-w-[440px] mx-auto`}>
         <button
           onClick={cropStage === "crop" ? handleBackToChat : onBack}
           className="w-8 h-8 flex items-center justify-center"
@@ -668,7 +668,7 @@ const StageChat = ({ onBack }: StageChatProps) => {
           <div 
             ref={messagesContainerRef}
             className="flex-1 overflow-y-auto px-4 space-y-3" 
-            style={{ paddingTop: 'calc(48px + 1rem)', paddingBottom: 'calc(72px + 5rem)' }}
+            style={{ paddingTop: 'calc(56px + 1rem)', paddingBottom: 'calc(72px + 5rem)' }}
           >
             {messages.map((message, index) => {
               const currentIndex = exampleScrollIndices[message.id] ?? 0;

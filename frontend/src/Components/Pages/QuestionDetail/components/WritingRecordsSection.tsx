@@ -198,8 +198,9 @@ export const WritingRecordsSection: React.FC<WritingRecordsSectionProps> = ({
                         {feedback.map((fb: string, idx: number) => (
                           <p
                             key={idx}
-                            className="text-gray-700 leading-relaxed text-sm"
+                            className="text-gray-700 leading-relaxed"
                             style={{
+                              ...baseTextStyle,
                               whiteSpace: "pre-wrap",
                               wordBreak: "keep-all",
                               overflowWrap: "break-word",
@@ -210,7 +211,7 @@ export const WritingRecordsSection: React.FC<WritingRecordsSectionProps> = ({
                         ))}
                       </div>
                     ) : (
-                      <p className="text-gray-400 italic text-sm">피드백이 없습니다. 완벽해요!!</p>
+                      <p className="text-gray-400 italic" style={baseTextStyle}>피드백이 없습니다. 완벽해요!!</p>
                     )}
                   </div>
                 </div>

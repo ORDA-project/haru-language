@@ -23,8 +23,13 @@ router.post("/", async (req, res) => {
 
     const { type, content, examples, imageUrl, questionId } = req.body;
 
-    if (!type || !content) {
-      return res.status(400).json({ message: "메시지 타입과 내용은 필수입니다." });
+    if (!type) {
+      return res.status(400).json({ message: "메시지 타입은 필수입니다." });
+    }
+
+    // content가 없어도 imageUrl이나 examples가 있으면 허용 (이미지만 있는 메시지 또는 예문만 있는 메시지)
+    if (!content && !imageUrl && !examples) {
+      return res.status(400).json({ message: "메시지 내용, 이미지, 또는 예문이 필요합니다." });
     }
 
     const result = await saveChatMessage(user.userId, {

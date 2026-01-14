@@ -12,8 +12,13 @@ async function saveChatMessage(userId, messageData) {
 
     const { type, content, examples, imageUrl, questionId } = messageData;
 
-    if (!type || !content) {
-      throw new Error('메시지 타입과 내용은 필수입니다.');
+    if (!type) {
+      throw new Error('메시지 타입은 필수입니다.');
+    }
+
+    // content가 없어도 imageUrl이나 examples가 있으면 허용 (이미지만 있는 메시지 또는 예문만 있는 메시지)
+    if (!content && !imageUrl && !examples) {
+      throw new Error('메시지 내용, 이미지, 또는 예문이 필요합니다.');
     }
 
     const chatMessage = await ChatMessage.create({
@@ -54,10 +59,15 @@ async function saveChatMessages(userId, messages) {
     // 트랜잭션 내에서 일괄 저장
     const savedMessages = await Promise.all(
       messages.map((msg) => {
+        // content가 없어도 imageUrl이나 examples가 있으면 허용 (이미지만 있는 메시지 또는 예문만 있는 메시지)
+        if (!msg.content && !msg.imageUrl && !msg.examples) {
+          throw new Error('메시지 내용, 이미지, 또는 예문이 필요합니다.');
+        }
+        
         return ChatMessage.create({
           user_id: userId,
           type: msg.type,
-          content: msg.content,
+          content: msg.content || '', // 빈 문자열 허용
           examples: msg.examples || null,
           image_url: msg.imageUrl || null,
           question_id: msg.questionId || null,
