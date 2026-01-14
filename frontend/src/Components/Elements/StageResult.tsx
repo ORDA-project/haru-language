@@ -325,20 +325,16 @@ const StageResult = ({
           });
         });
         
-        // 스크롤을 새로 추가된 예문으로 이동 (requestAnimationFrame으로 분할하여 성능 최적화)
+        // 스크롤을 새로 추가된 예문으로 이동 (다음 프레임에서 실행)
         requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            const chatContainer = document.querySelector('.overflow-y-auto');
-            if (chatContainer) {
-              // scrollTo를 별도 프레임에서 실행하여 블로킹 방지
-              requestAnimationFrame(() => {
-                chatContainer.scrollTo({
-                  top: chatContainer.scrollHeight,
-                  behavior: 'smooth'
-                });
-              });
-            }
-          });
+          const chatContainer = document.querySelector('.overflow-y-auto');
+          if (chatContainer) {
+            // scrollTo를 직접 실행 (smooth는 브라우저가 최적화)
+            chatContainer.scrollTo({
+              top: chatContainer.scrollHeight,
+              behavior: 'smooth'
+            });
+          }
         });
         
         showSuccess("예문 추가 완료", "새로운 예문 3개가 추가되었습니다!");

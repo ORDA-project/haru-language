@@ -95,6 +95,8 @@ const StageChat = ({ onBack }: StageChatProps) => {
   const exampleScrollRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastMessageCountRef = useRef<number>(0);
+  const lastMessageIdRef = useRef<string | null>(null);
+  const isScrollingRef = useRef<boolean>(false);
   
   // TTS 훅 사용
   const { isPlayingTTS, playingChatExampleId, playChatExampleTTS, stopTTS } = useChatTTS();
@@ -121,12 +123,36 @@ const StageChat = ({ onBack }: StageChatProps) => {
 
   // 메시지 스크롤 최적화: 새 메시지가 추가되었을 때만 스크롤, 디바운싱 적용
   useEffect(() => {
-    // 메시지 개수가 실제로 증가했을 때만 스크롤
-    const currentMessageCount = messages.length;
-    const hasNewMessage = currentMessageCount > lastMessageCountRef.current;
-    lastMessageCountRef.current = currentMessageCount;
+    // 메시지가 없으면 초기화하고 스킵
+    if (messages.length === 0) {
+      lastMessageCountRef.current = 0;
+      lastMessageIdRef.current = null;
+      return;
+    }
 
-    if (!hasNewMessage || !messagesEndRef.current || !messagesContainerRef.current) {
+    // 마지막 메시지 ID 확인
+    const lastMessage = messages[messages.length - 1];
+    const currentMessageId = lastMessage?.id;
+    const currentMessageCount = messages.length;
+
+    // 실제로 새 메시지가 추가되었는지 확인 (개수 증가 또는 마지막 메시지 ID 변경)
+    const hasNewMessage = 
+      currentMessageCount > lastMessageCountRef.current || 
+      currentMessageId !== lastMessageIdRef.current;
+
+    // 새 메시지가 없거나 이미 스크롤 중이면 스킵 (ref는 나중에 업데이트)
+    if (!hasNewMessage || isScrollingRef.current) {
+      return;
+    }
+
+    // 컨테이너와 타겟 요소 확인
+    const container = messagesContainerRef.current;
+    const target = messagesEndRef.current;
+    
+    if (!container || !target) {
+      // ref 업데이트는 여기서 해도 됨 (스크롤하지 않으므로)
+      lastMessageCountRef.current = currentMessageCount;
+      lastMessageIdRef.current = currentMessageId || null;
       return;
     }
 
@@ -137,29 +163,37 @@ const StageChat = ({ onBack }: StageChatProps) => {
 
     // 디바운싱: 짧은 시간 내 여러 업데이트를 하나로 묶음
     scrollTimeoutRef.current = setTimeout(() => {
-      const container = messagesContainerRef.current;
-      const target = messagesEndRef.current;
+      const currentContainer = messagesContainerRef.current;
+      const currentTarget = messagesEndRef.current;
       
-      if (!container || !target) return;
+      if (!currentContainer || !currentTarget || isScrollingRef.current) {
+        // ref 업데이트
+        lastMessageCountRef.current = currentMessageCount;
+        lastMessageIdRef.current = currentMessageId || null;
+        return;
+      }
 
-      // scrollIntoView 대신 직접 스크롤 위치 설정 (강제 리플로우 방지)
-      const scrollToBottom = () => {
-        if (!container || !target) return;
-        
-        // 현재 스크롤 위치가 하단 근처인지 확인 (사용자가 위로 스크롤한 경우 스크롤하지 않음)
-        const isNearBottom = 
-          container.scrollHeight - container.scrollTop - container.clientHeight < 100;
-        
-        if (isNearBottom) {
-          // 직접 스크롤 위치 설정 (리플로우 최소화)
-          container.scrollTop = container.scrollHeight;
-        }
-      };
+      isScrollingRef.current = true;
 
-      // requestAnimationFrame으로 한 번만 실행
-      requestAnimationFrame(scrollToBottom);
+      // 현재 스크롤 위치가 하단 근처인지 확인 (사용자가 위로 스크롤한 경우 스크롤하지 않음)
+      const isNearBottom = 
+        currentContainer.scrollHeight - currentContainer.scrollTop - currentContainer.clientHeight < 100;
+      
+      if (isNearBottom) {
+        // 직접 스크롤 위치 설정 (리플로우 최소화, requestAnimationFrame 없이도 충분)
+        currentContainer.scrollTop = currentContainer.scrollHeight;
+      }
+      
+      // ref 업데이트
+      lastMessageCountRef.current = currentMessageCount;
+      lastMessageIdRef.current = currentMessageId || null;
+      
+      // 스크롤 완료 후 플래그 해제
+      setTimeout(() => {
+        isScrollingRef.current = false;
+      }, 50);
     }, 50); // 50ms 디바운싱
-  }, [messages.length, messages]);
+  }, [messages.length]); // messages.length만 dependency로 사용
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || isLoading) return;

@@ -51,14 +51,10 @@ const FriendNotificationListener = () => {
     setCurrentNotification(null);
     isShowingNotificationRef.current = false;
     
-    // 다음 알림 표시 (requestAnimationFrame으로 분할하여 성능 최적화)
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        setTimeout(() => {
-          showNextNotification();
-        }, 300); // 페이드아웃 애니메이션 시간
-      });
-    });
+    // 다음 알림 표시 (페이드아웃 애니메이션 시간 후)
+    setTimeout(() => {
+      showNextNotification();
+    }, 300);
   }, [showNextNotification]);
 
   // 알림 조회 및 표시 함수 (비동기 처리로 성능 개선)
@@ -73,9 +69,6 @@ const FriendNotificationListener = () => {
 
       const notifications = response.notifications || [];
       if (notifications.length === 0) return;
-
-      // 상태 업데이트를 다음 프레임으로 지연시켜 메인 스레드 부하 감소 (requestAnimationFrame 사용)
-      await new Promise(resolve => requestAnimationFrame(resolve));
 
       const notificationIds: number[] = [];
 
@@ -97,29 +90,27 @@ const FriendNotificationListener = () => {
         });
       });
 
-      // 알림 표시 시작 (다음 프레임에서 실행 - requestAnimationFrame 사용)
+      // 알림 표시 시작
       if (notificationQueueRef.current.length > 0 && !isShowingNotificationRef.current) {
-        requestAnimationFrame(() => {
+        // 다음 이벤트 루프에서 실행하여 현재 렌더링 사이클 완료 후 실행
+        setTimeout(() => {
           showNextNotification();
-        });
+        }, 0);
       }
 
-      // 모든 알림을 표시한 후 읽음 처리 (비동기로 처리, requestAnimationFrame으로 분할)
+      // 모든 알림을 표시한 후 읽음 처리 (비동기로 처리)
       if (notificationIds.length > 0) {
         const delay = notificationIds.length * NOTIFICATION_DISPLAY_DELAY + READ_NOTIFICATION_DELAY;
-        setTimeout(() => {
-          // API 호출을 requestAnimationFrame으로 감싸서 메인 스레드 블로킹 방지
-          requestAnimationFrame(async () => {
-            try {
-              await http.post("/friends/notifications/read", {
-                json: { notificationIds },
-              });
-            } catch (error) {
-              if (import.meta.env.DEV) {
-                console.error("알림 읽음 처리 실패:", error);
-              }
+        setTimeout(async () => {
+          try {
+            await http.post("/friends/notifications/read", {
+              json: { notificationIds },
+            });
+          } catch (error) {
+            if (import.meta.env.DEV) {
+              console.error("알림 읽음 처리 실패:", error);
             }
-          });
+          }
         }, delay);
       }
     } catch (error) {
@@ -154,10 +145,10 @@ const FriendNotificationListener = () => {
         clearTimeout(intervalRef.current);
       }
       
-      // 즉시 한 번 체크 (requestAnimationFrame 사용)
-      requestAnimationFrame(() => {
+      // 즉시 한 번 체크 (다음 이벤트 루프에서 실행)
+      setTimeout(() => {
         fetchAndDisplayNotificationsRef.current?.();
-      });
+      }, 0);
       
       // 주기적으로 알림 체크 (재귀적 setTimeout 사용으로 이전 작업 완료 후 실행)
       const scheduleNextCheck = () => {
