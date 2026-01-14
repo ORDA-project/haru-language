@@ -253,7 +253,7 @@ const HomeInfo = ({
         </div>
       )}
       <div
-        className="h-[200px] flex flex-col justify-start items-start p-[20px] rounded-[20px] bg-white shadow-[0px_3px_7px_2px_rgba(0,0,0,0.05)] my-[20px] border-4 border-[#00DAAA] cursor-pointer select-none w-full max-w-full overflow-hidden box-border"
+        className="min-h-[200px] flex flex-col justify-start items-start p-[20px] pb-[24px] rounded-[20px] bg-white shadow-[0px_3px_7px_2px_rgba(0,0,0,0.05)] my-[20px] border-4 border-[#00DAAA] cursor-pointer select-none w-full max-w-full overflow-visible box-border"
         style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
         onTouchStart={(e) => {
           const touch = e.touches[0];
@@ -295,7 +295,7 @@ const HomeInfo = ({
         <div className="font-bold leading-[150%] bg-[#00E8B6] px-4 py-2 rounded-full" style={{ fontSize: '14px', marginTop: '-4px' }}>
           <span>오늘의 한줄 영어</span>
         </div>
-        <div className="w-full my-[8px] flex flex-col min-w-0 overflow-hidden relative z-10" ref={englishSentenceContainerRef}>
+        <div className="w-full my-[8px] flex flex-col min-w-0 overflow-visible relative z-10 pb-2" ref={englishSentenceContainerRef}>
           {dailySentence ? (
             <>
               <div 

@@ -6,10 +6,12 @@ interface MessageInputProps {
   isLoading: boolean;
   isLargeTextMode: boolean;
   baseTextStyle: React.CSSProperties;
+  croppedImage: string | null;
   onInputChange: (value: string) => void;
   onSend: () => void;
   onKeyPress: (e: React.KeyboardEvent) => void;
   onImageClick: () => void;
+  onRemoveImage: () => void;
 }
 
 export const MessageInput: React.FC<MessageInputProps> = ({
@@ -17,10 +19,12 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   isLoading,
   isLargeTextMode,
   baseTextStyle,
+  croppedImage,
   onInputChange,
   onSend,
   onKeyPress,
   onImageClick,
+  onRemoveImage,
 }) => {
   const inputFontSize = isLargeTextMode ? "16px" : "12px";
   const lineHeight = 1.4;
@@ -50,11 +54,30 @@ export const MessageInput: React.FC<MessageInputProps> = ({
           />
         </button>
         <div className="flex-1 relative">
+          {/* 이미지 미리보기 */}
+          {croppedImage && (
+            <div className="mb-2 relative">
+              <div className="relative inline-block">
+                <img
+                  src={croppedImage}
+                  alt="업로드된 이미지"
+                  className="w-20 h-20 object-cover rounded-lg border border-gray-300"
+                />
+                <button
+                  onClick={onRemoveImage}
+                  className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600 transition-colors"
+                  aria-label="이미지 제거"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+          )}
           <textarea
             value={inputMessage}
             onChange={(e) => onInputChange(e.target.value)}
             onKeyPress={onKeyPress}
-            placeholder="궁금한 것을 질문해보세요!"
+            placeholder={croppedImage ? "이미지에 대한 질문을 입력하세요..." : "궁금한 것을 질문해보세요!"}
             className="w-full px-3 border border-gray-300 rounded-2xl resize-none focus:outline-none focus:ring-2 focus:ring-[#00DAAA] focus:border-transparent bg-white"
             style={{
               ...baseTextStyle,
@@ -70,9 +93,9 @@ export const MessageInput: React.FC<MessageInputProps> = ({
         </div>
         <button
           onClick={onSend}
-          disabled={!inputMessage.trim() || isLoading}
+          disabled={(!inputMessage.trim() && !croppedImage) || isLoading}
           className={`rounded-full flex items-center justify-center transition-colors flex-shrink-0 ${
-            inputMessage.trim() && !isLoading
+            (inputMessage.trim() || croppedImage) && !isLoading
               ? "bg-[#00DAAA] hover:bg-[#00C495] cursor-pointer"
               : "bg-gray-300 cursor-not-allowed"
           }`}

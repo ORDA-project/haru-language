@@ -196,69 +196,81 @@ const StageChat = ({ onBack }: StageChatProps) => {
   }, [messages.length]); // messages.length만 dependency로 사용
 
   const handleSendMessage = async () => {
-    if (!inputMessage.trim() || isLoading) return;
+    // 이미지가 있거나 텍스트가 있어야 전송 가능
+    if ((!inputMessage.trim() && !croppedImage) || isLoading) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
       type: "user",
-      content: inputMessage.trim(),
+      content: inputMessage.trim() || "",
+      imageUrl: croppedImage || undefined,
       timestamp: new Date(),
     };
 
     addMessage(userMessage);
+    const messageContent = inputMessage.trim();
+    const messageImage = croppedImage;
     setInputMessage("");
+    setCroppedImage(null);
     setIsLoading(true);
 
     try {
       const headers = getAuthHeaders();
       
-      const response = await axios.post<{
-        answer: string | { answer: string };
-      }>("/question", 
-        { question: userMessage.content },
-        {
-          baseURL: API_BASE_URL,
-          headers: {
-            ...headers,
-            "Content-Type": "application/json",
-          },
-          withCredentials: true,
-          timeout: API_TIMEOUT,
+      // 이미지가 있으면 이미지 분석, 텍스트만 있으면 질문 API 호출
+      if (messageImage) {
+        // 이미지 분석 요청
+        await handleImageAnalysis(messageImage, messageContent);
+      } else if (messageContent) {
+        // 텍스트만 있는 경우 질문 API 호출
+        const response = await axios.post<{
+          answer: string | { answer: string };
+        }>("/question", 
+          { question: messageContent },
+          {
+            baseURL: API_BASE_URL,
+            headers: {
+              ...headers,
+              "Content-Type": "application/json",
+            },
+            withCredentials: true,
+            timeout: API_TIMEOUT,
+          }
+        );
+
+        // AI 응답 포맷팅
+        let formattedContent = "";
+        if (typeof response.data.answer === "string") {
+          formattedContent = response.data.answer;
+        } else if (
+          response.data.answer &&
+          typeof response.data.answer === "object"
+        ) {
+          // 객체인 경우 answer 필드만 추출
+          formattedContent =
+            response.data.answer.answer || JSON.stringify(response.data.answer);
+        } else {
+          formattedContent = JSON.stringify(response.data.answer);
         }
-      );
 
-      // AI 응답 포맷팅
-      let formattedContent = "";
-      if (typeof response.data.answer === "string") {
-        formattedContent = response.data.answer;
-      } else if (
-        response.data.answer &&
-        typeof response.data.answer === "object"
-      ) {
-        // 객체인 경우 answer 필드만 추출
-        formattedContent =
-          response.data.answer.answer || JSON.stringify(response.data.answer);
-      } else {
-        formattedContent = JSON.stringify(response.data.answer);
+        // 원본 텍스트 그대로 저장 (예문 생성과 동일하게, 렌더링할 때만 변환)
+        // 서버에서 받은 이상한 패턴 제거
+        let cleanedContent = formattedContent;
+        if (typeof cleanedContent === "string") {
+          cleanedContent = cleanedContent
+            .replace(/"text-decoration:\s*underline;\s*color:\s*#00DAAA;\s*font-weight:\s*500;">/gi, '')
+            .replace(/"text-decoration:\s*underline;\s*color:\s*#00DAAA;\s*font-weight:\s*500;"/gi, '');
+        }
+        
+        const aiMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          type: "ai",
+          content: cleanedContent,
+          timestamp: new Date(),
+        };
+
+        addMessage(aiMessage);
       }
-
-      // 원본 텍스트 그대로 저장 (예문 생성과 동일하게, 렌더링할 때만 변환)
-      // 서버에서 받은 이상한 패턴 제거
-      let cleanedContent = formattedContent;
-      if (typeof cleanedContent === "string") {
-        cleanedContent = cleanedContent
-          .replace(/"text-decoration:\s*underline;\s*color:\s*#00DAAA;\s*font-weight:\s*500;">/gi, '')
-          .replace(/"text-decoration:\s*underline;\s*color:\s*#00DAAA;\s*font-weight:\s*500;"/gi, '');
-      }
-      
-      const aiMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        type: "ai",
-        content: cleanedContent,
-        timestamp: new Date(),
-      };
-
-      addMessage(aiMessage);
     } catch (error) {
       console.error("Error sending message:", error);
       
@@ -368,24 +380,7 @@ const StageChat = ({ onBack }: StageChatProps) => {
       const croppedDataURL = finalCanvas.toDataURL("image/jpeg", 0.7);
       setCroppedImage(croppedDataURL);
       setCropStage("chat");
-
-      // 이미지를 메시지로 추가 (실제 이미지 URL 포함)
-      const imageMessage: Message = {
-        id: Date.now().toString(),
-        type: "user",
-        content: "", // 텍스트 없이 이미지만 표시
-        imageUrl: croppedDataURL, // 크롭된 이미지 URL 저장
-        timestamp: new Date(),
-      };
-      addMessage(imageMessage);
-
-      // AI에게 이미지 분석 요청 (예문 생성과 동일한 방식)
-      await handleImageAnalysis(croppedDataURL);
-
-      showSuccess(
-        "이미지 업로드 완료",
-        "이미지가 성공적으로 업로드되었습니다!"
-      );
+      // 이미지만 자르고 바로 전송하지 않음 - 사용자가 텍스트를 입력한 후 전송할 수 있도록 함
     } catch (error) {
       showError(
         "이미지 처리 오류",
@@ -401,7 +396,7 @@ const StageChat = ({ onBack }: StageChatProps) => {
     setCropStage("chat");
   };
 
-  const handleImageAnalysis = async (imageData: string) => {
+  const handleImageAnalysis = async (imageData: string, textContent?: string) => {
     setIsLoading(true);
 
     try {
@@ -542,13 +537,13 @@ const StageChat = ({ onBack }: StageChatProps) => {
   return (
     <div className="w-full flex-1 flex flex-col bg-[#F7F8FB] relative">
       {/* Header - 고정 */}
-      <div className={`flex items-center justify-between ${isLargeTextMode ? "py-3 px-5" : "py-3 px-4"} bg-white border-b border-gray-200 fixed top-0 left-0 right-0 z-50 max-w-[440px] mx-auto`}>
+      <div className={`flex items-center justify-between ${isLargeTextMode ? "py-3 px-5" : "py-3 px-4"} bg-white border-b border-gray-200 fixed top-0 left-0 right-0 z-50 max-w-[440px] mx-auto`} style={{ height: isLargeTextMode ? "56px" : "48px" }}>
         <button
           onClick={cropStage === "crop" ? handleBackToChat : onBack}
-          className="w-8 h-8 flex items-center justify-center"
+          className={`${isLargeTextMode ? "w-10 h-10" : "w-8 h-8"} flex items-center justify-center`}
         >
           <svg
-            className="w-5 h-5 text-gray-600"
+            className={`${isLargeTextMode ? "w-6 h-6" : "w-5 h-5"} text-gray-600`}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -668,7 +663,7 @@ const StageChat = ({ onBack }: StageChatProps) => {
           <div 
             ref={messagesContainerRef}
             className="flex-1 overflow-y-auto px-4 space-y-3" 
-            style={{ paddingTop: 'calc(56px + 1rem)', paddingBottom: 'calc(72px + 5rem)' }}
+            style={{ paddingTop: isLargeTextMode ? 'calc(56px + 1rem)' : 'calc(48px + 1rem)', paddingBottom: 'calc(72px + 5rem)' }}
           >
             {messages.map((message, index) => {
               const currentIndex = exampleScrollIndices[message.id] ?? 0;
@@ -753,10 +748,12 @@ const StageChat = ({ onBack }: StageChatProps) => {
             isLoading={isLoading}
             isLargeTextMode={isLargeTextMode}
             baseTextStyle={baseTextStyle}
+            croppedImage={croppedImage}
             onInputChange={setInputMessage}
             onSend={handleSendMessage}
             onKeyPress={handleKeyPress}
             onImageClick={() => setIsModalOpen(true)}
+            onRemoveImage={() => setCroppedImage(null)}
           />
         </>
       )}

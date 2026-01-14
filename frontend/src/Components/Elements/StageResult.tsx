@@ -453,7 +453,7 @@ const StageResult = ({
   return (
     <div className="w-full flex-1 flex flex-col bg-[#F7F8FB] relative">
       {/* Header - 고정 */}
-      <div className={`flex items-center justify-between ${isLargeTextMode ? "py-3 px-5" : "py-3 px-4"} bg-white border-b border-gray-200 fixed top-0 left-0 right-0 z-50 max-w-[440px] mx-auto`}>
+      <div className={`flex items-center justify-between ${isLargeTextMode ? "py-3 px-5" : "py-3 px-4"} bg-white border-b border-gray-200 fixed top-0 left-0 right-0 z-50 max-w-[440px] mx-auto`} style={{ height: isLargeTextMode ? "56px" : "48px" }}>
         <button
           onClick={() => setStage(1)}
           className={`${isLargeTextMode ? "w-10 h-10" : "w-8 h-8"} flex items-center justify-center`}
