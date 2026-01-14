@@ -50,46 +50,32 @@ export const useChatMessages = () => {
   const userId = user?.userId;
   const { showError } = useErrorHandler();
   const queryClient = useQueryClient();
-  const hasInitializedRef = useRef(false);
+  
+  // 초기화 추적: userId별로 한 번만 초기화 (더 강력한 가드)
+  const initStateRef = useRef<{
+    attempted: Set<number>;
+    inProgress: Set<number>;
+  }>({
+    attempted: new Set(),
+    inProgress: new Set(),
+  });
 
   // 서버에서 메시지 조회
   const { data: serverMessages, isLoading, isError } = useGetChatMessages();
   const saveMessageMutation = useSaveChatMessage();
   const saveMessagesMutation = useSaveChatMessages();
 
-  // userId 변경 시 이전 캐시 제거 및 메시지 초기화
+  // userId 변경 시 초기화
   useEffect(() => {
     if (!userId) {
       setMessages([]);
-      hasInitializedRef.current = false;
-      queryClient.removeQueries({ 
-        predicate: (query) => {
-          const key = query.queryKey;
-          return Array.isArray(key) && key[0] === "chat-messages";
-        }
-      });
-      queryClient.resetQueries({ 
-        predicate: (query) => {
-          const key = query.queryKey;
-          return Array.isArray(key) && key[0] === "chat-messages";
-        }
-      });
+      initStateRef.current.attempted.clear();
+      initStateRef.current.inProgress.clear();
       return;
     }
+  }, [userId]);
 
-    // userId가 변경되었을 때 이전 사용자의 캐시 제거 및 플래그 리셋
-    hasInitializedRef.current = false;
-    queryClient.removeQueries({ 
-      predicate: (query) => {
-        const key = query.queryKey;
-        return Array.isArray(key) && 
-               key[0] === "chat-messages" && 
-               key[1] !== userId;
-      }
-    });
-  }, [userId, queryClient]);
-
-  // 서버에서 메시지 로드 및 초기화
+  // 서버 메시지 동기화 - 서버 응답만 믿고 처리
   useEffect(() => {
     if (!userId) {
       setMessages([]);
@@ -101,37 +87,65 @@ export const useChatMessages = () => {
       return;
     }
 
-    // 서버 응답 처리
-    if (serverMessages && Array.isArray(serverMessages)) {
-      if (serverMessages.length > 0) {
-        // 메시지가 있으면 그대로 사용
-        const convertedMessages = serverMessages.map(convertToLocalMessage);
-        setMessages(convertedMessages);
-        hasInitializedRef.current = true;
-      } else if (!hasInitializedRef.current) {
-        // 메시지가 없고 아직 초기화하지 않았으면 초기 인사말 생성
-        hasInitializedRef.current = true;
-        
-        // 초기화 API 호출
-        http.post<ChatMessage>("/chat-message/initialize", {})
-          .then(() => {
-            // 초기 메시지 생성 후 다시 조회하여 최신 상태 반영
-            // refetch는 React Query가 자동으로 처리하므로 수동 호출 불필요
-            // 대신 쿼리를 무효화하여 자동 재조회 유도
-            queryClient.invalidateQueries({ 
-              queryKey: ["chat-messages", userId] 
-            });
-          })
-          .catch((error) => {
-            console.error("초기 인사말 생성 실패:", error);
-            // 에러 발생 시에도 다시 조회 (이미 생성되었을 수 있음)
-            queryClient.invalidateQueries({ 
-              queryKey: ["chat-messages", userId] 
-            });
-          });
+    // 서버 응답이 배열이면 그대로 사용
+    if (Array.isArray(serverMessages)) {
+      const convertedMessages = serverMessages.map(convertToLocalMessage);
+      setMessages(convertedMessages);
+      
+      // 메시지가 있으면 초기화 완료로 표시
+      if (convertedMessages.length > 0) {
+        initStateRef.current.attempted.add(userId);
+        initStateRef.current.inProgress.delete(userId);
       }
+    } else {
+      setMessages([]);
     }
-  }, [userId, serverMessages, isLoading, isError, queryClient]);
+  }, [userId, serverMessages, isLoading, isError]);
+
+  // 초기 인사말 생성 - 한 번만 시도 (완전히 분리된 effect)
+  useEffect(() => {
+    if (!userId) return;
+    if (isLoading || isError) return;
+    if (!Array.isArray(serverMessages)) return;
+
+    const { attempted, inProgress } = initStateRef.current;
+    
+    // 이미 시도했거나 진행 중이면 스킵 (가장 먼저 체크)
+    if (attempted.has(userId) || inProgress.has(userId)) return;
+    
+    // 메시지가 없을 때만 초기화
+    if (serverMessages.length === 0) {
+      // 즉시 마킹하여 중복 호출 완전 방지 (동기적으로 먼저 실행)
+      attempted.add(userId);
+      inProgress.add(userId);
+      
+      // 초기화 API 호출 (비동기)
+      const initPromise = http.post<ChatMessage>("/chat-message/initialize", {});
+      
+      initPromise
+        .then(() => {
+          // 성공 시 쿼리 무효화하여 재조회
+          queryClient.invalidateQueries({ 
+            queryKey: ["chat-messages", userId] 
+          });
+        })
+        .catch((error) => {
+          console.error("초기 인사말 생성 실패:", error);
+          // 실패해도 다시 조회 (이미 생성되었을 수 있음)
+          queryClient.invalidateQueries({ 
+            queryKey: ["chat-messages", userId] 
+          });
+        })
+        .finally(() => {
+          // 진행 중 플래그 제거 (성공/실패와 관계없이)
+          inProgress.delete(userId);
+        });
+    } else {
+      // 메시지가 있으면 초기화 완료로 표시
+      attempted.add(userId);
+      inProgress.delete(userId);
+    }
+  }, [userId, serverMessages?.length, isLoading, isError, queryClient]);
 
   const addMessage = useCallback(
     async (message: Message) => {

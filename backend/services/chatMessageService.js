@@ -41,14 +41,17 @@ async function saveChatMessage(userId, messageData) {
 }
 
 /**
- * 여러 채팅 메시지 저장
+ * 여러 채팅 메시지 저장 (트랜잭션 사용)
  */
 async function saveChatMessages(userId, messages) {
+  const transaction = await sequelize.transaction();
+  
   try {
     if (!userId || !Array.isArray(messages)) {
       throw new Error('유저 ID와 메시지 배열이 필요합니다.');
     }
 
+    // 트랜잭션 내에서 일괄 저장
     const savedMessages = await Promise.all(
       messages.map((msg) => {
         return ChatMessage.create({
@@ -58,9 +61,11 @@ async function saveChatMessages(userId, messages) {
           examples: msg.examples || null,
           image_url: msg.imageUrl || null,
           question_id: msg.questionId || null,
-        });
+        }, { transaction });
       })
     );
+
+    await transaction.commit();
 
     return savedMessages.map((msg) => ({
       id: msg.id.toString(),
@@ -71,6 +76,7 @@ async function saveChatMessages(userId, messages) {
       timestamp: msg.created_at,
     }));
   } catch (error) {
+    await transaction.rollback();
     console.error('채팅 메시지 일괄 저장 중 오류:', error.message);
     throw new Error('채팅 메시지 저장에 실패했습니다.');
   }
@@ -189,7 +195,7 @@ async function createInitialGreeting(userId) {
           },
         },
         transaction,
-        lock: true, // UPDATE LOCK
+        lock: transaction.LOCK.UPDATE, // 명시적 UPDATE LOCK
       });
 
       // 이미 메시지가 있으면 생성하지 않음
