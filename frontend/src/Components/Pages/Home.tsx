@@ -66,7 +66,8 @@ const Home = () => {
     // user가 없거나 userId가 없고 토큰도 없으면 로그인 페이지로 리다이렉트
     if ((!user || !user.userId) && !token) {
       setLoading(false);
-      navigate("/", { replace: true });
+      // navigate 대신 window.location 사용하여 렌더링 중 업데이트 방지
+      window.location.href = '/';
       return;
     }
     

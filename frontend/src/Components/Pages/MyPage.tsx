@@ -42,13 +42,15 @@ export default function MyPage() {
   const [totalVisitCount, setTotalVisitCount] = useState<number>(0);
   const [pokedFriends, setPokedFriends] = useState<Record<number, boolean>>({});
 
-  // 로그인 체크
+  // 로그인 체크 - useEffect에서 navigate 대신 window.location 사용 (렌더링 중 업데이트 방지)
   useEffect(() => {
     const token = localStorage.getItem("accessToken");
     if ((!user || !user.userId) && !token) {
-      navigate("/", { replace: true });
+      // navigate 대신 window.location 사용하여 렌더링 중 업데이트 방지
+      window.location.href = '/';
+      return;
     }
-  }, [user, navigate]);
+  }, [user]);
 
   // API queries - 회원정보 조회 (저장 후 갱신을 위해 refetchOnMount: true)
   const { data: userInfo, isLoading: userInfoLoading, refetch: refetchUserInfo } = useGetUserInfo();

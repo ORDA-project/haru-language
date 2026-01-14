@@ -30,14 +30,6 @@ const ChatBot = () => {
   const [isLargeTextMode] = useAtom(isLargeTextModeAtom);
   const [user] = useAtom(userAtom);
 
-  // 로그인 체크
-  useEffect(() => {
-    const token = localStorage.getItem("accessToken");
-    if ((!user || !user.userId) && !token) {
-      navigate("/", { replace: true });
-    }
-  }, [user, navigate]);
-
   // 대화 내역 저장/불러오기 - 사용자별로 구분
   const getStorageKey = () => {
     const dateKey = getTodayStringBy4AM();
@@ -90,9 +82,20 @@ const ChatBot = () => {
   const largeTextStyle: React.CSSProperties = { fontSize: `${largeFontSize}px`, wordBreak: 'keep-all', overflowWrap: 'break-word' as const };
   const smallTextStyle: React.CSSProperties = { fontSize: `${smallFontSize}px`, wordBreak: 'keep-all', overflowWrap: 'break-word' as const };
 
+  // 로그인 체크 - useEffect에서 navigate 대신 window.location 사용 (렌더링 중 업데이트 방지)
+  useEffect(() => {
+    const token = localStorage.getItem("accessToken");
+    if ((!user || !user.userId) && !token) {
+      // navigate 대신 window.location 사용하여 렌더링 중 업데이트 방지
+      window.location.href = '/';
+      return;
+    }
+  }, [user]);
+
   useEffect(() => {
     // 로그인하지 않은 경우 메시지 초기화
-    if (!user?.userId) {
+    const token = localStorage.getItem("accessToken");
+    if ((!user || !user.userId) && !token) {
       setMessages([]);
       setLoading(false);
       return;
@@ -166,7 +169,7 @@ const ChatBot = () => {
     };
 
     fetchUserData();
-  }, [showError, user?.userId]);
+  }, [user?.userId]); // showError는 함수이므로 dependency에서 제거
 
   const handleSend = async () => {
     if (!userInput.trim()) return;

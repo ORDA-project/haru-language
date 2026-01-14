@@ -54,13 +54,15 @@ const App = () => {
   const cropperRef = useRef<any>(null);
   const [user] = useAtom(userAtom);
 
-  // 로그인 체크
+  // 로그인 체크 - useEffect에서 navigate 대신 window.location 사용 (렌더링 중 업데이트 방지)
   useEffect(() => {
     const token = localStorage.getItem("accessToken");
     if ((!user || !user.userId) && !token) {
-      navigate("/", { replace: true });
+      // navigate 대신 window.location 사용하여 렌더링 중 업데이트 방지
+      window.location.href = '/';
+      return;
     }
-  }, [user, navigate]);
+  }, [user]);
 
   // 예문 생성 상태 저장
   const saveExampleState = useCallback(() => {

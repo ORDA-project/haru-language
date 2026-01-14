@@ -35,13 +35,15 @@ const Quiz = (props: QuizProps) => {
   const [isLargeTextMode] = useAtom(isLargeTextModeAtom);
   const [user] = useAtom(userAtom);
 
-  // 로그인 체크
+  // 로그인 체크 - useEffect에서 navigate 대신 window.location 사용 (렌더링 중 업데이트 방지)
   useEffect(() => {
     const token = localStorage.getItem("accessToken");
     if ((!user || !user.userId) && !token) {
-      navigate("/", { replace: true });
+      // navigate 대신 window.location 사용하여 렌더링 중 업데이트 방지
+      window.location.href = '/';
+      return;
     }
-  }, [user, navigate]);
+  }, [user]);
 
   // 로컬 상태
   const [isSuccess, setSuccess] = useState<boolean>(true);

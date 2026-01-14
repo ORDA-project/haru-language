@@ -87,15 +87,16 @@ const DailySentence = () => {
 
   // 보안: userId는 JWT 토큰에서 자동으로 가져옴 (전달 불필요)
   
-  // 로그인 확인
+  // 로그인 확인 - useEffect에서 navigate 대신 window.location 사용 (렌더링 중 업데이트 방지)
   useEffect(() => {
     const token = localStorage.getItem("accessToken");
     if (!isLoggedIn || !token) {
       console.warn("[DailySentence] 로그인이 필요합니다. 로그인 페이지로 리다이렉트합니다.");
-      navigate("/", { replace: true });
+      // navigate 대신 window.location 사용하여 렌더링 중 업데이트 방지
+      window.location.href = '/';
       return;
     }
-  }, [isLoggedIn, navigate]);
+  }, [isLoggedIn]);
 
   const { data: questionsData, isLoading: questionsLoading } =
     useWritingQuestions();
