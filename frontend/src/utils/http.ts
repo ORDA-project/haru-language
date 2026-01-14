@@ -143,6 +143,22 @@ export class Http {
           errorData = { message: `HTTP ${response.status} 오류` };
         }
       }
+      
+      // 401 에러 발생 시 로그인 페이지로 리다이렉트 (로그인 관련 경로 제외)
+      if (response.status === 401) {
+        const isLoginPath = path.includes('/auth/') || path === '/login' || path === '/';
+        if (!isLoginPath) {
+          // 토큰 삭제
+          localStorage.removeItem("accessToken");
+          // 사용자 정보 삭제
+          sessionStorage.removeItem("user");
+          // 로그인 페이지로 리다이렉트
+          if (typeof window !== 'undefined') {
+            window.location.href = '/';
+          }
+        }
+      }
+      
       throw new HttpError(response.status, errorData);
     }
 
