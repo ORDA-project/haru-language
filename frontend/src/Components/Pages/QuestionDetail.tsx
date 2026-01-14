@@ -223,11 +223,18 @@ const QuestionDetail = () => {
     return chatMessagesData
       .map((msg: any) => ({
         ...msg,
-        timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date()
+        timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
+        // imageUrl이 있으면 content가 없어도 표시
+        content: msg.content || "",
+        imageUrl: msg.imageUrl || msg.image_url || null,
       }))
       .filter((msg: any) => {
-        // 초기 인사 메시지 제외
-        return !msg.content?.includes("안녕하세요! 영어 학습을 도와드릴");
+        // 초기 인사 메시지 제외 (content로만 체크)
+        if (msg.content && msg.content.includes("안녕하세요! 영어 학습을 도와드릴")) {
+          return false;
+        }
+        // content가 없어도 imageUrl이 있으면 표시
+        return true;
       });
   }, [targetDate, user?.userId, chatMessagesData]);
 

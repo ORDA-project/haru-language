@@ -150,12 +150,18 @@ export const ChatMessagesSection: React.FC<ChatMessagesSectionProps> = ({
                       />
                     </div>
                   )}
-                  {message.content && (
+                  {message.content && message.content.trim() && (
                     <p
                       className="leading-relaxed whitespace-pre-wrap break-words"
                       style={{ ...baseTextStyle, wordBreak: "break-word", overflowWrap: "break-word" }}
                     >
                       {message.content}
+                    </p>
+                  )}
+                  {/* 이미지만 있고 content가 없는 경우도 표시 */}
+                  {!message.content && !message.imageUrl && (
+                    <p className="text-gray-400 italic" style={smallTextStyle}>
+                      (빈 메시지)
                     </p>
                   )}
                 </div>
@@ -190,6 +196,16 @@ export const ChatMessagesSection: React.FC<ChatMessagesSectionProps> = ({
                   }`}
                   style={{ wordBreak: "break-word", overflowWrap: "break-word" }}
                 >
+                  {/* AI 메시지에도 이미지 표시 */}
+                  {message.imageUrl && (
+                    <div className="mb-2">
+                      <img
+                        src={message.imageUrl}
+                        alt="업로드된 이미지"
+                        className="w-full rounded-lg object-contain max-h-64"
+                      />
+                    </div>
+                  )}
                   {message.examples && message.examples.length > 0 ? (
                     <div className="space-y-3">
                       {message.content && (
@@ -237,17 +253,21 @@ export const ChatMessagesSection: React.FC<ChatMessagesSectionProps> = ({
                       )}
                     </div>
                   ) : (
-                    <div
-                      className="leading-relaxed"
-                      style={baseTextStyle}
-                      dangerouslySetInnerHTML={{
-                        __html: message.content
-                          .replace(/"text-decoration:\s*underline;\s*color:\s*#00DAAA;\s*font-weight:\s*500;">/gi, "")
-                          .replace(/\*\*(.*?)\*\*/g, "<u>$1</u>")
-                          .replace(/__(.*?)__/g, "<u>$1</u>")
-                          .replace(/\*(.*?)\*/g, "<u>$1</u>"),
-                      }}
-                    />
+                    <>
+                      {message.content && message.content.trim() ? (
+                        <div
+                          className="leading-relaxed"
+                          style={baseTextStyle}
+                          dangerouslySetInnerHTML={{
+                            __html: message.content
+                              .replace(/"text-decoration:\s*underline;\s*color:\s*#00DAAA;\s*font-weight:\s*500;">/gi, "")
+                              .replace(/\*\*(.*?)\*\*/g, "<u>$1</u>")
+                              .replace(/__(.*?)__/g, "<u>$1</u>")
+                              .replace(/\*(.*?)\*/g, "<u>$1</u>"),
+                          }}
+                        />
+                      ) : null}
+                    </>
                   )}
                 </div>
               </div>

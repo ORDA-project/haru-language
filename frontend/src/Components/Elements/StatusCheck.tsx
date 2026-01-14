@@ -221,7 +221,7 @@ const StatusCheck = ({ userId: _userId }: StatusProps) => {
             <div
               key={record.id || index}
               onClick={() => handleRecordClick(record)}
-              className="min-h-[70px] flex items-start p-[12px_15px] bg-white rounded-[8px] shadow-[0_1px_3px_rgba(0,0,0,0.1)] mb-[12px] w-[91%] h-[100px] overflow-hidden cursor-pointer hover:shadow-[0_2px_6px_rgba(0,0,0,0.15)] transition-shadow"
+              className="min-h-[70px] flex items-start p-[12px_15px] bg-white rounded-[8px] shadow-[0_1px_3px_rgba(0,0,0,0.1)] mb-[12px] w-[91%] h-[80px] overflow-hidden cursor-pointer hover:shadow-[0_2px_6px_rgba(0,0,0,0.15)] transition-shadow"
             >
               <div className="font-bold text-[#666] w-[60px] mr-[10px] flex-shrink-0" style={baseTextStyle}>
                 {record.date}

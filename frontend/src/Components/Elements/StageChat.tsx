@@ -664,14 +664,11 @@ const StageChat = ({ onBack }: StageChatProps) => {
       {/* Chat Stage */}
       {cropStage === "chat" && (
         <>
-          {/* Date Separator - 공간만 유지 (보이지 않음) */}
-          <div style={{ marginTop: '48px', height: '0px' }}></div>
-
-          {/* Messages - 스크롤 가능 */}
+          {/* Messages - 스크롤 가능 (헤더 아래 여백 추가) */}
           <div 
             ref={messagesContainerRef}
             className="flex-1 overflow-y-auto px-4 space-y-3" 
-            style={{ paddingTop: '0.5rem', paddingBottom: 'calc(72px + 5rem)' }}
+            style={{ paddingTop: 'calc(48px + 1rem)', paddingBottom: 'calc(72px + 5rem)' }}
           >
             {messages.map((message, index) => {
               const currentIndex = exampleScrollIndices[message.id] ?? 0;
