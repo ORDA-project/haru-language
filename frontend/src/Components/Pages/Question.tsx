@@ -149,7 +149,10 @@ const ChatBot = () => {
         if (error?.status === 0) {
           showError("네트워크 오류", "서버에 연결할 수 없습니다.");
         } else if (error?.status === 401) {
-          // 인증 실패는 정상적인 상황이므로 에러 토스트 표시하지 않음
+          // 인증 실패 시 로그인 페이지로 리다이렉트
+          localStorage.removeItem("accessToken");
+          window.location.href = '/';
+          return;
         } else if (error?.status === 500) {
           showError("서버 오류", "서버에서 오류가 발생했습니다.");
         }

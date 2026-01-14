@@ -158,9 +158,11 @@ const Home = () => {
         clearTimeout(timeoutId);
 
         if (err.status === 401) {
-          // 인증 실패 시에도 기존 사용자 데이터를 유지 (토큰 만료 등 일시적 오류일 수 있음)
-          // setUserData(null); // 주석 처리 - 사용자 데이터 유지
-          return; // 에러 처리 중단, 기존 상태 유지
+          // 인증 실패 시 로그인 페이지로 리다이렉트
+          setUserData(null);
+          localStorage.removeItem("accessToken");
+          window.location.href = '/';
+          return;
         } else if (err.status === 500) {
           showError(
             "서버 오류",

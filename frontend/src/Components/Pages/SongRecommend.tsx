@@ -127,7 +127,10 @@ const SongRecommend = (props: RecommendProps) => {
           if (error.status === 0) {
             showError("네트워크 오류", "서버에 연결할 수 없습니다.");
           } else if (error.status === 401) {
-            showError("로그인이 필요합니다", "다시 로그인 후 시도해주세요.");
+            // 인증 실패 시 로그인 페이지로 리다이렉트
+            localStorage.removeItem("accessToken");
+            window.location.href = '/';
+            return;
           } else if (error.status === 404) {
             showError("추천 곡 없음", "오늘 추천할 곡을 찾을 수 없습니다.");
           } else if (error.status === 500) {
@@ -229,7 +232,10 @@ const SongRecommend = (props: RecommendProps) => {
         } else if (error.status === 400) {
           console.warn("No song data available for YouTube search");
         } else if (error.status === 401) {
-          showWarning("로그인이 필요합니다", "다시 로그인 후 시도해주세요.");
+          // 인증 실패 시 로그인 페이지로 리다이렉트
+          localStorage.removeItem("accessToken");
+          window.location.href = '/';
+          return;
         } else if (error.status === 500) {
           console.warn("YouTube API error");
         }

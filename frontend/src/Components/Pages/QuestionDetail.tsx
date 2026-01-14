@@ -48,6 +48,16 @@ const QuestionDetail = () => {
   const deleteWritingRecordMutation = useDeleteWritingRecord();
   const deleteExampleMutation = useDeleteExample();
   const deleteChatMessagesMutation = useDeleteChatMessages();
+
+  // 로그인 체크 - useEffect에서 navigate 대신 window.location 사용 (렌더링 중 업데이트 방지)
+  useEffect(() => {
+    const token = localStorage.getItem("accessToken");
+    if ((!user || !user.userId) && !token) {
+      // navigate 대신 window.location 사용하여 렌더링 중 업데이트 방지
+      window.location.href = '/';
+      return;
+    }
+  }, [user]);
   
   // 스타일 계산 (메모이제이션)
   const textStyles = useMemo(() => createExtendedTextStyles(isLargeTextMode), [isLargeTextMode]);

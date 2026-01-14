@@ -70,7 +70,12 @@ const Season = () => {
           setVisitCount(response.userData.visitCount || 0);
         }
       } catch (error: any) {
-        if (error.status !== 401) {
+        if (error.status === 401) {
+          // 인증 실패 시 로그인 페이지로 리다이렉트
+          localStorage.removeItem("accessToken");
+          window.location.href = '/';
+          return;
+        } else if (error.status !== 401) {
           showError("오류 발생", "방문 횟수를 불러오는데 실패했습니다.");
         }
       } finally {

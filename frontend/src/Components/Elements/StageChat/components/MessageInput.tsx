@@ -67,7 +67,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
                   onClick={onRemoveImage}
                   className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors shadow-sm"
                   aria-label="이미지 제거"
-                  style={{ fontSize: '14px', lineHeight: '1', fontWeight: '600' }}
+                  style={{ fontSize: '20px', lineHeight: '1', fontWeight: '600' }}
                 >
                   ×
                 </button>
