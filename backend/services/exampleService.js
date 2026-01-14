@@ -16,7 +16,7 @@ const INTEREST_MAP = {
   vocabulary: "vocabulary"
 };
 
-async function generateExamples(inputSentence, userId, imageUrl = null) {
+async function generateExamples(inputSentence, userId, imageUrl = null, saveToDb = true) {
   // 사용자 정보 가져오기 (목표, 관심사)
   let user = null;
   if (userId) {
@@ -248,56 +248,58 @@ async function generateExamples(inputSentence, userId, imageUrl = null) {
     }
   }
 
-  // DB에 저장 (추가)
-  try {
-    if (gptResponse.generatedExample && userId) {
-      const { extractedSentence, description, examples } = gptResponse.generatedExample;
+  // DB에 저장 (saveToDb가 true일 때만)
+  if (saveToDb) {
+    try {
+      if (gptResponse.generatedExample && userId) {
+        const { extractedSentence, description, examples } = gptResponse.generatedExample;
 
-      // 1. Example 테이블에 저장 (이미지 URL 포함)
-      const images = imageUrl ? [imageUrl] : [];
-      const example = await Example.create({
-        user_id: userId,
-        extracted_sentence: extractedSentence,
-        description: description,
-        images: images.length > 0 ? images : null
-      });
+        // 1. Example 테이블에 저장 (이미지 URL 포함)
+        const images = imageUrl ? [imageUrl] : [];
+        const example = await Example.create({
+          user_id: userId,
+          extracted_sentence: extractedSentence,
+          description: description,
+          images: images.length > 0 ? images : null
+        });
 
-      // 2. ExampleItem과 Dialogue 저장
-      if (Array.isArray(examples) && examples.length > 0) {
-        for (const exampleData of examples) {
-          if (!exampleData?.context) continue;
+        // 2. ExampleItem과 Dialogue 저장
+        if (Array.isArray(examples) && examples.length > 0) {
+          for (const exampleData of examples) {
+            if (!exampleData?.context) continue;
 
-          const exampleItem = await ExampleItem.create({
-            example_id: example.id,
-            context: exampleData.context
-          });
-
-          const { A, B } = exampleData.dialogue || {};
-          
-          if (A?.english && A?.korean) {
-            await Dialogue.create({
-              example_item_id: exampleItem.id,
-              speaker: 'A',
-              english: String(A.english),
-              korean: String(A.korean)
+            const exampleItem = await ExampleItem.create({
+              example_id: example.id,
+              context: exampleData.context
             });
-          }
 
-          if (B?.english && B?.korean) {
-            await Dialogue.create({
-              example_item_id: exampleItem.id,
-              speaker: 'B',
-              english: String(B.english),
-              korean: String(B.korean)
-            });
+            const { A, B } = exampleData.dialogue || {};
+            
+            if (A?.english && A?.korean) {
+              await Dialogue.create({
+                example_item_id: exampleItem.id,
+                speaker: 'A',
+                english: String(A.english),
+                korean: String(A.korean)
+              });
+            }
+
+            if (B?.english && B?.korean) {
+              await Dialogue.create({
+                example_item_id: exampleItem.id,
+                speaker: 'B',
+                english: String(B.english),
+                korean: String(B.korean)
+              });
+            }
           }
         }
-      }
 
+      }
+    } catch (dbError) {
+      console.error("DB 저장 중 오류:", dbError.message);
+      // DB 저장 실패해도 GPT 응답은 반환
     }
-  } catch (dbError) {
-    console.error("DB 저장 중 오류:", dbError.message);
-    // DB 저장 실패해도 GPT 응답은 반환
   }
 
   // 예문이 3개보다 많으면 처음 3개만 사용

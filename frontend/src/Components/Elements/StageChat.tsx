@@ -402,11 +402,21 @@ const StageChat = ({ onBack }: StageChatProps) => {
     try {
       // 예문 생성과 동일한 방식으로 FormData 생성
       const formData = createFormDataFromImage(imageData);
+      
+      // 텍스트가 있으면 FormData에 추가
+      if (textContent && textContent.trim()) {
+        formData.append("text", textContent.trim());
+      }
+      
+      // AI 대화에서 호출하는 경우 isChat 플래그 추가 (DB에 저장하지 않도록)
+      formData.append("isChat", "true");
+      
       const headers = getAuthHeaders();
       
       if (import.meta.env.DEV) {
         console.log("이미지 분석 요청 시작...", {
           imageType: typeof imageData,
+          textContent: textContent,
           formDataKeys: Array.from(formData.keys()),
         });
       }
@@ -480,6 +490,9 @@ const StageChat = ({ onBack }: StageChatProps) => {
           .replace(/"text-decoration:\s*underline;\s*color:\s*#00DAAA;\s*font-weight:\s*500;"/gi, '');
       }
       
+      // 사용자 메시지에 텍스트가 있으면 포함
+      const userContent = textContent && textContent.trim() ? textContent.trim() : "";
+      
       const summaryMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: "ai",
@@ -491,7 +504,7 @@ const StageChat = ({ onBack }: StageChatProps) => {
       const exampleMessage: Message = {
         id: (Date.now() + 2).toString(),
         type: "ai",
-        content: "",
+        content: userContent, // 사용자가 입력한 텍스트가 있으면 포함
         examples: examples,
         imageUrl: imageData || croppedImage || undefined, // 이미지 분석에 사용된 이미지 URL 저장
         timestamp: new Date(),

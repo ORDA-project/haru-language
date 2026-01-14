@@ -128,18 +128,32 @@ router.post("/", upload.single("image"), async (req, res) => {
       return res.status(401).json({ message: "로그인이 필요합니다." });
     }
 
+    // 텍스트 파라미터 받기 (선택적, AI 대화에서 이미지와 함께 텍스트를 보낼 때 사용)
+    const additionalText = req.body.text || req.body.additionalText || "";
+    // isChat 플래그 받기 (AI 대화에서 호출할 때는 true, 예문 생성 페이지에서 호출할 때는 false 또는 없음)
+    const isChat = req.body.isChat === "true" || req.body.isChat === true;
+
     const extractedText = await detectText(filePath);
 
     if (!extractedText || !extractedText.trim()) {
       return res.status(400).json({ message: "이미지에서 텍스트를 추출할 수 없습니다." });
     }
 
+    // 추가 텍스트가 있으면 OCR 텍스트와 결합
+    const combinedText = additionalText.trim() 
+      ? `${extractedText}\n\n사용자 질문: ${additionalText.trim()}`
+      : extractedText;
+
+    // AI 대화에서 호출한 경우 DB에 저장하지 않음 (채팅 메시지로만 저장)
+    // 예문 생성 페이지에서 호출한 경우 DB에 저장함
+    const saveToDb = !isChat;
+
     // 먼저 예문 생성 (이미지 URL은 나중에 추가)
-    const gptResponse = await generateExamples(extractedText, userId);
+    const gptResponse = await generateExamples(combinedText, userId, null, saveToDb);
     
-    // 예문이 생성되었고 DB에 저장되었다면, 이미지를 영구 저장하고 URL 업데이트
+    // 예문이 생성되었고 DB에 저장되었다면 (saveToDb가 true인 경우만), 이미지를 영구 저장하고 URL 업데이트
     let savedImageUrl = null;
-    if (gptResponse?.generatedExample && userId) {
+    if (saveToDb && gptResponse?.generatedExample && userId) {
       try {
         // 가장 최근에 생성된 예문 찾기 (같은 userId, 같은 extractedSentence)
         const Example = require("../models/Example");
