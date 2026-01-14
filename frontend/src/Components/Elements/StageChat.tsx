@@ -89,13 +89,16 @@ const StageChat = ({ onBack }: StageChatProps) => {
   const [croppedImage, setCroppedImage] = useState<string | null>(null);
   const [cropStage, setCropStage] = useState<"chat" | "crop">("chat");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const [isLargeTextMode] = useAtom(isLargeTextModeAtom);
   const [exampleScrollIndices, setExampleScrollIndices] = useState<Record<string, number>>({});
   const exampleScrollRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastMessageCountRef = useRef<number>(0);
   
   // TTS 훅 사용
   const { isPlayingTTS, playingChatExampleId, playChatExampleTTS, stopTTS } = useChatTTS();
-  
+
   // 큰글씨 모드에 따른 텍스트 크기 (중년층용)
   const baseFontSize = isLargeTextMode ? 18 : 16;
   const largeFontSize = isLargeTextMode ? 22 : 20;
@@ -110,15 +113,53 @@ const StageChat = ({ onBack }: StageChatProps) => {
   useEffect(() => {
     return () => {
       stopTTS();
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
     };
   }, [stopTTS]);
 
-  // 메시지 스크롤 (requestAnimationFrame 사용하여 성능 최적화)
+  // 메시지 스크롤 최적화: 새 메시지가 추가되었을 때만 스크롤, 디바운싱 적용
   useEffect(() => {
-    requestAnimationFrame(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    });
-  }, [messages]);
+    // 메시지 개수가 실제로 증가했을 때만 스크롤
+    const currentMessageCount = messages.length;
+    const hasNewMessage = currentMessageCount > lastMessageCountRef.current;
+    lastMessageCountRef.current = currentMessageCount;
+
+    if (!hasNewMessage || !messagesEndRef.current || !messagesContainerRef.current) {
+      return;
+    }
+
+    // 이전 스크롤 타이머 취소
+    if (scrollTimeoutRef.current) {
+      clearTimeout(scrollTimeoutRef.current);
+    }
+
+    // 디바운싱: 짧은 시간 내 여러 업데이트를 하나로 묶음
+    scrollTimeoutRef.current = setTimeout(() => {
+      const container = messagesContainerRef.current;
+      const target = messagesEndRef.current;
+      
+      if (!container || !target) return;
+
+      // scrollIntoView 대신 직접 스크롤 위치 설정 (강제 리플로우 방지)
+      const scrollToBottom = () => {
+        if (!container || !target) return;
+        
+        // 현재 스크롤 위치가 하단 근처인지 확인 (사용자가 위로 스크롤한 경우 스크롤하지 않음)
+        const isNearBottom = 
+          container.scrollHeight - container.scrollTop - container.clientHeight < 100;
+        
+        if (isNearBottom) {
+          // 직접 스크롤 위치 설정 (리플로우 최소화)
+          container.scrollTop = container.scrollHeight;
+        }
+      };
+
+      // requestAnimationFrame으로 한 번만 실행
+      requestAnimationFrame(scrollToBottom);
+    }, 50); // 50ms 디바운싱
+  }, [messages.length, messages]);
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || isLoading) return;
@@ -593,7 +634,11 @@ const StageChat = ({ onBack }: StageChatProps) => {
           <div style={{ marginTop: '48px', height: '0px' }}></div>
 
           {/* Messages - 스크롤 가능 */}
-          <div className="flex-1 overflow-y-auto px-4 space-y-3" style={{ paddingTop: '0.5rem', paddingBottom: 'calc(72px + 5rem)' }}>
+          <div 
+            ref={messagesContainerRef}
+            className="flex-1 overflow-y-auto px-4 space-y-3" 
+            style={{ paddingTop: '0.5rem', paddingBottom: 'calc(72px + 5rem)' }}
+          >
             {messages.map((message, index) => {
               const currentIndex = exampleScrollIndices[message.id] ?? 0;
               const currentExample = message.examples?.[currentIndex];
