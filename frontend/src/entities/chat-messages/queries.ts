@@ -27,8 +27,9 @@ export const useGetChatMessages = () => {
   return useGetQuery<ChatMessage[]>("/chat-message", {
     queryKey: ["chat-messages", user?.userId],
     refetchOnWindowFocus: false,
-    refetchOnMount: true,
-    staleTime: 30 * 1000, // 30초간 fresh 상태 유지 (불필요한 재조회 방지)
+    refetchOnMount: false, // 마운트 시 자동 재조회 방지
+    refetchOnReconnect: false, // 재연결 시 자동 재조회 방지
+    staleTime: 5 * 60 * 1000, // 5분간 fresh 상태 유지
     enabled: !!user?.userId, // 로그인한 경우에만 호출
   });
 };
@@ -108,4 +109,3 @@ export const useDeleteChatMessages = () => {
     }
   );
 };
-

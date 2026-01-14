@@ -51,14 +51,8 @@ export const useChatMessages = () => {
   const { showError } = useErrorHandler();
   const queryClient = useQueryClient();
   
-  // 초기화 추적: userId별로 한 번만 초기화 (더 강력한 가드)
-  const initStateRef = useRef<{
-    attempted: Set<number>;
-    inProgress: Set<number>;
-  }>({
-    attempted: new Set(),
-    inProgress: new Set(),
-  });
+  // 초기화 완료 여부 추적 (userId별로, 한 번만 실행)
+  const initCompletedRef = useRef<Set<number>>(new Set());
 
   // 서버에서 메시지 조회
   const { data: serverMessages, isLoading, isError } = useGetChatMessages();
@@ -69,8 +63,6 @@ export const useChatMessages = () => {
   useEffect(() => {
     if (!userId) {
       setMessages([]);
-      initStateRef.current.attempted.clear();
-      initStateRef.current.inProgress.clear();
       return;
     }
   }, [userId]);
@@ -91,38 +83,28 @@ export const useChatMessages = () => {
     if (Array.isArray(serverMessages)) {
       const convertedMessages = serverMessages.map(convertToLocalMessage);
       setMessages(convertedMessages);
-      
-      // 메시지가 있으면 초기화 완료로 표시
-      if (convertedMessages.length > 0) {
-        initStateRef.current.attempted.add(userId);
-        initStateRef.current.inProgress.delete(userId);
-      }
     } else {
       setMessages([]);
     }
   }, [userId, serverMessages, isLoading, isError]);
 
-  // 초기 인사말 생성 - 한 번만 시도 (완전히 분리된 effect)
+  // 초기 인사말 생성 - 로딩 완료 후 한 번만 실행 (완전히 분리)
   useEffect(() => {
+    // 조건 체크
     if (!userId) return;
     if (isLoading || isError) return;
     if (!Array.isArray(serverMessages)) return;
-
-    const { attempted, inProgress } = initStateRef.current;
     
-    // 이미 시도했거나 진행 중이면 스킵 (가장 먼저 체크)
-    if (attempted.has(userId) || inProgress.has(userId)) return;
+    // 이미 초기화했으면 절대 스킵
+    if (initCompletedRef.current.has(userId)) return;
     
     // 메시지가 없을 때만 초기화
     if (serverMessages.length === 0) {
-      // 즉시 마킹하여 중복 호출 완전 방지 (동기적으로 먼저 실행)
-      attempted.add(userId);
-      inProgress.add(userId);
+      // 즉시 마킹하여 중복 호출 완전 방지
+      initCompletedRef.current.add(userId);
       
-      // 초기화 API 호출 (비동기)
-      const initPromise = http.post<ChatMessage>("/chat-message/initialize", {});
-      
-      initPromise
+      // 초기화 API 호출
+      http.post<ChatMessage>("/chat-message/initialize", {})
         .then(() => {
           // 성공 시 쿼리 무효화하여 재조회
           queryClient.invalidateQueries({ 
@@ -131,21 +113,29 @@ export const useChatMessages = () => {
         })
         .catch((error) => {
           console.error("초기 인사말 생성 실패:", error);
+          // 실패 시 플래그 제거하여 재시도 가능하게
+          initCompletedRef.current.delete(userId);
           // 실패해도 다시 조회 (이미 생성되었을 수 있음)
           queryClient.invalidateQueries({ 
             queryKey: ["chat-messages", userId] 
           });
-        })
-        .finally(() => {
-          // 진행 중 플래그 제거 (성공/실패와 관계없이)
-          inProgress.delete(userId);
         });
     } else {
       // 메시지가 있으면 초기화 완료로 표시
-      attempted.add(userId);
-      inProgress.delete(userId);
+      initCompletedRef.current.add(userId);
     }
-  }, [userId, serverMessages?.length, isLoading, isError, queryClient]);
+  }, [userId, isLoading, isError]); // serverMessages를 dependency에서 완전히 제거
+
+  // serverMessages가 변경될 때 초기화 상태 업데이트 (별도 effect)
+  useEffect(() => {
+    if (!userId) return;
+    if (!Array.isArray(serverMessages)) return;
+    
+    // 메시지가 있으면 초기화 완료로 표시
+    if (serverMessages.length > 0) {
+      initCompletedRef.current.add(userId);
+    }
+  }, [userId, serverMessages?.length]);
 
   const addMessage = useCallback(
     async (message: Message) => {

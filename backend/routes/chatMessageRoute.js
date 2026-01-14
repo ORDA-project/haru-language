@@ -69,6 +69,7 @@ router.post("/batch", async (req, res) => {
 
 /**
  * 최근 채팅 메시지 조회 (오늘 날짜 기준)
+ * 조회만 수행, 사이드 이펙트 없음
  */
 router.get("/", async (req, res) => {
   try {
@@ -77,8 +78,7 @@ router.get("/", async (req, res) => {
       return res.status(401).json({ message: "인증이 필요합니다." });
     }
 
-    // 채팅 데이터는 사용자별 실시간 데이터이므로 캐시/ETag로 304가 나가면
-    // 프론트가 "데이터 없음"으로 오판하여 초기 인사 메시지를 중복 생성할 수 있음
+    // 캐시 방지 헤더 설정
     res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
     res.setHeader("Pragma", "no-cache");
     res.setHeader("Expires", "0");
@@ -94,6 +94,7 @@ router.get("/", async (req, res) => {
 
 /**
  * 초기 인사말 생성 (한 번만 생성)
+ * 이미 존재하면 기존 메시지 반환
  */
 router.post("/initialize", async (req, res) => {
   try {
@@ -102,10 +103,19 @@ router.post("/initialize", async (req, res) => {
       return res.status(401).json({ message: "인증이 필요합니다." });
     }
 
+    // 먼저 기존 메시지 확인
+    const existingMessages = await getRecentChatMessages(user.userId);
+    
+    // 이미 메시지가 있으면 첫 번째 메시지 반환 (생성하지 않음)
+    if (existingMessages.length > 0) {
+      return res.status(200).json(existingMessages[0]);
+    }
+
+    // 메시지가 없으면 초기 인사말 생성 (트랜잭션 + Lock으로 중복 방지)
     const initialMessage = await createInitialGreeting(user.userId);
     
     if (!initialMessage) {
-      // 이미 초기 메시지가 존재함 - 조회해서 반환
+      // 생성 실패 시 다시 조회 (다른 요청에서 이미 생성했을 수 있음)
       const messages = await getRecentChatMessages(user.userId);
       if (messages.length > 0) {
         return res.status(200).json(messages[0]);
@@ -203,4 +213,3 @@ router.delete("/batch", async (req, res) => {
 });
 
 module.exports = router;
-
