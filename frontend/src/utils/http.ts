@@ -70,6 +70,13 @@ export class Http {
       "X-Requested-With": "XMLHttpRequest", // AJAX 요청임을 명시
     };
 
+    // 사용자별 동적 API에서 304/캐시로 인한 상태 꼬임(예: 채팅 초기 인사 중복)을 막기 위해
+    // GET 요청은 기본적으로 캐시를 우회하도록 설정
+    if (method === "get") {
+      requestHeaders["Cache-Control"] = "no-cache";
+      requestHeaders["Pragma"] = "no-cache";
+    }
+
     // FormData인 경우 Content-Type을 설정하지 않음 (브라우저가 자동으로 boundary 설정)
     if (!formData) {
       requestHeaders["Content-Type"] = "application/json";

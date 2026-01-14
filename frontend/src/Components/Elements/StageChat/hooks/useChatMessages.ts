@@ -51,7 +51,7 @@ export const useChatMessages = () => {
   const queryClient = useQueryClient();
 
   // 서버에서 메시지 조회
-  const { data: serverMessages, isLoading } = useGetChatMessages();
+  const { data: serverMessages, isLoading, isError } = useGetChatMessages();
   const saveMessageMutation = useSaveChatMessage();
   const saveMessagesMutation = useSaveChatMessages();
 
@@ -91,6 +91,12 @@ export const useChatMessages = () => {
     if (!userId) {
       // 로그아웃 상태: 메시지 초기화 (이미 위에서 캐시 제거됨)
       setMessages([]);
+      return;
+    }
+
+    // 서버 조회가 실패한 경우(예: 304/캐시/네트워크 이슈 등)에는
+    // "메시지가 없다"로 오판하여 초기 인사 메시지를 생성/저장하지 않도록 방지
+    if (!isLoading && isError) {
       return;
     }
 
@@ -155,7 +161,7 @@ export const useChatMessages = () => {
         }
       );
     }
-  }, [userId, serverMessages, isLoading, saveMessageMutation, queryClient]);
+  }, [userId, serverMessages, isLoading, isError, saveMessageMutation, queryClient]);
 
   const addMessage = useCallback(
     async (message: Message) => {

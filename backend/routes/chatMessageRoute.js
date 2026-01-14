@@ -76,6 +76,13 @@ router.get("/", async (req, res) => {
       return res.status(401).json({ message: "인증이 필요합니다." });
     }
 
+    // 채팅 데이터는 사용자별 실시간 데이터이므로 캐시/ETag로 304가 나가면
+    // 프론트가 "데이터 없음"으로 오판하여 초기 인사 메시지를 중복 생성할 수 있음
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
+    res.setHeader("Surrogate-Control", "no-store");
+
     const messages = await getRecentChatMessages(user.userId);
     return res.status(200).json(messages);
   } catch (error) {
@@ -93,6 +100,11 @@ router.get("/date/:date", async (req, res) => {
     if (!user?.userId) {
       return res.status(401).json({ message: "인증이 필요합니다." });
     }
+
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
+    res.setHeader("Surrogate-Control", "no-store");
 
     const { date } = req.params;
     // date는 YYYY-MM-DD 형식
