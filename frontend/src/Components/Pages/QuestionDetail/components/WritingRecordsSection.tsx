@@ -14,6 +14,7 @@ interface WritingRecordsSectionProps {
   onDeselectAll: () => void;
   onDelete: () => void;
   isDeleting: boolean;
+  isLargeTextMode: boolean;
   baseTextStyle: React.CSSProperties;
   smallTextStyle: React.CSSProperties;
   headerTextStyle: React.CSSProperties;
@@ -30,6 +31,7 @@ export const WritingRecordsSection: React.FC<WritingRecordsSectionProps> = ({
   onDeselectAll,
   onDelete,
   isDeleting,
+  isLargeTextMode,
   baseTextStyle,
   smallTextStyle,
   headerTextStyle,
@@ -127,7 +129,7 @@ export const WritingRecordsSection: React.FC<WritingRecordsSectionProps> = ({
                 </div>
               )}
               <div
-                className="max-w-[80%] min-w-0 px-4 py-3 rounded-2xl bg-white text-gray-800 shadow-sm border border-gray-100 transition-all"
+                className={`max-w-[80%] min-w-0 ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-2xl bg-white text-gray-800 shadow-sm border border-gray-100 transition-all`}
                 style={{
                   wordBreak: "break-word",
                   overflowWrap: "break-word",
@@ -167,13 +169,7 @@ export const WritingRecordsSection: React.FC<WritingRecordsSectionProps> = ({
               <>
                 <div className="flex justify-start">
                   <div
-                    className="max-w-[80%] bg-white shadow-sm border border-gray-100 rounded-lg"
-                    style={{
-                      paddingLeft: "12px",
-                      paddingTop: "12px",
-                      paddingBottom: "16px",
-                      paddingRight: "16px",
-                    }}
+                    className={`max-w-[80%] bg-white shadow-sm border border-gray-100 rounded-lg ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"}`}
                   >
                     <div
                       className="inline-block rounded-full px-2 py-0.5 mb-1"
@@ -193,7 +189,7 @@ export const WritingRecordsSection: React.FC<WritingRecordsSectionProps> = ({
 
                 {/* 피드백 블록 */}
                 <div className="flex justify-start">
-                  <div className="max-w-[80%] px-4 py-3 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 shadow-sm">
+                  <div className={`max-w-[80%] ${isLargeTextMode ? "px-5 py-4" : "px-4 py-3"} rounded-lg bg-gray-50 text-gray-800 border border-gray-200 shadow-sm`}>
                     <div className="mb-2">
                       <span className="font-medium text-gray-800 text-sm">학습 피드백:</span>
                     </div>

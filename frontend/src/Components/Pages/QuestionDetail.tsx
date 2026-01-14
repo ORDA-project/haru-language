@@ -349,6 +349,7 @@ const QuestionDetail = () => {
             }
           }}
           isDeleting={deleteWritingRecordMutation.isPending}
+          isLargeTextMode={isLargeTextMode}
           baseTextStyle={baseTextStyle}
           smallTextStyle={smallTextStyle}
           headerTextStyle={headerTextStyle}
