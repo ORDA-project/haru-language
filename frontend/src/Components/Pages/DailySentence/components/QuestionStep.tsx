@@ -38,7 +38,7 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
 }) => {
   return (
     <div className="px-4 py-6 w-full box-border">
-      <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 shadow-lg border-4 border-[#00DAAA] dark:border-[#00DAAA] w-full max-w-full overflow-hidden box-border min-w-0">
+      <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 shadow-lg border-4 border-[#00DAAA] dark:border-[#00DAAA] w-full max-w-full box-border min-w-0">
         <div className="flex items-center justify-between mb-6 flex-wrap gap-2 min-w-0">
           <div className="bg-[#00E8B6] dark:bg-[#00DAAA] px-4 py-2 rounded-full flex-shrink-0">
             <span className="font-bold text-gray-800 dark:text-gray-900 whitespace-nowrap" style={smallTextStyle}>
