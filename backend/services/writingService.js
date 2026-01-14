@@ -1,4 +1,4 @@
-const { WritingRecord, WritingExample, WritingQuestion } = require("../models");
+const { WritingRecord, WritingExample, WritingQuestion, User, UserInterest } = require("../models");
 const callGPT = require("./gptService");
 const { validateText, validateUserId, validateWritingQuestionId } = require("../utils/validation");
 
@@ -69,6 +69,23 @@ async function correctWriting(text, userId, writingQuestionId = null) {
   validateWritingQuestionId(writingQuestionId, false);
 
   try {
+    // 사용자 정보 가져오기 (목표, 관심사)
+    let user = null;
+    try {
+      user = await User.findOne({
+        where: { id: userId },
+        include: [
+          {
+            model: UserInterest,
+            attributes: ["interest"],
+          },
+        ],
+      });
+    } catch (userError) {
+      console.warn("사용자 정보 조회 중 오류:", userError.message);
+      // 사용자 정보 조회 실패해도 계속 진행
+    }
+
     let questionContext = "";
     if (writingQuestionId) {
       try {
@@ -84,7 +101,8 @@ async function correctWriting(text, userId, writingQuestionId = null) {
       }
     }
 
-    const prompt = "You are an AI English tutor that provides grammar correction and writing feedback. " +
+    // 기본 프롬프트
+    let prompt = "You are an AI English tutor that provides grammar correction and writing feedback. " +
       "When given a text" + (questionContext ? " and a question" : "") + ", return a JSON object with the following:\n\n" +
       "- 'correctedText': The grammatically corrected version of the input text. " +
       "If the answer doesn't match the question's context (e.g., tense mismatch, logical inconsistency), correct it appropriately.\n" +
@@ -96,8 +114,45 @@ async function correctWriting(text, userId, writingQuestionId = null) {
       "For example: '원어민들은 보통 이렇게 표현합니다', '현지에서는 이렇게 쓰는 경우가 많습니다', '자연스러운 표현 팁' 등.\n" +
       "  3. If there are no errors, provide learning feedback about grammar points, vocabulary usage, tense usage, or writing style.\n" +
       "Each item should be a separate explanation sentence.\n\n" +
-      "Always provide at least 2-3 feedback items, including native speaker tips.\n" +
-      "Provide only the JSON output.";
+      "Always provide at least 2-3 feedback items, including native speaker tips.\n";
+
+    // 사용자 맞춤 프롬프트 추가
+    if (user) {
+      const interests = (user.UserInterests || user.userInterests || []).map((i) => i.interest) || [];
+      const goal = user.goal;
+      
+      if (interests.length > 0 || goal) {
+        prompt += "\n\nStudent's learning context:";
+        
+        if (goal) {
+          const goalMap = {
+            hobby: "hobby/leisure learning",
+            exam: "exam preparation",
+            business: "business English",
+            travel: "travel English"
+          };
+          prompt += `\n- Learning goal: ${goalMap[goal] || goal}`;
+        }
+        
+        if (interests.length > 0) {
+          const interestMap = {
+            conversation: "conversation",
+            reading: "reading comprehension",
+            grammar: "grammar analysis",
+            business: "business English",
+            vocabulary: "vocabulary"
+          };
+          const interestText = interests.map(i => interestMap[i] || i).join(", ");
+          prompt += `\n- Interests: ${interestText}`;
+        }
+        
+        prompt += "\n\nPlease tailor your feedback to match the student's learning goals and interests when relevant. " +
+          "For example, if the student's goal is business English, provide feedback that emphasizes professional communication. " +
+          "If the student is interested in conversation, focus on natural, conversational expressions.";
+      }
+    }
+
+    prompt += "\n\nProvide only the JSON output.";
 
     const userInput = questionContext 
       ? questionContext + "Please correct and provide feedback for the user's answer."
