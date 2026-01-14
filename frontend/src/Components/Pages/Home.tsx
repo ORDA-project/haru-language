@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useAtom } from "jotai";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import HomeInfo from "../Elements/HomeInfo";
 import NavBar from "../Templates/Navbar";
 import HomeHeader from "../Templates/HomeHeader";
@@ -22,6 +22,7 @@ interface User {
 }
 
 const Home = () => {
+  const navigate = useNavigate();
   const [isLoggedIn] = useAtom(isLoggedInAtom);
   const [user] = useAtom(userAtom);
   const [, setUserData] = useAtom(setUserAtom);
@@ -62,9 +63,10 @@ const Home = () => {
     // 토큰이 있으면 API 호출 (user atom이 없어도 토큰으로 인증 가능)
     const token = localStorage.getItem("accessToken");
     
-    // user가 없거나 userId가 없고 토큰도 없으면 API 호출하지 않음 (401 에러 방지)
+    // user가 없거나 userId가 없고 토큰도 없으면 로그인 페이지로 리다이렉트
     if ((!user || !user.userId) && !token) {
       setLoading(false);
+      navigate("/", { replace: true });
       return;
     }
     

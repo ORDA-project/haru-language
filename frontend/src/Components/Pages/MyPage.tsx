@@ -42,6 +42,14 @@ export default function MyPage() {
   const [totalVisitCount, setTotalVisitCount] = useState<number>(0);
   const [pokedFriends, setPokedFriends] = useState<Record<number, boolean>>({});
 
+  // 로그인 체크
+  useEffect(() => {
+    const token = localStorage.getItem("accessToken");
+    if ((!user || !user.userId) && !token) {
+      navigate("/", { replace: true });
+    }
+  }, [user, navigate]);
+
   // API queries - 회원정보 조회 (저장 후 갱신을 위해 refetchOnMount: true)
   const { data: userInfo, isLoading: userInfoLoading, refetch: refetchUserInfo } = useGetUserInfo();
   const { data: friendsData, isLoading: friendsLoading } = useGetFriends(Boolean(user?.userId));

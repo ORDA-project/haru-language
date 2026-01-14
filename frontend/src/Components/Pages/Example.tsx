@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import Cropper from "react-cropper";
 import "cropperjs/dist/cropper.css";
 import axios from "axios";
@@ -34,6 +35,7 @@ interface SavedExampleState {
 }
 
 const App = () => {
+  const navigate = useNavigate();
   const [stage, setStage] = useState<number>(1);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [croppedImage, setCroppedImage] = useState<string | null>(null);
@@ -51,6 +53,14 @@ const App = () => {
   const { showError, showSuccess, showWarning } = useErrorHandler();
   const cropperRef = useRef<any>(null);
   const [user] = useAtom(userAtom);
+
+  // 로그인 체크
+  useEffect(() => {
+    const token = localStorage.getItem("accessToken");
+    if ((!user || !user.userId) && !token) {
+      navigate("/", { replace: true });
+    }
+  }, [user, navigate]);
 
   // 예문 생성 상태 저장
   const saveExampleState = useCallback(() => {

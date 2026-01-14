@@ -7,6 +7,7 @@ import { Spinner } from "basic-loading";
 import { useErrorHandler } from "../../hooks/useErrorHandler";
 import { useAtom } from "jotai";
 import { isLargeTextModeAtom } from "../../store/dataStore";
+import { userAtom } from "../../store/authStore";
 import {
   QuizQuestion,
   setCurrentQuizAtom,
@@ -22,6 +23,9 @@ interface QuizProps {}
 type Question = QuizQuestion;
 
 const Quiz = (props: QuizProps) => {
+  const navigate = useNavigate(); // 페이지 이동을 위한 네비게이트
+  const { showError, showWarning, showSuccess } = useErrorHandler();
+  
   // 전역 상태 관리
   const [currentQuiz] = useAtom(currentQuizAtom);
   const [isLoading] = useAtom(isQuizLoadingAtom);
@@ -29,6 +33,15 @@ const Quiz = (props: QuizProps) => {
   const [, setQuizLoading] = useAtom(setQuizLoadingAtom);
   const [, addQuizResult] = useAtom(addQuizResultAtom);
   const [isLargeTextMode] = useAtom(isLargeTextModeAtom);
+  const [user] = useAtom(userAtom);
+
+  // 로그인 체크
+  useEffect(() => {
+    const token = localStorage.getItem("accessToken");
+    if ((!user || !user.userId) && !token) {
+      navigate("/", { replace: true });
+    }
+  }, [user, navigate]);
 
   // 로컬 상태
   const [isSuccess, setSuccess] = useState<boolean>(true);
@@ -38,9 +51,6 @@ const Quiz = (props: QuizProps) => {
   const [correctCount, setCorrectCount] = useState(0); // 맞은 문제 개수
   const [showDescription, setShowDescription] = useState(false);
   const [showPopup, setShowPopup] = useState(false); // 팝업 표시 여부
-
-  const navigate = useNavigate(); // 페이지 이동을 위한 네비게이트
-  const { showError, showWarning, showSuccess } = useErrorHandler();
   
   const baseFontSize = isLargeTextMode ? 18 : 16;
   const largeFontSize = isLargeTextMode ? 22 : 20;

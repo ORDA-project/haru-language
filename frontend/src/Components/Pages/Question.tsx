@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAtom } from "jotai";
 import { isLargeTextModeAtom } from "../../store/dataStore";
 import { userAtom } from "../../store/authStore";
@@ -14,6 +15,7 @@ import { useGenerateTTS } from "../../entities/tts/queries";
 import { getTodayStringBy4AM } from "../../utils/dateUtils";
 
 const ChatBot = () => {
+  const navigate = useNavigate();
   const [messages, setMessages] = useState<
     { type: "user" | "bot"; content: string; timestamp?: Date }[]
   >([]);
@@ -27,6 +29,14 @@ const ChatBot = () => {
   const ttsMutation = useGenerateTTS();
   const [isLargeTextMode] = useAtom(isLargeTextModeAtom);
   const [user] = useAtom(userAtom);
+
+  // 로그인 체크
+  useEffect(() => {
+    const token = localStorage.getItem("accessToken");
+    if ((!user || !user.userId) && !token) {
+      navigate("/", { replace: true });
+    }
+  }, [user, navigate]);
 
   // 대화 내역 저장/불러오기 - 사용자별로 구분
   const getStorageKey = () => {
