@@ -1,9 +1,18 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import { useAtom } from "jotai";
+import { isLargeTextModeAtom } from "../../store/dataStore";
+import { createTextStyles } from "../../utils/styleUtils";
 import NavBar from "../Templates/Navbar";
 
 export default function Announcements() {
   const navigate = useNavigate();
+  const [isLargeTextMode] = useAtom(isLargeTextModeAtom);
+  
+  const textStyles = createTextStyles(isLargeTextMode);
+  const baseTextStyle = textStyles.base;
+  const smallTextStyle = textStyles.small;
+  const headerTextStyle = textStyles.header;
 
   return (
     <div className="w-full h-[calc(100vh-72px)] flex flex-col max-w-[440px] mx-auto bg-gray-50 shadow-[0_0_10px_0_rgba(0,0,0,0.1)]">
@@ -28,7 +37,7 @@ export default function Announcements() {
           </svg>
         </button>
         <div className="text-center">
-          <h1 className="text-lg font-semibold text-gray-800">공지사항</h1>
+          <h1 className="font-semibold text-gray-800" style={headerTextStyle}>공지사항</h1>
         </div>
         <div className="w-8"></div>
       </div>
@@ -54,10 +63,10 @@ export default function Announcements() {
           </div>
 
           {/* 빈 상태 메시지 */}
-          <h2 className="text-xl font-semibold text-gray-800 mb-2">
+          <h2 className="font-semibold text-gray-800 mb-2" style={headerTextStyle}>
             아직 내용이 없어요
           </h2>
-          <p className="text-gray-500 text-sm leading-relaxed">
+          <p className="text-gray-500 leading-relaxed" style={smallTextStyle}>
             새로운 공지사항이 올라오면
             <br />
             여기에 표시됩니다

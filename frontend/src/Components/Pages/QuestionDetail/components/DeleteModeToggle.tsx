@@ -14,7 +14,7 @@ export const DeleteModeToggle: React.FC<DeleteModeToggleProps> = ({
   return (
     <button
       onClick={onToggle}
-      className={`px-5 py-2.5 rounded-lg text-base font-semibold transition-colors flex items-center gap-2 shadow-md ${
+      className={`px-5 py-2.5 rounded-lg font-semibold transition-colors flex items-center gap-2 shadow-md ${
         isDeleteMode
           ? 'bg-red-500 hover:bg-red-600 active:bg-red-700 text-white'
           : 'bg-white hover:bg-gray-50 text-gray-700 border-2 border-gray-300'

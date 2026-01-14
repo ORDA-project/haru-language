@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAtom } from "jotai";
 import { logoutAtom } from "../../store/authStore";
+import { isLargeTextModeAtom } from "../../store/dataStore";
+import { createTextStyles } from "../../utils/styleUtils";
 import { useErrorHandler } from "../../hooks/useErrorHandler";
 import { userDetailsApi } from "../../entities/user-details/api";
 import NavBar from "../Templates/Navbar";
@@ -9,9 +11,14 @@ import NavBar from "../Templates/Navbar";
 export default function DeleteAccount() {
   const navigate = useNavigate();
   const [, logout] = useAtom(logoutAtom);
+  const [isLargeTextMode] = useAtom(isLargeTextModeAtom);
   const { showSuccess, showError, handleError } = useErrorHandler();
   const [isAgreed, setIsAgreed] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  
+  const textStyles = createTextStyles(isLargeTextMode);
+  const baseTextStyle = textStyles.base;
+  const headerTextStyle = textStyles.header;
 
   const handleCancel = () => {
     navigate(-1);
@@ -71,7 +78,7 @@ export default function DeleteAccount() {
           </svg>
         </button>
         <div className="text-center flex-1">
-          <h1 className="text-lg font-bold text-gray-900">회원탈퇴</h1>
+          <h1 className="font-bold text-gray-900" style={headerTextStyle}>회원탈퇴</h1>
         </div>
         <div className="w-8"></div>
       </div>
@@ -82,7 +89,7 @@ export default function DeleteAccount() {
 
           {/* 섹션 헤더 */}
           <div className="mb-6">
-            <h3 className="text-lg font-bold text-gray-900 mb-3">
+            <h3 className="font-bold text-gray-900 mb-3" style={headerTextStyle}>
               탈퇴 전 확인하세요
             </h3>
             <div className="h-[1px] bg-gray-300"></div>
@@ -91,8 +98,9 @@ export default function DeleteAccount() {
           {/* 경고 메시지 */}
           <div className="mb-8">
             <p 
-              className="text-lg text-gray-700 leading-relaxed"
+              className="text-gray-700 leading-relaxed"
               style={{
+                ...baseTextStyle,
                 wordBreak: 'keep-all',
                 overflowWrap: 'break-word',
                 whiteSpace: 'normal'
@@ -133,8 +141,9 @@ export default function DeleteAccount() {
                 )}
               </div>
               <span 
-                className="ml-3 text-base text-gray-700 leading-relaxed"
+                className="ml-3 text-gray-700 leading-relaxed"
                 style={{
+                  ...baseTextStyle,
                   wordBreak: 'keep-all',
                   overflowWrap: 'break-word',
                   whiteSpace: 'normal'
@@ -152,11 +161,12 @@ export default function DeleteAccount() {
         <button
           onClick={handleDelete}
           disabled={isDeleting || !isAgreed}
-          className={`w-full py-4 text-base font-semibold rounded-lg transition-colors flex items-center justify-center gap-2 shadow-md ${
+          className={`w-full py-4 font-semibold rounded-lg transition-colors flex items-center justify-center gap-2 shadow-md ${
             isAgreed && !isDeleting
               ? "bg-red-500 hover:bg-red-600 active:bg-red-700 text-white cursor-pointer"
               : "bg-gray-300 cursor-not-allowed text-gray-500"
           }`}
+          style={baseTextStyle}
         >
           {isDeleting ? (
             <>

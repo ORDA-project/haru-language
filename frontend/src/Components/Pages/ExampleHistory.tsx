@@ -4,6 +4,8 @@ import { Example, Dialogue } from "../../entities/examples/types";
 import { exampleApi } from "../../entities/examples/api";
 import { useErrorHandler } from "../../hooks/useErrorHandler";
 import { userAtom } from "../../store/authStore";
+import { isLargeTextModeAtom } from "../../store/dataStore";
+import { createTextStyles } from "../../utils/styleUtils";
 import StageResult from "../Elements/StageResult";
 
 interface ExampleHistoryProps {
@@ -21,6 +23,13 @@ const ExampleHistory = ({ onBack }: ExampleHistoryProps) => {
   const [selectedExample, setSelectedExample] = useState<Example | null>(null);
   const { showError } = useErrorHandler();
   const [user] = useAtom(userAtom);
+  const [isLargeTextMode] = useAtom(isLargeTextModeAtom);
+  
+  const textStyles = createTextStyles(isLargeTextMode);
+  const baseTextStyle = textStyles.base;
+  const smallTextStyle = textStyles.small;
+  const xSmallTextStyle = textStyles.xSmall;
+  const headerTextStyle = textStyles.header;
 
   useEffect(() => {
     if (user?.userId) {
@@ -181,7 +190,7 @@ const ExampleHistory = ({ onBack }: ExampleHistoryProps) => {
           </svg>
         </button>
         <div className="text-center">
-          <h1 className="text-lg font-semibold text-gray-800">
+          <h1 className="font-semibold text-gray-800" style={headerTextStyle}>
             지난 예문 기록
           </h1>
         </div>
@@ -194,16 +203,16 @@ const ExampleHistory = ({ onBack }: ExampleHistoryProps) => {
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
               <div className="w-8 h-8 border-4 border-[#00DAAA] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-              <p className="text-gray-600">예문 기록을 불러오는 중...</p>
+              <p className="text-gray-600" style={baseTextStyle}>예문 기록을 불러오는 중...</p>
             </div>
           </div>
         ) : groupedExamples.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center p-8">
-              <p className="text-lg text-gray-600 mb-4">
+              <p className="text-gray-600 mb-4" style={headerTextStyle}>
                 저장된 예문이 없습니다.
               </p>
-              <p className="text-sm text-gray-500">
+              <p className="text-gray-500" style={smallTextStyle}>
                 새로운 예문을 생성해보세요!
               </p>
             </div>
@@ -216,7 +225,7 @@ const ExampleHistory = ({ onBack }: ExampleHistoryProps) => {
                 <div className="flex items-center mb-4">
                   <div className="flex-1 h-px bg-gray-300"></div>
                   <div className="px-4">
-                    <span className="text-sm text-gray-500 font-medium">
+                    <span className="text-gray-500 font-medium" style={smallTextStyle}>
                       {group.date}
                     </span>
                   </div>
@@ -248,18 +257,18 @@ const ExampleHistory = ({ onBack }: ExampleHistoryProps) => {
                           )}
                           
                           {/* Main sentence */}
-                          <h3 className="font-medium text-gray-900 mb-2 line-clamp-2">
+                          <h3 className="font-medium text-gray-900 mb-2 line-clamp-2" style={baseTextStyle}>
                             {example.extracted_sentence}
                           </h3>
 
                           {/* Description */}
-                          <p className="text-sm text-gray-600 line-clamp-2 mb-2">
+                          <p className="text-gray-600 line-clamp-2 mb-2" style={smallTextStyle}>
                             {example.description}
                           </p>
 
                           {/* Preview of first dialogue */}
                           {example.ExampleItems?.[0]?.Dialogues?.[0] && (
-                            <p className="text-xs text-gray-500 line-clamp-1">
+                            <p className="text-gray-500 line-clamp-1" style={xSmallTextStyle}>
                               {example.ExampleItems[0].Dialogues[0].english}
                             </p>
                           )}

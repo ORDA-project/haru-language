@@ -1,9 +1,18 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import { useAtom } from "jotai";
+import { isLargeTextModeAtom } from "../../store/dataStore";
+import { createTextStyles } from "../../utils/styleUtils";
 import NavBar from "../Templates/Navbar";
 
 export default function PrivacyPolicy() {
   const navigate = useNavigate();
+  const [isLargeTextMode] = useAtom(isLargeTextModeAtom);
+  
+  const textStyles = createTextStyles(isLargeTextMode);
+  const baseTextStyle = textStyles.base;
+  const smallTextStyle = textStyles.small;
+  const headerTextStyle = textStyles.header;
 
   return (
     <div className="w-full h-[calc(100vh-72px)] flex flex-col max-w-[440px] mx-auto bg-gray-50 shadow-[0_0_10px_0_rgba(0,0,0,0.1)]">
@@ -28,7 +37,7 @@ export default function PrivacyPolicy() {
           </svg>
         </button>
         <div className="text-center">
-          <h1 className="text-lg font-semibold text-gray-800">
+          <h1 className="font-semibold text-gray-800" style={headerTextStyle}>
             개인정보처리방침
           </h1>
         </div>
@@ -39,11 +48,11 @@ export default function PrivacyPolicy() {
       <div className="flex-1 overflow-y-auto px-4 py-6 pb-[72px]">
         <div className="bg-white rounded-lg p-6 shadow-sm">
           <div className="prose prose-sm max-w-none">
-            <h2 className="text-lg font-bold text-gray-800 mb-4">
+            <h2 className="font-bold text-gray-800 mb-4" style={headerTextStyle}>
               개인정보처리방침
             </h2>
 
-            <div className="space-y-4 text-sm text-gray-700 leading-relaxed">
+            <div className="space-y-4 text-gray-700 leading-relaxed" style={smallTextStyle}>
               <div>
                 <h3 className="font-semibold text-gray-800 mb-2">
                   제1조(목적)

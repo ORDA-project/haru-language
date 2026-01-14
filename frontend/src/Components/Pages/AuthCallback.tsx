@@ -7,6 +7,25 @@ import { API_ENDPOINTS } from "../../config/api";
 import { authApi } from "../../entities/authentication/api";
 import { http } from "../../utils/http";
 
+// 사용자 목적(goal) 확인 함수
+const checkUserGoal = async (): Promise<boolean> => {
+  try {
+    const userInfo = await http.get<{
+      gender?: string;
+      goal?: string;
+      interests?: string[];
+      books?: string[];
+    }>("/userDetails/info");
+    
+    // goal이 설정되어 있으면 true 반환
+    return !!userInfo.goal;
+  } catch (error) {
+    console.error("Failed to check user goal:", error);
+    // 에러 발생 시 false 반환 (안전하게 온보딩 페이지로 이동)
+    return false;
+  }
+};
+
 const AuthCallback: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -115,6 +134,14 @@ const AuthCallback: React.FC = () => {
         if (redirectToPendingInvite()) {
           return;
         }
+        
+        // 사용자 목적 확인
+        const hasGoal = await checkUserGoal();
+        if (!hasGoal) {
+          navigate("/mypage/edit", { replace: true });
+          return;
+        }
+        
         navigate("/home", { replace: true });
       } catch (error) {
         handleError(error);
@@ -197,6 +224,13 @@ const AuthCallback: React.FC = () => {
         
         showSuccess("로그인 성공", "로그인에 성공했습니다!");
         
+        // 사용자 목적 확인
+        const hasGoal = await checkUserGoal();
+        if (!hasGoal) {
+          navigate("/mypage/edit", { replace: true });
+          return;
+        }
+        
         let targetPath = "/home";
         if (response.redirectUrl) {
           try {
@@ -258,6 +292,14 @@ const AuthCallback: React.FC = () => {
         if (redirectToPendingInvite()) {
           return;
         }
+        
+        // 사용자 목적 확인
+        const hasGoal = await checkUserGoal();
+        if (!hasGoal) {
+          navigate("/mypage/edit", { replace: true });
+          return;
+        }
+        
         navigate("/home", { replace: true });
         return;
       } catch (error) {
@@ -278,6 +320,14 @@ const AuthCallback: React.FC = () => {
       if (redirectToPendingInvite()) {
         return;
       }
+      
+      // 사용자 목적 확인
+      const hasGoal = await checkUserGoal();
+      if (!hasGoal) {
+        navigate("/mypage/edit", { replace: true });
+        return;
+      }
+      
       navigate("/home", { replace: true });
     } catch (error) {
       if (loginSuccess === "true") {

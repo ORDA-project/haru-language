@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAtom } from "jotai";
 import { userAtom } from "../../store/authStore";
+import { isLargeTextModeAtom } from "../../store/dataStore";
+import { createTextStyles } from "../../utils/styleUtils";
 import { http } from "../../utils/http";
 import { useErrorHandler } from "../../hooks/useErrorHandler";
 import NavBar from "../Templates/Navbar";
@@ -17,9 +19,15 @@ interface NotificationItem {
 const NotificationHistory = () => {
   const navigate = useNavigate();
   const [user] = useAtom(userAtom);
+  const [isLargeTextMode] = useAtom(isLargeTextModeAtom);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { showError } = useErrorHandler();
+  
+  const textStyles = createTextStyles(isLargeTextMode);
+  const baseTextStyle = textStyles.base;
+  const smallTextStyle = textStyles.small;
+  const headerTextStyle = textStyles.header;
 
   useEffect(() => {
     if (!user?.userId) {
@@ -79,7 +87,7 @@ const NotificationHistory = () => {
           >
             <ChevronLeft className="w-5 h-5 text-gray-600" />
           </button>
-          <h1 className="font-semibold text-gray-800 text-lg">알림 기록</h1>
+          <h1 className="font-semibold text-gray-800" style={headerTextStyle}>알림 기록</h1>
         </div>
       </div>
 
@@ -91,8 +99,8 @@ const NotificationHistory = () => {
           </div>
         ) : notifications.length === 0 ? (
           <div className="flex flex-col justify-center items-center py-12">
-            <div className="text-gray-400 text-center mb-2">알림 기록이 없습니다</div>
-            <div className="text-gray-400 text-sm text-center">
+            <div className="text-gray-400 text-center mb-2" style={baseTextStyle}>알림 기록이 없습니다</div>
+            <div className="text-gray-400 text-center" style={smallTextStyle}>
               친구가 콕 찌르기를 보내면 여기에 표시됩니다
             </div>
           </div>
@@ -105,10 +113,10 @@ const NotificationHistory = () => {
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
-                    <div className="text-gray-800 font-medium mb-1">
+                    <div className="text-gray-800 font-medium mb-1" style={baseTextStyle}>
                       {notification.message}
                     </div>
-                    <div className="text-gray-500 text-sm">
+                    <div className="text-gray-500" style={smallTextStyle}>
                       {formatDate(notification.createdAt)}
                     </div>
                   </div>

@@ -91,9 +91,9 @@ const HomeInfo = ({
       const sentenceCount = (englishText.match(/[.!?]+/g) || []).length || 1;
       const targetLines = sentenceCount;
 
-      // 고정된 기본 폰트 크기 (큰글씨 모드 무관)
-      const baseSize = 16;
-      const minFontSize = 12;
+      // 큰글씨 모드에 따른 기본 폰트 크기
+      const baseSize = isLargeTextMode ? 18 : 16;
+      const minFontSize = isLargeTextMode ? 14 : 12;
       const maxFontSize = baseSize;
 
       // 컨테이너 너비 가져오기
@@ -167,9 +167,9 @@ const HomeInfo = ({
       
       if (!koreanText) return;
 
-      // 고정된 기본 폰트 크기 (큰글씨 모드 무관)
-      const baseSize = 18;
-      const minFontSize = 12;
+      // 큰글씨 모드에 따른 기본 폰트 크기
+      const baseSize = isLargeTextMode ? 20 : 18;
+      const minFontSize = isLargeTextMode ? 14 : 12;
       const maxFontSize = baseSize;
 
       // 컨테이너 너비 가져오기
@@ -292,7 +292,7 @@ const HomeInfo = ({
           }
         }}
       >
-        <div className="font-bold leading-[150%] bg-[#00E8B6] px-4 py-2 rounded-full" style={{ fontSize: '14px', marginTop: '-4px' }}>
+        <div className="font-bold leading-[150%] bg-[#00E8B6] px-4 py-2 rounded-full" style={{ ...smallTextStyle, marginTop: '-4px' }}>
           <span>오늘의 한줄 영어</span>
         </div>
         <div className="w-full my-[8px] mt-[12px] flex flex-col min-w-0 overflow-visible relative z-10 pb-2" ref={englishSentenceContainerRef}>
@@ -302,7 +302,7 @@ const HomeInfo = ({
                 ref={englishSentenceRef}
                 className="font-bold leading-[150%] break-words w-full min-w-0"
                 style={{
-                  fontSize: englishSentenceFontSize ? `${englishSentenceFontSize}px` : '17px',
+                  fontSize: englishSentenceFontSize ? `${englishSentenceFontSize}px` : (isLargeTextMode ? '18px' : '17px'),
                   lineHeight: '1.4'
                 }}
               >
@@ -312,7 +312,7 @@ const HomeInfo = ({
                 ref={koreanSentenceRef}
                 className="font-bold leading-[150%] break-words w-full min-w-0 mt-2 relative z-10"
                 style={{
-                  fontSize: koreanSentenceFontSize ? `${koreanSentenceFontSize}px` : '18px',
+                  fontSize: koreanSentenceFontSize ? `${koreanSentenceFontSize}px` : (isLargeTextMode ? '20px' : '18px'),
                   lineHeight: '1.4',
                   wordBreak: 'keep-all',
                   overflowWrap: 'break-word'
@@ -322,7 +322,7 @@ const HomeInfo = ({
               </div>
             </>
           ) : (
-            <div className="text-gray-400" style={{ fontSize: '16px' }}>오늘의 질문을 불러오는 중...</div>
+            <div className="text-gray-400" style={baseTextStyle}>오늘의 질문을 불러오는 중...</div>
           )}
         </div>
 

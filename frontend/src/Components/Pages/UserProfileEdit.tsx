@@ -152,9 +152,10 @@ export default function UserProfileEdit({}: UserProfileEditProps) {
 
       showSuccess("저장 완료", "유저 정보가 저장되었습니다.");
       
-      // 저장 후 MyPage로 이동
+      // 처음 회원가입한 사용자(기존 정보가 없었던 경우)는 홈으로, 기존 사용자는 MyPage로 이동
+      const redirectPath = isExistingUser ? "/mypage" : "/home";
       setTimeout(() => {
-        navigate("/mypage");
+        navigate(redirectPath);
       }, 1500);
     } catch (error) {
       console.error("Profile save error:", error);

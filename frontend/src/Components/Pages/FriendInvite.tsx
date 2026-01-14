@@ -2,6 +2,8 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useAtom } from "jotai";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { userAtom } from "../../store/authStore";
+import { isLargeTextModeAtom } from "../../store/dataStore";
+import { createTextStyles } from "../../utils/styleUtils";
 import { useRespondInvitation } from "../../entities/friends/queries";
 import { useErrorHandler } from "../../hooks/useErrorHandler";
 
@@ -15,9 +17,15 @@ const readPendingToken = () => {
 const FriendInvite: React.FC = () => {
   const [searchParams] = useSearchParams();
   const [user] = useAtom(userAtom);
+  const [isLargeTextMode] = useAtom(isLargeTextModeAtom);
   const { handleError, showSuccess, showError } = useErrorHandler();
   const respondInvitation = useRespondInvitation();
   const navigate = useNavigate();
+  
+  const textStyles = createTextStyles(isLargeTextMode);
+  const baseTextStyle = textStyles.base;
+  const smallTextStyle = textStyles.small;
+  const headerTextStyle = textStyles.header;
 
   const [pendingToken, setPendingToken] = useState(() => readPendingToken());
   const [status, setStatus] = useState<InviteStatus>("idle");
@@ -182,7 +190,7 @@ const FriendInvite: React.FC = () => {
     return (
       <div className="flex flex-col items-center gap-4">
         <div className="w-12 h-12 border-4 border-[#00DAAA] border-t-transparent rounded-full animate-spin" />
-        <p className="text-sm text-gray-500">잠시만 기다려주세요...</p>
+        <p className="text-gray-500" style={smallTextStyle}>잠시만 기다려주세요...</p>
       </div>
     );
   };
@@ -195,9 +203,9 @@ const FriendInvite: React.FC = () => {
             <div className="w-16 h-16 bg-[#00DAAA]/10 text-[#00B893] rounded-full flex items-center justify-center text-2xl font-bold">
               🤝
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">친구 초대 링크</h1>
+            <h1 className="font-bold text-gray-900" style={headerTextStyle}>친구 초대 링크</h1>
           </div>
-          <p className="text-gray-600 leading-relaxed">{message}</p>
+          <p className="text-gray-600 leading-relaxed" style={baseTextStyle}>{message}</p>
           {renderActionButton()}
         </div>
       </div>

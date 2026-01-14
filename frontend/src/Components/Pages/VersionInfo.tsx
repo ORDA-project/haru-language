@@ -1,9 +1,19 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import { useAtom } from "jotai";
+import { isLargeTextModeAtom } from "../../store/dataStore";
+import { createTextStyles } from "../../utils/styleUtils";
 import NavBar from "../Templates/Navbar";
 
 export default function VersionInfo() {
   const navigate = useNavigate();
+  const [isLargeTextMode] = useAtom(isLargeTextModeAtom);
+  
+  const textStyles = createTextStyles(isLargeTextMode);
+  const baseTextStyle = textStyles.base;
+  const smallTextStyle = textStyles.small;
+  const xSmallTextStyle = textStyles.xSmall;
+  const headerTextStyle = textStyles.header;
 
   return (
     <div className="w-full h-[calc(100vh-72px)] flex flex-col max-w-[440px] mx-auto bg-gray-50 shadow-[0_0_10px_0_rgba(0,0,0,0.1)]">
@@ -28,7 +38,7 @@ export default function VersionInfo() {
           </svg>
         </button>
         <div className="text-center">
-          <h1 className="text-lg font-semibold text-gray-800">버전정보</h1>
+          <h1 className="font-semibold text-gray-800" style={headerTextStyle}>버전정보</h1>
         </div>
         <div className="w-8"></div>
       </div>
@@ -42,8 +52,8 @@ export default function VersionInfo() {
               <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-[#00DAAA] to-[#00D999] rounded-2xl flex items-center justify-center">
                 <span className="text-white font-bold text-2xl">하</span>
               </div>
-              <h2 className="text-xl font-bold text-gray-800 mb-2">하루언어</h2>
-              <p className="text-gray-500 text-sm">
+              <h2 className="font-bold text-gray-800 mb-2" style={headerTextStyle}>하루언어</h2>
+              <p className="text-gray-500" style={smallTextStyle}>
                 언어 학습을 위한 AI 기반 플랫폼
               </p>
             </div>
@@ -73,7 +83,7 @@ export default function VersionInfo() {
 
             {/* 오픈소스 라이센스 */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-800">
+              <h3 className="font-semibold text-gray-800" style={headerTextStyle}>
                 오픈소스 라이센스
               </h3>
 
@@ -83,10 +93,10 @@ export default function VersionInfo() {
                     <span className="text-gray-700 font-medium">
                       MIT License
                     </span>
-                    <span className="text-gray-500 text-sm">MIT</span>
+                    <span className="text-gray-500" style={smallTextStyle}>MIT</span>
                   </div>
 
-                  <div className="text-sm text-gray-600 leading-relaxed">
+                  <div className="text-gray-600 leading-relaxed" style={smallTextStyle}>
                     <p className="mb-2">
                       <strong>MIT License</strong>
                     </p>
@@ -123,48 +133,48 @@ export default function VersionInfo() {
 
             {/* 사용된 기술 스택 */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-800">기술 스택</h3>
+              <h3 className="font-semibold text-gray-800" style={headerTextStyle}>기술 스택</h3>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-blue-50 rounded-lg p-3 text-center">
-                  <div className="text-blue-600 font-semibold text-sm">
+                  <div className="text-blue-600 font-semibold" style={smallTextStyle}>
                     Frontend
                   </div>
-                  <div className="text-gray-600 text-xs mt-1">
+                  <div className="text-gray-600 mt-1" style={xSmallTextStyle}>
                     React, TypeScript
                   </div>
                 </div>
 
                 <div className="bg-green-50 rounded-lg p-3 text-center">
-                  <div className="text-green-600 font-semibold text-sm">
+                  <div className="text-green-600 font-semibold" style={smallTextStyle}>
                     Backend
                   </div>
-                  <div className="text-gray-600 text-xs mt-1">
+                  <div className="text-gray-600 mt-1" style={xSmallTextStyle}>
                     Node.js, Express
                   </div>
                 </div>
 
                 <div className="bg-purple-50 rounded-lg p-3 text-center">
-                  <div className="text-purple-600 font-semibold text-sm">
+                  <div className="text-purple-600 font-semibold" style={smallTextStyle}>
                     Database
                   </div>
-                  <div className="text-gray-600 text-xs mt-1">
+                  <div className="text-gray-600 mt-1" style={xSmallTextStyle}>
                     MySQL, Sequelize
                   </div>
                 </div>
 
                 <div className="bg-orange-50 rounded-lg p-3 text-center">
-                  <div className="text-orange-600 font-semibold text-sm">
+                  <div className="text-orange-600 font-semibold" style={smallTextStyle}>
                     Styling
                   </div>
-                  <div className="text-gray-600 text-xs mt-1">Tailwind CSS</div>
+                  <div className="text-gray-600 mt-1" style={xSmallTextStyle}>Tailwind CSS</div>
                 </div>
               </div>
             </div>
 
             {/* 연락처 정보 */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-800">연락처</h3>
+              <h3 className="font-semibold text-gray-800" style={headerTextStyle}>연락처</h3>
 
               <div className="space-y-3">
                 <div className="flex items-center space-x-3">
@@ -184,10 +194,10 @@ export default function VersionInfo() {
                     </svg>
                   </div>
                   <div>
-                    <div className="text-sm font-medium text-gray-800">
+                    <div className="font-medium text-gray-800" style={smallTextStyle}>
                       이메일
                     </div>
-                    <div className="text-sm text-gray-600">
+                    <div className="text-gray-600" style={smallTextStyle}>
                       support@harulanguage.com
                     </div>
                   </div>
@@ -210,10 +220,10 @@ export default function VersionInfo() {
                     </svg>
                   </div>
                   <div>
-                    <div className="text-sm font-medium text-gray-800">
+                    <div className="font-medium text-gray-800" style={smallTextStyle}>
                       업데이트
                     </div>
-                    <div className="text-sm text-gray-600">2025년 1월 1일</div>
+                    <div className="text-gray-600" style={smallTextStyle}>2025년 1월 1일</div>
                   </div>
                 </div>
               </div>
@@ -222,12 +232,12 @@ export default function VersionInfo() {
             {/* 앱 정보 */}
             <div className="bg-gray-50 rounded-lg p-4">
               <div className="text-center">
-                <p className="text-sm text-gray-600 mb-2">
+                <p className="text-gray-600 mb-2" style={smallTextStyle}>
                   하루언어는 AI 기반의 언어 학습 플랫폼으로,
                   <br />
                   개인화된 학습 경험을 제공합니다.
                 </p>
-                <p className="text-xs text-gray-500">
+                <p className="text-gray-500" style={xSmallTextStyle}>
                   © 2025 하루언어. All rights reserved.
                 </p>
               </div>
