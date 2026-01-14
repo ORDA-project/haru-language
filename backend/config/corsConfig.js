@@ -39,7 +39,7 @@ module.exports = {
     return callback(new Error("Not allowed by CORS"));
   },
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept", "Cache-Control"],
   exposedHeaders: ["Content-Disposition"],
   optionsSuccessStatus: 204,
   credentials: true,
