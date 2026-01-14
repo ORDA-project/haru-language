@@ -458,15 +458,15 @@ const DailySentence = () => {
   }
 
   return (
-    <div className="w-full h-full flex flex-col items-center max-w-[440px] mx-auto shadow-[0_0_10px_0_rgba(0,0,0,0.1)] bg-[#F7F8FB]">
-      <div className="w-full max-w-[440px] bg-white shadow-lg">
+    <div className="w-full h-full flex flex-col items-center max-w-[440px] mx-auto shadow-[0_0_10px_0_rgba(0,0,0,0.1)] bg-[#F7F8FB] dark:bg-gray-900">
+      <div className="w-full max-w-[440px] bg-white dark:bg-gray-800 shadow-lg">
         {/* Header */}
-        <div className="bg-white px-4 py-4 border-b border-gray-200">
+        <div className="bg-white dark:bg-gray-800 px-4 py-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between">
-            <button onClick={() => navigate(-1)} className="p-2">
+            <button onClick={() => navigate(-1)} className="p-2 text-gray-800 dark:text-gray-200">
               <Icons.arrowLeft />
             </button>
-            <h1 className="font-bold text-gray-800" style={headerTextStyle}>
+            <h1 className="font-bold text-gray-800 dark:text-gray-200" style={headerTextStyle}>
               오늘의 한줄 영어
             </h1>
             <div className="w-8" />
@@ -480,7 +480,7 @@ const DailySentence = () => {
           />
         </div>
 
-        <div className="h-[calc(100vh-180px)] overflow-y-scroll pb-[72px]">
+        <div className="min-h-[calc(100vh-180px)] overflow-y-auto pb-[72px]">
           {/* Progress Indicator */}
           <ProgressIndicator
             currentStep={currentStep}

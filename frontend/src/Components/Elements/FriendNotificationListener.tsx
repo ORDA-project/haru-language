@@ -31,6 +31,7 @@ const FriendNotificationListener = () => {
   const processedNotificationIdsRef = useRef<Set<number>>(new Set());
   const intervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isShowingNotificationRef = useRef(false);
+  const fetchAndDisplayNotificationsRef = useRef<() => Promise<void>>();
 
   // 알림 표시 함수
   const showNextNotification = useCallback(() => {
@@ -128,6 +129,9 @@ const FriendNotificationListener = () => {
     }
   }, [user?.userId, showNextNotification]);
 
+  // fetchAndDisplayNotifications를 ref에 저장하여 최신 버전 유지
+  fetchAndDisplayNotificationsRef.current = fetchAndDisplayNotifications;
+
   useEffect(() => {
     // 사용자가 없으면 정리
     if (!user?.userId) {
@@ -152,13 +156,13 @@ const FriendNotificationListener = () => {
       
       // 즉시 한 번 체크 (requestAnimationFrame 사용)
       requestAnimationFrame(() => {
-        fetchAndDisplayNotifications();
+        fetchAndDisplayNotificationsRef.current?.();
       });
       
       // 주기적으로 알림 체크 (재귀적 setTimeout 사용으로 이전 작업 완료 후 실행)
       const scheduleNextCheck = () => {
         intervalRef.current = setTimeout(async () => {
-          await fetchAndDisplayNotifications();
+          await fetchAndDisplayNotificationsRef.current?.();
           scheduleNextCheck(); // 다음 체크 예약
         }, NOTIFICATION_CHECK_INTERVAL);
       };
@@ -173,7 +177,7 @@ const FriendNotificationListener = () => {
         intervalRef.current = null;
       }
     };
-  }, [user?.userId, fetchAndDisplayNotifications]);
+  }, [user?.userId]); // fetchAndDisplayNotifications는 ref를 통해 접근하므로 dependency에서 제거
 
   return (
     <>

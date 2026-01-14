@@ -73,8 +73,9 @@ const Home = () => {
     // 토큰이 있으면 API 호출
     setLoading(true);
 
+    let timeoutCleared = false;
     const timeoutId = setTimeout(() => {
-      if (loading) {
+      if (!timeoutCleared) {
         showWarning("요청 시간 초과", "서버 응답이 지연되고 있습니다.");
       }
     }, 10000); // 10초 후 타임아웃 경고
@@ -105,6 +106,7 @@ const Home = () => {
       errorMessage?: string;
     }>("/home")
       .then((data) => {
+        timeoutCleared = true;
         clearTimeout(timeoutId);
 
         if (!data || !data.userData) {
@@ -149,6 +151,7 @@ const Home = () => {
         setDailySentence(dailySentence || null);
       })
       .catch((err: any) => {
+        timeoutCleared = true;
         clearTimeout(timeoutId);
 
         if (err.status === 401) {
