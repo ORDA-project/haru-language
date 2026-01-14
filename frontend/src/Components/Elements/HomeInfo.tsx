@@ -295,14 +295,14 @@ const HomeInfo = ({
         <div className="font-bold leading-[150%] bg-[#00E8B6] px-4 py-2 rounded-full" style={{ fontSize: '14px', marginTop: '-4px' }}>
           <span>오늘의 한줄 영어</span>
         </div>
-        <div className="w-full my-[8px] flex flex-col min-w-0 overflow-visible relative z-10 pb-2" ref={englishSentenceContainerRef}>
+        <div className="w-full my-[8px] mt-[12px] flex flex-col min-w-0 overflow-visible relative z-10 pb-2" ref={englishSentenceContainerRef}>
           {dailySentence ? (
             <>
               <div 
                 ref={englishSentenceRef}
                 className="font-bold leading-[150%] break-words w-full min-w-0"
                 style={{
-                  fontSize: englishSentenceFontSize ? `${englishSentenceFontSize}px` : '16px',
+                  fontSize: englishSentenceFontSize ? `${englishSentenceFontSize}px` : '17px',
                   lineHeight: '1.4'
                 }}
               >
