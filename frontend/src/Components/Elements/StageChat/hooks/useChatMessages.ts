@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useAtom } from "jotai";
 import { useQueryClient } from "@tanstack/react-query";
 import { userAtom } from "../../../../store/authStore";
@@ -49,6 +49,8 @@ export const useChatMessages = () => {
   const userId = user?.userId;
   const { showError } = useErrorHandler();
   const queryClient = useQueryClient();
+  const hasCreatedInitialMessageRef = useRef(false);
+  const isCreatingInitialMessageRef = useRef(false);
 
   // 서버에서 메시지 조회
   const { data: serverMessages, isLoading, isError } = useGetChatMessages();
@@ -60,6 +62,8 @@ export const useChatMessages = () => {
     if (!userId) {
       // 로그아웃 상태: 메시지 초기화 및 모든 캐시 제거
       setMessages([]);
+      hasCreatedInitialMessageRef.current = false;
+      isCreatingInitialMessageRef.current = false;
       // React Query 캐시 완전 초기화 (모든 chat-messages 관련 캐시 제거)
       queryClient.removeQueries({ 
         predicate: (query) => {
@@ -76,7 +80,9 @@ export const useChatMessages = () => {
       return;
     }
 
-    // userId가 변경되었을 때 이전 사용자의 캐시 제거
+    // userId가 변경되었을 때 이전 사용자의 캐시 제거 및 플래그 리셋
+    hasCreatedInitialMessageRef.current = false;
+    isCreatingInitialMessageRef.current = false;
     queryClient.removeQueries({ 
       predicate: (query) => {
         const key = query.queryKey;
@@ -107,9 +113,13 @@ export const useChatMessages = () => {
       if (serverMessages.length > 0) {
         const convertedMessages = serverMessages.map(convertToLocalMessage);
         setMessages(convertedMessages);
+        // 서버에 메시지가 있으면 초기 메시지 생성 플래그 리셋 (이미 메시지가 있으므로)
+        hasCreatedInitialMessageRef.current = true;
+        isCreatingInitialMessageRef.current = false;
       } else {
-        // 빈 배열인 경우 초기 메시지 생성
-        if (!isLoading) {
+        // 빈 배열인 경우 초기 메시지 생성 (한 번만)
+        if (!isLoading && !hasCreatedInitialMessageRef.current && !isCreatingInitialMessageRef.current) {
+          isCreatingInitialMessageRef.current = true;
           const initialMessage: Message = {
             id: "initial",
             type: "ai",
@@ -126,40 +136,53 @@ export const useChatMessages = () => {
             },
             {
               onSuccess: (saved) => {
+                hasCreatedInitialMessageRef.current = true;
+                isCreatingInitialMessageRef.current = false;
                 setMessages([convertToLocalMessage(saved)]);
               },
               onError: (error) => {
                 console.error("초기 메시지 저장 실패:", error);
+                isCreatingInitialMessageRef.current = false;
+                // 저장 실패 시 메시지 제거
+                setMessages([]);
               },
             }
           );
         }
       }
     } else if (!isLoading && (serverMessages === undefined || serverMessages === null)) {
-      // 메시지가 없으면 초기 메시지 생성
-      const initialMessage: Message = {
-        id: "initial",
-        type: "ai",
-        content: "안녕하세요! 영어 학습을 도와드릴 AI 튜터입니다. 궁금한 것이 있으시면 언제든지 질문해주세요!",
-        timestamp: new Date(),
-      };
-      setMessages([initialMessage]);
-      
-      // 서버에 초기 메시지 저장
-      saveMessageMutation.mutate(
-        {
+      // 메시지가 없으면 초기 메시지 생성 (한 번만)
+      if (!hasCreatedInitialMessageRef.current && !isCreatingInitialMessageRef.current) {
+        isCreatingInitialMessageRef.current = true;
+        const initialMessage: Message = {
+          id: "initial",
           type: "ai",
-          content: initialMessage.content,
-        },
-        {
-          onSuccess: (saved) => {
-            setMessages([convertToLocalMessage(saved)]);
+          content: "안녕하세요! 영어 학습을 도와드릴 AI 튜터입니다. 궁금한 것이 있으시면 언제든지 질문해주세요!",
+          timestamp: new Date(),
+        };
+        setMessages([initialMessage]);
+        
+        // 서버에 초기 메시지 저장
+        saveMessageMutation.mutate(
+          {
+            type: "ai",
+            content: initialMessage.content,
           },
-          onError: (error) => {
-            console.error("초기 메시지 저장 실패:", error);
-          },
-        }
-      );
+          {
+            onSuccess: (saved) => {
+              hasCreatedInitialMessageRef.current = true;
+              isCreatingInitialMessageRef.current = false;
+              setMessages([convertToLocalMessage(saved)]);
+            },
+            onError: (error) => {
+              console.error("초기 메시지 저장 실패:", error);
+              isCreatingInitialMessageRef.current = false;
+              // 저장 실패 시 메시지 제거
+              setMessages([]);
+            },
+          }
+        );
+      }
     }
   }, [userId, serverMessages, isLoading, isError, saveMessageMutation, queryClient]);
 
