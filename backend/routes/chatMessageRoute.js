@@ -4,7 +4,6 @@ const {
   saveChatMessages,
   getChatMessagesByDate,
   getRecentChatMessages,
-  createInitialGreeting,
   deleteChatMessage,
   deleteChatMessages,
 } = require("../services/chatMessageService");
@@ -89,44 +88,6 @@ router.get("/", async (req, res) => {
   } catch (error) {
     logError(error, { endpoint: "GET /chat-message" });
     return res.status(500).json({ message: error.message || "채팅 메시지 조회 중 오류가 발생했습니다." });
-  }
-});
-
-/**
- * 초기 인사말 생성 (한 번만 생성)
- * 이미 존재하면 기존 메시지 반환
- */
-router.post("/initialize", async (req, res) => {
-  try {
-    const user = req.user;
-    if (!user?.userId) {
-      return res.status(401).json({ message: "인증이 필요합니다." });
-    }
-
-    // 먼저 기존 메시지 확인
-    const existingMessages = await getRecentChatMessages(user.userId);
-    
-    // 이미 메시지가 있으면 첫 번째 메시지 반환 (생성하지 않음)
-    if (existingMessages.length > 0) {
-      return res.status(200).json(existingMessages[0]);
-    }
-
-    // 메시지가 없으면 초기 인사말 생성 (트랜잭션 + Lock으로 중복 방지)
-    const initialMessage = await createInitialGreeting(user.userId);
-    
-    if (!initialMessage) {
-      // 생성 실패 시 다시 조회 (다른 요청에서 이미 생성했을 수 있음)
-      const messages = await getRecentChatMessages(user.userId);
-      if (messages.length > 0) {
-        return res.status(200).json(messages[0]);
-      }
-      return res.status(200).json({ message: "이미 초기 메시지가 존재합니다." });
-    }
-
-    return res.status(201).json(initialMessage);
-  } catch (error) {
-    logError(error, { endpoint: "POST /chat-message/initialize" });
-    return res.status(500).json({ message: error.message || "초기 인사말 생성 중 오류가 발생했습니다." });
   }
 });
 

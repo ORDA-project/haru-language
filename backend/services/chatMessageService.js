@@ -1,6 +1,5 @@
 const { ChatMessage } = require('../models');
 const { Op } = require('sequelize');
-const sequelize = require('../db');
 
 /**
  * 채팅 메시지 저장
@@ -44,6 +43,7 @@ async function saveChatMessage(userId, messageData) {
  * 여러 채팅 메시지 저장 (트랜잭션 사용)
  */
 async function saveChatMessages(userId, messages) {
+  const { sequelize } = require('../db');
   const transaction = await sequelize.transaction();
   
   try {
@@ -166,75 +166,6 @@ async function getRecentChatMessages(userId) {
 }
 
 /**
- * 초기 인사말 생성 (한 번만 생성되도록 보장)
- */
-async function createInitialGreeting(userId) {
-  try {
-    if (!userId) {
-      throw new Error('유저 ID는 필수입니다.');
-    }
-
-    // 오늘 날짜 (오전 4시 기준)
-    const today = new Date();
-    const todayBy4AM = new Date(today);
-    todayBy4AM.setHours(4, 0, 0, 0);
-    if (today < todayBy4AM) {
-      todayBy4AM.setDate(todayBy4AM.getDate() - 1);
-    }
-
-    const transaction = await sequelize.transaction();
-    
-    try {
-      // 트랜잭션 내에서 오늘 메시지 확인 (중복 생성 방지)
-      // lock을 사용하여 동시 요청 시 하나만 처리되도록 보장
-      const existingMessages = await ChatMessage.findAll({
-        where: {
-          user_id: userId,
-          created_at: {
-            [Op.gte]: todayBy4AM,
-          },
-        },
-        transaction,
-        lock: transaction.LOCK.UPDATE, // 명시적 UPDATE LOCK
-      });
-
-      // 이미 메시지가 있으면 생성하지 않음
-      if (existingMessages.length > 0) {
-        await transaction.commit();
-        return null; // 이미 존재함
-      }
-
-      // 초기 메시지 생성
-      const initialMessage = await ChatMessage.create({
-        user_id: userId,
-        type: 'ai',
-        content: '안녕하세요! 영어 학습을 도와드릴 AI 튜터입니다. 궁금한 것이 있으시면 언제든지 질문해주세요!',
-        examples: null,
-        image_url: null,
-        question_id: null,
-      }, { transaction });
-
-      await transaction.commit();
-
-      return {
-        id: initialMessage.id.toString(),
-        type: initialMessage.type,
-        content: initialMessage.content,
-        examples: initialMessage.examples,
-        imageUrl: initialMessage.image_url,
-        timestamp: initialMessage.created_at,
-      };
-    } catch (error) {
-      await transaction.rollback();
-      throw error;
-    }
-  } catch (error) {
-    console.error('초기 인사말 생성 중 오류:', error.message);
-    throw new Error('초기 인사말 생성에 실패했습니다.');
-  }
-}
-
-/**
  * 채팅 메시지 삭제
  */
 async function deleteChatMessage(userId, messageId) {
@@ -299,8 +230,6 @@ module.exports = {
   saveChatMessages,
   getChatMessagesByDate,
   getRecentChatMessages,
-  createInitialGreeting,
   deleteChatMessage,
   deleteChatMessages,
 };
-
