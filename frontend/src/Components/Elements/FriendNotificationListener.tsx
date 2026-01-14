@@ -31,7 +31,7 @@ const FriendNotificationListener = () => {
   const processedNotificationIdsRef = useRef<Set<number>>(new Set());
   const intervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isShowingNotificationRef = useRef(false);
-  const fetchAndDisplayNotificationsRef = useRef<() => Promise<void>>();
+  const fetchAndDisplayNotificationsRef = useRef<(() => Promise<void>) | undefined>(undefined);
 
   // 알림 표시 함수
   const showNextNotification = useCallback(() => {
