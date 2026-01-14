@@ -9,6 +9,7 @@ import {
   ChatMessage,
 } from "../../../../entities/chat-messages/queries";
 import { useErrorHandler } from "../../../../hooks/useErrorHandler";
+import { http } from "../../../../utils/http";
 
 interface Message {
   id: string;
@@ -49,8 +50,7 @@ export const useChatMessages = () => {
   const userId = user?.userId;
   const { showError } = useErrorHandler();
   const queryClient = useQueryClient();
-  const hasCreatedInitialMessageRef = useRef(false);
-  const isCreatingInitialMessageRef = useRef(false);
+  const hasInitializedRef = useRef(false);
 
   // 서버에서 메시지 조회
   const { data: serverMessages, isLoading, isError } = useGetChatMessages();
@@ -60,11 +60,8 @@ export const useChatMessages = () => {
   // userId 변경 시 이전 캐시 제거 및 메시지 초기화
   useEffect(() => {
     if (!userId) {
-      // 로그아웃 상태: 메시지 초기화 및 모든 캐시 제거
       setMessages([]);
-      hasCreatedInitialMessageRef.current = false;
-      isCreatingInitialMessageRef.current = false;
-      // React Query 캐시 완전 초기화 (모든 chat-messages 관련 캐시 제거)
+      hasInitializedRef.current = false;
       queryClient.removeQueries({ 
         predicate: (query) => {
           const key = query.queryKey;
@@ -81,114 +78,64 @@ export const useChatMessages = () => {
     }
 
     // userId가 변경되었을 때 이전 사용자의 캐시 제거 및 플래그 리셋
-    hasCreatedInitialMessageRef.current = false;
-    isCreatingInitialMessageRef.current = false;
+    hasInitializedRef.current = false;
     queryClient.removeQueries({ 
       predicate: (query) => {
         const key = query.queryKey;
         return Array.isArray(key) && 
                key[0] === "chat-messages" && 
-               key[1] !== userId; // 현재 userId가 아닌 모든 캐시 제거
+               key[1] !== userId;
       }
     });
   }, [userId, queryClient]);
 
+  // 서버에서 메시지 로드 및 초기화
   useEffect(() => {
     if (!userId) {
-      // 로그아웃 상태: 메시지 초기화 (이미 위에서 캐시 제거됨)
       setMessages([]);
       return;
     }
 
-    // 서버 조회가 실패한 경우(예: 304/캐시/네트워크 이슈 등)에는
-    // "메시지가 없다"로 오판하여 초기 인사 메시지를 생성/저장하지 않도록 방지
-    if (!isLoading && isError) {
+    // 로딩 중이거나 에러가 있으면 아무것도 하지 않음
+    if (isLoading || isError) {
       return;
     }
 
-    // 서버에서 메시지 로드 (로그인한 경우에만)
-    // enabled 옵션으로 로그인하지 않은 경우 호출되지 않지만, 캐시가 남아있을 수 있으므로 명시적으로 체크
-    // serverMessages가 undefined이거나 null이면 빈 배열로 처리
+    // 서버 응답 처리
     if (serverMessages && Array.isArray(serverMessages)) {
       if (serverMessages.length > 0) {
+        // 메시지가 있으면 그대로 사용
         const convertedMessages = serverMessages.map(convertToLocalMessage);
         setMessages(convertedMessages);
-        // 서버에 메시지가 있으면 초기 메시지 생성 플래그 리셋 (이미 메시지가 있으므로)
-        hasCreatedInitialMessageRef.current = true;
-        isCreatingInitialMessageRef.current = false;
-      } else {
-        // 빈 배열인 경우 초기 메시지 생성 (한 번만)
-        if (!isLoading && !hasCreatedInitialMessageRef.current && !isCreatingInitialMessageRef.current) {
-          isCreatingInitialMessageRef.current = true;
-          const initialMessage: Message = {
-            id: "initial",
-            type: "ai",
-            content: "안녕하세요! 영어 학습을 도와드릴 AI 튜터입니다. 궁금한 것이 있으시면 언제든지 질문해주세요!",
-            timestamp: new Date(),
-          };
-          setMessages([initialMessage]);
-          
-          // 서버에 초기 메시지 저장
-          saveMessageMutation.mutate(
-            {
-              type: "ai",
-              content: initialMessage.content,
-            },
-            {
-              onSuccess: (saved) => {
-                hasCreatedInitialMessageRef.current = true;
-                isCreatingInitialMessageRef.current = false;
-                setMessages([convertToLocalMessage(saved)]);
-              },
-              onError: (error) => {
-                console.error("초기 메시지 저장 실패:", error);
-                isCreatingInitialMessageRef.current = false;
-                // 저장 실패 시 메시지 제거
-                setMessages([]);
-              },
-            }
-          );
-        }
-      }
-    } else if (!isLoading && (serverMessages === undefined || serverMessages === null)) {
-      // 메시지가 없으면 초기 메시지 생성 (한 번만)
-      if (!hasCreatedInitialMessageRef.current && !isCreatingInitialMessageRef.current) {
-        isCreatingInitialMessageRef.current = true;
-        const initialMessage: Message = {
-          id: "initial",
-          type: "ai",
-          content: "안녕하세요! 영어 학습을 도와드릴 AI 튜터입니다. 궁금한 것이 있으시면 언제든지 질문해주세요!",
-          timestamp: new Date(),
-        };
-        setMessages([initialMessage]);
+        hasInitializedRef.current = true;
+      } else if (!hasInitializedRef.current) {
+        // 메시지가 없고 아직 초기화하지 않았으면 초기 인사말 생성
+        hasInitializedRef.current = true;
         
-        // 서버에 초기 메시지 저장
-        saveMessageMutation.mutate(
-          {
-            type: "ai",
-            content: initialMessage.content,
-          },
-          {
-            onSuccess: (saved) => {
-              hasCreatedInitialMessageRef.current = true;
-              isCreatingInitialMessageRef.current = false;
-              setMessages([convertToLocalMessage(saved)]);
-            },
-            onError: (error) => {
-              console.error("초기 메시지 저장 실패:", error);
-              isCreatingInitialMessageRef.current = false;
-              // 저장 실패 시 메시지 제거
-              setMessages([]);
-            },
-          }
-        );
+        // 초기화 API 호출
+        http.post<ChatMessage>("/chat-message/initialize", {})
+          .then(() => {
+            // 초기 메시지 생성 후 다시 조회하여 최신 상태 반영
+            // refetch는 React Query가 자동으로 처리하므로 수동 호출 불필요
+            // 대신 쿼리를 무효화하여 자동 재조회 유도
+            queryClient.invalidateQueries({ 
+              queryKey: ["chat-messages", userId] 
+            });
+          })
+          .catch((error) => {
+            console.error("초기 인사말 생성 실패:", error);
+            // 에러 발생 시에도 다시 조회 (이미 생성되었을 수 있음)
+            queryClient.invalidateQueries({ 
+              queryKey: ["chat-messages", userId] 
+            });
+          });
       }
     }
-  }, [userId, serverMessages, isLoading, isError, saveMessageMutation, queryClient]);
+  }, [userId, serverMessages, isLoading, isError, queryClient]);
 
   const addMessage = useCallback(
     async (message: Message) => {
-      if (!userId) return; // 로그인하지 않은 경우 추가하지 않음
+      if (!userId) return;
 
       // 즉시 UI에 반영
       setMessages((prev) => [...prev, message]);
@@ -208,7 +155,7 @@ export const useChatMessages = () => {
 
   const updateMessages = useCallback(
     (updater: (prev: Message[]) => Message[]) => {
-      if (!userId) return; // 로그인하지 않은 경우 업데이트하지 않음
+      if (!userId) return;
 
       setMessages((prev) => {
         const updated = updater(prev);
@@ -239,4 +186,3 @@ export const useChatMessages = () => {
     isLoading,
   };
 };
-

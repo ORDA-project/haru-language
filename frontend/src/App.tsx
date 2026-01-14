@@ -66,7 +66,7 @@ const router = createBrowserRouter([
     element: <UserProfileEdit />,
   },
   {
-    path: "daily-sentence",
+    path: "/daily-sentence",
     element: <DailySentence />,
   },
   {
