@@ -13,6 +13,7 @@ const router = express.Router();
 // uploads 디렉토리 확인 및 생성
 const uploadsDir = path.join(__dirname, "..", "uploads");
 const exampleImagesDir = path.join(__dirname, "..", "uploads", "examples");
+const chatImagesDir = path.join(__dirname, "..", "uploads", "chat");
 (async () => {
   try {
     await fs.access(uploadsDir);
@@ -31,6 +32,16 @@ const exampleImagesDir = path.join(__dirname, "..", "uploads", "examples");
       await fs.mkdir(exampleImagesDir, { recursive: true });
     } catch (error) {
       console.error("exampleImages 디렉토리 생성 실패:", error.message);
+    }
+  }
+  // 채팅 이미지 저장 디렉토리 생성
+  try {
+    await fs.access(chatImagesDir);
+  } catch {
+    try {
+      await fs.mkdir(chatImagesDir, { recursive: true });
+    } catch (error) {
+      console.error("chatImages 디렉토리 생성 실패:", error.message);
     }
   }
 })();
@@ -62,7 +73,7 @@ const cleanupFile = async (filePath) => {
   }
 };
 
-// 이미지를 영구 저장하고 URL 반환
+// 이미지를 영구 저장하고 URL 반환 (예문용)
 const saveImagePermanently = async (tempFilePath, userId, exampleId) => {
   try {
     const fileExt = path.extname(tempFilePath);
@@ -79,6 +90,27 @@ const saveImagePermanently = async (tempFilePath, userId, exampleId) => {
     return imageUrl;
   } catch (error) {
     console.error("이미지 영구 저장 실패:", error.message);
+    throw error;
+  }
+};
+
+// 채팅 메시지용 이미지를 영구 저장하고 URL 반환
+const saveChatImagePermanently = async (tempFilePath, userId) => {
+  try {
+    const fileExt = path.extname(tempFilePath);
+    const fileName = `chat_${userId}_${Date.now()}${fileExt}`;
+    const permanentPath = path.join(chatImagesDir, fileName);
+    
+    // 임시 파일을 영구 저장소로 이동
+    await fs.copyFile(tempFilePath, permanentPath);
+    
+    // URL 생성 (프로덕션에서는 실제 도메인 사용)
+    const baseUrl = process.env.API_BASE_URL || 'http://localhost:3000';
+    const imageUrl = `${baseUrl}/uploads/chat/${fileName}`;
+    
+    return imageUrl;
+  } catch (error) {
+    console.error("채팅 이미지 영구 저장 실패:", error.message);
     throw error;
   }
 };
@@ -151,9 +183,19 @@ router.post("/", upload.single("image"), async (req, res) => {
     // 먼저 예문 생성 (이미지 URL은 나중에 추가)
     const gptResponse = await generateExamples(combinedText, userId, null, saveToDb);
     
-    // 예문이 생성되었고 DB에 저장되었다면 (saveToDb가 true인 경우만), 이미지를 영구 저장하고 URL 업데이트
+    // 이미지를 영구 저장하고 URL 생성
     let savedImageUrl = null;
-    if (saveToDb && gptResponse?.generatedExample && userId) {
+    
+    if (isChat) {
+      // 채팅 메시지인 경우: 채팅 이미지 디렉토리에 저장
+      try {
+        savedImageUrl = await saveChatImagePermanently(filePath, userId);
+      } catch (imageError) {
+        console.error("채팅 이미지 저장 중 오류:", imageError.message);
+        // 이미지 저장 실패해도 계속 진행
+      }
+    } else if (saveToDb && gptResponse?.generatedExample && userId) {
+      // 예문 생성인 경우: 예문 이미지 디렉토리에 저장하고 DB 업데이트
       try {
         // 가장 최근에 생성된 예문 찾기 (같은 userId, 같은 extractedSentence)
         const Example = require("../models/Example");
@@ -191,6 +233,7 @@ router.post("/", upload.single("image"), async (req, res) => {
     res.status(200).json({
       extractedText,
       generatedExample: gptResponse,
+      imageUrl: savedImageUrl, // 채팅 메시지에서 사용할 이미지 URL 반환
     });
   } catch (error) {
     // 에러 로그 출력 (서버 로그에만 기록)

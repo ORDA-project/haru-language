@@ -70,6 +70,7 @@ interface ExampleApiResponse {
     examples?: Array<any>;
     description?: string;
   };
+  imageUrl?: string; // 서버에서 반환하는 이미지 URL
 }
 
 const normalizeExampleResponse = (response: ExampleApiResponse) => {
@@ -436,6 +437,26 @@ const StageChat = ({ onBack }: StageChatProps) => {
         console.log("이미지 분석 응답:", response.data);
       }
 
+      // 서버에서 반환한 이미지 URL 가져오기
+      const serverImageUrl = response.data?.imageUrl;
+      
+      // 서버에서 반환한 이미지 URL을 사용자 메시지에도 업데이트
+      if (serverImageUrl) {
+        // 가장 최근 사용자 메시지를 찾아서 이미지 URL 업데이트
+        setMessages((prev) => {
+          const updated = [...prev];
+          // 뒤에서부터 찾아서 가장 최근 사용자 메시지 업데이트
+          for (let i = updated.length - 1; i >= 0; i--) {
+            const msg = updated[i];
+            if (msg.type === "user" && msg.imageUrl && typeof msg.imageUrl === "string" && msg.imageUrl.startsWith("data:")) {
+              updated[i] = { ...msg, imageUrl: serverImageUrl };
+              break;
+            }
+          }
+          return updated;
+        });
+      }
+
       // 예문 생성과 동일한 방식으로 응답 정규화
       const actualExample = normalizeExampleResponse(response.data);
 
@@ -501,12 +522,13 @@ const StageChat = ({ onBack }: StageChatProps) => {
       };
 
       // 예문 카드 메시지
+      // 서버에서 반환한 이미지 URL 사용 (없으면 base64 사용)
       const exampleMessage: Message = {
         id: (Date.now() + 2).toString(),
         type: "ai",
         content: userContent, // 사용자가 입력한 텍스트가 있으면 포함
         examples: examples,
-        imageUrl: imageData || croppedImage || undefined, // 이미지 분석에 사용된 이미지 URL 저장
+        imageUrl: serverImageUrl || imageData || croppedImage || undefined, // 서버 URL 우선 사용
         timestamp: new Date(),
       };
 
