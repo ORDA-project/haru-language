@@ -200,17 +200,31 @@ const StageChat = ({ onBack }: StageChatProps) => {
     // 이미지가 있거나 텍스트가 있어야 전송 가능
     if ((!inputMessage.trim() && !croppedImage) || isLoading) return;
 
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      type: "user",
-      content: inputMessage.trim() || "",
-      imageUrl: croppedImage || undefined,
-      timestamp: new Date(),
-    };
-
-    addMessage(userMessage);
     const messageContent = inputMessage.trim();
     const messageImage = croppedImage;
+    const userMessageId = Date.now().toString();
+    
+    // 이미지가 있으면 서버 URL을 받은 후에 저장하도록 지연
+    // 텍스트만 있으면 즉시 저장
+    if (!messageImage) {
+      const userMessage: Message = {
+        id: userMessageId,
+        type: "user",
+        content: messageContent || "",
+        timestamp: new Date(),
+      };
+      addMessage(userMessage);
+    } else {
+      // 이미지가 있는 경우 UI에만 표시 (서버 저장은 나중에)
+      setMessages((prev) => [...prev, {
+        id: userMessageId,
+        type: "user" as const,
+        content: messageContent || "",
+        imageUrl: messageImage || undefined,
+        timestamp: new Date(),
+      }]);
+    }
+    
     setInputMessage("");
     setCroppedImage(null);
     setIsLoading(true);
@@ -220,8 +234,8 @@ const StageChat = ({ onBack }: StageChatProps) => {
       
       // 이미지가 있으면 이미지 분석, 텍스트만 있으면 질문 API 호출
       if (messageImage) {
-        // 이미지 분석 요청
-        await handleImageAnalysis(messageImage, messageContent);
+        // 이미지 분석 요청 (서버 URL을 받아서 사용자 메시지 업데이트)
+        await handleImageAnalysis(messageImage, messageContent, userMessageId);
       } else if (messageContent) {
         // 텍스트만 있는 경우 질문 API 호출
         const response = await axios.post<{
@@ -397,7 +411,7 @@ const StageChat = ({ onBack }: StageChatProps) => {
     setCropStage("chat");
   };
 
-  const handleImageAnalysis = async (imageData: string, textContent?: string) => {
+  const handleImageAnalysis = async (imageData: string, textContent?: string, userMessageId?: string) => {
     setIsLoading(true);
 
     try {
@@ -440,16 +454,32 @@ const StageChat = ({ onBack }: StageChatProps) => {
       // 서버에서 반환한 이미지 URL 가져오기
       const serverImageUrl = response.data?.imageUrl;
       
-      // 서버에서 반환한 이미지 URL을 사용자 메시지에도 업데이트
-      if (serverImageUrl) {
-        // 가장 최근 사용자 메시지를 찾아서 이미지 URL 업데이트
+      // 서버에서 반환한 이미지 URL을 사용자 메시지에 업데이트하고 서버에 저장
+      if (serverImageUrl && userMessageId) {
         setMessages((prev) => {
           const updated = [...prev];
-          // 뒤에서부터 찾아서 가장 최근 사용자 메시지 업데이트
+          // 사용자 메시지 찾아서 이미지 URL 업데이트
+          for (let i = updated.length - 1; i >= 0; i--) {
+            const msg = updated[i];
+            if (msg.id === userMessageId && msg.type === "user") {
+              updated[i] = { ...msg, imageUrl: serverImageUrl };
+              // 서버에 저장 (이미지 URL 포함)
+              addMessage(updated[i]);
+              break;
+            }
+          }
+          return updated;
+        });
+      } else if (serverImageUrl) {
+        // userMessageId가 없으면 가장 최근 사용자 메시지 찾기
+        setMessages((prev) => {
+          const updated = [...prev];
           for (let i = updated.length - 1; i >= 0; i--) {
             const msg = updated[i];
             if (msg.type === "user" && msg.imageUrl && typeof msg.imageUrl === "string" && msg.imageUrl.startsWith("data:")) {
               updated[i] = { ...msg, imageUrl: serverImageUrl };
+              // 서버에 저장 (이미지 URL 포함)
+              addMessage(updated[i]);
               break;
             }
           }

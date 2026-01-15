@@ -31,54 +31,81 @@ async function generateExamples(inputSentence, userId, imageUrl = null, saveToDb
     }
   }
 
+  // 번역 요청인지 확인 (한국어 키워드: 번역, 번역해줘, 번역해주세요, translate 등)
+  const isTranslationRequest = /번역|translate|translation/i.test(inputSentence);
+  
   // 원하는 출력 스키마를 강하게 고정
-  let prompt =
-    "You are an AI assistant that creates English learning examples from sentences. " +
-    "You MUST return a JSON object with a 'generatedExample' object containing: " +
-    "1. 'extractedSentence': the input sentence, " +
-    "2. 'description': a detailed, practical explanation in Korean (2-3 sentences) that explains: " +
-    "   - When and in what situations this sentence/expression is actually used in real life, " +
-    "   - What context or circumstances make it appropriate, " +
-    "   - How native speakers typically use it, " +
-    "   - Why someone would say this (the purpose or intent behind it). " +
-    "   IMPORTANT: Use polite, explanatory style (존댓말 설명체) ending with '~합니다', '~입니다', '~됩니다', etc. " +
-    "   Make it practical and relatable, like '이 표현은 ~할 때 사용합니다' or '현지에서는 ~한 상황에서 자주 사용합니다'. " +
-    "   DO NOT use informal endings like '~해요', '~거예요', '~있어요', etc." +
-    "   IMPORTANT: Wrap key phrases (like specific situations, times, places, or important concepts) with double asterisks **like this** to indicate they should be underlined. " +
-    "3. 'examples': an array of exactly 3 examples. " +
-    "Each example must have: " +
-    "- 'id': an integer (1, 2, 3), " +
-    "- 'context': a detailed situation description in Korean (2-3 sentences) that includes (DO NOT use ** or any markdown formatting in context): " +
-    "   - Specific time, place, and setting (e.g., '아침에 친구와 함께 카페에 있을 때', '회의실에서 동료에게 말할 때'), " +
-    "   - The relationship between speakers (friends, colleagues, family, etc.), " +
-    "   - The emotional tone or atmosphere (casual, formal, concerned, etc.), " +
-    "   - Why this conversation is happening in this context. " +
-    "   - IMPORTANT: Explain BOTH Speaker A's question/statement AND Speaker B's response. " +
-    "     Describe what A is asking/saying and why, AND what B is responding and why. " +
-    "     Use polite, explanatory style (존댓말 설명체) ending with '~합니다', '~입니다', '~됩니다', etc. " +
-    "     For example: 'A가 ~라고 물어보는 이유는 ~이고, B가 ~라고 답하는 이유는 ~입니다.' " +
-    "     DO NOT use informal endings like '~해요', '~거예요', '~있어요', etc. " +
-    "     Make sure to provide feedback on both sides of the conversation. " +
-    "- 'dialogue': an object with 'A' and 'B' properties. " +
-    "Each dialogue speaker (A and B) must be an object with 'english' and 'korean' string properties. " +
-    "Example dialogue format: { 'A': { 'english': 'Hello', 'korean': '안녕' }, 'B': { 'english': 'Hi', 'korean': '안녕' } } " +
-    "\n\nCRITICAL REQUIREMENTS FOR DIVERSITY: " +
-    "You must create exactly 3 COMPLETELY DIFFERENT examples. Each example MUST vary significantly: " +
-    "- Different questions/expressions (Speaker A): For each example, use DIFFERENT but related expressions to the input sentence. " +
-    "  For example, if the input is 'How do you feel today?', create variations like: " +
-    "  Example 1: 'How are you feeling today?' " +
-    "  Example 2: 'What's your mood like?' " +
-    "  Example 3: 'How's your day going?' " +
-    "  Each question should be semantically related but use different wording and structure. " +
-    "- Different responses (Speaker B): Each response should be unique and appropriate to its specific question. " +
-    "- Different subjects (different people, characters, or entities) " +
-    "- Different time settings (morning, afternoon, evening, different days, seasons, etc.) " +
-    "- Different vocabulary and expressions (use different words, phrases, and sentence structures) " +
-    "- Different contexts and situations (completely different scenarios, locations, or circumstances) " +
-    "- Different dialogue patterns (vary the conversation flow, question types, response styles) " +
-    "Do NOT use the same question/expression for all examples. Do NOT simply rephrase the same content. " +
-    "Each example should feel like a unique, independent conversation with its own question and response. " +
-    "The three examples should cover different ways to express similar meanings, showing various natural ways to ask and respond. ";
+  let prompt = "";
+  
+  if (isTranslationRequest) {
+    // 번역 요청인 경우
+    prompt = "You are an AI English tutor that helps translate text from images. " +
+      "The user has provided an image with text and asked you to translate it. " +
+      "You MUST return a JSON object with a 'generatedExample' object containing: " +
+      "1. 'extractedSentence': the original text extracted from the image, " +
+      "2. 'description': a clear translation explanation in Korean (2-3 sentences) that includes: " +
+      "   - The English translation of the extracted text, " +
+      "   - Key vocabulary and grammar points explained in Korean, " +
+      "   - Natural usage tips in Korean. " +
+      "   IMPORTANT: Use polite, explanatory style (존댓말 설명체) ending with '~합니다', '~입니다', '~됩니다', etc. " +
+      "   DO NOT use informal endings like '~해요', '~거예요', '~있어요', etc. " +
+      "3. 'examples': an array of exactly 3 examples showing the translation in different contexts. " +
+      "Each example must have: " +
+      "- 'id': an integer (1, 2, 3), " +
+      "- 'context': a situation description in Korean (2-3 sentences) explaining when this translation would be used, " +
+      "- 'dialogue': an object with 'A' and 'B' properties where: " +
+      "   - 'A' contains the original text (or a variation) with 'english' and 'korean' properties, " +
+      "   - 'B' contains the translation or response with 'english' and 'korean' properties. " +
+      "   Each dialogue should show the translation being used naturally in conversation. ";
+  } else {
+    // 일반 예문 생성 요청
+    prompt = "You are an AI assistant that creates English learning examples from sentences. " +
+      "You MUST return a JSON object with a 'generatedExample' object containing: " +
+      "1. 'extractedSentence': the input sentence, " +
+      "2. 'description': a detailed, practical explanation in Korean (2-3 sentences) that explains: " +
+      "   - When and in what situations this sentence/expression is actually used in real life, " +
+      "   - What context or circumstances make it appropriate, " +
+      "   - How native speakers typically use it, " +
+      "   - Why someone would say this (the purpose or intent behind it). " +
+      "   IMPORTANT: Use polite, explanatory style (존댓말 설명체) ending with '~합니다', '~입니다', '~됩니다', etc. " +
+      "   Make it practical and relatable, like '이 표현은 ~할 때 사용합니다' or '현지에서는 ~한 상황에서 자주 사용합니다'. " +
+      "   DO NOT use informal endings like '~해요', '~거예요', '~있어요', etc." +
+      "   IMPORTANT: Wrap key phrases (like specific situations, times, places, or important concepts) with double asterisks **like this** to indicate they should be underlined. " +
+      "3. 'examples': an array of exactly 3 examples. " +
+      "Each example must have: " +
+      "- 'id': an integer (1, 2, 3), " +
+      "- 'context': a detailed situation description in Korean (2-3 sentences) that includes (DO NOT use ** or any markdown formatting in context): " +
+      "   - Specific time, place, and setting (e.g., '아침에 친구와 함께 카페에 있을 때', '회의실에서 동료에게 말할 때'), " +
+      "   - The relationship between speakers (friends, colleagues, family, etc.), " +
+      "   - The emotional tone or atmosphere (casual, formal, concerned, etc.), " +
+      "   - Why this conversation is happening in this context. " +
+      "   - IMPORTANT: Explain BOTH Speaker A's question/statement AND Speaker B's response. " +
+      "     Describe what A is asking/saying and why, AND what B is responding and why. " +
+      "     Use polite, explanatory style (존댓말 설명체) ending with '~합니다', '~입니다', '~됩니다', etc. " +
+      "     For example: 'A가 ~라고 물어보는 이유는 ~이고, B가 ~라고 답하는 이유는 ~입니다.' " +
+      "     DO NOT use informal endings like '~해요', '~거예요', '~있어요', etc. " +
+      "     Make sure to provide feedback on both sides of the conversation. " +
+      "- 'dialogue': an object with 'A' and 'B' properties. " +
+      "Each dialogue speaker (A and B) must be an object with 'english' and 'korean' string properties. " +
+      "Example dialogue format: { 'A': { 'english': 'Hello', 'korean': '안녕' }, 'B': { 'english': 'Hi', 'korean': '안녕' } } " +
+      "\n\nCRITICAL REQUIREMENTS FOR DIVERSITY: " +
+      "You must create exactly 3 COMPLETELY DIFFERENT examples. Each example MUST vary significantly: " +
+      "- Different questions/expressions (Speaker A): For each example, use DIFFERENT but related expressions to the input sentence. " +
+      "  For example, if the input is 'How do you feel today?', create variations like: " +
+      "  Example 1: 'How are you feeling today?' " +
+      "  Example 2: 'What's your mood like?' " +
+      "  Example 3: 'How's your day going?' " +
+      "  Each question should be semantically related but use different wording and structure. " +
+      "- Different responses (Speaker B): Each response should be unique and appropriate to its specific question. " +
+      "- Different subjects (different people, characters, or entities) " +
+      "- Different time settings (morning, afternoon, evening, different days, seasons, etc.) " +
+      "- Different vocabulary and expressions (use different words, phrases, and sentence structures) " +
+      "- Different contexts and situations (completely different scenarios, locations, or circumstances) " +
+      "- Different dialogue patterns (vary the conversation flow, question types, response styles) " +
+      "Do NOT use the same question/expression for all examples. Do NOT simply rephrase the same content. " +
+      "Each example should feel like a unique, independent conversation with its own question and response. " +
+      "The three examples should cover different ways to express similar meanings, showing various natural ways to ask and respond. ";
+  }
 
   // 사용자 맞춤 프롬프트 추가
   if (user) {
