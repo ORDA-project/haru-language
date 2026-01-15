@@ -23,7 +23,7 @@ const ChatMessage = sequelize.define('ChatMessage', {
     allowNull: true,
   },
   image_url: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
     allowNull: true,
   },
   question_id: {
