@@ -261,7 +261,7 @@ const StageChat = ({ onBack }: StageChatProps) => {
 
 
   return (
-    <div className="w-full flex-1 flex flex-col bg-[#F7F8FB] relative">
+    <div className="w-full flex-1 flex flex-col bg-[#F7F8FB] relative" style={{ zIndex: 1 }}>
       {/* Header - 고정 */}
       <div className={`flex items-center justify-between ${isLargeTextMode ? "py-3 px-5" : "py-3 px-4"} bg-white border-b border-gray-200 fixed top-0 left-0 right-0 z-50 max-w-[440px] mx-auto`} style={{ height: isLargeTextMode ? "56px" : "48px" }}>
         <button

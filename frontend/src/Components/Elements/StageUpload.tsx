@@ -31,7 +31,7 @@ const StageUpload = ({ handleFileUpload, handleAIChat, hasSavedExample = false, 
   };
 
   return (
-    <div className="w-full flex-1 flex flex-col bg-[#F7F8FB]">
+    <div className="w-full flex-1 flex flex-col bg-[#F7F8FB] relative" style={{ zIndex: 1 }}>
       {/* Header */}
       <div className="flex items-center justify-between py-3 px-4 bg-white border-b border-gray-200">
         <div className="w-8"></div>

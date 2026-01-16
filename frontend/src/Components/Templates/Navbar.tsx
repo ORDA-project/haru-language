@@ -31,8 +31,12 @@ const NavBar = ({ currentPage }: NavBarProps) => {
 
   return (
     <div 
-      className="flex items-center justify-around fixed bottom-0 left-0 right-0 w-full max-w-[440px] mx-auto box-border h-[72px] z-[100]"
-      style={{ backgroundColor: '#00daaa' }}
+      className="flex items-center justify-around fixed bottom-0 left-0 right-0 w-full max-w-[440px] mx-auto box-border h-[72px]"
+      style={{ 
+        backgroundColor: '#00daaa',
+        zIndex: 9999,
+        position: 'fixed'
+      }}
     >
       {/* 예문 버튼 */}
       <NavLink
