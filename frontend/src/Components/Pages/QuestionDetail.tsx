@@ -7,7 +7,7 @@ import { useGetQuestionsByUserId, useDeleteQuestion } from "../../entities/quest
 import { useGetExampleHistory, useDeleteExample } from "../../entities/examples/queries";
 import { useWritingRecords, useDeleteWritingRecord } from "../../entities/writing/queries";
 import { useWritingQuestions } from "../../entities/writing/queries";
-import { useGetChatMessagesByDate, useDeleteChatMessages } from "../../entities/chat-messages/queries";
+import { useGetChatMessagesByDate, useDeleteChatMessage } from "../../entities/chat-messages/queries";
 import { useErrorHandler } from "../../hooks/useErrorHandler";
 import NavBar from "../Templates/Navbar";
 import { createExtendedTextStyles } from "../../utils/styleUtils";
@@ -19,6 +19,7 @@ import { useDateNavigation } from "./QuestionDetail/hooks/useDateNavigation";
 import { WritingRecordsSection } from "./QuestionDetail/components/WritingRecordsSection";
 import { ChatMessagesSection } from "./QuestionDetail/components/ChatMessagesSection";
 import { ExampleRecordsSection } from "./QuestionDetail/components/ExampleRecordsSection";
+import { DeleteConfirmModal } from "./QuestionDetail/components/DeleteConfirmModal";
 import { getDateString, parseGeneratedExample } from "./QuestionDetail/utils";
 
 type ExampleDialogue = {
@@ -47,7 +48,10 @@ const QuestionDetail = () => {
   const { showWarning, showError, showSuccess } = useErrorHandler();
   const deleteWritingRecordMutation = useDeleteWritingRecord();
   const deleteExampleMutation = useDeleteExample();
-  const deleteChatMessagesMutation = useDeleteChatMessages();
+  const deleteChatMessageMutation = useDeleteChatMessage();
+  const [showChatDeleteModal, setShowChatDeleteModal] = useState(false);
+  const [showExampleDeleteModal, setShowExampleDeleteModal] = useState(false);
+  const [showWritingDeleteModal, setShowWritingDeleteModal] = useState(false);
 
   // 로그인 체크 - useEffect에서 navigate 대신 window.location 사용 (렌더링 중 업데이트 방지)
   useEffect(() => {
@@ -340,20 +344,9 @@ const QuestionDetail = () => {
           onDeselectAll={() => {
             setSelectedWritingIds(new Set());
           }}
-          onDelete={async () => {
-            if (window.confirm(`선택한 ${selectedWritingIds.size}개의 하루한줄 기록을 삭제하시겠습니까?`)) {
-              try {
-                const deletePromises = Array.from(selectedWritingIds).map(id =>
-                  deleteWritingRecordMutation.mutateAsync(id)
-                );
-                await Promise.all(deletePromises);
-                showSuccess("삭제 완료", `${selectedWritingIds.size}개의 하루한줄 기록이 삭제되었습니다.`);
-                setSelectedWritingIds(new Set());
-                setIsDeleteModeWriting(false);
-              } catch (error) {
-                showError("삭제 실패", "하루한줄 기록 삭제에 실패했습니다.");
-              }
-            }
+          onDelete={() => {
+            if (selectedWritingIds.size === 0) return;
+            setShowWritingDeleteModal(true);
           }}
           isDeleting={deleteWritingRecordMutation.isPending}
           isLargeTextMode={isLargeTextMode}
@@ -396,44 +389,10 @@ const QuestionDetail = () => {
           onDeselectAll={() => {
             setSelectedChatMessageIds(new Set());
           }}
-          onDelete={async () => {
+          onDelete={() => {
             if (!user?.userId) return; // 로그인하지 않은 경우 삭제 불가
-            if (window.confirm(`선택한 ${selectedChatMessageIds.size}개의 채팅 기록을 삭제하시겠습니까?`)) {
-              try {
-                // 유효한 숫자 ID만 필터링
-                const validIds = Array.from(selectedChatMessageIds)
-                  .map((id) => {
-                    // 문자열이면 숫자로 변환 시도
-                    if (typeof id === 'string') {
-                      const numId = parseInt(id, 10);
-                      return isNaN(numId) || numId <= 0 ? null : String(numId);
-                    }
-                    // 숫자면 문자열로 변환
-                    if (typeof id === 'number') {
-                      return id > 0 ? String(id) : null;
-                    }
-                    return null;
-                  })
-                  .filter((id): id is string => id !== null);
-                
-                if (validIds.length === 0) {
-                  showError("삭제 실패", "유효한 메시지 ID가 없습니다.");
-                  return;
-                }
-                
-                if (import.meta.env.DEV) {
-                  console.log("삭제할 메시지 ID:", validIds);
-                }
-                
-                await deleteChatMessagesMutation.mutateAsync(validIds);
-                showSuccess("삭제 완료", `${validIds.length}개의 채팅 기록이 삭제되었습니다.`);
-                setSelectedChatMessageIds(new Set());
-                setIsDeleteModeChat(false);
-              } catch (error) {
-                console.error("삭제 오류:", error);
-                showError("삭제 실패", "채팅 기록 삭제에 실패했습니다.");
-              }
-            }
+            if (selectedChatMessageIds.size === 0) return;
+            setShowChatDeleteModal(true);
           }}
           onExampleScrollChange={(messageId, index) => {
             setExampleScrollIndices((prev) => ({
@@ -475,21 +434,9 @@ const QuestionDetail = () => {
           onDeselectAll={() => {
             setSelectedExampleIds(new Set());
           }}
-          onDelete={async () => {
-            if (window.confirm(`선택한 ${selectedExampleIds.size}개의 예문 기록을 삭제하시겠습니까?`)) {
-              try {
-                const deletePromises = Array.from(selectedExampleIds).map((id) =>
-                  deleteExampleMutation.mutateAsync(id)
-                );
-                await Promise.all(deletePromises);
-                removeExamplesFromStorage(Array.from(selectedExampleIds));
-                showSuccess("삭제 완료", `${selectedExampleIds.size}개의 예문 기록이 삭제되었습니다.`);
-                setSelectedExampleIds(new Set());
-                setIsDeleteMode(false);
-              } catch (error) {
-                showError("삭제 실패", "예문 기록 삭제에 실패했습니다.");
-              }
-            }
+          onDelete={() => {
+            if (selectedExampleIds.size === 0) return;
+            setShowExampleDeleteModal(true);
           }}
           onItemIndexChange={handleItemIndexChange}
           isLargeTextMode={isLargeTextMode}
@@ -511,6 +458,100 @@ const QuestionDetail = () => {
       </div>
 
       <NavBar currentPage={"QuestionDetail"} />
+
+      {/* 채팅 기록 삭제 확인 모달 */}
+      <DeleteConfirmModal
+        isOpen={showChatDeleteModal}
+        onClose={() => setShowChatDeleteModal(false)}
+        onConfirm={async () => {
+          if (!user?.userId) return;
+          try {
+            // 예문 삭제처럼 개별 삭제로 변경
+            const validIds = Array.from(selectedChatMessageIds)
+              .map((id) => {
+                if (typeof id === 'string') {
+                  const numId = parseInt(id, 10);
+                  return isNaN(numId) || numId <= 0 ? null : id;
+                }
+                if (typeof id === 'number') {
+                  return id > 0 ? String(id) : null;
+                }
+                return null;
+              })
+              .filter((id): id is string => id !== null);
+            
+            if (validIds.length === 0) {
+              showError("삭제 실패", "유효한 메시지 ID가 없습니다.");
+              setShowChatDeleteModal(false);
+              return;
+            }
+            
+            // 개별 삭제 (예문 삭제와 동일한 방식)
+            const deletePromises = validIds.map((id) =>
+              deleteChatMessageMutation.mutateAsync(id)
+            );
+            await Promise.all(deletePromises);
+            
+            showSuccess("삭제 완료", `${validIds.length}개의 채팅 기록이 삭제되었습니다.`);
+            setSelectedChatMessageIds(new Set());
+            setIsDeleteModeChat(false);
+            setShowChatDeleteModal(false);
+          } catch (error) {
+            console.error("삭제 오류:", error);
+            showError("삭제 실패", "채팅 기록 삭제에 실패했습니다.");
+            setShowChatDeleteModal(false);
+          }
+        }}
+        message={`선택한 ${selectedChatMessageIds.size}개의 채팅 기록을 삭제하시겠습니까?`}
+        isLoading={deleteChatMessageMutation.isPending}
+      />
+
+      {/* 예문 기록 삭제 확인 모달 */}
+      <DeleteConfirmModal
+        isOpen={showExampleDeleteModal}
+        onClose={() => setShowExampleDeleteModal(false)}
+        onConfirm={async () => {
+          try {
+            const deletePromises = Array.from(selectedExampleIds).map((id) =>
+              deleteExampleMutation.mutateAsync(id)
+            );
+            await Promise.all(deletePromises);
+            removeExamplesFromStorage(Array.from(selectedExampleIds));
+            showSuccess("삭제 완료", `${selectedExampleIds.size}개의 예문 기록이 삭제되었습니다.`);
+            setSelectedExampleIds(new Set());
+            setIsDeleteMode(false);
+            setShowExampleDeleteModal(false);
+          } catch (error) {
+            showError("삭제 실패", "예문 기록 삭제에 실패했습니다.");
+            setShowExampleDeleteModal(false);
+          }
+        }}
+        message={`선택한 ${selectedExampleIds.size}개의 예문 기록을 삭제하시겠습니까?`}
+        isLoading={deleteExampleMutation.isPending}
+      />
+
+      {/* 하루한줄 기록 삭제 확인 모달 */}
+      <DeleteConfirmModal
+        isOpen={showWritingDeleteModal}
+        onClose={() => setShowWritingDeleteModal(false)}
+        onConfirm={async () => {
+          try {
+            const deletePromises = Array.from(selectedWritingIds).map(id =>
+              deleteWritingRecordMutation.mutateAsync(id)
+            );
+            await Promise.all(deletePromises);
+            showSuccess("삭제 완료", `${selectedWritingIds.size}개의 하루한줄 기록이 삭제되었습니다.`);
+            setSelectedWritingIds(new Set());
+            setIsDeleteModeWriting(false);
+            setShowWritingDeleteModal(false);
+          } catch (error) {
+            showError("삭제 실패", "하루한줄 기록 삭제에 실패했습니다.");
+            setShowWritingDeleteModal(false);
+          }
+        }}
+        message={`선택한 ${selectedWritingIds.size}개의 하루한줄 기록을 삭제하시겠습니까?`}
+        isLoading={deleteWritingRecordMutation.isPending}
+      />
     </div>
   );
 };
