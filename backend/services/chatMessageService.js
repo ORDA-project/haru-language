@@ -219,14 +219,25 @@ async function deleteChatMessages(userId, messageIds) {
     // 유효한 숫자 ID만 필터링
     const validIds = messageIds
       .map(id => {
-        const numId = typeof id === 'string' ? parseInt(id, 10) : id;
-        return numId;
+        // 문자열이면 숫자로 변환
+        if (typeof id === 'string') {
+          const numId = parseInt(id, 10);
+          return isNaN(numId) || numId <= 0 ? null : numId;
+        }
+        // 숫자면 그대로 사용
+        if (typeof id === 'number') {
+          return Number.isInteger(id) && id > 0 ? id : null;
+        }
+        return null;
       })
-      .filter(id => Number.isInteger(id) && id > 0);
+      .filter(id => id !== null);
 
     if (validIds.length === 0) {
+      console.error('유효한 메시지 ID가 없습니다. 받은 ID:', messageIds);
       throw new Error('유효한 메시지 ID가 없습니다.');
     }
+
+    console.log('삭제할 메시지 ID:', validIds, '사용자 ID:', userId);
 
     const deletedCount = await ChatMessage.destroy({
       where: {
@@ -237,13 +248,15 @@ async function deleteChatMessages(userId, messageIds) {
       },
     });
 
+    console.log('삭제된 메시지 수:', deletedCount);
+
     return { 
       message: `${deletedCount}개의 메시지가 삭제되었습니다.`,
       deletedCount,
     };
   } catch (error) {
     console.error('채팅 메시지 일괄 삭제 중 오류:', error.message);
-    throw new Error('채팅 메시지 삭제에 실패했습니다.');
+    throw error; // 원본 에러를 그대로 전달
   }
 }
 

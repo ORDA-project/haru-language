@@ -100,11 +100,20 @@ export const ChatMessagesSection: React.FC<ChatMessagesSectionProps> = ({
 
       {chatMessages.map((message: any, index: number) => {
         // 실제 DB ID만 사용 (임시 ID는 삭제 불가)
-        const messageId = message.id && typeof message.id === 'string' && !isNaN(Number(message.id))
-          ? String(message.id)
-          : message.id && typeof message.id === 'number'
-          ? String(message.id)
-          : null;
+        // 서버에서 받은 ID는 문자열로 변환되어 있음
+        let messageId: string | null = null;
+        
+        if (message.id) {
+          if (typeof message.id === 'string') {
+            // 문자열이 숫자로 변환 가능한지 확인
+            const numId = parseInt(message.id, 10);
+            if (!isNaN(numId) && numId > 0) {
+              messageId = message.id; // 원본 문자열 유지
+            }
+          } else if (typeof message.id === 'number' && message.id > 0) {
+            messageId = String(message.id);
+          }
+        }
 
         // ID가 없으면 렌더링하지 않음 (삭제 불가)
         if (!messageId) return null;

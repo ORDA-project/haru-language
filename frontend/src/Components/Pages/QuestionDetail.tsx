@@ -402,15 +402,27 @@ const QuestionDetail = () => {
               try {
                 // 유효한 숫자 ID만 필터링
                 const validIds = Array.from(selectedChatMessageIds)
-                  .filter((id) => {
-                    const numId = typeof id === 'string' ? Number(id) : id;
-                    return !isNaN(numId) && numId > 0;
+                  .map((id) => {
+                    // 문자열이면 숫자로 변환 시도
+                    if (typeof id === 'string') {
+                      const numId = parseInt(id, 10);
+                      return isNaN(numId) || numId <= 0 ? null : String(numId);
+                    }
+                    // 숫자면 문자열로 변환
+                    if (typeof id === 'number') {
+                      return id > 0 ? String(id) : null;
+                    }
+                    return null;
                   })
-                  .map((id) => String(id));
+                  .filter((id): id is string => id !== null);
                 
                 if (validIds.length === 0) {
                   showError("삭제 실패", "유효한 메시지 ID가 없습니다.");
                   return;
+                }
+                
+                if (import.meta.env.DEV) {
+                  console.log("삭제할 메시지 ID:", validIds);
                 }
                 
                 await deleteChatMessagesMutation.mutateAsync(validIds);
@@ -418,6 +430,7 @@ const QuestionDetail = () => {
                 setSelectedChatMessageIds(new Set());
                 setIsDeleteModeChat(false);
               } catch (error) {
+                console.error("삭제 오류:", error);
                 showError("삭제 실패", "채팅 기록 삭제에 실패했습니다.");
               }
             }

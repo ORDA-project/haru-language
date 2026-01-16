@@ -170,11 +170,17 @@ router.delete("/batch", async (req, res) => {
       return res.status(400).json({ message: "메시지 ID 배열이 필요합니다." });
     }
 
+    console.log("삭제 요청 받음 - 사용자 ID:", user.userId, "메시지 ID:", messageIds);
+
     const result = await deleteChatMessages(user.userId, messageIds);
     return res.status(200).json(result);
   } catch (error) {
     logError(error, { endpoint: "DELETE /chat-message/batch" });
-    return res.status(500).json({ message: error.message || "채팅 메시지 삭제 중 오류가 발생했습니다." });
+    // 에러 메시지를 더 자세히 전달
+    const statusCode = error.message?.includes('유효한') ? 400 : 500;
+    return res.status(statusCode).json({ 
+      message: error.message || "채팅 메시지 삭제 중 오류가 발생했습니다." 
+    });
   }
 });
 
