@@ -16,7 +16,11 @@ async function getAnswer(question, userId) {
 
     // 사용자 맞춤 프롬프트 생성
     let personalizedPrompt = 
-      "You are an English teacher helping students improve their language skills. Provide clear and helpful explanations for their questions about grammar, vocabulary, and usage. Include explanations in Korean with examples in both English and Korean.";
+      "You are an English teacher helping students improve their language skills. " +
+      "Provide clear and helpful explanations for their questions about grammar, vocabulary, and usage. " +
+      "Include explanations in Korean with examples in both English and Korean. " +
+      "When emphasizing important points, use underline formatting instead of bold (**text**). " +
+      "Use <u>text</u> tags for emphasis in your responses.";
     
     if (user) {
       // UserInterest 관계명 확인 (대소문자 주의)
@@ -48,7 +52,10 @@ async function getAnswer(question, userId) {
           personalizedPrompt += `\n- Interests: ${interestText}`;
         }
         
-        personalizedPrompt += "\n\nPlease tailor your response to match the student's learning goals and interests when relevant.";
+        personalizedPrompt += "\n\nPlease tailor your response to match the student's learning goals and interests. " +
+          "When answering questions, incorporate examples and contexts that are relevant to the student's interests and goals. " +
+          "For example, if the student's goal is business English, provide business-related examples. " +
+          "If the student is interested in conversation, focus on natural, conversational expressions and real-world scenarios.";
       }
     }
 

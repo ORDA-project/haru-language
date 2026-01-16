@@ -12,7 +12,6 @@ interface Message {
       B: { english: string; korean?: string };
     };
   }>;
-  imageUrl?: string;
 }
 
 interface ChatMessageProps {
@@ -49,16 +48,6 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
             : "bg-gray-200 text-gray-800 shadow-sm border border-gray-100"
         }`}
       >
-        {/* 사용자 메시지에 이미지가 있는 경우 */}
-        {message.type === "user" && message.imageUrl && (
-          <div className="mb-2">
-            <img
-              src={message.imageUrl}
-              alt="업로드된 이미지"
-              className="w-full rounded-lg object-contain max-h-64"
-            />
-          </div>
-        )}
         {/* 텍스트 내용 표시 */}
         {message.content && (
           message.type === "ai" ? (

@@ -21,7 +21,6 @@ interface Message {
       B: { english: string; korean?: string };
     };
   }>;
-  imageUrl?: string;
 }
 
 // 초기 인사말 (프론트엔드 고정)
@@ -39,22 +38,14 @@ const convertToLocalMessage = (msg: ChatMessage): Message => ({
   content: msg.content,
   timestamp: typeof msg.timestamp === "string" ? new Date(msg.timestamp) : msg.timestamp,
   examples: msg.examples,
-  imageUrl: msg.imageUrl,
 });
 
 // 로컬 Message를 서버 형식으로 변환
 const convertToServerMessage = (msg: Message): Omit<ChatMessage, "id" | "timestamp"> => {
-  // base64 데이터 URI는 서버에 저장하지 않음 (너무 길어서 오류 발생)
-  // 서버 URL만 저장 (서버에서 이미지를 저장한 후 반환한 URL)
-  const imageUrl = msg.imageUrl && typeof msg.imageUrl === "string" && msg.imageUrl.startsWith("data:")
-    ? undefined // base64 데이터 URI는 제외
-    : msg.imageUrl; // 서버 URL만 저장
-  
   return {
     type: msg.type,
     content: msg.content,
     examples: msg.examples,
-    imageUrl,
   };
 };
 

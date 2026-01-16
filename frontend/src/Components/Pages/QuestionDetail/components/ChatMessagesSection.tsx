@@ -141,15 +141,6 @@ export const ChatMessagesSection: React.FC<ChatMessagesSectionProps> = ({
                   }`}
                   style={{ wordBreak: "break-word", overflowWrap: "break-word" }}
                 >
-                  {message.imageUrl && (
-                    <div className="mb-2">
-                      <img
-                        src={message.imageUrl}
-                        alt="업로드된 이미지"
-                        className="w-full rounded-lg object-contain max-h-64"
-                      />
-                    </div>
-                  )}
                   {message.content && message.content.trim() && (
                     <p
                       className="leading-relaxed whitespace-pre-wrap break-words"
@@ -158,8 +149,7 @@ export const ChatMessagesSection: React.FC<ChatMessagesSectionProps> = ({
                       {message.content}
                     </p>
                   )}
-                  {/* 이미지만 있고 content가 없는 경우도 표시 */}
-                  {!message.content && !message.imageUrl && (
+                  {!message.content && (
                     <p className="text-gray-400 italic" style={smallTextStyle}>
                       (빈 메시지)
                     </p>
@@ -196,16 +186,6 @@ export const ChatMessagesSection: React.FC<ChatMessagesSectionProps> = ({
                   }`}
                   style={{ wordBreak: "break-word", overflowWrap: "break-word" }}
                 >
-                  {/* AI 메시지에도 이미지 표시 */}
-                  {message.imageUrl && (
-                    <div className="mb-2">
-                      <img
-                        src={message.imageUrl}
-                        alt="업로드된 이미지"
-                        className="w-full rounded-lg object-contain max-h-64"
-                      />
-                    </div>
-                  )}
                   {message.examples && message.examples.length > 0 ? (
                     <div className="space-y-3">
                       {message.content && (
