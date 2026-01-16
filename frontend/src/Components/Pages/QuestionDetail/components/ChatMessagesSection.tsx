@@ -105,14 +105,15 @@ export const ChatMessagesSection: React.FC<ChatMessagesSectionProps> = ({
           : message.id && typeof message.id === 'number'
           ? String(message.id)
           : null;
-        const isSelected = messageId ? selectedIds.has(messageId) : false;
+
+        // ID가 없으면 렌더링하지 않음 (삭제 불가)
+        if (!messageId) return null;
+
+        const isSelected = selectedIds.has(messageId);
         const currentIndex = exampleScrollIndices[messageId] ?? 0;
         const currentExample = message.examples?.[currentIndex];
         const exampleId = `${messageId}-${currentIndex}`;
         const isPlaying = playingChatExampleId === exampleId && isPlayingTTS;
-
-        // ID가 없으면 렌더링하지 않음 (삭제 불가)
-        if (!messageId) return null;
         
         return (
           <div
