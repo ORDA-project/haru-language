@@ -30,7 +30,10 @@ const NavBar = ({ currentPage }: NavBarProps) => {
   const homeLabelStyle: React.CSSProperties = { fontSize: `${homeLabelFontSize}px` };
 
   return (
-    <div className="flex items-center justify-around bg-[#00daaa] fixed bottom-0 left-0 right-0 w-full max-w-[440px] mx-auto box-border h-[72px] z-[100]">
+    <div 
+      className="flex items-center justify-around fixed bottom-0 left-0 right-0 w-full max-w-[440px] mx-auto box-border h-[72px] z-[100]"
+      style={{ backgroundColor: '#00daaa' }}
+    >
       {/* 예문 버튼 */}
       <NavLink
         to="/example"
@@ -56,7 +59,10 @@ const NavBar = ({ currentPage }: NavBarProps) => {
         className="flex flex-col items-center justify-center no-underline font-medium h-full"
       >
         {location.pathname === "/home" ? (
-          <div className="bg-[#00daaa] w-[72px] h-[72px] rounded-full flex flex-col justify-center items-center">
+          <div 
+            className="w-[72px] h-[72px] rounded-full flex flex-col justify-center items-center"
+            style={{ backgroundColor: '#00daaa' }}
+          >
             <div className="flex justify-center items-center">
               <MemoizedHome fill="white" fillOpacity="1" />
             </div>
@@ -65,7 +71,10 @@ const NavBar = ({ currentPage }: NavBarProps) => {
             </span>
           </div>
         ) : (
-          <div className="bg-[#00daaa] w-[72px] h-[72px] rounded-full flex flex-col justify-center items-center">
+          <div 
+            className="w-[72px] h-[72px] rounded-full flex flex-col justify-center items-center"
+            style={{ backgroundColor: '#00daaa' }}
+          >
             <div className="flex justify-center items-center">
               <MemoizedHome />
             </div>
