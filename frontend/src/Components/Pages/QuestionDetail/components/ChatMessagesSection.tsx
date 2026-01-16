@@ -99,16 +99,24 @@ export const ChatMessagesSection: React.FC<ChatMessagesSectionProps> = ({
       </div>
 
       {chatMessages.map((message: any, index: number) => {
-        const messageId = message.id || `msg-${index}`;
-        const isSelected = selectedIds.has(messageId);
+        // 실제 DB ID만 사용 (임시 ID는 삭제 불가)
+        const messageId = message.id && typeof message.id === 'string' && !isNaN(Number(message.id))
+          ? String(message.id)
+          : message.id && typeof message.id === 'number'
+          ? String(message.id)
+          : null;
+        const isSelected = messageId ? selectedIds.has(messageId) : false;
         const currentIndex = exampleScrollIndices[messageId] ?? 0;
         const currentExample = message.examples?.[currentIndex];
         const exampleId = `${messageId}-${currentIndex}`;
         const isPlaying = playingChatExampleId === exampleId && isPlayingTTS;
 
+        // ID가 없으면 렌더링하지 않음 (삭제 불가)
+        if (!messageId) return null;
+        
         return (
           <div
-            key={message.id || index}
+            key={messageId}
             className={`space-y-3 relative transition-all duration-200 ${
               isDeleteMode && isSelected ? "ring-2 ring-red-500 ring-offset-2 rounded-lg" : ""
             }`}
@@ -116,10 +124,10 @@ export const ChatMessagesSection: React.FC<ChatMessagesSectionProps> = ({
             {/* 사용자 메시지 */}
             {message.type === "user" && (
               <div className="flex justify-end items-start gap-3">
-                {isDeleteMode && (
+                {isDeleteMode && messageId && (
                   <div className="flex-shrink-0 pt-1">
                     <button
-                      onClick={() => onToggleSelect(messageId)}
+                      onClick={() => messageId && onToggleSelect(messageId)}
                       className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
                         isSelected
                           ? "bg-red-500 border-red-500"
@@ -161,10 +169,10 @@ export const ChatMessagesSection: React.FC<ChatMessagesSectionProps> = ({
             {/* AI 메시지 */}
             {message.type === "ai" && (
               <div className="flex justify-start items-start gap-3">
-                {isDeleteMode && (
+                {isDeleteMode && messageId && (
                   <div className="flex-shrink-0 pt-1">
                     <button
-                      onClick={() => onToggleSelect(messageId)}
+                      onClick={() => messageId && onToggleSelect(messageId)}
                       className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
                         isSelected
                           ? "bg-red-500 border-red-500"
@@ -190,14 +198,15 @@ export const ChatMessagesSection: React.FC<ChatMessagesSectionProps> = ({
                     <div className="space-y-3">
                       {message.content && (
                         <div
-                          className="leading-relaxed"
+                          className="leading-relaxed whitespace-pre-wrap"
                           style={baseTextStyle}
                           dangerouslySetInnerHTML={{
                             __html: message.content
                               .replace(/"text-decoration:\s*underline;\s*color:\s*#00DAAA;\s*font-weight:\s*500;">/gi, "")
                               .replace(/\*\*(.*?)\*\*/g, "<u>$1</u>")
                               .replace(/__(.*?)__/g, "<u>$1</u>")
-                              .replace(/\*(.*?)\*/g, "<u>$1</u>"),
+                              .replace(/\*(.*?)\*/g, "<u>$1</u>")
+                              .replace(/\n/g, "<br>"),
                           }}
                         />
                       )}
@@ -236,14 +245,15 @@ export const ChatMessagesSection: React.FC<ChatMessagesSectionProps> = ({
                     <>
                       {message.content && message.content.trim() ? (
                         <div
-                          className="leading-relaxed"
+                          className="leading-relaxed whitespace-pre-wrap"
                           style={baseTextStyle}
                           dangerouslySetInnerHTML={{
                             __html: message.content
                               .replace(/"text-decoration:\s*underline;\s*color:\s*#00DAAA;\s*font-weight:\s*500;">/gi, "")
                               .replace(/\*\*(.*?)\*\*/g, "<u>$1</u>")
                               .replace(/__(.*?)__/g, "<u>$1</u>")
-                              .replace(/\*(.*?)\*/g, "<u>$1</u>"),
+                              .replace(/\*(.*?)\*/g, "<u>$1</u>")
+                              .replace(/\n/g, "<br>"),
                           }}
                         />
                       ) : null}

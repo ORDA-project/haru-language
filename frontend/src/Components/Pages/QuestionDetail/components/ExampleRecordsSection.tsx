@@ -169,6 +169,22 @@ export const ExampleRecordsSection: React.FC<ExampleRecordsSectionProps> = ({
                   isDeleteMode && isSelected ? "opacity-75" : ""
                 }`}
               >
+                {/* 사용자가 보낸 이미지 표시 (description 위에) */}
+                {exampleImages.length > 0 && (
+                  <div className="flex justify-start">
+                    <div className="rounded-lg overflow-hidden border border-gray-200 shadow-sm" style={{ maxWidth: "343px" }}>
+                      {exampleImages.map((imgUrl: string, imgIndex: number) => (
+                        <img
+                          key={imgIndex}
+                          src={imgUrl}
+                          alt={`예문 생성 이미지 ${imgIndex + 1}`}
+                          className="w-full rounded-lg object-contain max-h-64"
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {example.description && example.description !== "이미지에서 예문을 생성했어요." && (
                   <div className="flex justify-start">
                     <div
@@ -332,25 +348,6 @@ export const ExampleRecordsSection: React.FC<ExampleRecordsSectionProps> = ({
                   </div>
                 )}
               </div>
-
-              {exampleImages.length > 0 && (
-                <div className="flex-shrink-0">
-                  <div className="flex flex-col gap-2">
-                    {exampleImages.map((imgUrl: string, imgIndex: number) => (
-                      <div
-                        key={imgIndex}
-                        className="w-24 h-24 sm:w-32 sm:h-32 rounded-lg overflow-hidden border border-gray-200 shadow-sm"
-                      >
-                        <img
-                          src={imgUrl}
-                          alt={`예문 생성 이미지 ${imgIndex + 1}`}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
 
             {exampleIndex < exampleRecords.length - 1 && (

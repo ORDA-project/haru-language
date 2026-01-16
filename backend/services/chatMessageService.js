@@ -216,10 +216,22 @@ async function deleteChatMessages(userId, messageIds) {
       throw new Error('유저 ID와 메시지 ID 배열이 필요합니다.');
     }
 
+    // 유효한 숫자 ID만 필터링
+    const validIds = messageIds
+      .map(id => {
+        const numId = typeof id === 'string' ? parseInt(id, 10) : id;
+        return numId;
+      })
+      .filter(id => Number.isInteger(id) && id > 0);
+
+    if (validIds.length === 0) {
+      throw new Error('유효한 메시지 ID가 없습니다.');
+    }
+
     const deletedCount = await ChatMessage.destroy({
       where: {
         id: {
-          [Op.in]: messageIds.map(id => parseInt(id)),
+          [Op.in]: validIds,
         },
         user_id: userId,
       },

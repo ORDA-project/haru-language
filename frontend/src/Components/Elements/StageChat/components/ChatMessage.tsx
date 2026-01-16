@@ -52,7 +52,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
         {message.content && (
           message.type === "ai" ? (
             <div
-              className="leading-relaxed"
+              className="leading-relaxed whitespace-pre-wrap"
               style={baseTextStyle}
               dangerouslySetInnerHTML={{
                 __html: message.content
@@ -60,7 +60,8 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                   .replace(/"text-decoration:\s*underline;\s*color:\s*#00DAAA;\s*font-weight:\s*500;"/gi, "")
                   .replace(/\*\*(.*?)\*\*/g, "<u>$1</u>")
                   .replace(/__(.*?)__/g, "<u>$1</u>")
-                  .replace(/\*(.*?)\*/g, "<u>$1</u>"),
+                  .replace(/\*(.*?)\*/g, "<u>$1</u>")
+                  .replace(/\n/g, "<br>"),
               }}
             />
           ) : (

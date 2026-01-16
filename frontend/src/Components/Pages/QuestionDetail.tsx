@@ -386,7 +386,11 @@ const QuestionDetail = () => {
           }}
           onSelectAll={() => {
             setSelectedChatMessageIds(
-              new Set(chatMessages.map((msg: any, idx: number) => msg.id || `msg-${idx}`))
+              new Set(chatMessages
+                .map((msg: any) => msg.id)
+                .filter((id: any) => id && typeof id === 'string' && !isNaN(Number(id)) || typeof id === 'number')
+                .map((id: any) => String(id))
+              )
             );
           }}
           onDeselectAll={() => {
@@ -396,8 +400,21 @@ const QuestionDetail = () => {
             if (!user?.userId) return; // 로그인하지 않은 경우 삭제 불가
             if (window.confirm(`선택한 ${selectedChatMessageIds.size}개의 채팅 기록을 삭제하시겠습니까?`)) {
               try {
-                await deleteChatMessagesMutation.mutateAsync(Array.from(selectedChatMessageIds));
-                showSuccess("삭제 완료", `${selectedChatMessageIds.size}개의 채팅 기록이 삭제되었습니다.`);
+                // 유효한 숫자 ID만 필터링
+                const validIds = Array.from(selectedChatMessageIds)
+                  .filter((id) => {
+                    const numId = typeof id === 'string' ? Number(id) : id;
+                    return !isNaN(numId) && numId > 0;
+                  })
+                  .map((id) => String(id));
+                
+                if (validIds.length === 0) {
+                  showError("삭제 실패", "유효한 메시지 ID가 없습니다.");
+                  return;
+                }
+                
+                await deleteChatMessagesMutation.mutateAsync(validIds);
+                showSuccess("삭제 완료", `${validIds.length}개의 채팅 기록이 삭제되었습니다.`);
                 setSelectedChatMessageIds(new Set());
                 setIsDeleteModeChat(false);
               } catch (error) {
