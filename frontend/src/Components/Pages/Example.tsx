@@ -335,44 +335,46 @@ const App = () => {
   }, [loadExampleState]);
 
   return (
-    <div className="w-full h-[calc(100vh-72px)] flex flex-col max-w-[440px] mx-auto bg-[#F7F8FB] shadow-[0_0_10px_0_rgba(0,0,0,0.1)] relative" style={{ zIndex: 1 }}>
-      {stage === 1 && (
-        <StageUpload
-          handleFileUpload={handleFileUpload}
-          handleAIChat={handleAIChat}
-          hasSavedExample={(() => {
-            const saved = loadExampleState();
-            return !!(saved && saved.stage === 4 && saved.examples.length > 0);
-          })()}
-          hasSavedChat={hasChatMessages()}
-          onRestoreExample={handleRestoreExample}
-        />
-      )}
-      {stage === 2 && uploadedImage && (
-        <StageCrop
-          uploadedImage={uploadedImage}
-          cropperRef={cropperRef}
-          handleCrop={handleCrop}
-          handleBackToUpload={handleBackToUpload}
-        />
-      )}
-      {stage === 3 && <StageLoading />}
-      {stage === 4 && (
-        <StageResult
-          description={description}
-          examples={examples}
-          extractedText={extractedText}
-          uploadedImage={croppedImage}
-          errorMessage={errorMessage}
-          setStage={setStage}
-          newImageSets={newImageSets}
-          setNewImageSets={setNewImageSets}
-          onExamplesUpdate={(newExamples) => {
-            setExamples(newExamples);
-          }}
-        />
-      )}
-      {stage === 5 && <StageChat onBack={handleBackFromChat} />}
+    <div className="w-full h-full flex flex-col items-center max-w-[440px] mx-auto shadow-[0_0_10px_0_rgba(0,0,0,0.1)] bg-[#F7F8FB]">
+      <div className="w-full h-[calc(100vh-72px)] flex flex-col">
+        {stage === 1 && (
+          <StageUpload
+            handleFileUpload={handleFileUpload}
+            handleAIChat={handleAIChat}
+            hasSavedExample={(() => {
+              const saved = loadExampleState();
+              return !!(saved && saved.stage === 4 && saved.examples.length > 0);
+            })()}
+            hasSavedChat={hasChatMessages()}
+            onRestoreExample={handleRestoreExample}
+          />
+        )}
+        {stage === 2 && uploadedImage && (
+          <StageCrop
+            uploadedImage={uploadedImage}
+            cropperRef={cropperRef}
+            handleCrop={handleCrop}
+            handleBackToUpload={handleBackToUpload}
+          />
+        )}
+        {stage === 3 && <StageLoading />}
+        {stage === 4 && (
+          <StageResult
+            description={description}
+            examples={examples}
+            extractedText={extractedText}
+            uploadedImage={croppedImage}
+            errorMessage={errorMessage}
+            setStage={setStage}
+            newImageSets={newImageSets}
+            setNewImageSets={setNewImageSets}
+            onExamplesUpdate={(newExamples) => {
+              setExamples(newExamples);
+            }}
+          />
+        )}
+        {stage === 5 && <StageChat onBack={handleBackFromChat} />}
+      </div>
       <NavBar currentPage={"Example"} />
     </div>
   );
