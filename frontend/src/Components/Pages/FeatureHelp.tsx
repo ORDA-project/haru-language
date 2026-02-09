@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Tooltip } from "../Elements/Tooltip";
 import NavBar from "../Templates/Navbar";
 
 type FeatureType = "home" | "daily-sentence" | "example-generation";

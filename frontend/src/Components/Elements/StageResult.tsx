@@ -101,7 +101,7 @@ const StageResult = ({
   const isInitializedRef = useRef(false);
   const [groupScrollIndices, setGroupScrollIndices] = useState<Record<number, number>>({});
   const groupScrollRefs = useRef<Record<number, HTMLDivElement | null>>({});
-  const [tooltipPage, setTooltipPage] = useState(1); // StageResult는 2페이지부터 시작
+  const [tooltipPage, setTooltipPage] = useState(1); // StageResult는 예문 생성의 2페이지(스피커, 예문추가)만 표시
   const speakerRef = useRef<HTMLButtonElement>(null);
   const addExampleRef = useRef<HTMLButtonElement>(null);
   
@@ -710,7 +710,7 @@ const StageResult = ({
         speakerRef={speakerRef}
         addExampleRef={addExampleRef}
         onNext={() => {}}
-        onClose={() => setTooltipPage(0)}
+        onClose={() => {}}
       />
     </div>
   );

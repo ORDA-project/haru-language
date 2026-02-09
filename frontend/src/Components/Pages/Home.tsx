@@ -198,12 +198,15 @@ const Home = () => {
   }, [setUserData, showSuccess, showError, showWarning, user?.userId]); // user.userId 변경 시 다시 호출 (로그인 후)
 
 
-  // 예문 네비게이션 ref 설정
+  // 예문 네비게이션 ref 설정 (NavBar가 렌더링된 후)
   useEffect(() => {
-    const exampleNav = document.querySelector('a[href="/example"]');
-    if (exampleNav) {
-      exampleNavRef.current = exampleNav as HTMLElement;
-    }
+    const timer = setTimeout(() => {
+      const exampleNav = document.querySelector('a[href="/example"]');
+      if (exampleNav) {
+        exampleNavRef.current = exampleNav as HTMLElement;
+      }
+    }, 100); // NavBar 렌더링 대기
+    return () => clearTimeout(timer);
   }, []);
 
   return (
