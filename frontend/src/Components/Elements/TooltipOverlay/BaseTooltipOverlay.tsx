@@ -11,6 +11,13 @@ export interface TooltipConfig {
   transform?: string;
   showUnderline?: boolean; // 제목 밑줄 표시 여부
   backgroundColor?: string; // 배경색
+  borderColor?: string; // 테두리 색상
+  textAlign?: "left" | "center" | "right"; // 텍스트 정렬
+  customWidth?: number; // 커스텀 너비
+  customHeight?: number; // 커스텀 높이
+  customPadding?: { top: number; right: number; bottom: number; left: number }; // 커스텀 패딩
+  titleGap?: number; // 제목과 설명 사이 간격
+  titleColor?: string; // 제목 색상
 }
 
 interface BaseTooltipOverlayProps {
@@ -137,12 +144,23 @@ export const BaseTooltipOverlay: React.FC<BaseTooltipOverlayProps> = ({
       style={{ 
         touchAction: "none",
         backgroundColor: "rgba(0, 0, 0, 0.3)", // 실무에서 많이 쓰는 반투명 방식
+        bottom: "72px", // 네비게이션 바 높이만큼 제외 (네비게이션 바가 보이도록)
       }}
     >
       {/* 페이지 인디케이터 */}
       <div className={TOOLTIP_STYLES.INDICATOR}>
-        <div className="bg-white rounded-full px-4 py-2 shadow-md">
-          <span className="text-gray-700 font-medium">
+        <div 
+          className="bg-white rounded-full shadow-md"
+          style={{
+            padding: "8px 16px",
+          }}
+        >
+          <span 
+            className="text-gray-700 font-medium"
+            style={{
+              fontSize: "14px",
+            }}
+          >
             {currentPage + 1}/{totalPages}
           </span>
         </div>
@@ -152,7 +170,11 @@ export const BaseTooltipOverlay: React.FC<BaseTooltipOverlayProps> = ({
       {currentPage === totalPages - 1 && (
         <button
           onClick={onClose}
-          className={TOOLTIP_STYLES.CLOSE_BUTTON}
+          className="absolute top-4 right-4 bg-white rounded-full flex items-center justify-center shadow-md z-10 hover:bg-gray-100 transition-colors"
+          style={{
+            width: "40px",
+            height: "40px",
+          }}
           aria-label="닫기"
         >
           <svg
@@ -188,6 +210,7 @@ export const BaseTooltipOverlay: React.FC<BaseTooltipOverlayProps> = ({
               top: `${position.top}px`,
               left: `${position.left}px`,
               transform: position.transform || "translateX(-50%)",
+              maxWidth: "calc(100vw - 40px)", // 모바일 화면에 맞게 조정
             }}
           >
             <Tooltip
@@ -198,6 +221,13 @@ export const BaseTooltipOverlay: React.FC<BaseTooltipOverlayProps> = ({
               onClose={onClose}
               showUnderline={tooltip.showUnderline !== false}
               backgroundColor={tooltip.backgroundColor}
+              borderColor={tooltip.borderColor}
+              textAlign={tooltip.textAlign}
+              customWidth={tooltip.customWidth}
+              customHeight={tooltip.customHeight}
+              customPadding={tooltip.customPadding}
+              titleGap={tooltip.titleGap}
+              titleColor={tooltip.titleColor}
             />
           </div>
         );

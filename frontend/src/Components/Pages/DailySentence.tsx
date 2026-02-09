@@ -613,7 +613,10 @@ const DailySentence = () => {
       {showLanguageModeTooltip && languageModeTooltipPosition && (
         <div
           className="fixed inset-0 z-50 pointer-events-none"
-          style={{ touchAction: "none" }}
+          style={{ 
+            touchAction: "none",
+            bottom: "72px", // 네비게이션 바 높이만큼 제외
+          }}
         >
           <div
             className="absolute"
@@ -626,11 +629,12 @@ const DailySentence = () => {
           >
             <Tooltip
               title="언어모드 전환"
-              description="모드를 클릭하고, 자유롭게 대답해보세요! 한국어는 자연스런 영어로 번역해드려요"
+              description="모드를 클릭하고, 자유롭게 대답해보세요!\n한국어는 자연스런 영어로 번역해드려요"
               position="bottom"
               showCloseButton={true}
               onClose={handleCloseLanguageModeTooltip}
               showUnderline={false}
+              customWidth={243}
             />
           </div>
           <div
@@ -639,6 +643,7 @@ const DailySentence = () => {
             style={{ 
               pointerEvents: "auto",
               backgroundColor: "rgba(0, 0, 0, 0.3)", // 실무에서 많이 쓰는 반투명 방식
+              bottom: "72px", // 네비게이션 바 높이만큼 제외
             }}
           />
         </div>

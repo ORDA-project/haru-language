@@ -5,6 +5,7 @@ export const TOOLTIP_KEYS = {
   DAILY_SENTENCE_LANGUAGE_MODE: "tooltip_daily_sentence_language_mode",
   SENTENCE_CONSTRUCTION_HELP: "tooltip_sentence_construction_help",
   EXAMPLE_GENERATION: "tooltip_example_generation",
+  REVISED_ANSWER: "tooltip_revised_answer",
 } as const;
 
 export const hasSeenTooltip = (key: string): boolean => {

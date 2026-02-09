@@ -76,7 +76,7 @@ export const SentenceConstructionStep: React.FC<SentenceConstructionStepProps> =
     if (helpButtonRef.current) {
       const rect = helpButtonRef.current.getBoundingClientRect();
       setHelpTooltipPosition({
-        top: rect.bottom + 10,
+        top: rect.top - 10,
         left: rect.left + rect.width / 2,
       });
     }
@@ -246,24 +246,28 @@ export const SentenceConstructionStep: React.FC<SentenceConstructionStepProps> =
       {showHelpTooltip && helpTooltipPosition && (
         <div
           className="fixed inset-0 z-50 pointer-events-none"
-          style={{ touchAction: "none" }}
+          style={{ 
+            touchAction: "none",
+            bottom: "72px", // 네비게이션 바 높이만큼 제외
+          }}
         >
           <div
             className="absolute"
             style={{
               top: `${helpTooltipPosition.top}px`,
               left: `${helpTooltipPosition.left}px`,
-              transform: "translateX(-50%)",
+              transform: "translateX(-50%) translateY(-100%)",
               pointerEvents: "auto",
             }}
           >
             <Tooltip
               title="모르겠어요..."
               description="잘 모르겠다면 클릭해서 결과를 볼 수 있어요."
-              position="top"
+              position="bottom"
               showCloseButton={true}
               onClose={handleCloseHelpTooltip}
               showUnderline={false}
+              customWidth={243}
             />
           </div>
           <div
@@ -272,6 +276,7 @@ export const SentenceConstructionStep: React.FC<SentenceConstructionStepProps> =
             style={{ 
               pointerEvents: "auto",
               backgroundColor: "rgba(0, 0, 0, 0.3)", // 실무에서 많이 쓰는 반투명 방식
+              bottom: "72px", // 네비게이션 바 높이만큼 제외
             }}
           />
         </div>

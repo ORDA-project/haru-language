@@ -35,19 +35,19 @@ export const ExampleGenerationTooltip: React.FC<ExampleGenerationTooltipProps> =
     [
       {
         title: "이미지 예문생성",
-        description: "교재를 찍어서 바로 올릴 수도 있고, 갤러리에서 올릴 수도 있어요.",
-        position: "top" as const,
+        description: "교재를 찍어서 바로 올릴 수도 있고,\n갤러리에서 올릴 수도 있어요.",
+        position: "bottom" as const,
         ref: imageUploadRef,
         offset: { x: 0, y: 0 },
-        transform: "translateX(-50%)",
+        transform: "translateX(-50%) translateY(-100%)",
       },
       {
         title: "채팅 예문생성",
-        description: "어색한 부분, 기억안나는 단어 등 모든 것을 물어볼 수 있어요.",
-        position: "bottom" as const,
+        description: "어색한 부분, 기억안나는 단어 등\n모든 것을 물어볼 수 있어요.",
+        position: "top" as const,
         ref: chatRef,
         offset: { x: 0, y: 0 },
-        transform: "translateX(-50%) translateY(-100%)",
+        transform: "translateX(-50%)",
       },
     ],
     // 페이지 2/2
@@ -55,14 +55,14 @@ export const ExampleGenerationTooltip: React.FC<ExampleGenerationTooltipProps> =
       {
         title: "스피커",
         description: "예문을 직접 들어보고 발음을 따라해봐요.",
-        position: "top" as const,
+        position: "bottom" as const,
         ref: speakerRef,
         offset: { x: 0, y: 0 },
-        transform: "translateX(-50%)",
+        transform: "translateX(-50%) translateY(-100%)",
       },
       {
         title: "예문추가",
-        description: "예문을 더 보고싶다면, 예문추가를 할 수 있어요.",
+        description: "예문을 더 보고싶다면,\n예문추가를 할 수 있어요.",
         position: "bottom" as const,
         ref: addExampleRef,
         offset: { x: 0, y: 0 },
