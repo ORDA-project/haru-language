@@ -31,8 +31,45 @@ async function generateExamples(inputSentence, userId, imageUrl = null, saveToDb
     }
   }
 
-  // 번역 요청인지 확인 (한국어 키워드: 번역, 번역해줘, 번역해주세요, translate 등)
-  const isTranslationRequest = /번역|translate|translation/i.test(inputSentence);
+  // 사용자 의도 자동 추론: 명시적 요청 또는 텍스트 언어 분석
+  function detectUserIntent(inputSentence) {
+    // 1. 명시적 번역 요청 확인
+    const hasTranslationKeyword = /번역|translate|translation/i.test(inputSentence);
+    if (hasTranslationKeyword) {
+      return 'translation';
+    }
+
+    // 2. 텍스트 언어 분석 (영어 vs 한국어 비율)
+    const englishChars = (inputSentence.match(/[a-zA-Z]/g) || []).length;
+    const koreanChars = (inputSentence.match(/[가-힣]/g) || []).length;
+    const totalChars = englishChars + koreanChars;
+
+    if (totalChars === 0) {
+      return 'example'; // 기본값
+    }
+
+    const englishRatio = englishChars / totalChars;
+    const koreanRatio = koreanChars / totalChars;
+
+    // 영어가 60% 이상이고 한국어가 10% 미만이면 → 자동 번역 모드
+    // (영어 문제 사진, 영어 문장 등)
+    if (englishRatio >= 0.6 && koreanRatio < 0.1) {
+      return 'translation';
+    }
+
+    // 한국어가 50% 이상이면 → 예문 생성 모드
+    // (한국어 문장, 한국어 질문 등)
+    if (koreanRatio >= 0.5) {
+      return 'example';
+    }
+
+    // 애매한 경우: 영어가 더 많으면 번역, 아니면 예문 생성
+    return englishRatio > 0.5 ? 'translation' : 'example';
+  }
+
+  // 번역 요청인지 확인 (자동 의도 추론 포함)
+  const userIntent = detectUserIntent(inputSentence);
+  const isTranslationRequest = userIntent === 'translation';
   
   // 원하는 출력 스키마를 강하게 고정
   let prompt = "";
@@ -87,7 +124,14 @@ async function generateExamples(inputSentence, userId, imageUrl = null, saveToDb
       "     Make sure to provide feedback on both sides of the conversation. " +
       "- 'dialogue': an object with 'A' and 'B' properties. " +
       "Each dialogue speaker (A and B) must be an object with 'english' and 'korean' string properties. " +
-      "Example dialogue format: { 'A': { 'english': 'Hello', 'korean': '안녕' }, 'B': { 'english': 'Hi', 'korean': '안녕' } } " +
+      "CRITICAL: 'korean' is MANDATORY and must contain NATURAL Korean that sounds like native speech.\n" +
+      "TRANSLATION EXAMPLES:\n" +
+      "❌ BAD: 'You are doing great in your studies.' → '넌 공부를 잘하고 있다' (literal, awkward)\n" +
+      "✅ GOOD: 'You are doing great in your studies.' → '너 공부 정말 잘하고 있구나' (natural, encouraging)\n" +
+      "❌ BAD: 'How are you feeling?' → '너는 어떻게 느끼고 있나요?' (literal)\n" +
+      "✅ GOOD: 'How are you feeling?' → '오늘 기분이 어때?' (natural, caring)\n" +
+      "GUIDELINES: Match formality (존댓말/반말), preserve tone (encouraging/friendly/formal), use natural Korean structures.\n" +
+      "Example format: { 'A': { 'english': 'Hello, how are you?', 'korean': '안녕하세요, 어떻게 지내세요?' }, 'B': { 'english': 'I'm great!', 'korean': '네, 잘 지내고 있어요!' } } " +
       "\n\nCRITICAL REQUIREMENTS FOR DIVERSITY: " +
       "You must create exactly 3 COMPLETELY DIFFERENT examples. Each example MUST vary significantly: " +
       "- Different questions/expressions (Speaker A): For each example, use DIFFERENT but related expressions to the input sentence. " +
