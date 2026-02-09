@@ -9,6 +9,8 @@ export interface TooltipConfig {
   ref?: React.RefObject<HTMLElement | null>;
   offset?: { x: number; y: number };
   transform?: string;
+  showUnderline?: boolean; // 제목 밑줄 표시 여부
+  backgroundColor?: string; // 배경색
 }
 
 interface BaseTooltipOverlayProps {
@@ -39,6 +41,12 @@ export const BaseTooltipOverlay: React.FC<BaseTooltipOverlayProps> = ({
     currentTooltips.forEach((tooltip, index) => {
       if (tooltip.ref?.current) {
         const rect = tooltip.ref.current.getBoundingClientRect();
+        
+        // 요소가 화면에 렌더링되었는지 확인
+        if (rect.width === 0 && rect.height === 0) {
+          return; // 아직 렌더링되지 않음
+        }
+        
         const offset = tooltip.offset || { x: 0, y: 0 };
         
         let top = 0;
@@ -46,10 +54,13 @@ export const BaseTooltipOverlay: React.FC<BaseTooltipOverlayProps> = ({
 
         switch (tooltip.position) {
           case "top":
-            top = rect.top - TOOLTIP_CONSTANTS.TOOLTIP_OFFSET;
+            // 툴팁이 요소 위에 표시 (화살표가 아래를 가리킴)
+            // 툴팁 높이를 고려하여 위치 조정
+            top = rect.top - 20; // 툴팁 높이 + 여백
             left = rect.left + rect.width / 2;
             break;
           case "bottom":
+            // 툴팁이 요소 아래에 표시 (화살표가 위를 가리킴)
             top = rect.bottom + TOOLTIP_CONSTANTS.TOOLTIP_OFFSET;
             left = rect.left + rect.width / 2;
             break;
@@ -76,10 +87,29 @@ export const BaseTooltipOverlay: React.FC<BaseTooltipOverlayProps> = ({
 
   useEffect(() => {
     if (showTooltip) {
-      updateTooltipPositions();
+      // ref가 설정되고 DOM이 렌더링될 때까지 여러 번 시도
+      let retryCount = 0;
+      const maxRetries = 10;
+      
+      const tryUpdate = () => {
+        updateTooltipPositions();
+        retryCount++;
+        
+        // 위치가 계산되지 않았다면 계속 재시도
+        if (retryCount < maxRetries) {
+          setTimeout(tryUpdate, 100);
+        }
+      };
+      
+      const timer = setTimeout(tryUpdate, 100);
+      
       const handleResize = () => updateTooltipPositions();
       window.addEventListener("resize", handleResize);
-      return () => window.removeEventListener("resize", handleResize);
+      
+      return () => {
+        clearTimeout(timer);
+        window.removeEventListener("resize", handleResize);
+      };
     }
   }, [showTooltip, currentPage, updateTooltipPositions]);
 
@@ -104,7 +134,10 @@ export const BaseTooltipOverlay: React.FC<BaseTooltipOverlayProps> = ({
     <div
       className={TOOLTIP_STYLES.OVERLAY}
       onClick={handleOverlayClick}
-      style={{ touchAction: "none" }}
+      style={{ 
+        touchAction: "none",
+        backgroundColor: "rgba(0, 0, 0, 0.3)", // 실무에서 많이 쓰는 반투명 방식
+      }}
     >
       {/* 페이지 인디케이터 */}
       <div className={TOOLTIP_STYLES.INDICATOR}>
@@ -142,12 +175,15 @@ export const BaseTooltipOverlay: React.FC<BaseTooltipOverlayProps> = ({
       {/* 현재 페이지의 툴팁들 */}
       {currentTooltips.map((tooltip, index) => {
         const position = tooltipPositions[`tooltip-${index}`];
-        if (!position) return null;
+        if (!position) {
+          // 위치가 계산되지 않았어도 일단 렌더링 (나중에 위치 업데이트됨)
+          return null;
+        }
 
         return (
           <div
             key={index}
-            className="absolute"
+            className="absolute z-[60]"
             style={{
               top: `${position.top}px`,
               left: `${position.left}px`,
@@ -160,6 +196,8 @@ export const BaseTooltipOverlay: React.FC<BaseTooltipOverlayProps> = ({
               position={tooltip.position}
               showCloseButton={currentPage === totalPages - 1 && index === currentTooltips.length - 1}
               onClose={onClose}
+              showUnderline={tooltip.showUnderline !== false}
+              backgroundColor={tooltip.backgroundColor}
             />
           </div>
         );

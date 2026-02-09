@@ -10,6 +10,8 @@ interface TooltipProps {
   showCloseButton?: boolean;
   targetElementRef?: React.RefObject<HTMLElement>;
   className?: string;
+  showUnderline?: boolean; // 제목 밑줄 표시 여부
+  backgroundColor?: string; // 배경색 (기본값: 흰색)
 }
 
 export const Tooltip: React.FC<TooltipProps> = ({
@@ -20,6 +22,8 @@ export const Tooltip: React.FC<TooltipProps> = ({
   showCloseButton = false,
   targetElementRef,
   className = "",
+  showUnderline = true,
+  backgroundColor = "white",
 }) => {
   const getArrowStyle = () => {
     const baseStyle: React.CSSProperties = {
@@ -29,6 +33,8 @@ export const Tooltip: React.FC<TooltipProps> = ({
       borderStyle: "solid",
     };
 
+    const arrowColor = backgroundColor === "#00DAAA" ? "#00DAAA" : "white";
+    
     switch (position) {
       case "top":
         return {
@@ -37,7 +43,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
           left: "50%",
           transform: "translateX(-50%)",
           borderWidth: "10px 10px 0 10px",
-          borderColor: "white transparent transparent transparent",
+          borderColor: `${arrowColor} transparent transparent transparent`,
         };
       case "bottom":
         return {
@@ -46,7 +52,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
           left: "50%",
           transform: "translateX(-50%)",
           borderWidth: "0 10px 10px 10px",
-          borderColor: "transparent transparent white transparent",
+          borderColor: `transparent transparent ${arrowColor} transparent`,
         };
       case "left":
         return {
@@ -55,7 +61,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
           top: "50%",
           transform: "translateY(-50%)",
           borderWidth: "10px 0 10px 10px",
-          borderColor: "transparent transparent transparent white",
+          borderColor: `transparent transparent transparent ${arrowColor}`,
         };
       case "right":
         return {
@@ -64,7 +70,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
           top: "50%",
           transform: "translateY(-50%)",
           borderWidth: "10px 10px 10px 0",
-          borderColor: "transparent white transparent transparent",
+          borderColor: `transparent ${arrowColor} transparent transparent`,
         };
       default:
         return baseStyle;
@@ -73,8 +79,9 @@ export const Tooltip: React.FC<TooltipProps> = ({
 
   return (
     <div
-      className={`absolute z-50 bg-white rounded-2xl shadow-lg p-4 min-w-[200px] max-w-[300px] ${className}`}
+      className={`absolute z-50 rounded-2xl shadow-lg p-4 min-w-[200px] max-w-[300px] ${className}`}
       style={{
+        backgroundColor,
         boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
       }}
     >
@@ -106,8 +113,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
         className="font-bold mb-2 text-gray-900"
         style={{
           fontSize: "16px",
-          borderBottom: "2px solid #00DAAA",
-          paddingBottom: "4px",
+          ...(showUnderline ? { borderBottom: "2px solid #00DAAA", paddingBottom: "4px" } : {}),
         }}
       >
         {title}

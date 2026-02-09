@@ -630,12 +630,16 @@ const DailySentence = () => {
               position="bottom"
               showCloseButton={true}
               onClose={handleCloseLanguageModeTooltip}
+              showUnderline={false}
             />
           </div>
           <div
-            className="absolute inset-0 bg-black bg-opacity-30 -z-10"
+            className="absolute inset-0 -z-10"
             onClick={handleCloseLanguageModeTooltip}
-            style={{ pointerEvents: "auto" }}
+            style={{ 
+              pointerEvents: "auto",
+              backgroundColor: "rgba(0, 0, 0, 0.3)", // 실무에서 많이 쓰는 반투명 방식
+            }}
           />
         </div>
       )}

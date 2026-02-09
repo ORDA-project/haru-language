@@ -8,7 +8,7 @@ export const TOOLTIP_CONSTANTS = {
 } as const;
 
 export const TOOLTIP_STYLES = {
-  OVERLAY: "fixed inset-0 z-50 bg-black bg-opacity-30",
+  OVERLAY: "fixed inset-0 z-50",
   INDICATOR: "absolute top-4 left-1/2 transform -translate-x-1/2 z-10",
   CLOSE_BUTTON: "absolute top-4 right-4 w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-md z-10 hover:bg-gray-100 transition-colors",
 } as const;

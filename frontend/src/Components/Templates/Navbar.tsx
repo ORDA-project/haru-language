@@ -41,12 +41,15 @@ const NavBar = ({ currentPage }: NavBarProps) => {
       {/* 예문 버튼 */}
       <NavLink
         to="/example"
-        className={`flex flex-col items-center justify-center no-underline font-medium h-full ${
+        className={`flex flex-col items-center justify-center font-medium h-full ${
           location.pathname === "/example"
             ? "text-white"
             : "text-black text-opacity-50"
         }`}
-        style={labelStyle}
+        style={{
+          ...labelStyle,
+          textDecoration: "none",
+        }}
       >
         <div className="m-[5px]">
           <MemoizedCamera
@@ -54,7 +57,7 @@ const NavBar = ({ currentPage }: NavBarProps) => {
             strokeOpacity={location.pathname === "/example" ? "1" : "0.5"}
           />
         </div>
-        <span>예문</span>
+        <span style={{ textDecoration: "none" }}>예문</span>
       </NavLink>
 
       {/* 둥근 홈 버튼 */}

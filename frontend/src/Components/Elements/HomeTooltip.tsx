@@ -54,6 +54,7 @@ export const HomeTooltip: React.FC<HomeTooltipProps> = ({
         ref: exampleNavRef,
         offset: { x: 0, y: 0 },
         transform: "translateX(-50%) translateY(-100%)",
+        backgroundColor: "#00DAAA", // 초록색 배경
       },
     ],
     // 페이지 2/2
