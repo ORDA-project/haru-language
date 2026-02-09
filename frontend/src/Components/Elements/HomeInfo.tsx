@@ -13,8 +13,8 @@ interface HomeInfoProps {
   recommendation?: string;
   dailySentence?: { english: string; korean: string } | null;
   isLoggedIn?: boolean;
-  dailySentenceRef?: React.RefObject<HTMLDivElement>;
-  popSongRef?: React.RefObject<HTMLDivElement>;
+  dailySentenceRef?: React.RefObject<HTMLDivElement | null>;
+  popSongRef?: React.RefObject<HTMLDivElement | null>;
 }
 
 const HomeInfo = ({

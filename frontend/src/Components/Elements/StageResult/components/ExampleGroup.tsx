@@ -23,8 +23,8 @@ interface ExampleGroupProps {
   showAddButton?: boolean;
   onAddMore?: () => void;
   isLoadingMore?: boolean;
-  speakerRef?: React.RefObject<HTMLButtonElement>;
-  addExampleRef?: React.RefObject<HTMLButtonElement>;
+  speakerRef?: React.RefObject<HTMLButtonElement | null>;
+  addExampleRef?: React.RefObject<HTMLButtonElement | null>;
 }
 
 const ADD_BUTTON_WIDTH = 114;

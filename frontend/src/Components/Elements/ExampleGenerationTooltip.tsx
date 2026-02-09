@@ -4,10 +4,10 @@ import { shouldShowFeatureTooltip, markTooltipAsSeen, TOOLTIP_KEYS } from "../..
 
 interface ExampleGenerationTooltipProps {
   currentPage: number;
-  imageUploadRef?: React.RefObject<HTMLButtonElement>;
-  chatRef?: React.RefObject<HTMLButtonElement>;
-  speakerRef?: React.RefObject<HTMLElement>;
-  addExampleRef?: React.RefObject<HTMLElement>;
+  imageUploadRef?: React.RefObject<HTMLButtonElement | null>;
+  chatRef?: React.RefObject<HTMLButtonElement | null>;
+  speakerRef?: React.RefObject<HTMLElement | null>;
+  addExampleRef?: React.RefObject<HTMLElement | null>;
   onNext: () => void;
   onClose: () => void;
 }

@@ -9,7 +9,7 @@ import { useErrorHandler } from "../../hooks/useErrorHandler";
 
 interface StatusProps {
   userId?: number; // 하위 호환성을 위해 유지하지만 사용하지 않음
-  recordRef?: React.RefObject<HTMLDivElement>;
+  recordRef?: React.RefObject<HTMLDivElement | null>;
 }
 
 interface ProgressRecord {

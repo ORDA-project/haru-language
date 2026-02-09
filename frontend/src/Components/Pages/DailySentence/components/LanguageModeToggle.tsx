@@ -6,7 +6,7 @@ interface LanguageModeToggleProps {
   languageMode: LanguageMode;
   onModeChange: (mode: LanguageMode) => void;
   smallTextStyle: React.CSSProperties;
-  languageModeRef?: React.RefObject<HTMLDivElement>;
+  languageModeRef?: React.RefObject<HTMLDivElement | null>;
 }
 
 export const LanguageModeToggle: React.FC<LanguageModeToggleProps> = ({

@@ -4,10 +4,10 @@ import { shouldShowHomeTooltip, markTooltipAsSeen, TOOLTIP_KEYS } from "../../ut
 
 interface HomeTooltipProps {
   isOnboarded: boolean;
-  dailySentenceRef: React.RefObject<HTMLDivElement>;
-  popSongRef: React.RefObject<HTMLDivElement>;
-  exampleNavRef: React.RefObject<HTMLElement>;
-  recordRef: React.RefObject<HTMLDivElement>;
+  dailySentenceRef: React.RefObject<HTMLDivElement | null>;
+  popSongRef: React.RefObject<HTMLDivElement | null>;
+  exampleNavRef: React.RefObject<HTMLElement | null>;
+  recordRef: React.RefObject<HTMLDivElement | null>;
 }
 
 export const HomeTooltip: React.FC<HomeTooltipProps> = ({

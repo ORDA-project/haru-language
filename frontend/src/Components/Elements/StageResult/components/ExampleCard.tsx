@@ -16,7 +16,7 @@ interface ExampleCardProps {
   onNext: () => void;
   onPlay: () => void;
   onDotClick: (index: number) => void;
-  speakerRef?: React.RefObject<HTMLButtonElement>;
+  speakerRef?: React.RefObject<HTMLButtonElement | null>;
 }
 
 const EXAMPLE_CARD_WIDTH = 343;
