@@ -13,10 +13,13 @@ if (!JWT_SECRET) {
 // 기본값은 개발 환경에서만 사용 (최소 32자 이상의 랜덤 문자열 권장)
 const DEFAULT_SECRET = "dev-secret-key-change-in-production-MUST-BE-CHANGED-IN-PRODUCTION";
 
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "7d"; // 7일
+// 액세스 토큰 만료 시간: 1시간 (보안 강화)
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "1h";
+// 리프레시 토큰 만료 시간: 7일
+const REFRESH_TOKEN_EXPIRES_IN = process.env.REFRESH_TOKEN_EXPIRES_IN || "7d";
 
 /**
- * JWT 토큰 생성
+ * JWT 액세스 토큰 생성
  * @param {Object} payload - 토큰에 포함할 데이터
  * @returns {string} JWT 토큰
  */
@@ -38,6 +41,45 @@ const generateToken = (payload) => {
     issuer: "soksok-language",
     audience: "soksok-language-client",
   });
+};
+
+/**
+ * 리프레시 토큰 생성 (랜덤 문자열)
+ * @returns {string} 리프레시 토큰
+ */
+const generateRefreshToken = () => {
+  const crypto = require("crypto");
+  return crypto.randomBytes(64).toString("hex");
+};
+
+/**
+ * 리프레시 토큰 만료 시간 계산
+ * @returns {Date} 만료 시간
+ */
+const getRefreshTokenExpiry = () => {
+  const expiryDate = new Date();
+  
+  // "7d" 형식 파싱
+  const match = REFRESH_TOKEN_EXPIRES_IN.match(/^(\d+)([dhms])$/);
+  if (match) {
+    const value = parseInt(match[1]);
+    const unit = match[2];
+    
+    if (unit === 'd') {
+      expiryDate.setDate(expiryDate.getDate() + value);
+    } else if (unit === 'h') {
+      expiryDate.setHours(expiryDate.getHours() + value);
+    } else if (unit === 'm') {
+      expiryDate.setMinutes(expiryDate.getMinutes() + value);
+    } else if (unit === 's') {
+      expiryDate.setSeconds(expiryDate.getSeconds() + value);
+    }
+  } else {
+    // 기본값: 7일
+    expiryDate.setDate(expiryDate.getDate() + 7);
+  }
+  
+  return expiryDate;
 };
 
 /**
@@ -147,6 +189,8 @@ const optionalAuthenticate = (req, res, next) => {
 
 module.exports = {
   generateToken,
+  generateRefreshToken,
+  getRefreshTokenExpiry,
   verifyToken,
   extractToken,
   authenticateToken,

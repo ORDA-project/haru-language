@@ -1,7 +1,7 @@
 const express = require("express");
 const axios = require("axios");
-const { User, UserActivity } = require("../models");
-const { generateToken } = require("../utils/jwt");
+const { User, UserActivity, RefreshToken } = require("../models");
+const { generateToken, generateRefreshToken, getRefreshTokenExpiry } = require("../utils/jwt");
 const { validateOAuthCode } = require("../middleware/validation");
 
 require("dotenv").config();
@@ -145,6 +145,22 @@ router.get("/callback", validateOAuthCode, async (req, res) => {
 
     const accessToken = generateToken(tokenPayload);
 
+    // 리프레시 토큰 생성 및 저장
+    const refreshToken = generateRefreshToken();
+    const expiresAt = getRefreshTokenExpiry();
+    
+    // 기존 리프레시 토큰 삭제 (한 사용자당 하나의 리프레시 토큰만 유지)
+    await RefreshToken.destroy({
+      where: { user_id: user.id },
+    });
+    
+    // 새 리프레시 토큰 저장
+    await RefreshToken.create({
+      user_id: user.id,
+      token: refreshToken,
+      expires_at: expiresAt,
+    });
+
     delete req.session.loginOrigin;
     req.session.loginSuccess = true;
     req.session.tempUserName = user.name;
@@ -153,6 +169,7 @@ router.get("/callback", validateOAuthCode, async (req, res) => {
       return res.json({
         success: true,
         token: accessToken,
+        refreshToken: refreshToken,
         redirectUrl: `${redirectBase}/home`,
         user: {
           userId: user.id,
@@ -166,12 +183,22 @@ router.get("/callback", validateOAuthCode, async (req, res) => {
       });
     }
 
+    // 액세스 토큰 쿠키 (1시간)
     res.cookie("accessToken", accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
       path: "/",
-      maxAge: 1000 * 60 * 60 * 24 * 7,
+      maxAge: 1000 * 60 * 60, // 1시간
+    });
+
+    // 리프레시 토큰 쿠키 (7일)
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      path: "/",
+      maxAge: 1000 * 60 * 60 * 24 * 7, // 7일
     });
 
     try {

@@ -60,8 +60,8 @@ router.use("/kakao", kakaoRouter);
  *                     userId: 123
  *                     name: "홍길동"
  */
-const { authenticateToken, optionalAuthenticate, extractToken } = require("../utils/jwt");
-const { User, UserActivity } = require("../models");
+const { authenticateToken, optionalAuthenticate, extractToken, generateRefreshToken, getRefreshTokenExpiry } = require("../utils/jwt");
+const { User, UserActivity, RefreshToken } = require("../models");
 
 router.get("/check", optionalAuthenticate, async (req, res) => {
   const user = req.user;
@@ -124,6 +124,119 @@ router.get("/check", optionalAuthenticate, async (req, res) => {
   }
 });
 
+// 리프레시 토큰으로 액세스 토큰 갱신
+/**
+ * @openapi
+ * /auth/refresh:
+ *   post:
+ *     summary: Refresh access token using refresh token
+ *     tags:
+ *       - Auth
+ *     responses:
+ *       200:
+ *         description: New access token issued
+ *       401:
+ *         description: Invalid or expired refresh token
+ */
+router.post("/refresh", async (req, res) => {
+  try {
+    // 리프레시 토큰 추출 (쿠키 또는 요청 본문)
+    const refreshToken = req.cookies?.refreshToken || req.body?.refreshToken;
+
+    if (!refreshToken) {
+      return res.status(401).json({
+        error: "Unauthorized",
+        message: "리프레시 토큰이 필요합니다.",
+      });
+    }
+
+    // 데이터베이스에서 리프레시 토큰 조회
+    const tokenRecord = await RefreshToken.findOne({
+      where: { token: refreshToken },
+      include: [{ model: User }],
+    });
+
+    if (!tokenRecord) {
+      return res.status(401).json({
+        error: "Unauthorized",
+        message: "유효하지 않은 리프레시 토큰입니다.",
+      });
+    }
+
+    // 만료 확인
+    const now = new Date();
+    if (new Date(tokenRecord.expires_at) < now) {
+      // 만료된 토큰 삭제
+      await tokenRecord.destroy();
+      return res.status(401).json({
+        error: "Unauthorized",
+        message: "리프레시 토큰이 만료되었습니다.",
+      });
+    }
+
+    const user = tokenRecord.User;
+    if (!user) {
+      await tokenRecord.destroy();
+      return res.status(401).json({
+        error: "Unauthorized",
+        message: "사용자를 찾을 수 없습니다.",
+      });
+    }
+
+    // 사용자 활동 정보 조회
+    const activity = await UserActivity.findOne({
+      where: { user_id: user.id },
+      order: [["created_at", "DESC"]],
+    });
+    const mostVisitedData = await UserActivity.getMostVisitedDays(user.id);
+
+    // 새로운 액세스 토큰 생성
+    const { generateToken } = require("../utils/jwt");
+    const tokenPayload = {
+      userId: user.id,
+      social_id: user.social_id,
+      social_provider: user.social_provider,
+      name: user.name,
+      email: user.email,
+      visitCount: activity?.visit_count || 0,
+      mostVisitedDays: (mostVisitedData?.mostVisitedDays || []).join(", "),
+    };
+
+    const newAccessToken = generateToken(tokenPayload);
+
+    // 액세스 토큰을 쿠키에도 설정
+    res.cookie("accessToken", newAccessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      path: "/",
+      maxAge: 1000 * 60 * 60, // 1시간
+    });
+
+    res.json({
+      success: true,
+      token: newAccessToken,
+      user: {
+        userId: user.id,
+        name: user.name,
+        email: user.email,
+        socialId: user.social_id,
+        socialProvider: user.social_provider,
+        visitCount: activity?.visit_count || 0,
+        mostVisitedDays: (mostVisitedData?.mostVisitedDays || []).join(", "),
+      },
+    });
+  } catch (error) {
+    const { logError } = require("../middleware/errorHandler");
+    logError(error, { endpoint: "/auth/refresh" });
+    
+    res.status(500).json({
+      error: "Internal Server Error",
+      message: "토큰 갱신 중 오류가 발생했습니다.",
+    });
+  }
+});
+
 // 로그아웃 라우터
 /**
  * @openapi
@@ -136,10 +249,19 @@ router.get("/check", optionalAuthenticate, async (req, res) => {
  *       200:
  *         description: Logout successful
  */
-router.get("/logout", (req, res) => {
+router.get("/logout", async (req, res) => {
   try {
+    // 리프레시 토큰 삭제
+    const refreshToken = req.cookies?.refreshToken;
+    if (refreshToken) {
+      await RefreshToken.destroy({
+        where: { token: refreshToken },
+      });
+    }
+
     // JWT 토큰 쿠키 삭제
     res.clearCookie("accessToken");
+    res.clearCookie("refreshToken");
     res.setHeader("Cache-Control", "no-store");
     res.setHeader("Pragma", "no-cache");
 
