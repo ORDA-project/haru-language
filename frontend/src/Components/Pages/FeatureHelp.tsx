@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import NavBar from "../Templates/Navbar";
+import { Tooltip } from "../Elements/Tooltip";
 
 type FeatureType = "home" | "daily-sentence" | "example-generation";
 
@@ -12,70 +13,29 @@ const FeatureHelp = () => {
     home: {
       title: "홈 화면",
       description: "메인 화면의 주요 기능들을 확인해보세요.",
-      tooltips: [
-        {
-          title: "오늘의 한줄 영어",
-          description: "매일매일 새로운 주제가 주어집니다. 영어, 한국어로 자유롭게 대답해보세요! 한국어는 자연스런 영어로 번역해드려요",
-          position: "bottom" as const,
-        },
-        {
-          title: "오늘의 추천 팝송",
-          description: "옛날 팝송을 들으며 가사를 볼 수 있어요.",
-          position: "top" as const,
-        },
-        {
-          title: "예문",
-          description: "사진 / 채팅으로 더 많은 예문을 만들어드려요.",
-          position: "bottom" as const,
-        },
-        {
-          title: "기록",
-          description: "날짜별로 활동내역을 볼 수 있어요. 한줄 영어, 예문생성, 예문채팅 내역이 제공돼요.",
-          position: "bottom" as const,
-        },
-      ],
+      exampleTooltip: {
+        title: "오늘의 한줄 영어",
+        description: "매일매일 새로운 주제가 주어집니다.\n영어, 한국어로 자유롭게 대답해보세요!\n한국어는 자연스런 영어로 번역해드려요",
+        position: "bottom" as const,
+      },
     },
     "daily-sentence": {
-      title: "오늘의 한줄 영어",
+      title: "한줄 영어",
       description: "언어 모드 전환 기능을 확인해보세요.",
-      tooltips: [
-        {
-          title: "언어모드 전환",
-          description: "모드를 클릭하고, 자유롭게 대답해보세요! 한국어는 자연스런 영어로 번역해드려요",
-          position: "bottom" as const,
-        },
-        {
-          title: "모르겠어요...",
-          description: "잘 모르겠다면 클릭해서 결과를 볼 수 있어요.",
-          position: "top" as const,
-        },
-      ],
+      exampleTooltip: {
+        title: "언어모드 전환",
+        description: "모드를 클릭하고, 자유롭게 대답해보세요!\n한국어는 자연스런 영어로 번역해드려요",
+        position: "bottom" as const,
+      },
     },
     "example-generation": {
-      title: "예문 생성",
+      title: "예문",
       description: "예문 생성 기능을 확인해보세요.",
-      tooltips: [
-        {
-          title: "이미지 예문생성",
-          description: "교재를 찍어서 바로 올릴 수도 있고, 갤러리에서 올릴 수도 있어요.",
-          position: "top" as const,
-        },
-        {
-          title: "채팅 예문생성",
-          description: "어색한 부분, 기억안나는 단어 등 모든 것을 물어볼 수 있어요.",
-          position: "bottom" as const,
-        },
-        {
-          title: "스피커",
-          description: "예문을 직접 들어보고 발음을 따라해봐요.",
-          position: "top" as const,
-        },
-        {
-          title: "예문추가",
-          description: "예문을 더 보고싶다면, 예문추가를 할 수 있어요.",
-          position: "bottom" as const,
-        },
-      ],
+      exampleTooltip: {
+        title: "스피커",
+        description: "예문을 직접 들어보고 발음을 따라해봐요.",
+        position: "bottom" as const,
+      },
     },
   };
 
@@ -141,19 +101,28 @@ const FeatureHelp = () => {
                 </svg>
               </div>
 
-              {selectedFeature === key && (
-                <div className="mt-4 space-y-3 pt-4 border-t border-gray-200">
-                  {feature.tooltips.map((tooltip, index) => (
-                    <div
-                      key={index}
-                      className="bg-gray-50 rounded-lg p-3 border border-gray-200"
-                    >
-                      <h4 className="font-semibold text-gray-900 mb-1 text-sm">
-                        {tooltip.title}
-                      </h4>
-                      <p className="text-gray-600 text-sm">{tooltip.description}</p>
+              {selectedFeature === key && feature.exampleTooltip && (
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  {/* 예시 이미지 영역 */}
+                  <div className="relative bg-gray-200 rounded-lg overflow-hidden" style={{ height: "300px", minHeight: "300px" }}>
+                    {/* 툴팁 오버레이 */}
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div 
+                        className="relative"
+                        style={{
+                          top: key === "home" ? "-80px" : key === "daily-sentence" ? "-100px" : "-60px",
+                        }}
+                      >
+                        <Tooltip
+                          title={feature.exampleTooltip.title}
+                          description={feature.exampleTooltip.description}
+                          position={feature.exampleTooltip.position}
+                          showUnderline={true}
+                          customWidth={243}
+                        />
+                      </div>
                     </div>
-                  ))}
+                  </div>
                 </div>
               )}
             </div>
