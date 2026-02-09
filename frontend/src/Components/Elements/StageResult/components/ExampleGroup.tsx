@@ -23,6 +23,8 @@ interface ExampleGroupProps {
   showAddButton?: boolean;
   onAddMore?: () => void;
   isLoadingMore?: boolean;
+  speakerRef?: React.RefObject<HTMLButtonElement>;
+  addExampleRef?: React.RefObject<HTMLButtonElement>;
 }
 
 const ADD_BUTTON_WIDTH = 114;
@@ -43,6 +45,8 @@ export const ExampleGroup: React.FC<ExampleGroupProps> = ({
   showAddButton = false,
   onAddMore,
   isLoadingMore = false,
+  speakerRef,
+  addExampleRef,
 }) => {
   const currentExample = group[currentIndex];
   if (!currentExample) return null;
@@ -62,6 +66,7 @@ export const ExampleGroup: React.FC<ExampleGroupProps> = ({
         onNext={onNext}
         onPlay={() => onPlay(currentExample)}
         onDotClick={onDotClick}
+        speakerRef={speakerRef}
       />
 
       {/* 상황 설명 - 예문 카드 아래에 표시 */}
@@ -88,6 +93,7 @@ export const ExampleGroup: React.FC<ExampleGroupProps> = ({
       {showAddButton && onAddMore && (
         <div className="flex justify-start mt-4">
           <button
+            ref={addExampleRef}
             onClick={onAddMore}
             disabled={isLoadingMore}
             className="bg-[#00DAAA] hover:bg-[#00C495] active:bg-[#00B085] text-gray-900 font-semibold rounded-full transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"

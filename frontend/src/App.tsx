@@ -27,6 +27,7 @@ import FriendInvite from "./Components/Pages/FriendInvite";
 import Season from "./Components/Pages/Season";
 import DeleteAccount from "./Components/Pages/DeleteAccount";
 import NotificationHistory from "./Components/Pages/NotificationHistory";
+import FeatureHelp from "./Components/Pages/FeatureHelp";
 
 const router = createBrowserRouter([
   {
@@ -112,6 +113,10 @@ const router = createBrowserRouter([
   {
     path: "/notification-history",
     element: <NotificationHistory />,
+  },
+  {
+    path: "/feature-help",
+    element: <FeatureHelp />,
   },
 ]);
 

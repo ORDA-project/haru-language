@@ -6,15 +6,17 @@ interface LanguageModeToggleProps {
   languageMode: LanguageMode;
   onModeChange: (mode: LanguageMode) => void;
   smallTextStyle: React.CSSProperties;
+  languageModeRef?: React.RefObject<HTMLDivElement>;
 }
 
 export const LanguageModeToggle: React.FC<LanguageModeToggleProps> = ({
   languageMode,
   onModeChange,
   smallTextStyle,
+  languageModeRef,
 }) => {
   return (
-    <div className="flex justify-center mt-4">
+    <div ref={languageModeRef} className="flex justify-center mt-4">
       <div className="bg-gray-100 rounded-full p-1 flex">
         <button
           onClick={() => onModeChange("korean")}

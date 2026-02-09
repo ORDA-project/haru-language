@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useAtom } from "jotai";
 import { isLargeTextModeAtom } from "../../store/dataStore";
 import ImageUploadModal from "./ImageUploadModal";
+import { ExampleGenerationTooltip } from "./ExampleGenerationTooltip";
 
 interface StageUploadProps {
   handleFileUpload: (file: File) => void;
@@ -14,6 +15,9 @@ interface StageUploadProps {
 const StageUpload = ({ handleFileUpload, handleAIChat, hasSavedExample = false, hasSavedChat = false, onRestoreExample }: StageUploadProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLargeTextMode] = useAtom(isLargeTextModeAtom);
+  const [tooltipPage, setTooltipPage] = useState(0);
+  const imageUploadRef = useRef<HTMLButtonElement>(null);
+  const chatRef = useRef<HTMLButtonElement>(null);
   
   // 큰글씨 모드에 따른 텍스트 크기 (중년층용)
   const baseFontSize = isLargeTextMode ? 18 : 16;
@@ -46,6 +50,7 @@ const StageUpload = ({ handleFileUpload, handleAIChat, hasSavedExample = false, 
         <div className="w-full max-w-sm space-y-4">
           {/* 이미지 업로드 옵션 */}
           <button
+            ref={imageUploadRef}
             onClick={() => {
               if (hasSavedExample && onRestoreExample) {
                 onRestoreExample();
@@ -125,6 +130,7 @@ const StageUpload = ({ handleFileUpload, handleAIChat, hasSavedExample = false, 
 
           {/* AI 대화 옵션 */}
           <button
+            ref={chatRef}
             onClick={handleAIChat}
             className="w-full flex flex-col items-center bg-white py-12 px-6 border-2 border-solid border-[#00DAAA] rounded-2xl cursor-pointer hover:bg-gray-50 transition-colors shadow-sm"
           >
@@ -163,6 +169,15 @@ const StageUpload = ({ handleFileUpload, handleAIChat, hasSavedExample = false, 
         onClose={() => setIsModalOpen(false)}
         onImageSelect={handleImageSelect}
         title="교재 사진 선택"
+      />
+
+      {/* 예문 생성 툴팁 */}
+      <ExampleGenerationTooltip
+        currentPage={tooltipPage}
+        imageUploadRef={imageUploadRef}
+        chatRef={chatRef}
+        onNext={() => setTooltipPage(1)}
+        onClose={() => setTooltipPage(0)}
       />
     </div>
   );

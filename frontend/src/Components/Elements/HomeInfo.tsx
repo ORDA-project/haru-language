@@ -13,6 +13,8 @@ interface HomeInfoProps {
   recommendation?: string;
   dailySentence?: { english: string; korean: string } | null;
   isLoggedIn?: boolean;
+  dailySentenceRef?: React.RefObject<HTMLDivElement>;
+  popSongRef?: React.RefObject<HTMLDivElement>;
 }
 
 const HomeInfo = ({
@@ -22,6 +24,8 @@ const HomeInfo = ({
   recommendation,
   dailySentence,
   isLoggedIn,
+  dailySentenceRef,
+  popSongRef,
 }: HomeInfoProps) => {
   const navigate = useNavigate();
   const [isLargeTextMode] = useAtom(isLargeTextModeAtom);
@@ -253,6 +257,7 @@ const HomeInfo = ({
         </div>
       )}
       <div
+        ref={dailySentenceRef}
         className="min-h-[200px] flex flex-col justify-start items-start p-[20px] pb-[24px] rounded-[20px] bg-white shadow-[0px_3px_7px_2px_rgba(0,0,0,0.05)] my-[20px] border-4 border-[#00DAAA] cursor-pointer select-none w-full max-w-full overflow-visible box-border"
         style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
         onTouchStart={(e) => {
@@ -333,6 +338,7 @@ const HomeInfo = ({
         </div>
       </div>
       <div
+        ref={popSongRef}
         className="min-h-[120px] flex px-5 py-4 justify-between items-center rounded-[20px] bg-white shadow-[0px_3px_7px_2px_rgba(0,0,0,0.05)] cursor-pointer select-none"
         style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
         onTouchStart={(e) => {

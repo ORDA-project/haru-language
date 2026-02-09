@@ -9,6 +9,7 @@ import { useErrorHandler } from "../../hooks/useErrorHandler";
 
 interface StatusProps {
   userId?: number; // 하위 호환성을 위해 유지하지만 사용하지 않음
+  recordRef?: React.RefObject<HTMLDivElement>;
 }
 
 interface ProgressRecord {
@@ -18,7 +19,7 @@ interface ProgressRecord {
   createdAt: string;
 }
 
-const StatusCheck = ({ userId: _userId }: StatusProps) => {
+const StatusCheck = ({ userId: _userId, recordRef }: StatusProps) => {
   // 보안: userId 파라미터는 사용하지 않음 (JWT로 자동 인증)
   const navigate = useNavigate();
   const { showError } = useErrorHandler();
@@ -197,7 +198,7 @@ const StatusCheck = ({ userId: _userId }: StatusProps) => {
   return (
     <div className="flex flex-col justify-center items-center w-full">
       {/* <button className="rounded-[20px] border-0 bg-[#fcc21b] shadow-[0px_3px_7px_2px_rgba(0,0,0,0.05)] w-[95%] p-[21px_17px] text-[19px] font-bold leading-[150%] m-[25px]" onClick={() => {navigate("/quiz");}}>진도 점검 하러 가기</button> */}
-      <div className="rounded-[10px] bg-[#d2deed] w-[90%] flex flex-col items-start p-[15px] shadow-[0px_3px_7px_rgba(0,0,0,0.1)] m-[10px]">
+      <div ref={recordRef} className="rounded-[10px] bg-[#d2deed] w-[90%] flex flex-col items-start p-[15px] shadow-[0px_3px_7px_rgba(0,0,0,0.1)] m-[10px]">
         <div className="font-bold mb-[10px] text-center w-full" style={headerTextStyle}>
           지난 시간에는 이런 걸 배웠어요<span style={{ display: 'inline-block', verticalAlign: 'middle', lineHeight: '1' }}>📝</span>
         </div>

@@ -4,7 +4,9 @@ import { useAtom } from "jotai";
 import { isLoggedInAtom } from "../../store/authStore";
 import { isLargeTextModeAtom } from "../../store/dataStore";
 import { Icons } from "../Elements/Icons";
+import { Tooltip } from "../Elements/Tooltip";
 import { getTodayStringBy4AM, hashDateString } from "../../utils/dateUtils";
+import { shouldShowFeatureTooltip, markTooltipAsSeen, TOOLTIP_KEYS } from "../../utils/tooltipUtils";
 
 import Navbar from "../Templates/Navbar";
 import {
@@ -42,6 +44,12 @@ const DailySentence = () => {
   const [englishQuestionFontSize, setEnglishQuestionFontSize] = useState<number | null>(null);
   const englishQuestionRef = useRef<HTMLDivElement>(null);
   const englishQuestionContainerRef = useRef<HTMLDivElement>(null);
+  const languageModeRef = useRef<HTMLDivElement>(null);
+  const [showLanguageModeTooltip, setShowLanguageModeTooltip] = useState(false);
+  const [languageModeTooltipPosition, setLanguageModeTooltipPosition] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
 
   // 큰글씨 모드에 따른 텍스트 크기 (중년층용)
   const baseFontSize = isLargeTextMode ? 18 : 16;
@@ -447,6 +455,38 @@ const DailySentence = () => {
     return `${today.getMonth() + 1}월 ${today.getDate()}일`;
   };
 
+  // 언어 모드 전환 툴팁 표시
+  useEffect(() => {
+    if (currentStep === "question" && shouldShowFeatureTooltip(TOOLTIP_KEYS.DAILY_SENTENCE_LANGUAGE_MODE)) {
+      setShowLanguageModeTooltip(true);
+      updateLanguageModeTooltipPosition();
+    }
+  }, [currentStep]);
+
+  useEffect(() => {
+    if (showLanguageModeTooltip && languageModeRef.current) {
+      updateLanguageModeTooltipPosition();
+      const handleResize = () => updateLanguageModeTooltipPosition();
+      window.addEventListener("resize", handleResize);
+      return () => window.removeEventListener("resize", handleResize);
+    }
+  }, [showLanguageModeTooltip]);
+
+  const updateLanguageModeTooltipPosition = () => {
+    if (languageModeRef.current) {
+      const rect = languageModeRef.current.getBoundingClientRect();
+      setLanguageModeTooltipPosition({
+        top: rect.top - 10,
+        left: rect.left + rect.width / 2,
+      });
+    }
+  };
+
+  const handleCloseLanguageModeTooltip = () => {
+    setShowLanguageModeTooltip(false);
+    markTooltipAsSeen(TOOLTIP_KEYS.DAILY_SENTENCE_LANGUAGE_MODE);
+  };
+
   if (questionsLoading || !currentQuestion) {
     return (
       <div className="min-h-screen bg-[#F7F8FB] flex items-center justify-center">
@@ -478,6 +518,7 @@ const DailySentence = () => {
             languageMode={languageMode}
             onModeChange={handleModeChange}
             smallTextStyle={smallTextStyle}
+            languageModeRef={languageModeRef}
           />
         </div>
 
@@ -567,6 +608,37 @@ const DailySentence = () => {
         onCancel={() => setShowConfirmPopup(false)}
         onNo={handlePopupNo}
       />
+
+      {/* 언어 모드 전환 툴팁 */}
+      {showLanguageModeTooltip && languageModeTooltipPosition && (
+        <div
+          className="fixed inset-0 z-50 pointer-events-none"
+          style={{ touchAction: "none" }}
+        >
+          <div
+            className="absolute"
+            style={{
+              top: `${languageModeTooltipPosition.top}px`,
+              left: `${languageModeTooltipPosition.left}px`,
+              transform: "translateX(-50%) translateY(-100%)",
+              pointerEvents: "auto",
+            }}
+          >
+            <Tooltip
+              title="언어모드 전환"
+              description="모드를 클릭하고, 자유롭게 대답해보세요! 한국어는 자연스런 영어로 번역해드려요"
+              position="bottom"
+              showCloseButton={true}
+              onClose={handleCloseLanguageModeTooltip}
+            />
+          </div>
+          <div
+            className="absolute inset-0 bg-black bg-opacity-30 -z-10"
+            onClick={handleCloseLanguageModeTooltip}
+            style={{ pointerEvents: "auto" }}
+          />
+        </div>
+      )}
     </div>
   );
 };

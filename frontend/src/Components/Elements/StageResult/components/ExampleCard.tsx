@@ -16,6 +16,7 @@ interface ExampleCardProps {
   onNext: () => void;
   onPlay: () => void;
   onDotClick: (index: number) => void;
+  speakerRef?: React.RefObject<HTMLButtonElement>;
 }
 
 const EXAMPLE_CARD_WIDTH = 343;
@@ -31,6 +32,7 @@ export const ExampleCard: React.FC<ExampleCardProps> = ({
   onNext,
   onPlay,
   onDotClick,
+  speakerRef,
 }) => {
   return (
     <div className="flex justify-start">
@@ -131,6 +133,7 @@ export const ExampleCard: React.FC<ExampleCardProps> = ({
             <ChevronLeft className="w-5 h-5" />
           </button>
           <button
+            ref={speakerRef}
             onClick={onPlay}
             className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors shadow-md ${
               isPlaying ? "bg-[#FF6B35] hover:bg-[#E55A2B]" : "bg-[#00DAAA] hover:bg-[#00C299]"

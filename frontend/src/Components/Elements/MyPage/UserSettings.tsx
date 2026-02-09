@@ -141,6 +141,15 @@ const UserSettings = React.memo(function UserSettings({
               <span style={baseTextStyle}>도움말</span>
             </button>
             <button
+              onClick={() => navigate("/feature-help")}
+              className="flex items-center hover:bg-gray-50 p-2 rounded-lg transition-colors"
+            >
+              <div className="w-6 h-6 mr-3 bg-[#00DAAA] rounded-full flex items-center justify-center">
+                <span className="text-white text-xs font-bold">?</span>
+              </div>
+              <span style={baseTextStyle}>기능별 도움말</span>
+            </button>
+            <button
               onClick={() => navigate("/announcements")}
               className="flex items-center hover:bg-gray-50 p-2 rounded-lg transition-colors"
             >

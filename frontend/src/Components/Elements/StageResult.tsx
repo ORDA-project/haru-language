@@ -14,6 +14,7 @@ import { ExampleGroup } from "./StageResult/components/ExampleGroup";
 import { ImageCropStage } from "./StageResult/components/ImageCropStage";
 import { useStageResultTTS } from "./StageResult/hooks/useStageResultTTS";
 import { useAddMoreExamples } from "./StageResult/hooks/useAddMoreExamples";
+import { ExampleGenerationTooltip } from "./ExampleGenerationTooltip";
 
 interface StageResultProps {
   description: string;
@@ -100,6 +101,9 @@ const StageResult = ({
   const isInitializedRef = useRef(false);
   const [groupScrollIndices, setGroupScrollIndices] = useState<Record<number, number>>({});
   const groupScrollRefs = useRef<Record<number, HTMLDivElement | null>>({});
+  const [tooltipPage, setTooltipPage] = useState(1); // StageResult는 2페이지부터 시작
+  const speakerRef = useRef<HTMLButtonElement>(null);
+  const addExampleRef = useRef<HTMLButtonElement>(null);
   
   // TTS 훅 사용
   const { isPlayingTTS, playingExampleId, handlePlayExample } = useStageResultTTS();
@@ -551,6 +555,8 @@ const StageResult = ({
                 showAddButton={groupIndex === exampleGroups.length - 1 && !newImageSetGroupIndices.has(groupIndex)}
                 onAddMore={() => handleAddMoreExamples()}
                 isLoadingMore={isLoadingMore}
+                speakerRef={groupIndex === 0 ? speakerRef : undefined}
+                addExampleRef={groupIndex === exampleGroups.length - 1 && !newImageSetGroupIndices.has(groupIndex) ? addExampleRef : undefined}
               />
             </React.Fragment>
           );
@@ -630,6 +636,7 @@ const StageResult = ({
                   showAddButton={true}
                   onAddMore={() => handleAddMoreExamples(imageSet.image)}
                   isLoadingMore={isLoadingMore}
+                  addExampleRef={setIndex === newImageSets.length - 1 ? addExampleRef : undefined}
                 />
               )}
             </React.Fragment>
@@ -696,6 +703,15 @@ const StageResult = ({
           onCancel={handleCropCancel}
         />
       )}
+
+      {/* 예문 생성 툴팁 (2페이지) */}
+      <ExampleGenerationTooltip
+        currentPage={tooltipPage}
+        speakerRef={speakerRef}
+        addExampleRef={addExampleRef}
+        onNext={() => {}}
+        onClose={() => setTooltipPage(0)}
+      />
     </div>
   );
 };

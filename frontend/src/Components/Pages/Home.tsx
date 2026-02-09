@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useAtom } from "jotai";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import HomeInfo from "../Elements/HomeInfo";
 import NavBar from "../Templates/Navbar";
 import HomeHeader from "../Templates/HomeHeader";
 import StatusCheck from "../Elements/StatusCheck";
-import { isLoggedInAtom, userAtom, setUserAtom } from "../../store/authStore";
+import { HomeTooltip } from "../Elements/HomeTooltip";
+import { isLoggedInAtom, userAtom, setUserAtom, isOnboardedAtom } from "../../store/authStore";
 import { API_ENDPOINTS } from "../../config/api";
 import { useErrorHandler } from "../../hooks/useErrorHandler";
 import { http } from "../../utils/http";
@@ -25,6 +26,7 @@ const Home = () => {
   const navigate = useNavigate();
   const [isLoggedIn] = useAtom(isLoggedInAtom);
   const [user] = useAtom(userAtom);
+  const [isOnboarded] = useAtom(isOnboardedAtom);
   const [, setUserData] = useAtom(setUserAtom);
   const [visitCount, setVisitCount] = useState<number>(0);
   const [mostVisitedDay, setMostVisitedDay] = useState<string>("");
@@ -32,6 +34,12 @@ const Home = () => {
   const [dailySentence, setDailySentence] = useState<{ english: string; korean: string } | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const { showError, showWarning, showSuccess } = useErrorHandler();
+
+  // 툴팁을 위한 ref들
+  const dailySentenceRef = useRef<HTMLDivElement>(null);
+  const popSongRef = useRef<HTMLDivElement>(null);
+  const exampleNavRef = useRef<HTMLElement>(null);
+  const recordRef = useRef<HTMLDivElement>(null);
 
   // 보안: URL에서 민감한 정보 제거
   useEffect(() => {
@@ -190,6 +198,14 @@ const Home = () => {
   }, [setUserData, showSuccess, showError, showWarning, user?.userId]); // user.userId 변경 시 다시 호출 (로그인 후)
 
 
+  // 예문 네비게이션 ref 설정
+  useEffect(() => {
+    const exampleNav = document.querySelector('a[href="/example"]');
+    if (exampleNav) {
+      exampleNavRef.current = exampleNav as HTMLElement;
+    }
+  }, []);
+
   return (
     <div className="w-full h-full flex flex-col items-center max-w-[440px] mx-auto shadow-[0_0_10px_0_rgba(0,0,0,0.1)] bg-[#F7F8FB]">
       <HomeHeader />
@@ -202,12 +218,21 @@ const Home = () => {
             recommendation={recommendation}
             dailySentence={dailySentence}
             isLoggedIn={isLoggedIn}
+            dailySentenceRef={dailySentenceRef}
+            popSongRef={popSongRef}
           />
           {/* 보안: userId 전달하지 않음 (JWT로 자동 인증) */}
-          <StatusCheck />
+          <StatusCheck recordRef={recordRef} />
         </>
       </div>
       <NavBar currentPage={"Home"} />
+      <HomeTooltip
+        isOnboarded={isOnboarded || false}
+        dailySentenceRef={dailySentenceRef}
+        popSongRef={popSongRef}
+        exampleNavRef={exampleNavRef}
+        recordRef={recordRef}
+      />
     </div>
   );
 };
