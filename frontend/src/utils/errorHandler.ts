@@ -32,6 +32,50 @@ export const apiClient = axios.create({
   }
 });
 
+// 리프레시 토큰 갱신 플래그 (중복 요청 방지)
+let isRefreshing = false;
+let refreshPromise: Promise<string | null> | null = null;
+
+// 리프레시 토큰으로 액세스 토큰 갱신
+const refreshAccessToken = async (): Promise<string | null> => {
+  if (isRefreshing && refreshPromise) {
+    return refreshPromise;
+  }
+
+  isRefreshing = true;
+  refreshPromise = (async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+      });
+
+      if (!response.ok) {
+        return null;
+      }
+
+      const data = await response.json();
+      if (data.token) {
+        localStorage.setItem("accessToken", data.token);
+        return data.token;
+      }
+      return null;
+    } catch (error) {
+      return null;
+    } finally {
+      isRefreshing = false;
+      refreshPromise = null;
+    }
+  })();
+
+  return refreshPromise;
+};
+
 // Request interceptor
 apiClient.interceptors.request.use(
   (config) => {
@@ -53,7 +97,29 @@ apiClient.interceptors.response.use(
   (response) => {
     return response;
   },
-  (error: AxiosError) => {
+  async (error: AxiosError) => {
+    const originalRequest = error.config as any;
+
+    // 401 에러이고 리프레시 엔드포인트가 아닌 경우에만 갱신 시도
+    if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url?.includes('/auth/refresh')) {
+      originalRequest._retry = true;
+
+      const newToken = await refreshAccessToken();
+      
+      if (newToken) {
+        // 새 토큰으로 재시도
+        originalRequest.headers.Authorization = `Bearer ${newToken}`;
+        return apiClient(originalRequest);
+      } else {
+        // 리프레시 실패 시 로그아웃 처리 (기존 동작 유지)
+        localStorage.removeItem('accessToken');
+        sessionStorage.removeItem('user');
+        if (typeof window !== 'undefined') {
+          window.location.href = '/';
+        }
+      }
+    }
+
     return Promise.reject(handleApiError(error));
   }
 );

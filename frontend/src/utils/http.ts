@@ -26,6 +26,9 @@ interface HttpRequestOptions {
 }
 
 export class Http {
+  private isRefreshing = false;
+  private refreshPromise: Promise<string | null> | null = null;
+
   async get<T>(path: string, options?: Omit<HttpRequestOptions, 'json'>): Promise<T> {
     return this.request<T>('get', path, options);
   }
@@ -44,6 +47,53 @@ export class Http {
 
   async delete<T>(path: string, options?: HttpRequestOptions): Promise<T> {
     return this.request<T>('delete', path, options);
+  }
+
+  /**
+   * 리프레시 토큰으로 액세스 토큰 갱신
+   * 리프레시 토큰이 없거나 갱신 실패 시 null 반환 (기존 동작 유지)
+   */
+  private async refreshAccessToken(): Promise<string | null> {
+    // 이미 갱신 중이면 기존 Promise 반환
+    if (this.isRefreshing && this.refreshPromise) {
+      return this.refreshPromise;
+    }
+
+    this.isRefreshing = true;
+    this.refreshPromise = (async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+          },
+        });
+
+        if (!response.ok) {
+          // 리프레시 토큰이 없거나 만료된 경우 (기존 사용자 호환성 유지)
+          // 쿠키 인증으로 계속 시도할 수 있으므로 null만 반환
+          return null;
+        }
+
+        const data = await response.json();
+        if (data.token) {
+          localStorage.setItem("accessToken", data.token);
+          return data.token;
+        }
+        return null;
+      } catch (error) {
+        // 네트워크 오류 등 - 기존 동작 유지
+        return null;
+      } finally {
+        this.isRefreshing = false;
+        this.refreshPromise = null;
+      }
+    })();
+
+    return this.refreshPromise;
   }
 
   private async request<T>(method: HttpRequestMethod, path: string, options?: HttpRequestOptions): Promise<T> {
@@ -151,18 +201,55 @@ export class Http {
         }
       }
       
-      // 401 에러 발생 시 로그인 페이지로 리다이렉트 (로그인 관련 경로 제외)
+      // 401 에러 발생 시 리프레시 토큰으로 자동 갱신 시도
       if (response.status === 401) {
         const isLoginPath = path.includes('/auth/') || path === '/login' || path === '/';
-        if (!isLoginPath) {
-          // 토큰 삭제
-          localStorage.removeItem("accessToken");
-          // 사용자 정보 삭제
-          sessionStorage.removeItem("user");
-          // 로그인 페이지로 리다이렉트
-          if (typeof window !== 'undefined') {
-            window.location.href = '/';
+        const isRefreshPath = path.includes('/auth/refresh');
+        
+        // 리프레시 엔드포인트가 아니고, 로그인 관련 경로가 아닌 경우에만 갱신 시도
+        if (!isLoginPath && !isRefreshPath) {
+          const newToken = await this.refreshAccessToken();
+          
+          if (newToken) {
+            // 새 토큰으로 원래 요청 재시도
+            requestHeaders["Authorization"] = `Bearer ${newToken}`;
+            
+            const retryResponse = await fetch(url.toString(), {
+              ...requestInit,
+              headers: requestHeaders,
+            });
+            
+            if (retryResponse.ok) {
+              try {
+                return await retryResponse.json();
+              } catch (error) {
+                throw new HttpError(retryResponse.status, {
+                  error: "Invalid JSON Response",
+                  message: "서버가 유효한 JSON을 반환하지 않았습니다.",
+                });
+              }
+            }
+            
+            // 재시도도 실패한 경우 로그아웃 처리
+            localStorage.removeItem("accessToken");
+            sessionStorage.removeItem("user");
+            if (typeof window !== 'undefined') {
+              window.location.href = '/';
+            }
+          } else {
+            // 리프레시 토큰이 없거나 갱신 실패한 경우
+            // 기존 사용자 호환성을 위해 쿠키 인증으로 계속 시도할 수 있지만,
+            // 이미 401 에러가 발생했으므로 로그아웃 처리 (기존 동작 유지)
+            localStorage.removeItem("accessToken");
+            sessionStorage.removeItem("user");
+            if (typeof window !== 'undefined') {
+              window.location.href = '/';
+            }
           }
+        } else if (!isRefreshPath) {
+          // 로그인 관련 경로가 아닌 경우에만 토큰 삭제
+          localStorage.removeItem("accessToken");
+          sessionStorage.removeItem("user");
         }
       }
       
