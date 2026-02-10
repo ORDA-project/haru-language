@@ -53,10 +53,8 @@ export const ImageTooltipOverlay: React.FC<ImageTooltipOverlayProps> = ({
   const handleNext = () => {
     if (currentIndex < images.length - 1) {
       setCurrentIndex((prev) => prev + 1);
-    } else {
-      // 마지막 화면: 스펙대로 X 또는 화면 클릭 시 툴팁 사라짐
-      onClose();
     }
+    // 마지막에서 오른쪽 터치해도 닫지 않음 (오로지 X로만 닫기)
   };
 
   const handlePrev = () => {
@@ -65,12 +63,8 @@ export const ImageTooltipOverlay: React.FC<ImageTooltipOverlayProps> = ({
     }
   };
 
-  // 스펙: 화면 오른쪽 터치 → 다음 화면 / 마지막 화면에서 X 또는 화면 클릭 → 툴팁 사라짐
+  // 왼쪽 터치 → 이전 이미지 / 오른쪽 터치 → 다음 이미지. 끝에서 계속 터치해도 안 닫힘 (X만 닫기)
   const handleOverlayClick = (e: React.MouseEvent) => {
-    if (currentIndex === images.length - 1) {
-      onClose();
-      return;
-    }
     const clickX = e.clientX;
     const screenWidth = window.innerWidth;
     if (clickX > screenWidth * 0.5) {
@@ -119,12 +113,35 @@ export const ImageTooltipOverlay: React.FC<ImageTooltipOverlayProps> = ({
         />
       </div>
 
-      {/* 이미지 위 오버레이: 페이지 안내(1/2) + 닫기(X) — 실무에서 많이 쓰는 상단 바 */}
+      {/* 상단: 닫기(X)만 — 오로지 X로만 툴팁 닫기 */}
       <div
-        className="absolute top-0 left-0 right-0 z-10 flex items-center justify-center px-12 py-3 sm:py-4"
+        className="absolute top-0 left-0 right-0 z-10 flex items-center justify-end px-3 py-3 sm:py-4"
         style={{
           paddingTop: "max(12px, env(safe-area-inset-top))",
           background: "linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, transparent 100%)",
+        }}
+      >
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onClose();
+          }}
+          className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white/95 hover:bg-black/50 active:scale-95 transition-all"
+          style={{ marginRight: "max(12px, env(safe-area-inset-right))" }}
+          aria-label="닫기"
+        >
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <path d="M15 5L5 15M5 5L15 15" />
+          </svg>
+        </button>
+      </div>
+
+      {/* 하단: 이미지 아래쪽에 페이지 안내(1/2) 오버레이 */}
+      <div
+        className="absolute bottom-0 left-0 right-0 z-10 flex items-center justify-center py-3 sm:py-4"
+        style={{
+          paddingBottom: "max(12px, env(safe-area-inset-bottom))",
+          background: "linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 100%)",
         }}
       >
         <div className="rounded-full bg-black/40 backdrop-blur-md px-3 py-1.5">
@@ -132,19 +149,6 @@ export const ImageTooltipOverlay: React.FC<ImageTooltipOverlayProps> = ({
             {currentIndex + 1} / {images.length}
           </span>
         </div>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onClose();
-          }}
-          className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white/95 hover:bg-black/50 active:scale-95 transition-all"
-          style={{ right: "max(12px, env(safe-area-inset-right))" }}
-          aria-label="닫기"
-        >
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            <path d="M15 5L5 15M5 5L15 15" />
-          </svg>
-        </button>
       </div>
     </div>
   );
