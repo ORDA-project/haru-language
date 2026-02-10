@@ -4,9 +4,14 @@ import { useAtom } from "jotai";
 import { isLoggedInAtom } from "../../store/authStore";
 import { isLargeTextModeAtom } from "../../store/dataStore";
 import { Icons } from "../Elements/Icons";
-import { Tooltip } from "../Elements/Tooltip";
+import { ImageTooltipOverlay } from "../Elements/ImageTooltipOverlay";
 import { getTodayStringBy4AM, hashDateString } from "../../utils/dateUtils";
 import { shouldShowFeatureTooltip, markTooltipAsSeen, TOOLTIP_KEYS } from "../../utils/tooltipUtils";
+
+// 이미지 import
+import dailySentence1 from "../../Images/feature-help/툴팁_하루언어1.png";
+import dailySentence2 from "../../Images/feature-help/툴팁_하루언어2.png";
+import dailySentence3 from "../../Images/feature-help/툴팁_하루언어3.png";
 
 import Navbar from "../Templates/Navbar";
 import {
@@ -46,10 +51,6 @@ const DailySentence = () => {
   const englishQuestionContainerRef = useRef<HTMLDivElement>(null);
   const languageModeRef = useRef<HTMLDivElement>(null);
   const [showLanguageModeTooltip, setShowLanguageModeTooltip] = useState(false);
-  const [languageModeTooltipPosition, setLanguageModeTooltipPosition] = useState<{
-    top: number;
-    left: number;
-  } | null>(null);
 
   // 큰글씨 모드에 따른 텍스트 크기 (중년층용)
   const baseFontSize = isLargeTextMode ? 18 : 16;
@@ -459,33 +460,15 @@ const DailySentence = () => {
   useEffect(() => {
     if (currentStep === "question" && shouldShowFeatureTooltip(TOOLTIP_KEYS.DAILY_SENTENCE_LANGUAGE_MODE)) {
       setShowLanguageModeTooltip(true);
-      updateLanguageModeTooltipPosition();
     }
   }, [currentStep]);
-
-  useEffect(() => {
-    if (showLanguageModeTooltip && languageModeRef.current) {
-      updateLanguageModeTooltipPosition();
-      const handleResize = () => updateLanguageModeTooltipPosition();
-      window.addEventListener("resize", handleResize);
-      return () => window.removeEventListener("resize", handleResize);
-    }
-  }, [showLanguageModeTooltip]);
-
-  const updateLanguageModeTooltipPosition = () => {
-    if (languageModeRef.current) {
-      const rect = languageModeRef.current.getBoundingClientRect();
-      setLanguageModeTooltipPosition({
-        top: rect.top - 10,
-        left: rect.left + rect.width / 2,
-      });
-    }
-  };
 
   const handleCloseLanguageModeTooltip = () => {
     setShowLanguageModeTooltip(false);
     markTooltipAsSeen(TOOLTIP_KEYS.DAILY_SENTENCE_LANGUAGE_MODE);
   };
+
+  const dailySentenceImages = [dailySentence1, dailySentence2, dailySentence3];
 
   if (questionsLoading || !currentQuestion) {
     return (
@@ -610,44 +593,11 @@ const DailySentence = () => {
       />
 
       {/* 언어 모드 전환 툴팁 */}
-      {showLanguageModeTooltip && languageModeTooltipPosition && (
-        <div
-          className="fixed inset-0 z-50 pointer-events-none"
-          style={{ 
-            touchAction: "none",
-            bottom: "72px", // 네비게이션 바 높이만큼 제외
-          }}
-        >
-          <div
-            className="absolute"
-            style={{
-              top: `${languageModeTooltipPosition.top}px`,
-              left: `${languageModeTooltipPosition.left}px`,
-              transform: "translateX(-50%) translateY(-100%)",
-              pointerEvents: "auto",
-            }}
-          >
-            <Tooltip
-              title="언어모드 전환"
-              description="모드를 클릭하고, 자유롭게 대답해보세요!\n한국어는 자연스런 영어로 번역해드려요"
-              position="bottom"
-              showCloseButton={true}
-              onClose={handleCloseLanguageModeTooltip}
-              showUnderline={false}
-              customWidth={243}
-            />
-          </div>
-          <div
-            className="absolute inset-0 -z-10"
-            onClick={handleCloseLanguageModeTooltip}
-            style={{ 
-              pointerEvents: "auto",
-              backgroundColor: "rgba(0, 0, 0, 0.3)", // 실무에서 많이 쓰는 반투명 방식
-              bottom: "72px", // 네비게이션 바 높이만큼 제외
-            }}
-          />
-        </div>
-      )}
+      <ImageTooltipOverlay
+        images={dailySentenceImages}
+        showTooltip={showLanguageModeTooltip}
+        onClose={handleCloseLanguageModeTooltip}
+      />
     </div>
   );
 };

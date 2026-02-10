@@ -1,6 +1,10 @@
-import React, { useState, useEffect, useMemo } from "react";
-import { BaseTooltipOverlay, TooltipConfig } from "./TooltipOverlay/BaseTooltipOverlay";
+import React, { useState, useEffect } from "react";
+import { ImageTooltipOverlay } from "./ImageTooltipOverlay";
 import { shouldShowFeatureTooltip, markTooltipAsSeen, TOOLTIP_KEYS } from "../../utils/tooltipUtils";
+
+// 이미지 import
+import example1 from "../../Images/feature-help/툴팁_예문안내1.png";
+import example2 from "../../Images/feature-help/툴팁_예문안내2.png";
 
 interface ExampleGenerationTooltipProps {
   currentPage: number;
@@ -29,55 +33,7 @@ export const ExampleGenerationTooltip: React.FC<ExampleGenerationTooltipProps> =
     }
   }, []); // 한 번만 체크
 
-  // 페이지별 툴팁 설정
-  const tooltips: TooltipConfig[][] = useMemo(() => [
-    // 페이지 1/2
-    [
-      {
-        title: "이미지 예문생성",
-        description: "교재를 찍어서 바로 올릴 수도 있고,\n갤러리에서 올릴 수도 있어요.",
-        position: "bottom" as const,
-        ref: imageUploadRef,
-        offset: { x: 0, y: 0 },
-        transform: "translateX(-50%) translateY(-100%)",
-      },
-      {
-        title: "채팅 예문생성",
-        description: "어색한 부분, 기억안나는 단어 등\n모든 것을 물어볼 수 있어요.",
-        position: "top" as const,
-        ref: chatRef,
-        offset: { x: 0, y: 0 },
-        transform: "translateX(-50%)",
-      },
-    ],
-    // 페이지 2/2
-    [
-      {
-        title: "스피커",
-        description: "예문을 직접 들어보고 발음을 따라해봐요.",
-        position: "bottom" as const,
-        ref: speakerRef,
-        offset: { x: 0, y: 0 },
-        transform: "translateX(-50%) translateY(-100%)",
-      },
-      {
-        title: "예문추가",
-        description: "예문을 더 보고싶다면,\n예문추가를 할 수 있어요.",
-        position: "bottom" as const,
-        ref: addExampleRef,
-        offset: { x: 0, y: 0 },
-        transform: "translateX(-50%) translateY(-100%)",
-      },
-    ],
-  ], [imageUploadRef, chatRef, speakerRef, addExampleRef]);
-
-  const handleNext = () => {
-    if (currentPage < 1) {
-      onNext();
-    } else {
-      handleClose();
-    }
-  };
+  const images = [example1, example2];
 
   const handleClose = () => {
     setShowTooltip(false);
@@ -86,13 +42,10 @@ export const ExampleGenerationTooltip: React.FC<ExampleGenerationTooltipProps> =
   };
 
   return (
-    <BaseTooltipOverlay
-      tooltips={tooltips}
-      currentPage={currentPage}
-      totalPages={2}
-      onNext={handleNext}
-      onClose={handleClose}
+    <ImageTooltipOverlay
+      images={images}
       showTooltip={showTooltip}
+      onClose={handleClose}
     />
   );
 };

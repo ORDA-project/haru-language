@@ -27,19 +27,19 @@ const FeatureHelp = () => {
     {
       id: "home",
       title: "홈 화면",
-      description: "메인 화면의 주요 기능들을 확인해보세요.",
+      description: "메인 화면의 주요 기능들을 확인해보세요!",
       images: [homeScreen1, homeScreen2],
     },
     {
       id: "daily-sentence",
       title: "한줄 영어",
-      description: "언어 모드 전환 기능을 확인해보세요.",
+      description: "언어 모드 전환 기능을 확인해보세요!",
       images: [dailySentence1, dailySentence2, dailySentence3],
     },
     {
       id: "example-generation",
       title: "예문",
-      description: "예문 생성 기능을 확인해보세요.",
+      description: "예문 생성 기능을 확인해보세요!",
       images: [example1, example2],
     },
   ];
@@ -82,16 +82,21 @@ const FeatureHelp = () => {
               {/* 이미지들을 차례대로 표시 */}
               <div className="space-y-4">
                 {feature.images.map((image, index) => (
-                  <div
-                    key={index}
-                    className="relative w-full overflow-hidden rounded-2xl"
-                  >
-                    <img
-                      src={image}
-                      alt={`${feature.title} ${index + 1}`}
-                      className="w-full h-auto object-contain"
-                      style={{ borderRadius: "16px" }}
-                    />
+                  <div key={index}>
+                    <div
+                      className="relative w-full overflow-hidden rounded-2xl"
+                    >
+                      <img
+                        src={image}
+                        alt={`${feature.title} ${index + 1}`}
+                        className="w-full h-auto object-contain"
+                        style={{ borderRadius: "16px" }}
+                      />
+                    </div>
+                    {/* 이미지 사이 구분선 (마지막 이미지가 아닐 때만) */}
+                    {index < feature.images.length - 1 && (
+                      <div className="w-full h-px bg-gray-200 my-4" />
+                    )}
                   </div>
                 ))}
               </div>
