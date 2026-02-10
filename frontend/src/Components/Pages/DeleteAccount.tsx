@@ -6,6 +6,7 @@ import { isLargeTextModeAtom } from "../../store/dataStore";
 import { createTextStyles } from "../../utils/styleUtils";
 import { useErrorHandler } from "../../hooks/useErrorHandler";
 import { userDetailsApi } from "../../entities/user-details/api";
+import { clearAllTooltipSeenState } from "../../utils/tooltipUtils";
 import NavBar from "../Templates/Navbar";
 
 export default function DeleteAccount() {
@@ -40,6 +41,8 @@ export default function DeleteAccount() {
 
       // 로그아웃 처리
       logout();
+      // 툴팁 '봤음' 상태 초기화 → 재가입 시 툴팁 다시 표시
+      clearAllTooltipSeenState();
 
       showSuccess("탈퇴 완료", "회원 탈퇴가 완료되었습니다.");
 

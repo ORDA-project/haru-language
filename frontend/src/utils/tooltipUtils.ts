@@ -28,3 +28,9 @@ export const shouldShowFeatureTooltip = (key: string): boolean => {
   return !hasSeenTooltip(key);
 };
 
+/** 탈퇴 시 호출: 툴팁 '봤음' 상태를 모두 초기화 (재가입 시 툴팁 다시 표시) */
+export const clearAllTooltipSeenState = (): void => {
+  if (typeof window === "undefined") return;
+  Object.values(TOOLTIP_KEYS).forEach((key) => localStorage.removeItem(key));
+};
+
