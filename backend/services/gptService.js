@@ -13,7 +13,9 @@ async function callGPT(prompt, userInput, maxTokens = 600, options = {}) {
   }
 
   try {
-    const { responseFormat } = options;
+    const { responseFormat, temperature } = options;
+    // 교육·피드백·구조화 출력용 기본값 (일관성 우선, 옵션으로 override 가능)
+    const temperatureValue = temperature !== undefined ? temperature : 0.6;
 
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
@@ -22,6 +24,7 @@ async function callGPT(prompt, userInput, maxTokens = 600, options = {}) {
         { role: "user", content: userInput },
       ],
       max_tokens: maxTokens,
+      temperature: temperatureValue,
       ...(responseFormat ? { response_format: responseFormat } : {}),
     });
 
