@@ -456,12 +456,12 @@ const DailySentence = () => {
     return `${today.getMonth() + 1}월 ${today.getDate()}일`;
   };
 
-  // 언어 모드 전환 툴팁 표시
+  // 하루언어 페이지 진입 시 무조건 툴팁 표시 (미확인 시). X 눌렀을 때만 체크해서 이후엔 안 뜸
   useEffect(() => {
-    if (currentStep === "question" && shouldShowFeatureTooltip(TOOLTIP_KEYS.DAILY_SENTENCE_LANGUAGE_MODE)) {
+    if (shouldShowFeatureTooltip(TOOLTIP_KEYS.DAILY_SENTENCE_LANGUAGE_MODE)) {
       setShowLanguageModeTooltip(true);
     }
-  }, [currentStep]);
+  }, []);
 
   const handleCloseLanguageModeTooltip = () => {
     setShowLanguageModeTooltip(false);

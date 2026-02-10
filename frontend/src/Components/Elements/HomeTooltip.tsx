@@ -18,12 +18,15 @@ export const HomeTooltip: React.FC<HomeTooltipProps> = () => {
   const [showTooltip, setShowTooltip] = useState(false);
   const location = useLocation();
 
-  // 홈 화면에 들어올 때마다 툴팁 미확인 시 표시 (회원가입→마이페이지→홈 경로 포함)
+  // 홈 화면 진입 시 툴팁 미확인 시 무조건 표시 (회원가입 직후 포함). 즉시 + 지연 이중 체크로 타이밍 보정
   useEffect(() => {
     if (location.pathname !== "/home") return;
-    if (shouldShowHomeTooltip()) {
-      setShowTooltip(true);
-    }
+    if (!shouldShowHomeTooltip()) return;
+    setShowTooltip(true); // 즉시 시도
+    const t = setTimeout(() => {
+      if (shouldShowHomeTooltip()) setShowTooltip(true); // 한 번 더 시도 (Strict Mode·빠른 전환 대비)
+    }, 200);
+    return () => clearTimeout(t);
   }, [location.pathname]);
 
   const images = [homeScreen1, homeScreen2];
