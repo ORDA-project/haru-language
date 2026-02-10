@@ -6,7 +6,7 @@ import NavBar from "../Templates/Navbar";
 import HomeHeader from "../Templates/HomeHeader";
 import StatusCheck from "../Elements/StatusCheck";
 import { HomeTooltip } from "../Elements/HomeTooltip";
-import { isLoggedInAtom, userAtom, setUserAtom, isOnboardedAtom } from "../../store/authStore";
+import { isLoggedInAtom, userAtom, setUserAtom } from "../../store/authStore";
 import { API_ENDPOINTS } from "../../config/api";
 import { useErrorHandler } from "../../hooks/useErrorHandler";
 import { http } from "../../utils/http";
@@ -26,7 +26,6 @@ const Home = () => {
   const navigate = useNavigate();
   const [isLoggedIn] = useAtom(isLoggedInAtom);
   const [user] = useAtom(userAtom);
-  const [isOnboarded] = useAtom(isOnboardedAtom);
   const [, setUserData] = useAtom(setUserAtom);
   const [visitCount, setVisitCount] = useState<number>(0);
   const [mostVisitedDay, setMostVisitedDay] = useState<string>("");
@@ -230,7 +229,6 @@ const Home = () => {
       </div>
       <NavBar currentPage={"Home"} />
       <HomeTooltip
-        isOnboarded={isOnboarded || false}
         dailySentenceRef={dailySentenceRef}
         popSongRef={popSongRef}
         exampleNavRef={exampleNavRef}

@@ -82,10 +82,10 @@ export const ImageTooltipOverlay: React.FC<ImageTooltipOverlayProps> = ({
   return (
     <div
       ref={containerRef}
-      className="fixed inset-0 z-50 flex items-center justify-center"
+      className="fixed inset-0 z-50 flex flex-col"
       style={{
-        backgroundColor: "rgba(0, 0, 0, 0.7)",
-        bottom: "72px", // 네비게이션 바 높이만큼 제외
+        backgroundColor: "rgba(0, 0, 0, 0.72)",
+        bottom: "72px",
         touchAction: "pan-y",
       }}
       onClick={handleOverlayClick}
@@ -93,119 +93,73 @@ export const ImageTooltipOverlay: React.FC<ImageTooltipOverlayProps> = ({
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
-      {/* X 버튼 */}
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onClose();
-        }}
-        className="absolute top-4 right-4 bg-white rounded-full flex items-center justify-center shadow-lg z-10 hover:bg-gray-100 transition-colors"
-        style={{
-          width: "40px",
-          height: "40px",
-        }}
-        aria-label="닫기"
-      >
-        <svg
-          width="20"
-          height="20"
-          viewBox="0 0 20 20"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
+      {/* 상단: 닫기 버튼 + 페이지 안내 */}
+      <div className="flex-shrink-0 flex items-center justify-center relative min-h-[56px] px-4">
+        <div className="bg-white/95 backdrop-blur-sm rounded-full shadow-md px-5 py-2.5">
+          <span className="text-gray-700 font-semibold text-sm tabular-nums">
+            {currentIndex + 1} / {images.length}
+          </span>
+        </div>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onClose();
+          }}
+          className="absolute top-4 right-4 w-10 h-10 bg-white/95 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg z-10 hover:bg-gray-100 active:scale-95 transition-all"
+          aria-label="닫기"
         >
-          <path
-            d="M15 5L5 15M5 5L15 15"
-            stroke="#666"
-            strokeWidth="2"
-            strokeLinecap="round"
-          />
-        </svg>
-      </button>
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M15 5L5 15M5 5L15 15" stroke="#555" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+        </button>
+      </div>
 
-      {/* 이미지 컨테이너 */}
-      <div className="relative w-full h-full flex items-center justify-center px-4">
+      {/* 이미지 영역 */}
+      <div className="flex-1 flex items-center justify-center min-h-0 px-4 py-2">
         <img
           src={images[currentIndex]}
           alt={`툴팁 ${currentIndex + 1}`}
-          className="max-w-full max-h-full object-contain"
-          style={{
-            borderRadius: "16px",
-          }}
+          className="max-w-full max-h-full object-contain select-none"
+          style={{ borderRadius: "16px", boxShadow: "0 8px 32px rgba(0,0,0,0.2)" }}
           draggable={false}
         />
       </div>
 
-      {/* 페이지 인디케이터 */}
-      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-10">
-        <div className="bg-white rounded-full shadow-md px-4 py-2">
-          <span className="text-gray-700 font-medium text-sm">
-            {currentIndex + 1}/{images.length}
-          </span>
-        </div>
-      </div>
-
-      {/* 이전/다음 화살표 (선택적) */}
-      {currentIndex > 0 && (
+      {/* 하단: 이전 / 다음 버튼 */}
+      <div className="flex-shrink-0 flex items-center justify-center gap-4 pb-6 pt-2">
         <button
           onClick={(e) => {
             e.stopPropagation();
             handlePrev();
           }}
-          className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white rounded-full flex items-center justify-center shadow-lg z-10 hover:bg-gray-100 transition-colors"
-          style={{
-            width: "40px",
-            height: "40px",
-          }}
+          className="w-12 h-12 rounded-full bg-white/95 backdrop-blur-sm shadow-lg flex items-center justify-center hover:bg-gray-50 active:scale-95 transition-all disabled:opacity-40 disabled:pointer-events-none"
+          style={{ minWidth: "48px" }}
+          disabled={currentIndex === 0}
           aria-label="이전"
         >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 20 20"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              d="M12 15L7 10L12 5"
-              stroke="#666"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M15 18L9 12L15 6" stroke="#374151" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </button>
-      )}
-
-      {currentIndex < images.length - 1 && (
         <button
           onClick={(e) => {
             e.stopPropagation();
             handleNext();
           }}
-          className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white rounded-full flex items-center justify-center shadow-lg z-10 hover:bg-gray-100 transition-colors"
-          style={{
-            width: "40px",
-            height: "40px",
-          }}
-          aria-label="다음"
+          className="w-12 h-12 rounded-full bg-white/95 backdrop-blur-sm shadow-lg flex items-center justify-center hover:bg-gray-50 active:scale-95 transition-all disabled:opacity-40 disabled:pointer-events-none"
+          style={{ minWidth: "48px" }}
+          disabled={currentIndex === images.length - 1}
+          aria-label={currentIndex < images.length - 1 ? "다음" : "닫기"}
         >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 20 20"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              d="M8 5L13 10L8 15"
-              stroke="#666"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
+          {currentIndex < images.length - 1 ? (
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M9 18L15 12L9 6" stroke="#374151" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          ) : (
+            <span className="text-gray-700 font-medium text-sm">확인</span>
+          )}
         </button>
-      )}
+      </div>
     </div>
   );
 };

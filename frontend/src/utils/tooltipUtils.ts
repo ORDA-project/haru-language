@@ -18,9 +18,9 @@ export const markTooltipAsSeen = (key: string): void => {
   localStorage.setItem(key, "true");
 };
 
-export const shouldShowHomeTooltip = (isOnboarded: boolean): boolean => {
-  // 첫 로그인 시에만 표시 (온보딩이 완료되지 않은 경우)
-  return !isOnboarded && !hasSeenTooltip(TOOLTIP_KEYS.HOME);
+export const shouldShowHomeTooltip = (): boolean => {
+  // 처음 회원가입 후 홈 화면 진입 시 한 번만 표시 (아직 툴팁을 본 적 없을 때)
+  return !hasSeenTooltip(TOOLTIP_KEYS.HOME);
 };
 
 export const shouldShowFeatureTooltip = (key: string): boolean => {
