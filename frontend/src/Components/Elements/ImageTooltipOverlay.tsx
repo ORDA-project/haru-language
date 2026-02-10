@@ -82,7 +82,7 @@ export const ImageTooltipOverlay: React.FC<ImageTooltipOverlayProps> = ({
 
   if (!showTooltip) return null;
 
-  // 모바일 웹: 뷰포트 높이에서 하단 네비 높이·safe-area 제외
+  // 이미지가 화면을 꽉 채우고, 그 위에 페이지 안내·닫기만 오버레이 (스와이프·화면 탭으로 이동)
   const overlayStyle: React.CSSProperties = {
     position: "fixed",
     top: 0,
@@ -93,7 +93,7 @@ export const ImageTooltipOverlay: React.FC<ImageTooltipOverlayProps> = ({
     minHeight: "calc(100dvh - 72px)",
     paddingTop: "env(safe-area-inset-top, 0)",
     paddingBottom: "env(safe-area-inset-bottom, 0)",
-    backgroundColor: "rgba(0, 0, 0, 0.72)",
+    backgroundColor: "#000",
     touchAction: "pan-y",
     zIndex: 50,
   };
@@ -108,10 +108,27 @@ export const ImageTooltipOverlay: React.FC<ImageTooltipOverlayProps> = ({
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
-      {/* 상단: 닫기 버튼 + 페이지 안내 */}
-      <div className="flex-shrink-0 flex items-center justify-center relative min-h-[48px] sm:min-h-[56px] px-3 sm:px-4">
-        <div className="bg-white/95 backdrop-blur-sm rounded-full shadow-md px-4 py-2 sm:px-5 sm:py-2.5">
-          <span className="text-gray-700 font-semibold text-xs sm:text-sm tabular-nums">
+      {/* 이미지 전체 영역 (화면 크게) */}
+      <div className="absolute inset-0 flex items-center justify-center">
+        <img
+          src={images[currentIndex]}
+          alt={`툴팁 ${currentIndex + 1}`}
+          className="w-full h-full object-contain select-none rounded-2xl"
+          style={{ maxHeight: "100%" }}
+          draggable={false}
+        />
+      </div>
+
+      {/* 이미지 위 오버레이: 페이지 안내(1/2) + 닫기(X) — 실무에서 많이 쓰는 상단 바 */}
+      <div
+        className="absolute top-0 left-0 right-0 z-10 flex items-center justify-center px-12 py-3 sm:py-4"
+        style={{
+          paddingTop: "max(12px, env(safe-area-inset-top))",
+          background: "linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, transparent 100%)",
+        }}
+      >
+        <div className="rounded-full bg-black/40 backdrop-blur-md px-3 py-1.5">
+          <span className="text-white/95 text-xs font-medium tabular-nums">
             {currentIndex + 1} / {images.length}
           </span>
         </div>
@@ -120,58 +137,13 @@ export const ImageTooltipOverlay: React.FC<ImageTooltipOverlayProps> = ({
             e.stopPropagation();
             onClose();
           }}
-          className="absolute top-3 right-3 sm:top-4 sm:right-4 w-9 h-9 sm:w-10 sm:h-10 bg-white/95 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg z-10 hover:bg-gray-100 active:scale-95 transition-all"
+          className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white/95 hover:bg-black/50 active:scale-95 transition-all"
+          style={{ right: "max(12px, env(safe-area-inset-right))" }}
           aria-label="닫기"
         >
-          <svg width="18" height="18" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" className="sm:w-5 sm:h-5">
-            <path d="M15 5L5 15M5 5L15 15" stroke="#555" strokeWidth="2" strokeLinecap="round" />
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <path d="M15 5L5 15M5 5L15 15" />
           </svg>
-        </button>
-      </div>
-
-      {/* 이미지 영역 - 모바일에서 비율 유지하며 꽉 채움 */}
-      <div className="flex-1 flex items-center justify-center min-h-0 px-3 py-2 sm:px-4">
-        <img
-          src={images[currentIndex]}
-          alt={`툴팁 ${currentIndex + 1}`}
-          className="max-w-full w-full max-h-full object-contain select-none"
-          style={{ borderRadius: "12px", boxShadow: "0 8px 32px rgba(0,0,0,0.2)" }}
-          draggable={false}
-        />
-      </div>
-
-      {/* 하단: 이전 / 다음 버튼 */}
-      <div className="flex-shrink-0 flex items-center justify-center gap-3 sm:gap-4 pb-4 pt-2 sm:pb-6">
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            handlePrev();
-          }}
-          className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-white/95 backdrop-blur-sm shadow-lg flex items-center justify-center hover:bg-gray-50 active:scale-95 transition-all disabled:opacity-40 disabled:pointer-events-none"
-          style={{ minWidth: "44px" }}
-          disabled={currentIndex === 0}
-          aria-label="이전"
-        >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="sm:w-6 sm:h-6">
-            <path d="M15 18L9 12L15 6" stroke="#374151" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </button>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            handleNext();
-          }}
-          className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-white/95 backdrop-blur-sm shadow-lg flex items-center justify-center hover:bg-gray-50 active:scale-95 transition-all disabled:opacity-40 disabled:pointer-events-none"
-          style={{ minWidth: "44px" }}
-          aria-label={currentIndex < images.length - 1 ? "다음" : "확인"}
-        >
-          {currentIndex < images.length - 1 ? (
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="sm:w-6 sm:h-6">
-              <path d="M9 18L15 12L9 6" stroke="#374151" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          ) : (
-            <span className="text-gray-700 font-medium text-xs sm:text-sm">확인</span>
-          )}
         </button>
       </div>
     </div>

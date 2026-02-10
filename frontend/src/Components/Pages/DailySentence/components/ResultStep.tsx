@@ -1,7 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Icons } from "../../../Elements/Icons";
-import { Tooltip } from "../../../Elements/Tooltip";
-import { shouldShowFeatureTooltip, markTooltipAsSeen, TOOLTIP_KEYS } from "../../../../utils/tooltipUtils";
 
 interface SentencePair {
   originalSentence?: string;
@@ -40,44 +38,6 @@ export const ResultStep: React.FC<ResultStepProps> = ({
   onPrevious,
   onRestart,
 }) => {
-  const [showRevisedAnswerTooltip, setShowRevisedAnswerTooltip] = useState(false);
-  const revisedAnswerRef = React.useRef<HTMLDivElement>(null);
-  const [revisedAnswerTooltipPosition, setRevisedAnswerTooltipPosition] = useState<{
-    top: number;
-    left: number;
-  } | null>(null);
-
-  useEffect(() => {
-    if (shouldShowFeatureTooltip(TOOLTIP_KEYS.REVISED_ANSWER)) {
-      setShowRevisedAnswerTooltip(true);
-      updateRevisedAnswerTooltipPosition();
-    }
-  }, []);
-
-  useEffect(() => {
-    if (showRevisedAnswerTooltip && revisedAnswerRef.current) {
-      updateRevisedAnswerTooltipPosition();
-      const handleResize = () => updateRevisedAnswerTooltipPosition();
-      window.addEventListener("resize", handleResize);
-      return () => window.removeEventListener("resize", handleResize);
-    }
-  }, [showRevisedAnswerTooltip]);
-
-  const updateRevisedAnswerTooltipPosition = () => {
-    if (revisedAnswerRef.current) {
-      const rect = revisedAnswerRef.current.getBoundingClientRect();
-      setRevisedAnswerTooltipPosition({
-        top: rect.top - 10,
-        left: rect.left + rect.width / 2,
-      });
-    }
-  };
-
-  const handleCloseRevisedAnswerTooltip = () => {
-    setShowRevisedAnswerTooltip(false);
-    markTooltipAsSeen(TOOLTIP_KEYS.REVISED_ANSWER);
-  };
-
   const allCompleted =
     languageMode === "korean"
       ? translationResult.sentencePairs &&
@@ -136,7 +96,7 @@ export const ResultStep: React.FC<ResultStepProps> = ({
 
           {translationResult.isCorrection ? (
             // 영어 모드: 첨삭 결과 표시
-            <div ref={revisedAnswerRef}>
+            <div>
               <p className="text-gray-600 mb-3 font-medium" style={smallTextStyle}>
                 수정된 답변:
               </p>
@@ -154,7 +114,7 @@ export const ResultStep: React.FC<ResultStepProps> = ({
             </div>
           ) : (
             // 한국어 모드: 번역 결과 표시
-            <div ref={revisedAnswerRef}>
+            <div>
               <p className="text-gray-600 mb-3 font-medium" style={smallTextStyle}>
                 수정된 답변:
               </p>
@@ -213,45 +173,6 @@ export const ResultStep: React.FC<ResultStepProps> = ({
         다시 시작하기
       </button>
 
-      {/* 수정본 툴팁 */}
-      {showRevisedAnswerTooltip && revisedAnswerTooltipPosition && (
-        <div
-          className="fixed inset-0 z-50 pointer-events-none"
-          style={{ 
-            touchAction: "none",
-            bottom: "72px", // 네비게이션 바 높이만큼 제외
-          }}
-        >
-          <div
-            className="absolute"
-            style={{
-              top: `${revisedAnswerTooltipPosition.top}px`,
-              left: `${revisedAnswerTooltipPosition.left}px`,
-              transform: "translateX(-50%) translateY(-100%)",
-              pointerEvents: "auto",
-            }}
-          >
-            <Tooltip
-              title="수정본"
-              description="다음에는 같은 질문에 이렇게 말할 수 있어요"
-              position="bottom"
-              showCloseButton={true}
-              onClose={handleCloseRevisedAnswerTooltip}
-              showUnderline={true}
-              customWidth={243}
-            />
-          </div>
-          <div
-            className="absolute inset-0 -z-10"
-            onClick={handleCloseRevisedAnswerTooltip}
-            style={{ 
-              pointerEvents: "auto",
-              backgroundColor: "rgba(0, 0, 0, 0.3)", // 실무에서 많이 쓰는 반투명 방식
-              bottom: "72px", // 네비게이션 바 높이만큼 제외
-            }}
-          />
-        </div>
-      )}
     </div>
   );
 };

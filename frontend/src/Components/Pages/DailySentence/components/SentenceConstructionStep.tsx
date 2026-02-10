@@ -1,7 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Icons } from "../../../Elements/Icons";
-import { Tooltip } from "../../../Elements/Tooltip";
-import { shouldShowFeatureTooltip, markTooltipAsSeen, TOOLTIP_KEYS } from "../../../../utils/tooltipUtils";
 
 interface SentencePair {
   koreanSentence?: string;
@@ -49,43 +47,6 @@ export const SentenceConstructionStep: React.FC<SentenceConstructionStepProps> =
   onNextSentence,
   onSkipToResult,
 }) => {
-  const [showHelpTooltip, setShowHelpTooltip] = useState(false);
-  const helpButtonRef = React.useRef<HTMLButtonElement>(null);
-  const [helpTooltipPosition, setHelpTooltipPosition] = useState<{
-    top: number;
-    left: number;
-  } | null>(null);
-
-  useEffect(() => {
-    if (shouldShowFeatureTooltip(TOOLTIP_KEYS.SENTENCE_CONSTRUCTION_HELP)) {
-      setShowHelpTooltip(true);
-      updateHelpTooltipPosition();
-    }
-  }, []);
-
-  useEffect(() => {
-    if (showHelpTooltip && helpButtonRef.current) {
-      updateHelpTooltipPosition();
-      const handleResize = () => updateHelpTooltipPosition();
-      window.addEventListener("resize", handleResize);
-      return () => window.removeEventListener("resize", handleResize);
-    }
-  }, [showHelpTooltip]);
-
-  const updateHelpTooltipPosition = () => {
-    if (helpButtonRef.current) {
-      const rect = helpButtonRef.current.getBoundingClientRect();
-      setHelpTooltipPosition({
-        top: rect.top - 10,
-        left: rect.left + rect.width / 2,
-      });
-    }
-  };
-
-  const handleCloseHelpTooltip = () => {
-    setShowHelpTooltip(false);
-    markTooltipAsSeen(TOOLTIP_KEYS.SENTENCE_CONSTRUCTION_HELP);
-  };
   return (
     <div className="px-4 py-6">
       <div className="bg-white rounded-3xl p-6 shadow-lg">
@@ -232,7 +193,6 @@ export const SentenceConstructionStep: React.FC<SentenceConstructionStepProps> =
               : "결과 확인"}
           </button>
           <button
-            ref={helpButtonRef}
             onClick={onSkipToResult}
             className="w-full text-center text-gray-600 underline py-2 hover:text-gray-800 transition-colors"
             style={smallTextStyle}
@@ -242,45 +202,6 @@ export const SentenceConstructionStep: React.FC<SentenceConstructionStepProps> =
         </div>
       </div>
 
-      {/* 모르겠어요 툴팁 */}
-      {showHelpTooltip && helpTooltipPosition && (
-        <div
-          className="fixed inset-0 z-50 pointer-events-none"
-          style={{ 
-            touchAction: "none",
-            bottom: "72px", // 네비게이션 바 높이만큼 제외
-          }}
-        >
-          <div
-            className="absolute"
-            style={{
-              top: `${helpTooltipPosition.top}px`,
-              left: `${helpTooltipPosition.left}px`,
-              transform: "translateX(-50%) translateY(-100%)",
-              pointerEvents: "auto",
-            }}
-          >
-            <Tooltip
-              title="모르겠어요..."
-              description="잘 모르겠다면 클릭해서 결과를 볼 수 있어요."
-              position="bottom"
-              showCloseButton={true}
-              onClose={handleCloseHelpTooltip}
-              showUnderline={false}
-              customWidth={243}
-            />
-          </div>
-          <div
-            className="absolute inset-0 -z-10"
-            onClick={handleCloseHelpTooltip}
-            style={{ 
-              pointerEvents: "auto",
-              backgroundColor: "rgba(0, 0, 0, 0.3)", // 실무에서 많이 쓰는 반투명 방식
-              bottom: "72px", // 네비게이션 바 높이만큼 제외
-            }}
-          />
-        </div>
-      )}
     </div>
   );
 };
