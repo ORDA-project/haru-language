@@ -1,43 +1,48 @@
-import React, { useState } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
 import NavBar from "../Templates/Navbar";
-import { Tooltip } from "../Elements/Tooltip";
+
+// 이미지 import
+import homeScreen1 from "../../Images/feature-help/툴팁_메인화면1.png";
+import homeScreen2 from "../../Images/feature-help/툴팁_메인화면2.png";
+import dailySentence1 from "../../Images/feature-help/툴팁_하루언어1.png";
+import dailySentence2 from "../../Images/feature-help/툴팁_하루언어2.png";
+import dailySentence3 from "../../Images/feature-help/툴팁_하루언어3.png";
+import example1 from "../../Images/feature-help/툴팁_예문안내1.png";
+import example2 from "../../Images/feature-help/툴팁_예문안내2.png";
 
 type FeatureType = "home" | "daily-sentence" | "example-generation";
 
+interface FeatureConfig {
+  id: FeatureType;
+  title: string;
+  description: string;
+  images: string[]; // 이미지 배열
+}
+
 const FeatureHelp = () => {
   const navigate = useNavigate();
-  const [selectedFeature, setSelectedFeature] = useState<FeatureType | null>(null);
 
-  const features = {
-    home: {
+  const features: FeatureConfig[] = [
+    {
+      id: "home",
       title: "홈 화면",
       description: "메인 화면의 주요 기능들을 확인해보세요.",
-      exampleTooltip: {
-        title: "오늘의 한줄 영어",
-        description: "매일매일 새로운 주제가 주어집니다.\n영어, 한국어로 자유롭게 대답해보세요!\n한국어는 자연스런 영어로 번역해드려요",
-        position: "bottom" as const,
-      },
+      images: [homeScreen1, homeScreen2],
     },
-    "daily-sentence": {
+    {
+      id: "daily-sentence",
       title: "한줄 영어",
       description: "언어 모드 전환 기능을 확인해보세요.",
-      exampleTooltip: {
-        title: "언어모드 전환",
-        description: "모드를 클릭하고, 자유롭게 대답해보세요!\n한국어는 자연스런 영어로 번역해드려요",
-        position: "bottom" as const,
-      },
+      images: [dailySentence1, dailySentence2, dailySentence3],
     },
-    "example-generation": {
+    {
+      id: "example-generation",
       title: "예문",
       description: "예문 생성 기능을 확인해보세요.",
-      exampleTooltip: {
-        title: "스피커",
-        description: "예문을 직접 들어보고 발음을 따라해봐요.",
-        position: "bottom" as const,
-      },
+      images: [example1, example2],
     },
-  };
+  ];
 
   return (
     <div className="w-full h-full flex flex-col items-center max-w-[440px] mx-auto shadow-[0_0_10px_0_rgba(0,0,0,0.1)] bg-[#F7F8FB]">
@@ -47,13 +52,7 @@ const FeatureHelp = () => {
             onClick={() => navigate("/mypage")}
             className="p-2 text-gray-800"
           >
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
               <path
                 d="M15 18L9 12L15 6"
                 stroke="currentColor"
@@ -69,62 +68,33 @@ const FeatureHelp = () => {
       </div>
 
       <div className="flex-1 w-full px-4 py-6 overflow-y-auto pb-24">
-        <div className="space-y-4">
-          {Object.entries(features).map(([key, feature]) => (
+        <div className="space-y-6">
+          {features.map((feature) => (
             <div
-              key={key}
-              className="bg-white rounded-lg p-4 shadow-sm border border-gray-200 cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => setSelectedFeature(selectedFeature === key ? null : (key as FeatureType))}
+              key={feature.id}
+              className="bg-white rounded-lg p-4 shadow-sm border border-gray-200"
             >
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-bold text-gray-900 mb-1">{feature.title}</h3>
-                  <p className="text-gray-600 text-sm">{feature.description}</p>
-                </div>
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 20 20"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                  className={`transform transition-transform ${
-                    selectedFeature === key ? "rotate-180" : ""
-                  }`}
-                >
-                  <path
-                    d="M5 7.5L10 12.5L15 7.5"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
+              <div className="mb-4">
+                <h3 className="font-bold text-gray-900 text-lg mb-1">{feature.title}</h3>
+                <p className="text-gray-600 text-sm">{feature.description}</p>
               </div>
 
-              {selectedFeature === key && feature.exampleTooltip && (
-                <div className="mt-4 pt-4 border-t border-gray-200">
-                  {/* 예시 이미지 영역 */}
-                  <div className="relative bg-gray-200 rounded-lg overflow-hidden" style={{ height: "300px", minHeight: "300px" }}>
-                    {/* 툴팁 오버레이 */}
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div 
-                        className="relative"
-                        style={{
-                          top: key === "home" ? "-80px" : key === "daily-sentence" ? "-100px" : "-60px",
-                        }}
-                      >
-                        <Tooltip
-                          title={feature.exampleTooltip.title}
-                          description={feature.exampleTooltip.description}
-                          position={feature.exampleTooltip.position}
-                          showUnderline={true}
-                          customWidth={243}
-                        />
-                      </div>
-                    </div>
+              {/* 이미지들을 차례대로 표시 */}
+              <div className="space-y-4">
+                {feature.images.map((image, index) => (
+                  <div
+                    key={index}
+                    className="relative w-full overflow-hidden rounded-2xl"
+                  >
+                    <img
+                      src={image}
+                      alt={`${feature.title} ${index + 1}`}
+                      className="w-full h-auto object-contain"
+                      style={{ borderRadius: "16px" }}
+                    />
                   </div>
-                </div>
-              )}
+                ))}
+              </div>
             </div>
           ))}
         </div>
@@ -136,4 +106,3 @@ const FeatureHelp = () => {
 };
 
 export default FeatureHelp;
-
